@@ -29,7 +29,7 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 
 1. **Domain first.** Commands read `ncly <domain> [<resource>] <verb>`, such as `ncly video convert`, with one verb per action across domains. `ncly <domain> --help` lists everything a domain does. A few commands stand alone, such as `ncly doctor`. A script that joins Nicely is reshaped into this grammar, whatever its interface was before.
 2. **One implementation, two faces.** In interactive mode, a missing value opens a short form. In non-interactive mode, the same command fails with exit code 2 and a hint that shows the full command. Both faces produce the same result.
-3. **A stable agent contract.** Command names, flags, JSON keys, error codes, and exit codes stay in English. JSON keys are only added. Any other change to the contract needs a new entry in [decisions.md](decisions.md). [cli-spec.md](cli-spec.md) defines the contract.
+3. **A stable agent contract.** Command names, flags, JSON keys, error codes, and exit codes stay in English. JSON keys are only added. Any other change to the contract needs a new entry in [decision-records.md](decision-records.md). [cli-spec.md](cli-spec.md) defines the contract.
 4. **Safe by default.** Every command that writes accepts `--dry-run`. Overwriting or deleting needs `--force` or a yes in the terminal. Deleted files go to the OS trash. Text from outside Nicely, such as a transcript, reaches an agent only with the agent's tools turned off.
 5. **Keys stay with the human.** Keys live in the OS keychain or in environment variables, never in flags, config files, the repository, or the binary. An agent that meets a missing key relays the hint, and the human runs `ncly auth login`.
 6. **Check everything, install nothing silently.** `ncly doctor` checks tools and keys. Nicely installs a prerequisite only after a human says yes.
@@ -81,5 +81,5 @@ Use one word per concept in code, docs, help, and commit messages. Add a term he
 ## Where the details live
 
 - [cli-spec.md](cli-spec.md) holds the agent contract and every specified command. Read the sections you touch before changing a command.
-- [decisions.md](decisions.md) explains why each rule exists. Read it before you propose to change a rule.
+- [decision-records.md](decision-records.md) explains why each rule exists. Read it before you propose to change a rule.
 - The milestone files in `docs/milestones/` list the work in order. The current milestone is the lowest-numbered file whose status is not `done`.

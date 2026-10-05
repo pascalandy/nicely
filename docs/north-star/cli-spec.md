@@ -106,7 +106,7 @@ A command that processes several items, such as several URLs or files, checks ev
 
 A report command, such as `ncly doctor` or `ncly auth status`, answers with a report. The report goes to stdout even when a check fails. `ok` gives the verdict, and the exit code matches it.
 
-JSON keys are only added. Renaming or removing a key needs an entry in [decisions.md](decisions.md).
+JSON keys are only added. Renaming or removing a key needs an entry in [decision-records.md](decision-records.md).
 
 ## Exit codes (M0)
 

@@ -1,4 +1,4 @@
-# Decisions
+# Decision records
 
 Each entry records what was decided, why, and what was rejected. The rules themselves live in the [guide](guide.md) and in [cli-spec.md](cli-spec.md), and an entry links to its rule instead of repeating it.
 

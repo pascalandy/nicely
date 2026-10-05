@@ -7,7 +7,7 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 1. [docs/north-star/guide.md](docs/north-star/guide.md), at the start of every session.
 2. The current milestone in `docs/milestones/`: the lowest-numbered file whose status is not `done`.
 3. The sections of [docs/north-star/cli-spec.md](docs/north-star/cli-spec.md) that your task touches.
-4. [docs/north-star/decisions.md](docs/north-star/decisions.md), only when a rule blocks your task.
+4. [docs/north-star/decision-records.md](docs/north-star/decision-records.md), only when a rule blocks your task.
 
 Take rules only from these files. `docs/archived/` holds history, such as the design chat.
 
@@ -37,12 +37,12 @@ Until M0 lands `just check` and `just signoff`, run the checks that exist, skip 
 
 ## Rules
 
-- Where cli-spec.md is silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in decisions.md.
+- Where cli-spec.md is silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in decision-records.md.
 - Use the terms defined in the guide. Add a new term to the guide before using it.
 - Prefer end-to-end testscript scenarios. Write a unit test only for logic that a scenario cannot reach.
 - Write code, comments, docs, and commit messages in English.
 - Stay inside the current milestone. Write any other idea as one line in [M99](docs/milestones/M99-parking-lot.md), then continue.
-- To change a principle or the agent contract, add or fix an entry in decisions.md. Ask Pascal before merging, unless Pascal asked for the change.
+- To change a principle or the agent contract, add or fix an entry in decision-records.md. Ask Pascal before merging, unless Pascal asked for the change.
 - Use placeholders such as `/Users/me`, `host-a`, and `example.com` in code, tests, and docs. The pre-commit hook runs gitleaks with generic rules for home paths and private IP ranges. Rules that name Pascal's hosts live in `lefthook-local.yml`, which git ignores.
 
 ## Code
