@@ -21,7 +21,7 @@ Core says where a feature lives, not when it ships. The milestones decide timing
 
 ## Agents in both directions
 
-Agents operate `ncly`. Every command runs without a terminal, answers in JSON on request, and fails with an error code and a fix. Any agent with a shell can use Nicely, so `ncly` never needs to know which agent calls it.
+Agents operate `ncly`. Every command runs without a terminal, answers in JSON on request, and fails with an error code and a fix. [cli-spec.md](cli-spec.md#output-m0) lists the few exceptions, such as `--help`. Any agent with a shell can use Nicely, so `ncly` never needs to know which agent calls it.
 
 `ncly` also runs agents. Profiles in the config name a harness, a model, and an effort from M1. From M2, `ncly agent` sends a task to a harness through a profile, and harness logic lives in that one place.
 
