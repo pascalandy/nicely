@@ -59,6 +59,7 @@ An unknown profile exits 2 with `NOT_FOUND`. After a harness starts, a failure e
 - Whether `ncly agent run` reads stdin without `-` when stdin is a pipe, given that some harnesses leave stdin open.
 - The flags that turn the tools off in each harness, starting from the `claude` flags of the transcript CLI.
 - Whether `ncly agent model list` replaces the `list models` command of the transcript CLI.
+- The key variables that each harness reads, such as `ANTHROPIC_API_KEY`. Its adapter declares them, so the environment rule of cli-spec.md passes them to the harness.
 
 ## Out of scope
 
