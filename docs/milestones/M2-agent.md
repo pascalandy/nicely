@@ -18,7 +18,7 @@ M1, which brings the profiles in the config and `internal/run`.
 **Commands.**
 
 ```
-ncly agent run [task] [--profile <name>] [--input <file> | -] [--cwd <dir>] [--read-only] [--json]
+ncly agent run [task] [--profile <name>] [--input <file> | -] [--cwd <dir>] [--read-only] [--dry-run] [--json]
 ncly agent profile list [--json]
 ncly agent profile view <name> [--json]
 ```
@@ -27,6 +27,7 @@ ncly agent profile view <name> [--json]
 - Material runs with the harness's tools turned off, as D028 requires. A task without material may use tools.
 - The answer goes to stdout. `--json` returns `ok`, `answer`, `profile`, `harness`, `model`, and `duration_ms`.
 - `--read-only` fails the run when a tracked or untracked file under `--cwd` changed. Ignored files do not count.
+- `--dry-run` prints the harness command it would run, without starting the harness.
 
 ```bash
 cat notes.md | ncly agent run "Extract the action items"

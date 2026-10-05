@@ -86,7 +86,7 @@ stdout carries data. stderr carries progress, warnings, and errors. Without `--j
 With `--json`, every answer is one JSON object on one line, never a bare array. `ok` is `true` or `false` and agrees with the exit code. `--help`, `--version`, and `ncly completion` print text and ignore `--json`.
 
 - On success, stdout holds the object. Progress is not shown, and stderr stays empty unless `--verbose` or `NCLY_DEBUG` adds lines.
-- On failure, stdout stays empty and the object ends stderr. With `--verbose`, diagnostic lines come before it.
+- On failure, stdout stays empty and the object ends stderr. With `--verbose` or `NCLY_DEBUG`, diagnostic lines come before it.
 
 ```json
 {"ok":false,"errors":[{"code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram"}]}
@@ -252,7 +252,7 @@ ncly doctor [component] [--live] [--json]
 ## ncly auth (M1)
 
 ```
-ncly auth login <service> [--stdin] [--force]
+ncly auth login <service> [--stdin] [--dry-run] [--force]
 ncly auth logout <service> [--dry-run] [--force]
 ncly auth status [--json]
 ```
@@ -304,7 +304,7 @@ ncly transcript prompt list [--json]
 
 - A run needs the `deepgram` key and exits 78 with `AUTH_MISSING` without it.
 - `--profile` names an [agent profile](#agent-profiles-m1) for the summary.
-- `--dry-run` follows the [global definition](#global-flags-m0): it validates the plan without a key, a paid request, or a write.
+- `--dry-run` follows the [global definition](#global-flags-m0): it validates the plan without a key, a paid request, or a change to the user's files.
 - Exit 75 is safe to rerun. Never rerun an exit 1 automatically, because Deepgram may already have billed the audio.
 - When the summary fails, the transcript is still saved, and the failure keeps `output_dir` next to `errors`.
 - Several URLs answer with `results`, as [Output](#output-m0) describes. Each item carries its `url`.
