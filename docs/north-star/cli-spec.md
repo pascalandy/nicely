@@ -42,7 +42,7 @@ Core reserves every name in the domain table of the [guide](guide.md#domains-and
 
 ## Global flags (M0)
 
-Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. `ncly` sets these variables for every program it runs, so an extension receives the resolved values.
+Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. [Programs that ncly runs](#programs-that-ncly-runs-m1) receive the resolved values.
 
 | Flag | Variable | Default | Effect |
 |---|---|---|---|
@@ -61,7 +61,7 @@ Commands that write also accept these flags.
 | Flag | Effect |
 |---|---|
 | `-n`, `--dry-run` | Shows what the command would change. It changes nothing the user owns, reads no key, and sends no paid request. It may fill Nicely's cache, including the first download of a Python program's dependencies. |
-| `-f`, `--force` | Answers yes to every confirmation, such as an overwrite, a deletion, or the keys a tap requests. |
+| `-f`, `--force` | Answers yes to every confirmation, such as an overwrite or a deletion. It never installs a prerequisite and never grants a key, because both need a human in a terminal. |
 | `-o`, `--output <path>` | Writes the result to this file, or to this folder when the command writes several files. |
 
 Commands that call the network or run for minutes also accept `--timeout <duration>`. A duration is `30s`, `5m`, `2h`, or a number of seconds. Each command states its default in its help.
@@ -75,7 +75,7 @@ Interactive mode applies when stdin and stdout are terminals, `--no-input` is ab
 | Every required value is given | Runs | Runs |
 | A required value is missing | A form asks only for the missing values | Exit 2, `USAGE_INVALID`, and a hint with the full command |
 | A step needs a confirmation and `--force` is absent | Asks for confirmation | Exit 2, `CONFIRMATION_REQUIRED`, and a hint that adds `--force` |
-| A step only a human can do, such as typing a key | Asks | Exit 78, `TERMINAL_REQUIRED`, and a hint that names the command to run in a terminal |
+| A step only a human can do, such as typing or granting a key | Asks | Exit 78, `TERMINAL_REQUIRED`, and a hint that names the command to run in a terminal |
 
 After an interactive run that used a form, `ncly` prints the equivalent command on stderr, after the line `Next time:`. The command itself is never translated.
 
@@ -131,12 +131,12 @@ Each code maps to exactly one exit code. Core uses only the codes in this table,
 | `USAGE_INVALID` | 2 | Unknown command, bad flag, or a missing value in non-interactive mode | M0 |
 | `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent | M0 |
 | `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type | M0 |
-| `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing a key | M0 |
+| `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing or granting a key | M0 |
 | `RUNTIME` | 1 | Any other failure during work | M0 |
 | `NOT_FOUND` | 2 | The named skill, service, profile, or component does not exist | M1 |
 | `AUTH_MISSING` | 78 | A required key is in neither the environment nor the keychain | M1 |
 | `PREREQ_MISSING` | 78 | A required tool is absent or too old | M1 |
-| `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer | M1 |
+| `KEYRING_UNAVAILABLE` | 78 | A command needs a key that is not in the environment, and the OS keychain does not answer | M1 |
 | `TEMPORARY` | 75 | The network, a service, or a lock failed before any paid request | M0 |
 | `INTERRUPTED` | 130 | Ctrl-C stopped the command | M0 |
 | `TERMINATED` | 143 | SIGTERM stopped the command | M0 |
@@ -182,10 +182,24 @@ paths = ["~/code/skills"]
 ## Keys (M1)
 
 - A service has a name of lowercase letters and digits, such as `deepgram`. Its environment variable is the name in uppercase followed by `_API_KEY`, such as `DEEPGRAM_API_KEY`.
-- `ncly` reads a key from its environment variable first, then from the keychain. The keychain entry uses the service `nicely` and the account named after the service.
+- `ncly` reads a key from its environment variable first. It asks the keychain only when that variable is empty, and for `ncly auth`. The keychain entry uses the service `nicely` and the account named after the service.
+- Each keychain call has a time limit, and a keychain that does not answer in time counts as unavailable. A command that needs a key exits 78 with `KEYRING_UNAVAILABLE` when the key is missing from the environment and the keychain is unavailable, and its hint names the variable to export. When the keychain answers without the key, the code is `AUTH_MISSING`.
 - A key is never accepted as a flag. `ncly auth login` reads it from a masked field, or from stdin with `--stdin`.
 - A key is never printed. `ncly auth status` reports where a key comes from, never its value.
-- A program that `ncly` runs receives only the keys it declares, as environment variables of its own process.
+
+## Programs that ncly runs (M1)
+
+`ncly` runs three kinds of programs: Python programs of core, harnesses, and, from M3, extensions. None of them runs in a sandbox. A program runs with the rights of the user, so it could read the keychain or any file itself. Adding a tap means trusting its author.
+
+**Environment.** A program receives the environment of `ncly` with these changes:
+
+- Each variable named `<NAME>_API_KEY` is the key of a service. The program receives it only when that key is granted to it, and `ncly` then sets it from the environment or the keychain.
+- The variables of the global flags carry their resolved values, and `NCLY_VERSION` holds the version of `ncly`.
+- A harness receives `NCLY_AGENT_DEPTH` plus one.
+
+**Grants.** A program of core receives the keys that core declares for it. An extension receives a key only after a human grants that key to that extension in a terminal. `--force` never grants a key. When an update of an extension declares a new key, the extension does not start until a human grants it.
+
+**Cancellation.** On Ctrl-C or SIGTERM, `ncly` sends the signal to every program it started and to their descendants. It sends SIGKILL to what still runs 15 seconds later, which leaves a Python program its own 10 seconds to stop its children. It keeps every finished output and removes only its own temporary files. It exits 130 with `INTERRUPTED` or 143 with `TERMINATED`, and under `--json` the answer keeps the data keys that apply, such as `output_dir` or the `results` of finished items. A second signal during this cleanup is ignored. A SIGKILL sent to `ncly` itself leaves no time to clean up.
 
 ## Agent profiles (M1)
 
@@ -238,6 +252,7 @@ ncly doctor [component] [--live] [--json]
 | `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. |
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
+- When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` otherwise.
 - The `skill` component checks that each folder in `[skill] paths` exists and that each `SKILL.md` has a `name` and a `description`.
 - In interactive mode, when a tool is missing and its install command for this system is known, doctor shows the command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and runs it only after a yes.
 - In non-interactive mode, doctor never installs anything. The hint of each failed check holds the command.
@@ -261,13 +276,14 @@ Core uses one service in M1, `deepgram`, for `transcript`. Any other service nam
 
 - `login` stores the key in the keychain. Replacing a stored key asks for confirmation, or needs `--force` in non-interactive mode. In non-interactive mode without `--stdin`, `login` exits 78 with `TERMINAL_REQUIRED` and the hint ``Run `ncly auth login <service>` in a terminal``. An agent relays this hint to the human and never pipes a key itself.
 - `logout` removes the key from the keychain. It asks for confirmation, or needs `--force` in non-interactive mode.
-- `status` is a report command. It lists every service that core uses, plus, from M3, every service that an extension declares. `ok` is `false`, with exit 78, only when the keychain does not answer.
+- When the keychain is unavailable, `login` and `logout` exit 78 with `KEYRING_UNAVAILABLE`, and the hint names the environment variable to use instead.
+- `status` is a report command. It reports whether the keychain answers, then lists every service that core uses, plus, from M3, every service that an extension declares. `ok` is `false`, with exit 78, only when the keychain does not answer and a listed service has no key in the environment.
 
 ```json
-{"ok":true,"services":[{"service":"deepgram","configured":true,"source":"keychain"}]}
+{"ok":true,"keychain":"available","services":[{"service":"deepgram","configured":true,"source":"keychain"}]}
 ```
 
-`source` is `env`, `keychain`, or `none`. To move a key from another secret store, pipe it once: `<command that prints the key> | ncly auth login deepgram --stdin`.
+`keychain` is `available` or `unavailable`. `source` is `env`, `keychain`, or `none`. To move a key from another secret store, pipe it once: `<command that prints the key> | ncly auth login deepgram --stdin`.
 
 ## ncly skill (M1)
 
