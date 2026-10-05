@@ -1,6 +1,6 @@
 # ncly CLI spec
 
-This file is the agent contract of Nicely and the reference for every specified command. Each section and each line of the command tree names the milestone that introduced it. When a milestone starts, it moves its draft commands here before any code is written, and the milestone file links to them.
+This file is the agent contract of Nicely and the reference for every specified command. Each command section, and each command in the tree, names the milestone that introduced it. When a milestone starts, it moves its draft commands here before any code is written, and the milestone file links to them.
 
 ## Usage (M0)
 
@@ -129,7 +129,7 @@ Each code maps to exactly one exit code. Core uses only the codes in this table,
 | Code | Exit | When | Since |
 |---|---|---|---|
 | `USAGE_INVALID` | 2 | Unknown command, bad flag, or a missing value in non-interactive mode | M0 |
-| `CONFIRMATION_REQUIRED` | 2 | A step would overwrite or delete in non-interactive mode without `--force` | M0 |
+| `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent | M0 |
 | `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type | M0 |
 | `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing a key | M0 |
 | `RUNTIME` | 1 | Any other failure during work | M0 |
