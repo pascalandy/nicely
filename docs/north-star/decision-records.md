@@ -1,6 +1,6 @@
 # Decision records
 
-Each entry records what was decided, why, and what was rejected. The rules themselves live in the [guide](guide.md) and in [cli-spec.md](cli-spec.md), and an entry links to its rule instead of repeating it.
+Each entry records what was decided, why, and what was rejected. An entry states its decision in a sentence or two. When the [guide](guide.md) or [cli-spec.md](cli-spec.md) holds the rule, the entry links to it for the details.
 
 Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From v0.0.1, add a new entry that names the entry it replaces, and mark the old entry `Replaced by Dxxx`.
 
@@ -56,11 +56,11 @@ Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes
 
 **Rejected.** A dedicated exit code 3 for a missing key. Exit 2 for a step that only a human can do, such as `ncly auth login` without a terminal or a broken config file, because the agent cannot fix those by changing the call.
 
-## D008 Use one flag for overwrite and delete
+## D008 Use one flag for every confirmation
 
-Decided 2026-10-05. `--force` covers every overwrite and deletion. There is no `--yes`.
+Decided 2026-10-05. In non-interactive mode, `--force` answers yes to every confirmation, such as an overwrite, a deletion, or the keys a tap requests. There is no `--yes`. Installing a prerequisite is the exception: it waits for a yes in a terminal, as principle 6 requires.
 
-**Why.** clig.dev asks for `-f` or `--force` when a confirmation cannot be asked. Every confirmation in Nicely guards an overwrite or a deletion, so a second flag would name the same step twice.
+**Why.** clig.dev asks for `-f` or `--force` when a confirmation cannot be asked. One concept gets one flag, so an agent never has to guess which of two flags a step needs.
 
 **Rejected.** `--yes` beside `--force`, as in Pascal's script conventions, which serve scripts that have both a prompt and a separate safety check.
 
@@ -162,7 +162,7 @@ Decided 2026-10-05. Each project in the docs hub is `public`, `private`, or `exc
 
 ## D023 Configure with a shared TOML file and a local one
 
-Decided 2026-10-05. The shared config describes the setup the user wants, and the local config overrides it on one machine, as [cli-spec.md](cli-spec.md#configuration-m0) defines. `ncly` edits a config file only through a command whose job is to change the setup, and it keeps comments and formatting. An unknown key is a warning. Environment variables start with `NCLY_`.
+Decided 2026-10-05. The shared config describes the setup the user wants, and the local config overrides it on one machine, as [cli-spec.md](cli-spec.md#configuration-m0) defines. `ncly` edits a config file only through a command whose job is to change the setup, and it keeps comments and formatting. An unknown key is a warning. Nicely's own environment variables start with `NCLY_`.
 
 **Why.** TOML is easy to read and edit, and Pascal's tools already use it. One shared file lets a new machine reach the same setup, for example with `ncly tap sync`. The local file keeps machine paths out of the shared one. A warning on unknown keys keeps older versions of `ncly` working.
 
@@ -192,7 +192,7 @@ Decided 2026-10-05. Code, comments, docs, and commit messages are in English. Us
 
 ## D027 Answer in one JSON line with `ok` and `errors`
 
-Decided 2026-10-05. With `--json`, every answer is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`, and the first error decides the exit code. A report command keeps its report on stdout. JSON keys are only added. [cli-spec.md](cli-spec.md#output-m0) holds the details.
+Decided 2026-10-05. With `--json`, every answer is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`, and the first error decides the exit code. A report command keeps its report, with its own findings key, on stdout. JSON keys are only added. [cli-spec.md](cli-spec.md#output-m0) holds the details.
 
 **Why.** Stripe, npm, JSON:API, and GraphQL all answer with error objects that carry a stable code. The key `errors` matches Pascal's script-output convention, so his Python scripts can become extensions by turning their error strings into objects. `ok` stays readable when an agent merges stdout and stderr. ESLint, ShellCheck, `terraform validate -json`, and `npm audit --json` keep their reports on stdout when a check fails. One line keeps `tail -n1 | jq` working.
 

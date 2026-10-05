@@ -55,7 +55,7 @@ ncly tap remove <tap> [--dry-run] [--force]
 
 - `owner/repo` means a GitHub repository. Any Git URL works.
 - The shared config lists the taps. `add` writes the tap into it and clones the tap to `~/.local/share/nicely/taps/<owner>/<repo>/` with the user's own Git credentials. Nicely handles no Git authentication.
-- `add` shows the keys that the tap's extensions declare and asks for confirmation, or needs `--force` in non-interactive mode.
+- When the tap's extensions declare keys, `add` shows them and asks for confirmation, or needs `--force` in non-interactive mode. The fixture tap of the acceptance scenarios declares none.
 - `sync` clones each tap of the shared config that this machine lacks and pulls the others, so a new machine reaches the same setup.
 - `remove` takes the tap out of the shared config and moves its clone to the trash.
 - A tap holds `skills/<name>/SKILL.md` and `extensions/ncly-<domain>`.

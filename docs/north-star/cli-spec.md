@@ -1,6 +1,6 @@
 # ncly CLI spec
 
-This file is the agent contract of Nicely and the reference for every specified command. Each section names the milestone that introduced it. When a milestone starts, it moves its draft commands here before any code is written, and the milestone file links to them.
+This file is the agent contract of Nicely and the reference for every specified command. Each section and each line of the command tree names the milestone that introduced it. When a milestone starts, it moves its draft commands here before any code is written, and the milestone file links to them.
 
 ## Usage (M0)
 
@@ -42,11 +42,11 @@ Core reserves every name in the domain table of the [guide](guide.md#domains-and
 
 ## Global flags (M0)
 
-Each global flag has an environment variable with the same effect. A flag wins over its variable. `ncly` sets these variables for every program it runs, so an extension receives the resolved values.
+Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. `ncly` sets these variables for every program it runs, so an extension receives the resolved values.
 
 | Flag | Variable | Default | Effect |
 |---|---|---|---|
-| `-h`, `--help` | | | Shows help on stdout and exits 0. Other arguments are ignored. |
+| `-h`, `--help` | | | Shows help on stdout and exits 0. It wins over every other argument, including unknown flags, but still honors `--lang` and `--no-color`. |
 | `--version` | | | Prints `ncly vX.Y.Z` on stdout and exits 0. |
 | `--json` | `NCLY_JSON=1` | off | Machine output, as described in [Output](#output-m0). |
 | `--no-input` | `NCLY_NO_INPUT=1` | off | Never prompts, even in a terminal. |
@@ -61,7 +61,7 @@ Commands that write also accept these flags.
 | Flag | Effect |
 |---|---|
 | `-n`, `--dry-run` | Shows what the command would change. It changes nothing the user owns, reads no key, and sends no paid request. It may fill Nicely's cache, including the first download of a Python program's dependencies. |
-| `-f`, `--force` | Overwrites or deletes without asking. |
+| `-f`, `--force` | Answers yes to every confirmation, such as an overwrite, a deletion, or the keys a tap requests. |
 | `-o`, `--output <path>` | Writes the result to this file, or to this folder when the command writes several files. |
 
 Commands that call the network or run for minutes also accept `--timeout <duration>`. A duration is `30s`, `5m`, `2h`, or a number of seconds. Each command states its default in its help.
@@ -74,7 +74,7 @@ Interactive mode applies when stdin and stdout are terminals, `--no-input` is ab
 |---|---|---|
 | Every required value is given | Runs | Runs |
 | A required value is missing | A form asks only for the missing values | Exit 2, `USAGE_INVALID`, and a hint with the full command |
-| A step would overwrite or delete without `--force` | Asks for confirmation | Exit 2, `CONFIRMATION_REQUIRED`, and a hint that adds `--force` |
+| A step needs a confirmation and `--force` is absent | Asks for confirmation | Exit 2, `CONFIRMATION_REQUIRED`, and a hint that adds `--force` |
 | A step only a human can do, such as typing a key | Asks | Exit 78, `TERMINAL_REQUIRED`, and a hint that names the command to run in a terminal |
 
 After an interactive run that used a form, `ncly` prints the equivalent command on stderr, after the line `Next time:`. The command itself is never translated.
@@ -83,9 +83,9 @@ After an interactive run that used a form, `ncly` prints the equivalent command 
 
 stdout carries data. stderr carries progress, warnings, and errors. Without `--json`, human output uses Lip Gloss styles, and `--no-color` turns them off.
 
-With `--json`, every answer is one JSON object on one line, never a bare array. `ok` is `true` or `false` and agrees with the exit code.
+With `--json`, every answer is one JSON object on one line, never a bare array. `ok` is `true` or `false` and agrees with the exit code. `--help`, `--version`, and `ncly completion` print text and ignore `--json`.
 
-- On success, stdout holds the object and stderr stays empty. Progress is not shown.
+- On success, stdout holds the object. Progress is not shown, and stderr stays empty unless `--verbose` or `NCLY_DEBUG` adds lines.
 - On failure, stdout stays empty and the object ends stderr. With `--verbose`, diagnostic lines come before it.
 
 ```json
@@ -104,7 +104,7 @@ A failure after partial work keeps the data keys that still apply, such as `outp
 
 A command that processes several items, such as several URLs or files, checks every input before it starts. A bad input stops the whole command with exit 2. Otherwise the answer holds `results`: one object per item, in input order, each with its own `ok` and either its data or its `errors`. The command exits 0 when every item succeeded, 75 when every failure was temporary and came before any paid request, and 1 otherwise.
 
-A report command, such as `ncly doctor` or `ncly auth status`, answers with a report. The report goes to stdout even when a check fails. `ok` gives the verdict, and the exit code matches it.
+A report command, such as `ncly doctor` or `ncly auth status`, answers with a report. The report goes to stdout even when a check fails, and it lists its findings under its own key, such as `checks`, instead of `errors`. `ok` gives the verdict, and the exit code matches it. When the report command itself fails, it answers with `errors` like any other command.
 
 JSON keys are only added. Renaming or removing a key needs an entry in [decision-records.md](decision-records.md).
 
@@ -137,7 +137,9 @@ Each code maps to exactly one exit code. Core uses only the codes in this table,
 | `AUTH_MISSING` | 78 | A required key is in neither the environment nor the keychain | M1 |
 | `PREREQ_MISSING` | 78 | A required tool is absent or too old | M1 |
 | `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer | M1 |
-| `TEMPORARY` | 75 | The network, a service, or a lock failed before any paid request | M1 |
+| `TEMPORARY` | 75 | The network, a service, or a lock failed before any paid request | M0 |
+| `INTERRUPTED` | 130 | Ctrl-C stopped the command | M0 |
+| `TERMINATED` | 143 | SIGTERM stopped the command | M0 |
 
 Warnings use codes from this table.
 
@@ -151,7 +153,7 @@ Warnings use codes from this table.
 
 `config.toml` is the shared config: the setup the user wants, which can travel between machines, for example through dotfiles. `config.local.toml`, in the same folder, is the local config: what belongs to this machine only.
 
-Precedence, highest first: flags, environment variables, `config.local.toml`, `config.toml`, then defaults.
+Precedence, highest first: flags, environment variables, `config.local.toml`, `config.toml`, then defaults. A table, such as `[agent.profiles.everyday]`, merges key by key across the files. A list, such as `[skill] paths`, from a higher source replaces the whole list below it.
 
 | Purpose | Path |
 |---|---|

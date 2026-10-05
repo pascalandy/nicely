@@ -13,7 +13,7 @@ M1. Translate the catalog as it stands when this milestone starts. Later milesto
 
 ## Scope
 
-**Catalog.** A complete `fr-CA` catalog that passes the parity test against `en`. The pseudo-locale scenario of M0 already proves that every string core shows is in the catalog, including the messages of Python error codes from M1.
+**Catalog.** A complete `fr-CA` catalog that passes the parity test against `en`. Each command's scenarios run once under the pseudo-locale from M0, so every string core shows is already in the catalog, including the messages of Python error codes from M1.
 
 **Workflow.** Repeat until the parity test passes:
 

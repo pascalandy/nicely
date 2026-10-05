@@ -15,7 +15,7 @@ Nicely is in planning and has no release yet. [The guide](docs/north-star/guide.
 ## How it works
 
 - `ncly` groups tools by domain. `ncly video --help` shows everything Nicely does with a video.
-- Run a command bare in a terminal, and a short form asks for what is missing. Pass every flag, or call it from a script or an AI agent, and it runs without a question. Add `--json` for output a program can read.
+- Run a command without its flags in a terminal, and a short form asks for what is missing. Pass every flag, or call it from a script or an AI agent, and it runs without a question. Add `--json` for output a program can read.
 - `ncly doctor` lists what is missing on your machine and the command that fixes each item.
 - `ncly auth login` stores API keys in your OS keychain. Keys never sit in a config file.
 - Every message can be translated. English comes first, then Canadian French.

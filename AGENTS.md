@@ -13,7 +13,7 @@ Take rules only from these files. `docs/archived/` holds history, such as the de
 
 ## Work on a milestone task
 
-A task is one pull request. Pick the next unticked task of the current milestone, and set the milestone to `active` when its first task starts. When the milestone has no task list yet, write one first, as M0 does. Copy this checklist and tick each step when its condition holds.
+Pick the next unticked task of the current milestone, and set the milestone to `active` when its first task starts. When the milestone has no task list yet, write one first, as M0 does. Copy this checklist and tick each step when its condition holds. Mark a step `n/a` with its reason when the task has nothing for it, such as a task that adds no user-facing text.
 
 ```
 - [ ] 1. Spec: cli-spec.md covers every command, flag, JSON key, and error code you add or change
@@ -38,7 +38,6 @@ Until M0 lands `just check` and `just signoff`, run the checks that exist, skip 
 ## Rules
 
 - Where cli-spec.md is silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in decision-records.md.
-- Use the terms defined in the guide. Add a new term to the guide before using it.
 - Prefer end-to-end testscript scenarios. Write a unit test only for logic that a scenario cannot reach.
 - Write code, comments, docs, and commit messages in English.
 - Stay inside the current milestone. Write any other idea as one line in [M99](docs/milestones/M99-parking-lot.md), then continue.
@@ -65,7 +64,7 @@ testdata/script/    testscript scenarios
 - Write a shared file, such as a cache entry, a state file, or a config file, to a temporary file and rename it, under a lock from `internal/platform`. A lock held by another `ncly` exits 75.
 - Move a deleted user file to the trash through `internal/platform`.
 - Send every string a human reads through the catalog. Name catalog IDs `<domain>.<thing>`, and never reuse an ID for a new meaning. Give every message that holds a number its plural forms. Format numbers, sizes, durations, and dates through `internal/i18n`. Let translated text set its own width.
-- In scenarios, point `HOME` and the XDG folders at `$WORK`, put stub executables in `PATH` for harnesses, `uv`, and paid services, and use the test keychain that lives only in the test binary. `exits <code> <command>` asserts an exact exit code, because the built-in `! exec` only asserts a failure.
+- In scenarios, point `HOME` and the XDG folders at `$WORK`, put stub executables in `PATH` for harnesses, `uv`, and paid services, and use the test keychain that lives only in the test binary. Run each command's scenarios once under the pseudo-locale, so text outside the catalog fails a check. `exits <code> <command>` asserts an exact exit code, because the built-in `! exec` only asserts a failure.
 
 ## Commit
 
@@ -73,7 +72,7 @@ Write each commit message as `<emoji> <type>: <scope>: <summary>`, such as `📚
 
 ## Merge
 
-"Merge" means ship: commit, push, sign off, open a pull request, merge it into origin/main, and sync local main. Don't ask for confirmation at any step. Stop only on a real blocker, and report it.
+"Merge" means ship: commit, push, sign off, open a pull request, merge it into origin/main, and sync local main. Don't ask for confirmation at any step, except the one that the contract rule in [Rules](#rules) requires. Stop only on a real blocker, and report it.
 
 Keep the history linear. Rebase the branch onto origin/main, sign off its head, then push that head to `main` with `git push origin <branch>:main`. GitHub marks the pull request merged, and `main` keeps the commit that was checked. Then fast-forward the local `main` checkout.
 
