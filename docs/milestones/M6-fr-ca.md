@@ -13,7 +13,7 @@ M1. Translate the catalog as it stands when this milestone starts. Later milesto
 
 ## Scope
 
-**Catalog.** A complete `fr-CA` catalog that passes the parity test against `en`.
+**Catalog.** A complete `fr-CA` catalog that passes the parity test against `en`. The pseudo-locale scenario of M0 already proves that every string core shows is in the catalog, including the messages of Python error codes from M1.
 
 **Workflow.** Repeat until the parity test passes:
 
@@ -21,9 +21,9 @@ M1. Translate the catalog as it stands when this milestone starts. Later milesto
 2. It translates each one, using the description of the entry for context.
 3. Pascal reviews the tone of the new entries.
 
-**Formatting.** Plural and number rules follow the language. French uses the singular for zero, as in "0 fichier", and a decimal comma, as in "1,5 Mo".
+**Formatting.** The plural rules and formats of `internal/i18n`, built in M0, apply. Confirm that French uses the singular for zero, as in "0 fichier", and a decimal comma, as in "1,5 Mo".
 
-**Detection.** `--lang fr-CA`, `NCLY_LANG=fr-CA`, or a system language such as `fr_CA.UTF-8` selects the catalog. A plain `fr` also selects `fr-CA` while it is the only French catalog.
+**Detection.** The language matching of M0 selects the new catalog for `fr_CA.UTF-8` and for a plain `fr`, as the Configuration section of [cli-spec.md](../north-star/cli-spec.md) says. Detection needs no new code.
 
 **README.** One line says the interface speaks Canadian French and how to select it.
 
