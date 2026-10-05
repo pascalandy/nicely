@@ -15,7 +15,7 @@ Nicely runs on macOS and Linux. Omarchy, which is based on Arch, is the referenc
 Nicely has two layers.
 
 - **Core** holds the built-in commands everyone gets. A feature belongs in core when a stranger would use it.
-- **Extensions** are executables named `ncly-<domain>` that add a domain. They receive the global flags as `NCLY_*` variables and follow the agent contract. Pascal's personal tools, such as fleet sync, are extensions shipped through his private tap.
+- **Extensions** are executables named `ncly-<domain>` that add a domain. They receive the global flags as `NCLY_*` variables, follow the agent contract, and run with the rights of the user, because Nicely is not a sandbox. Pascal's personal tools, such as fleet sync, are extensions shipped through his private tap.
 
 Core says where a feature lives, not when it ships. The milestones decide timing.
 
@@ -31,7 +31,7 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 2. **One implementation, two faces.** In interactive mode, a missing value opens a short form. In non-interactive mode, the same command fails with exit code 2 and a hint that shows the full command. Both faces produce the same result.
 3. **A stable agent contract.** Command names, flags, JSON keys, error codes, and exit codes stay in English. JSON keys are only added. Any other change to the contract needs a new entry in [decision-records.md](decision-records.md). [cli-spec.md](cli-spec.md) defines the contract.
 4. **Safe by default.** Every command that writes accepts `--dry-run`. Overwriting or deleting needs `--force` or a yes in the terminal. Deleted files go to the OS trash. Text from outside Nicely, such as a transcript, reaches an agent only with the agent's tools turned off.
-5. **Keys stay with the human.** Keys live in the OS keychain or in environment variables, never in flags, config files, the repository, or the binary. An agent that meets a missing key relays the hint, and the human runs `ncly auth login`.
+5. **Keys stay with the human.** Keys live in the OS keychain or in environment variables, never in flags, config files, the repository, or the binary. An agent that meets a missing key relays the hint, and the human runs `ncly auth login`. A key reaches an extension only after a human grants it.
 6. **Check everything, install nothing silently.** `ncly doctor` checks tools and keys. Nicely installs a prerequisite only after a human says yes.
 7. **Every word core shows can be translated.** Core text lives in message catalogs, never in code. English ships first, and Canadian French follows in M6. A pseudo-locale exposes untranslated text from M0. Extensions receive the language in `NCLY_LANG` and translate their own text.
 8. **Core is written in Go.** A Python program may sit in core while it moves to Go. It talks to Go in JSON only, and Go renders and translates everything a human sees.
@@ -65,6 +65,7 @@ Use one word per concept in code, docs, help, and commit messages. Add a term he
 - **Day one**: M1, the first useful release.
 - **Domain**: a top-level noun that groups actions, such as `video`.
 - **Extension**: an executable named `ncly-<domain>`, outside core.
+- **Grant**: the permission, given by a human in a terminal, for one extension to receive one key.
 - **Harness**: the program an agent runs in: Claude Code, Codex, Pi, OpenCode, or Grok.
 - **Interactive mode**: the mode in which `ncly` may ask questions. [cli-spec.md](cli-spec.md#modes-m0) defines when it applies. Every other case is non-interactive mode.
 - **Local config**: `config.local.toml`, which holds what belongs to one machine and overrides the shared config.

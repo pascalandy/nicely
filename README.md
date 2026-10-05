@@ -19,7 +19,7 @@ Nicely is in planning and has no release yet. [The guide](docs/north-star/guide.
 - `ncly doctor` lists what is missing on your machine and the command that fixes each item.
 - `ncly auth login` stores API keys in your OS keychain. Keys never sit in a config file.
 - Every message can be translated. English comes first, then Canadian French.
-- Personal tools plug in as extensions, the way Git subcommands do: an executable named `ncly-backup` becomes `ncly backup`.
+- Personal tools plug in as extensions, the way Git subcommands do: an executable named `ncly-backup` becomes `ncly backup`. An extension runs with your rights, so add only taps you trust.
 - One TOML file describes your setup and can travel between your machines. `ncly tap sync` brings a new machine to the same taps.
 
 ## Install
