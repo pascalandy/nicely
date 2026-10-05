@@ -43,6 +43,10 @@ Copy this checklist and tick each step when its condition holds.
 - Use placeholders such as `/Users/me`, `host-a`, and `example.com` in code, tests, and docs. The pre-commit hook runs gitleaks with rules for personal paths, hostnames, and local IPs.
 - When `ncly` deletes a user's file, it moves the file to the trash through `internal/platform`.
 
+## Merge
+
+"Merge" means ship: commit, push, sign off, open a PR, merge it into origin/main, and sync local main. Don't ask for confirmation at any step. Stop only on a real blocker, and report it.
+
 ## Release
 
 Release only when Pascal asks.
