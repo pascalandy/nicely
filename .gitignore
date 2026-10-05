@@ -1,1 +1,29 @@
+# macOS
 .DS_Store
+
+# Go build and test output
+/ncly
+/bin/
+/dist/
+*.test
+*.out
+coverage.*
+go.work
+go.work.sum
+
+# Python components under python/
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+lefthook-local.yml
+
+# Editors
+.idea/
+.vscode/
