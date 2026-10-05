@@ -39,7 +39,7 @@ Nicely sends no telemetry. It contacts a service only when a command you run nee
 
 ## Contributing
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and pull requests are welcome. [AGENTS.md](AGENTS.md) explains how changes are made.
 
 ## License
 
