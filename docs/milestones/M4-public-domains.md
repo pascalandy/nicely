@@ -27,9 +27,8 @@ Work in this order.
 **Conventions for these domains.** Move them into cli-spec.md when this milestone starts.
 
 - The main input is the one positional argument: a file, a folder, or a glob. A folder or a glob processes a batch with one overall progress bar, and `--json` answers with `results`, as the Output section of cli-spec.md defines.
-- `--output` picks the destination. `--dry-run` lists every file the command would write. An existing file is replaced only with `--force`.
+- `--output` picks the destination. `--dry-run` lists every file the command would write.
 - Without input in interactive mode, a file picker opens in the folder set by `input` under `[paths]` in the config.
-- The help of a command that wraps a tool names it, such as "Uses ffmpeg".
 - A wrapped tool, such as `ffmpeg`, is no package dependency. `ncly doctor` offers to install it, and the AUR package lists it in `optdepends`. Homebrew discourages optional dependencies, so the formula leaves it out.
 
 **Candidates, to confirm after the inventory.**

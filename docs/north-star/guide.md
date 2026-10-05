@@ -1,6 +1,6 @@
 # Nicely guide
 
-Read this file at the start of every session. It says what Nicely is, which rules every change follows, and where the details live.
+This file says what Nicely is, which rules every change follows, and where the details live.
 
 ## What Nicely is
 
@@ -37,7 +37,7 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 8. **Core is written in Go.** A Python program may sit in core while it moves to Go. It talks to Go in JSON only, and Go renders and translates everything a human sees.
 9. **Same paths on every machine.** Config, data, state, and cache follow XDG on macOS and Linux, under `nicely`. The shared config describes the setup the user wants and can travel between machines. The local config holds what belongs to one machine.
 10. **Import Go, wrap the rest, credit both.** Nicely imports Go libraries and wraps other tools, such as `ffmpeg`. The help of a wrapping command names the tool, and every release ships the license notices of its dependencies.
-11. **Build what the current milestone needs, and decide early what is costly to change.** Write a rule before the milestone that codes it when a later milestone would otherwise force a rewrite. Any other idea goes to the [parking lot](../milestones/M99-parking-lot.md) as one line.
+11. **Build what the current milestone needs, and decide early what is costly to change.** Write a rule before the milestone that codes it when a later milestone would otherwise force a rewrite.
 
 ## Domains and commands
 
@@ -82,4 +82,4 @@ Use one word per concept in code, docs, help, and commit messages. Add a term he
 
 - [cli-spec.md](cli-spec.md) holds the agent contract and every specified command. Read the sections you touch before changing a command.
 - [decision-records.md](decision-records.md) explains why each rule exists. Read it before you propose to change a rule.
-- The milestone files in `docs/milestones/` list the work in order. The current milestone is the lowest-numbered file whose status is not `done`.
+- The milestone files in `docs/milestones/` list the work in order, and [M99](../milestones/M99-parking-lot.md) parks every other idea.
