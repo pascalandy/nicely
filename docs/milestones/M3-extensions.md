@@ -49,7 +49,7 @@ Skills move their requirements from frontmatter to `nicely.toml` when they join 
 ```
 ncly tap add <owner/repo | git-url> [--dry-run] [--force]
 ncly tap list [--json]
-ncly tap sync [<tap>]
+ncly tap sync [<tap>] [--dry-run]
 ncly tap remove <tap> [--dry-run] [--force]
 ```
 

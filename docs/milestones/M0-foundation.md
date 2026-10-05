@@ -17,7 +17,7 @@ Pascal does these before T6. T1 to T5 do not need them.
 
 - [ ] The empty repository `pascalandy/homebrew-tap` exists
 - [ ] An AUR account exists, with an SSH key registered for it
-- [ ] The `pascalandy/nicely` repository has two secrets for `release.yml`: a token that can push to `pascalandy/homebrew-tap`, and the private key of that AUR SSH key
+- [ ] The `pascalandy/nicely` repository has two secrets for `release.yml`: a token that can push to `pascalandy/homebrew-tap`, and the private half of the AUR SSH key
 - [ ] After T1, `main` requires the status check `signoff`
 
 ## Tasks
@@ -35,7 +35,7 @@ Do the tasks in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 ## Out of scope
 
 - Every user command other than `--help`, `--version`, and `completion`.
-- Extension discovery, beyond the empty lookup of T2: M3.
+- Extension discovery, beyond the empty extension registry of T2: M3.
 - The form, spinner, progress bar, and step list of `internal/tui`. Each one lands with the first command that needs it.
 
 ## Acceptance
