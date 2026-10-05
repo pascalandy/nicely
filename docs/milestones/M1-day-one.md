@@ -23,9 +23,11 @@ M0.
 
 **Agent profiles.** `[agent.profiles]` in the config, as cli-spec.md defines them. `transcript` reads them for its summary.
 
-**`internal/run`.** Starts here with the Python program. M2 reuses it for harnesses and M3 for extensions.
+**`internal/run`.** Starts here with the Python program, as the Programs section of cli-spec.md defines it: environment, grants, and cancellation. M2 reuses it for harnesses and M3 for extensions.
 
-**Test keychain.** A keychain stored in a file under `$WORK`, registered only in the test binary. go-keyring's mock lives in one process, and a scenario runs `ncly` several times.
+**Test keychain.** A keychain stored in a file under `$WORK`, registered only in the test binary. go-keyring's mock lives in one process, and a scenario runs `ncly` several times. `NCLY_TEST_KEYCHAIN=unavailable`, which only the test binary reads, makes it stop answering.
+
+**Test commands.** `waitfile <path>` waits until a file exists. `gone <path>` checks that the process whose ID the file holds no longer runs.
 
 **`transcript`.** Move it in these steps:
 
@@ -53,6 +55,9 @@ M0.
 - The mapping of the other transcript options onto Nicely's flags, such as `--output-dir` to `--output` and `--debug` to `NCLY_DEBUG`, and the fate of `--no-progress`, `--open`, and `--preview`.
 - The harnesses that `transcript` accepts in a profile until M2, `claude` and `pi`, and the profile it uses when the config has none.
 - How a `yt-dlp` fix reaches users, since the Python program pins `yt-dlp` and YouTube breaks it every few weeks.
+- The time limit of a keychain call. An unlock prompt on a desktop takes longer than a script can wait.
+- How `internal/run` reaches a descendant that left the process group of its parent and outlived it, since the transcript CLI starts its children in their own process groups.
+- The keys that the transcript program declares: `deepgram`, plus the key variables that the harness of its profile reads, because that harness inherits the environment of the Python program.
 - Pascal's key migration, once per machine: `chezmoi secret keyring get --service=deepgram --user=api_key | ncly auth login deepgram --stdin`.
 
 ## Follow-up in `pascalandy/skills`
@@ -99,7 +104,35 @@ stderr '"code":"NOT_FOUND"'
 exits 78 ncly doctor auth --json
 stdout '"ok":false'
 stdout '"status":"fail"'
+
+# A key in the environment works when the keychain is unavailable
+env NCLY_TEST_KEYCHAIN=unavailable
+env DEEPGRAM_API_KEY=test-key
+exec ncly doctor auth --json
+stdout '"ok":true'
+stdout '"status":"warn"'
+exec ncly transcript run youtube --url https://www.youtube.com/watch?v=VIDEO_ID --json
+stdout '"ok":true'
+
+# Without the variable, the run names the variable to export
+env DEEPGRAM_API_KEY=
+exits 78 ncly transcript run youtube --url https://www.youtube.com/watch?v=VIDEO_ID --json
+stderr '"code":"KEYRING_UNAVAILABLE"'
+stderr 'DEEPGRAM_API_KEY'
+
+# Ctrl-C stops the whole tree and keeps the result folder
+env NCLY_TEST_KEYCHAIN=
+env DEEPGRAM_API_KEY=test-key
+exec ncly transcript run youtube --url https://www.youtube.com/watch?v=VIDEO_ID --json &
+waitfile $WORK/grandchild.pid
+kill -INT
+! wait
+stderr '"code":"INTERRUPTED"'
+stderr '"output_dir"'
+gone $WORK/grandchild.pid
 ```
+
+The stub `uv` of the last scenario starts a grandchild in its own process group, as the transcript CLI does, and writes its process ID to `grandchild.pid`.
 
 Before tagging v0.1.0, run the paid end-to-end check from the transcript README against its listed test video.
 
