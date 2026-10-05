@@ -58,11 +58,11 @@ Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes
 
 ## D008 Use one flag for every confirmation
 
-Decided 2026-10-05. In non-interactive mode, `--force` answers yes to every confirmation, such as an overwrite, a deletion, or the keys a tap requests. There is no `--yes`. Installing a prerequisite is the exception: it waits for a yes in a terminal, as principle 6 requires.
+Decided 2026-10-05. In non-interactive mode, `--force` answers yes to every confirmation, such as an overwrite or a deletion. There is no `--yes`. Installing a prerequisite and granting a key are the exceptions: both wait for a human in a terminal, as principles 5 and 6 require.
 
 **Why.** clig.dev asks for `-f` or `--force` when a confirmation cannot be asked. One concept gets one flag, so an agent never has to guess which of two flags a step needs.
 
-**Rejected.** `--yes` beside `--force`, as in Pascal's script conventions, which serve scripts that have both a prompt and a separate safety check.
+**Rejected.** `--yes` beside `--force`, as in Pascal's script conventions, which serve scripts that have both a prompt and a separate safety check. `--force` granting the keys a tap requests, because an update could then gain a key in silence.
 
 ## D009 Ask in a terminal, fail elsewhere
 
@@ -72,9 +72,9 @@ Decided 2026-10-05. A missing value opens a form in interactive mode and exits 2
 
 ## D010 Keep keys in the keychain or the environment
 
-Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [cli-spec.md](cli-spec.md#keys-m1) says. Agents relay the hint and never handle a key.
+Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [cli-spec.md](cli-spec.md#keys-m1) says. `ncly` asks the keychain only when the environment lacks the key, under a time limit, so an unavailable keychain blocks only a command that needs it. Agents relay the hint and never handle a key.
 
-**Why.** Each program owns its own keychain entries, as `gh` does with `gh:github.com`, so `logout` touches only Nicely's keys. The environment lets any other secret store feed `ncly`. Open service names let an extension declare a key that core does not know.
+**Why.** Each program owns its own keychain entries, as `gh` does with `gh:github.com`, so `logout` touches only Nicely's keys. The environment lets any other secret store feed `ncly`. Open service names let an extension declare a key that core does not know. A Linux machine reached over SSH often has no unlocked keychain, and go-keyring's unlock call has no time limit of its own.
 
 **Rejected.** A fallback file. Sharing entries written by another tool, such as chezmoi's `service=deepgram, user=api_key`, because two programs would then own one entry. Remote commands that need keys, parked in M99.
 
@@ -213,3 +213,19 @@ Decided 2026-10-05. A rule that a later milestone would otherwise rewrite goes i
 **Why.** Extensions, Canadian French, the shared config, and agent profiles all put constraints on the contract, the config, and the catalogs. A rule written now costs a paragraph. The same rule found in M3 or M6 costs a rewrite of M0 code.
 
 **Rejected.** Deciding each rule only when its milestone starts.
+
+## D030 Treat extensions as trusted code and grant keys one by one
+
+Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` minus every key that is not granted to it, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines. No program runs in a sandbox. A key reaches an extension only after a human grants it in a terminal, and an update that declares a new key gets nothing until then.
+
+**Why.** Git, `kubectl`, `gh`, and cargo pass the user's environment to their plugins, and real tools need it, such as the SSH agent and proxies. An extension runs with the user's rights: on macOS, go-keyring stores keys through `/usr/bin/security`, which any process can call, and on Linux any program of the session can read an unlocked keychain. Grants are consent and protection against accidental leaks, not isolation, and the docs say so.
+
+**Rejected.** A minimal list of variables plus the ones a manifest declares, because it breaks tools that rely on the environment and still isolates nothing. Granting a key without a human, such as every key a tap declares when an agent adds the tap.
+
+## D031 Stop the whole process tree on cancel and keep finished work
+
+Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and their descendants, keeps every finished output, and exits 130 or 143 with the data that still applies, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines.
+
+**Why.** The transcript CLI starts its children in their own process groups, so a signal to its parent alone leaves `yt-dlp`, `ffmpeg`, or a harness running. A harness that hits its time limit sends SIGTERM. A finished transcript may already be billed, so cleanup must never delete it.
+
+**Rejected.** Signaling only the direct child. Deleting partial results on interrupt.
