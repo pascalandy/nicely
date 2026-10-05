@@ -16,21 +16,21 @@ M1. M2 and M3 are not required.
 Work in this order.
 
 1. **Inventory.** Collect the tools on Pascal's machines:
-   - macOS: `brew leaves`
-   - Omarchy: `pacman -Qe`
-   - Both, by frequency of use: `LC_ALL=C sed 's/^: [0-9]*:[0-9]*;//' ~/.zsh_history | awk '{print $1}' | sort | uniq -c | sort -rn | head -50`
+   - macOS: `brew leaves`, and by frequency of use in zsh: `LC_ALL=C sed 's/^: [0-9]*:[0-9]*;//' ~/.zsh_history | awk '{print $1}' | sort | uniq -c | sort -rn | head -50`
+   - Omarchy: `pacman -Qe`, and by frequency of use in bash: `awk '{print $1}' ~/.bash_history | sort | uniq -c | sort -rn | head -50`
 
-   Add a table to this file with one row per tool: the tool, its domain, its layer, which is core, extension, or drop, and one line of reason. Done when Pascal approves the table.
+   Add a table to this file with one row per tool: the tool, its domain, its layer, which is core, extension, or drop, and one line of reason. An extension row goes to Pascal's private tap, which M3 provides. Done when Pascal approves the table.
 2. **Pick the domains.** Choose the first domains from the approved table. The candidates so far are `markdown`, `video`, and `image`.
 3. **Spec.** Add each command to [cli-spec.md](../north-star/cli-spec.md) before writing Go.
 4. **Build.** One domain at a time, each with its scenarios.
 
-**Conventions for these domains.**
+**Conventions for these domains.** Move them into cli-spec.md when this milestone starts.
 
-- The main input is the one positional argument: a file, a folder, or a glob. A folder or a glob processes a batch with one overall progress bar.
+- The main input is the one positional argument: a file, a folder, or a glob. A folder or a glob processes a batch with one overall progress bar, and `--json` answers with `results`, as the Output section of cli-spec.md defines.
 - `--output` picks the destination. `--dry-run` lists every file the command would write. An existing file is replaced only with `--force`.
 - Without input in interactive mode, a file picker opens in the folder set by `input` under `[paths]` in the config.
 - The help of a command that wraps a tool names it, such as "Uses ffmpeg".
+- A wrapped tool, such as `ffmpeg`, is no package dependency. `ncly doctor` offers to install it, and the AUR package lists it in `optdepends`. Homebrew discourages optional dependencies, so the formula leaves it out.
 
 **Candidates, to confirm after the inventory.**
 
@@ -72,7 +72,3 @@ On a machine with no Nicely config, each new command works after the prerequisit
 - [ ] Every acceptance scenario passes in `just check`
 - [ ] Each new command runs with no config file on macOS and on Omarchy
 - [ ] v0.4.0 is tagged and released
-
-## Open questions
-
-1. Should the packages depend on `ffmpeg`, or should `ncly doctor` offer to install it? Recommendation: let doctor offer it, so the packages stay light for people who never convert a video.

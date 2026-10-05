@@ -9,26 +9,23 @@ Any executable becomes an `ncly` domain, and taps carry skills and extensions to
 
 ## Depends on
 
-M2, so extensions inherit the agent depth and the shared profiles.
+M1, which brings `internal/run`, the agent depth, and the profiles that extensions inherit.
 
 ## Scope
 
-**Spec first.** Add sections for extensions, `tap`, `skill link`, and `nicely.toml` to [cli-spec.md](../north-star/cli-spec.md) before writing Go.
+**Spec first.** Move the sections for extensions, `tap`, `skill link`, and `nicely.toml` into [cli-spec.md](../north-star/cli-spec.md) before writing Go. `link` joins the verb table.
 
 **Discovery.**
 
-- An executable named `ncly-<domain>` becomes `ncly <domain>`. `ncly` looks in `~/.local/share/nicely/extensions/` first, then in `PATH` order.
-- Built-in commands always win. A new `extensions` component of `ncly doctor` lists every extension it finds, where it came from, and any extension that a built-in or an earlier extension hides.
+- An executable named `ncly-<domain>` becomes `ncly <domain>`. `ncly` looks in `~/.local/share/nicely/extensions/` first, then in `PATH` order, the same as Git, `kubectl`, and cargo. An extension found in `PATH` needs no opt-in.
+- Built-in commands and reserved names always win. A new `extensions` component of `ncly doctor` lists every extension it finds, where it came from, and any extension that a built-in, a reserved name, or an earlier extension hides.
 - `ncly --help` shows extensions in their own section, with the description from their manifest.
 
-**Protocol.** `ncly` runs an extension with these environment variables, and the extension follows the agent contract of cli-spec.md.
+**Protocol.** `ncly` runs an extension through `internal/run`. The extension receives the variables of the global flags in cli-spec.md, plus these, and it follows the agent contract. Its error codes carry its domain as a prefix, and it translates its own text into the language of `NCLY_LANG`.
 
 | Variable | Value |
 |---|---|
 | `NCLY_VERSION` | Version of `ncly` |
-| `NCLY_LANG` | The resolved language |
-| `NCLY_JSON` | `1` when `--json` was given |
-| `NCLY_NO_INPUT` | `1` in non-interactive mode |
 | `NCLY_AGENT_DEPTH` | The current agent depth |
 | Declared keys | Only the keys the manifest lists, such as `DEEPGRAM_API_KEY` |
 
@@ -50,16 +47,19 @@ Skills move their requirements from frontmatter to `nicely.toml` when they join 
 **Taps.**
 
 ```
-ncly tap add <owner/repo | git-url>
+ncly tap add <owner/repo | git-url> [--dry-run] [--force]
 ncly tap list [--json]
 ncly tap sync [<tap>]
 ncly tap remove <tap> [--dry-run] [--force]
 ```
 
 - `owner/repo` means a GitHub repository. Any Git URL works.
-- A tap is cloned to `~/.local/share/nicely/taps/<owner>/<repo>/` with the user's own Git credentials. Nicely handles no Git authentication.
+- The shared config lists the taps. `add` writes the tap into it and clones the tap to `~/.local/share/nicely/taps/<owner>/<repo>/` with the user's own Git credentials. Nicely handles no Git authentication.
+- `add` shows the keys that the tap's extensions declare and asks for confirmation, or needs `--force` in non-interactive mode.
+- `sync` clones each tap of the shared config that this machine lacks and pulls the others, so a new machine reaches the same setup.
+- `remove` takes the tap out of the shared config and moves its clone to the trash.
 - A tap holds `skills/<name>/SKILL.md` and `extensions/ncly-<domain>`.
-- Tap skills join `ncly skill list`. When two sources hold the same name, `ncly skill show <tap>/<name>` picks one.
+- Tap skills join `ncly skill list`. When two sources hold the same name, `ncly skill view <tap>/<name>` picks one.
 
 **Skill link.**
 
@@ -77,6 +77,13 @@ claude = "~/.claude/skills"
 **First personal extension.** Pascal's `sync-fleet` script becomes `ncly-fleet` in his private tap, called as `ncly fleet sync`.
 
 **Follow-up in `pascalandy/skills`.** The `sync`, `install-skills`, and `sync-fleet` recipes can retire once taps and `skill link` cover them. Pascal decides when.
+
+## To define when M3 starts
+
+- The order of skill sources between `[skill] paths` and taps.
+- The editor for config files. `tomledit` keeps comments and formatting.
+- Whether a manifest description carries translations.
+- How Pascal's Python scripts move from the `{"ok":false,"errors":["…"]}` strings of his script-output convention to the error objects of D027.
 
 ## Out of scope
 
@@ -110,7 +117,3 @@ stdout '"status":"warn"'
 - [ ] `ncly fleet sync` runs from Pascal's private tap on macOS and on Omarchy
 - [ ] `ncly skill link` replaces `just install-skills` on one machine
 - [ ] v0.3.0 is tagged and released
-
-## Open questions
-
-1. Should an extension found in `PATH` need an opt-in? Recommendation: no, the same as Git. `ncly doctor extensions` shows every extension and where it came from.

@@ -5,26 +5,27 @@ Release: v0.2.0
 
 ## Goal
 
-`ncly agent` runs any task through a harness and a profile. Profiles live in one place, transcript uses them, and the `headless` skill's launcher retires.
+`ncly agent` runs any task through a harness and a profile. The summary step of transcript moves to Go, and the `headless` skill's launcher retires.
 
 ## Depends on
 
-M1.
+M1, which brings the profiles in the config and `internal/run`.
 
 ## Scope
 
-**Spec first.** Add an `ncly agent` section to [cli-spec.md](../north-star/cli-spec.md), with the error codes below, before writing Go.
+**Spec first.** Move the commands and error codes below into [cli-spec.md](../north-star/cli-spec.md) before writing Go.
 
 **Commands.**
 
 ```
 ncly agent run [task] [--profile <name>] [--input <file> | -] [--cwd <dir>] [--read-only] [--json]
-ncly agent profiles [--json]
-ncly agent profiles show <name> [--json]
+ncly agent profile list [--json]
+ncly agent profile view <name> [--json]
 ```
 
-- The argument is the task. Material to work on comes from stdin or `--input`.
-- The answer goes to stdout. `--json` returns `answer`, `profile`, `harness`, `model`, and `duration_ms`.
+- The argument is the task. Material to work on comes from `--input` or stdin.
+- Material runs with the harness's tools turned off, as D028 requires. A task without material may use tools.
+- The answer goes to stdout. `--json` returns `ok`, `answer`, `profile`, `harness`, `model`, and `duration_ms`.
 - `--read-only` fails the run when a tracked or untracked file under `--cwd` changed. Ignored files do not count.
 
 ```bash
@@ -32,33 +33,11 @@ cat notes.md | ncly agent run "Extract the action items"
 ncly agent run "Review this branch for risky changes" --profile second-opinion --cwd . --read-only
 ```
 
-**Profiles.**
+**Harnesses.** Port the adapters for Claude Code, Codex, and Grok from the `headless` skill's launcher, `scripts/headless.py`, and its notes per harness. Write new adapters for Pi and OpenCode, which the launcher does not run yet. Each adapter knows how to turn its harness's tools off.
 
-```toml
-[agent]
-default_profile = "everyday"
-max_depth = 2
+**Depth limit.** `internal/run` already passes `NCLY_AGENT_DEPTH` plus one to each harness. At `max_depth` in `[agent]`, 2 by default, `ncly agent run` refuses to start. Depth 2 lets an agent launched by `ncly` launch one more.
 
-[agent.profiles.everyday]
-harness = "claude"
-model = "<model id>"
-effort = "medium"
-
-[agent.profiles.second-opinion]
-harness = "codex"
-model = "<model id>"
-effort = "high"
-```
-
-**Harnesses.** Port the adapters for Claude Code, Codex, and Grok from the `headless` skill's launcher, `scripts/headless.py`, and its notes per harness. Write new adapters for Pi and OpenCode, which the launcher does not run yet.
-
-**Depth limit.** Each child agent inherits `NCLY_AGENT_DEPTH` plus one. At `max_depth`, `ncly agent run` refuses to start.
-
-**Transcript moves onto profiles.**
-
-1. Go runs the summary step through the agent package. The Python component stops at the transcript.
-2. `--profile` on `ncly transcript run` names an agent profile.
-3. `ncly transcript list profiles` is removed in favor of `ncly agent profiles`.
+**Transcript moves onto the agent package.** Go runs the summary step, and the Python program stops at the transcript. `--profile` keeps its meaning, because the profiles have lived in the config since M1.
 
 **Doctor.** A new `agent` component checks that the harness of each profile is installed. It never starts a harness, because a run can bill.
 
@@ -74,10 +53,16 @@ An unknown profile exits 2 with `NOT_FOUND`. After a harness starts, a failure e
 
 **Follow-up in `pascalandy/skills`.** The `headless` skill points to `ncly agent`. Pascal decides when.
 
+## To define when M2 starts
+
+- Whether `ncly agent run` reads stdin without `-` when stdin is a pipe, given that some harnesses leave stdin open.
+- The flags that turn the tools off in each harness, starting from the `claude` flags of the transcript CLI.
+- Whether `ncly agent model list` replaces the `list models` command of the transcript CLI.
+
 ## Out of scope
 
 - The built-in code review modes of the harnesses: [M99](M99-parking-lot.md).
-- Sandbox options beyond `--read-only`.
+- Sandbox options beyond `--read-only` and the tool-off mode.
 - Cost tracking.
 
 ## Acceptance
@@ -108,9 +93,5 @@ stderr '"code":"HARNESS_MISSING"'
 
 - [ ] Every acceptance scenario passes in `just check`
 - [ ] A real run succeeds with each of the five harnesses Pascal has installed
-- [ ] `ncly transcript run` summarizes through an agent profile
+- [ ] `ncly transcript run` summarizes through the agent package
 - [ ] v0.2.0 is tagged and released
-
-## Open questions
-
-1. Is a default `max_depth` of 2 right? It allows one agent launched by `ncly` to launch one more. Recommendation: start with 2 and raise it only for a real need.

@@ -5,67 +5,38 @@ Release: v0.0.1
 
 ## Goal
 
-An installable `ncly` that does almost nothing yet, built on finished plumbing. Every later command lands on the same contract, catalogs, config, interactive parts, tests, and release pipeline.
+An installable `ncly` that does almost nothing yet, built on finished plumbing. Every later command lands on the same contract, catalogs, config, tests, and release pipeline, and no later milestone has to reshape them.
 
 ## Depends on
 
 Nothing.
 
-## Scope
+## Prerequisites
 
-**Repository.** `pascalandy/nicely` with the module path `github.com/pascalandy/nicely`, plus LICENSE, README.md, AGENTS.md, CONTRIBUTING.md, and `docs/`.
+Pascal does these before T6. T1 to T5 do not need them.
 
-**Layout.**
+- [ ] The empty repository `pascalandy/homebrew-tap` exists
+- [ ] An AUR account exists, with an SSH key registered for it
+- [ ] The `pascalandy/nicely` repository has two secrets for `release.yml`: a token that can push to `pascalandy/homebrew-tap`, and the private key of that AUR SSH key
+- [ ] After T1, `main` requires the status check `signoff`
 
-```
-cmd/ncly/           entry point, a few lines
-internal/cli/       one package per domain or standalone command
-internal/contract/  exit codes, error registry, JSON writers
-internal/i18n/      catalogs in locales/, lookup, plural rules
-internal/config/    TOML file, environment, flags, XDG paths
-internal/platform/  OS differences: open, clipboard, trash, keychain
-internal/tui/       the shared interactive parts
-python/             Python components while they move in, empty in M0
-testdata/script/    testscript scenarios
-```
+## Tasks
 
-**Libraries.** Cobra and Fang for commands. Huh, Bubble Tea, Bubbles, Lip Gloss, and Glamour for the interface. go-i18n for catalogs, koanf for config, and testscript for scenarios.
+Each task is one pull request, in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 
-**Agent contract.** Global flags, modes, output, exit codes, error registry, and configuration, as the M0 sections of [cli-spec.md](../north-star/cli-spec.md) specify.
-
-**Translation.** An English catalog. Every entry has an ID and a description of where it appears. A test fails when another catalog misses a key from `en`. Help headings come from the catalog too.
-
-**Interactive parts.** `internal/tui` holds the only components commands use:
-
-- a form for missing values
-- a spinner for work of unknown length
-- a progress bar for work of known length
-- a step list for pipelines
-- a final summary with the `Next time:` line
-- an error block that says what failed, why, and how to fix it
-
-**Completion.** `ncly completion zsh|bash|fish`, with hooks ready for the values of M1.
-
-**Local CI.**
-
-- `justfile` recipes: `check`, `test`, `lint`, `signoff`, and `release-check`.
-- Lefthook pre-commit: format, lint, and gitleaks with rules for home paths, hostnames, and local IPs.
-- Lefthook pre-push: tests and testscript scenarios.
-- The signoff status is a required check on `main`.
-
-**Release.**
-
-- GoReleaser builds macOS and Linux binaries for arm64 and amd64.
-- It publishes to the Homebrew tap `pascalandy/homebrew-tap` and to the AUR as `ncly-bin`, both with completions.
-- `go-licenses` generates the third-party notices that ship in each archive.
-- The GitHub Actions workflow `release.yml` runs GoReleaser and starts only through `workflow_dispatch`.
-- `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`.
-
-**Testing helper.** A custom testscript command, `exits <code> <command>`, asserts an exact exit code, because the built-in `! exec` only asserts a failure.
+- [ ] **T1 Skeleton.** `go.mod` with the module path `github.com/pascalandy/nicely`, `cmd/ncly`, and `--version`. A `justfile` with `check`, `test`, `lint`, and `signoff`. Lefthook runs format, lint, and gitleaks before a commit, and tests and scenarios before a push. The testscript runner with the `exits` command and `HOME` and the XDG folders inside `$WORK`. Go tools such as `govulncheck` and `go-licenses` are pinned with `tool` lines in `go.mod`.
+- [ ] **T2 Contract.** `internal/contract` implements the M0 sections of [cli-spec.md](../north-star/cli-spec.md): Output, Exit codes, Error codes, Modes, and the global flags with their variables. The root command sends an unknown name to an extension lookup that finds nothing yet and skips reserved names, so M3 adds discovery without reshaping the root. A test fails when cli-spec.md and the code disagree on the error registry, the exit codes, the global flags, or the command tree.
+- [ ] **T3 Config.** The shared and local config files, their precedence, and the XDG paths, including state. `CONFIG_INVALID` for a broken file. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports in M1.
+- [ ] **T4 Text.** The English catalog, with a description per entry, and the parity test against `en`. The pseudo-locale `en-XA` and its scenario. Plural rules, number, size, and date formats, and language matching in `internal/i18n`. Help text comes from the catalog, so `--lang` is read before the command tree is built. Lip Gloss styles and the error block in `internal/tui`.
+- [ ] **T5 Completion.** `ncly completion zsh|bash|fish`.
+- [ ] **T6 Release.** GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`.
+- [ ] **T7 First release.** v0.0.1 is tagged and released through `release.yml`, and both manual checks pass.
 
 ## Out of scope
 
-Every user command other than `--help`, `--version`, and `completion`.
+- Every user command other than `--help`, `--version`, and `completion`.
+- Extension discovery, beyond the empty lookup of T2: M3.
+- The form, spinner, progress bar, and step list of `internal/tui`. Each one lands with the first command that needs it.
 
 ## Acceptance
 
@@ -75,33 +46,43 @@ exec ncly --version
 stdout '^ncly v'
 ! stderr .
 
-# An unknown command fails as a JSON usage error
+# An unknown command fails as one JSON line
 exits 2 ncly nope --json
 ! stdout .
-stderr '"code":"USAGE_INVALID"'
+stderr '^\{"ok":false,"errors":\[\{"code":"USAGE_INVALID"'
 
 # A language without a catalog falls back to English
 exec ncly --lang xx --help
-stdout 'Usage'
+stdout '(?i)usage'
+
+# The pseudo-locale marks the catalog strings of the help
+exec ncly --lang en-XA --help
+stdout '⟦'
+
+# A broken config never blocks the help
+env NCLY_CONFIG=$WORK/broken.toml
+exec ncly --help
+stdout '(?i)usage'
 
 # NO_COLOR removes escape codes
 env NO_COLOR=1
 exec ncly --help
 ! stdout '\x1b\['
+
+-- broken.toml --
+lang =
 ```
+
+T4 sharpens the pseudo-locale scenario, so that it fails on any word outside the markers other than command names, flags, and examples.
 
 Manual checks on Pascal's machines:
 
-1. On macOS, `brew install pascalandy/tap/ncly`, then `ncly <Tab>` completes in zsh.
-2. On Omarchy, `yay -S ncly-bin`, then the same completion check.
+1. On macOS, `brew install pascalandy/tap/ncly` builds `ncly`, then `ncly <Tab>` completes in zsh.
+2. On Omarchy, `yay -S ncly-bin`, then `ncly <Tab>` completes in bash.
 
 ## Done when
 
+- [ ] Every prerequisite and every task is ticked
 - [ ] Every acceptance scenario passes in `just check`
 - [ ] Both manual checks pass
 - [ ] v0.0.1 is tagged and released through `release.yml`
-
-## Open questions
-
-1. Can Fang take its help headings from the catalog? Test this first. If it cannot, keep Cobra's templates and style them with Lip Gloss.
-2. Which Homebrew publisher does GoReleaser recommend for prebuilt binaries today? Use it, and confirm the installed binary runs without a Gatekeeper prompt on macOS.
