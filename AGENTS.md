@@ -60,7 +60,7 @@ testdata/script/    testscript scenarios
 ```
 
 - Build interactive screens from `internal/tui` only, so every command looks the same. Add a component there when the first command needs it.
-- Run every other program through `internal/run`. It forwards SIGINT and SIGTERM, sends SIGKILL 10 seconds later, applies the timeout, passes only the keys the program declares, adds one to `NCLY_AGENT_DEPTH` when it starts a harness, and keeps keys out of every log.
+- Run every other program through `internal/run`, which implements [Programs that ncly runs](docs/north-star/cli-spec.md#programs-that-ncly-runs-m1). Start each program in its own process group, so a signal reaches its descendants, apply the timeout, and keep keys out of every log.
 - Write a shared file, such as a cache entry, a state file, or a config file, to a temporary file and rename it, under a lock from `internal/platform`. A lock held by another `ncly` exits 75.
 - Move a deleted user file to the trash through `internal/platform`.
 - Send every string a human reads through the catalog. Name catalog IDs `<domain>.<thing>`, and never reuse an ID for a new meaning. Give every message that holds a number its plural forms. Format numbers, sizes, durations, and dates through `internal/i18n`. Let translated text set its own width.
