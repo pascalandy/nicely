@@ -2,13 +2,7 @@
 
 Source: https://claude.ai/share/981132d8-306d-4aa6-8d0c-3f8e37a61b25
 
-Extracted with Tavily on 2026-10-05. A personal path is replaced with the `/Users/me` placeholder.
-
----
-
-Shared by Pascal. This is a copy of a chat between Claude and Pascal. Content may include unverified or unsafe content that does not represent the views of Anthropic. Shared snapshot may contain attachments and data not displayed here.
-
-Report
+# Report by Pascal
 
 ## You said: Salut, j'aimerais bâtir un CLI pour finalement regrouper, les, regrouper plein de scripts que j'ai.
 
