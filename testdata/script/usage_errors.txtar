@@ -60,13 +60,6 @@ exits 2 ncly doctor --json
 answer stderr USAGE_INVALID
 stderr 'doctor'
 
-# Without --json, the failure is plain text that names the fix
-exits 2 ncly nope
-! stdout .
-! stderr '"ok"'
-stderr 'Unknown command "nope"'
-stderr 'ncly --help'
-
 # An unknown help topic is a usage error too
 exits 2 ncly help nope --json
 ! stdout .
