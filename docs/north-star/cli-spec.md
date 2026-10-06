@@ -50,7 +50,7 @@ Each global flag other than `--help` and `--version` has an environment variable
 | Flag | Variable | Default | Effect |
 |---|---|---|---|
 | `-h`, `--help` | | | Shows help on stdout and exits 0. It wins over every other argument, including unknown flags, but still honors `--lang` and `--no-color`. |
-| `--version` | | | Prints `ncly vX.Y.Z` on stdout and exits 0. |
+| `--version` | | | Prints `ncly vX.Y.Z` on stdout and exits 0. It works after any command and wins over every other argument except `--help`. |
 | `--json` | `NCLY_JSON=1` | off | Machine output, as described in [Output](#output-m0). |
 | `--no-input` | `NCLY_NO_INPUT=1` | off | Never prompts, even in a terminal. |
 | `--no-color` | `NO_COLOR`, or `TERM=dumb` | off | Plain text. |
@@ -88,7 +88,7 @@ stdout carries data. stderr carries progress, warnings, and errors. Without `--j
 
 With `--json`, every answer is one JSON object on one line, never a bare array. `ok` is `true` or `false` and agrees with the exit code. `contract_version` is the integer version of this public protocol, initially `1`. `--help`, `--version`, and `ncly completion` print text and ignore `--json`.
 
-Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON` and a valid `--json` flag before reporting an invalid command, unknown flag, or missing value, wherever that flag occurs before `--`. A flag that takes a value takes the next argument even when it starts with `-`, as the parser does, so `ncly --lang --json` sets the language and leaves machine mode off. Help retains its documented precedence.
+Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON` and a valid `--json` flag before reporting an invalid command, unknown flag, or missing value, wherever that flag occurs before `--`. A flag that takes a value takes the next argument even when it starts with `-`, as the parser does, so `ncly --lang --json` sets the language and leaves machine mode off. When a switch repeats, its last valid value counts, so `--json --json=bad` keeps machine mode for the parser failure. Words after `--` are operands, never flags, and an unknown one is still `USAGE_INVALID`. Help retains its documented precedence, including inside a group of shorthands such as `-zh`.
 
 - On success, stdout holds the object. Progress is not shown, and stderr stays empty unless `--verbose` or `NCLY_DEBUG` adds lines.
 - On failure, stdout stays empty and the object ends stderr. With `--verbose` or `NCLY_DEBUG`, diagnostic lines come before it.
