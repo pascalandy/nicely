@@ -45,7 +45,7 @@ Core reserves every name in the domain table of the [guide](guide.md#domains-and
 
 ## Global flags (M0)
 
-Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. An `NCLY_` variable turns its flag on only when it equals `1`, and `NO_COLOR` turns color off when it holds any value. [Programs that ncly runs](#programs-that-ncly-runs-m1) receive the resolved values.
+Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. An `NCLY_` variable turns its flag on only when it equals `1`, and `NO_COLOR` turns color off when it is set and not empty, as [no-color.org](https://no-color.org/) defines it. [Programs that ncly runs](#programs-that-ncly-runs-m1) receive the resolved values.
 
 | Flag | Variable | Default | Effect |
 |---|---|---|---|
