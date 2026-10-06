@@ -230,6 +230,7 @@ var (
 	marked  = regexp.MustCompile(`(?s)⟦.*?⟧`)
 	example = regexp.MustCompile(`(?m)^\s*\$ .*$`)
 	letter  = regexp.MustCompile(`\p{L}`)
+	version = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)*$`)
 )
 
 // cmdPseudo fails on any word of a stream that the pseudo-locale did not
@@ -242,7 +243,7 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("usage: pseudo <stdout|stderr> [word...]")
 	}
 	text := ts.ReadFile(args[0])
-	if !strings.Contains(text, "⟦") {
+	if !marked.MatchString(text) {
 		ts.Fatalf("pseudo: no marked text on %s", args[0])
 	}
 	var stray []string
@@ -254,7 +255,7 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 			word == "ncly",
 			isCode(word),
 			strings.HasPrefix(word, "<") || strings.HasPrefix(word, "["),
-			strings.HasPrefix(word, "v") && strings.Contains(word, "."),
+			version.MatchString(word),
 			slices.Contains(args[1:], word):
 			continue
 		}

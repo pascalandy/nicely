@@ -58,6 +58,7 @@ stdout '^#compdef ncly'
 env NCLY_CONFIG=
 exec ncly --lang en-XA __complete ''
 stdout '^completion\t⟦'
+pseudo stdout completion help
 
 # Completing after --help, -h, or --version answers in the completion protocol, never with help
 exec ncly __complete --help ''
