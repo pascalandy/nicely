@@ -31,6 +31,12 @@ exits 2 ncly -z --json
 answer stderr USAGE_INVALID
 stderr '"message":"Unknown flag -z."'
 
+# An unknown shorthand's inline value is never another shorthand
+exits 2 ncly -z=h --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"Unknown flag -z."'
+
 # A missing flag value uses the same envelope
 exits 2 ncly --json --lang
 ! stdout .
