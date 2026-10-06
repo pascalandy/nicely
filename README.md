@@ -10,7 +10,7 @@ ncly transcript run youtube --url "https://www.youtube.com/watch?v=VIDEO_ID"
 
 ## Status
 
-Nicely is in planning and has no release yet. [The guide](docs/north-star/guide.md) explains what it is and why. [The first milestone](docs/milestones/M0-foundation.md) starts the plan.
+Nicely is in early development and has no release yet. [The guide](docs/north-star/guide.md) explains what it is and why. [The first milestone](docs/milestones/M0-foundation.md) is under way.
 
 ## How it works
 
