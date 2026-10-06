@@ -5,7 +5,7 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 ## Read in this order
 
 1. [docs/north-star/guide.md](docs/north-star/guide.md), at the start of every session.
-2. [docs/north-star/dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup.
+2. [docs/north-star/dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup and waiting for his review before a merge.
 3. The current milestone in `docs/milestones/`: the lowest-numbered file whose status is not `done`.
 4. The sections of [docs/north-star/cli-spec.md](docs/north-star/cli-spec.md) that your task touches.
 5. [docs/north-star/decision-records.md](docs/north-star/decision-records.md), only when a rule blocks your task.
@@ -78,7 +78,7 @@ Write each commit message as `<emoji> <type>: <scope>: <summary>`, such as `📚
 
 ## Merge
 
-"Merge" means ship: commit, push, sign off, open a pull request, merge it into origin/main, and sync local main. Don't ask for confirmation at any step, except the one that the contract rule in [Rules](#rules) requires. Stop only on a real blocker, and report it.
+"Merge" means ship: commit, push, sign off, merge the pull request into origin/main, and sync local main. Merge only after Pascal has reviewed the pull request and says "merge", as [dev-preferences.md](docs/north-star/dev-preferences.md#wait-for-pascals-review-before-a-merge) asks. Until then, stop at an open pull request. Once Pascal says "merge", don't ask for confirmation at any step, except the one that the contract rule in [Rules](#rules) requires. Stop only on a real blocker, and report it.
 
 Keep the history linear. Rebase the branch onto origin/main, sign off its head, then push that head to `main` with `git push origin <branch>:main`. GitHub marks the pull request merged, and `main` keeps the commit that was checked. Then fast-forward the local `main` checkout.
 
