@@ -90,15 +90,16 @@ func (p *Printer) T(id string, data ...map[string]any) string {
 	return p.localize(cfg)
 }
 
-// N returns the plural form of the message id that fits count, with Count
-// and data filling its template.
+// N returns the plural form of the message id that fits count, with data
+// filling its template. Count in the template is always count, formatted.
 func (p *Printer) N(id string, count int, data ...map[string]any) string {
-	fill := map[string]any{"Count": p.Number(float64(count), 0)}
+	fill := map[string]any{}
 	if len(data) > 0 {
 		for k, v := range data[0] {
 			fill[k] = v
 		}
 	}
+	fill["Count"] = p.Number(float64(count), 0)
 	return p.localize(&goi18n.LocalizeConfig{MessageID: id, PluralCount: count, TemplateData: fill})
 }
 
