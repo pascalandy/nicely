@@ -6,7 +6,7 @@ Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From 
 
 ## D001 Build from scratch in Go with Cobra and Charm
 
-Decided 2026-10-05. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour for the interface.
+Decided 2026-10-05. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour for the interface. Until a form needs Huh or Bubble Tea, `internal/tui` styles text with `x/ansi` and `colorprofile`, both from Charm, without Lip Gloss: Lip Gloss v2.0.6 detects the terminal as its package loads, and inside tmux that runs `tmux info` with no time limit, so even `ncly --version` could hang. The first form must prove that its packages no longer probe at load, with the scenario `terminal.txtar`.
 
 **Why.** Cobra already carries the practices of `gh`, `kubectl`, and the Stripe CLI. The Charm libraries cover forms, spinners, styles, and Markdown in one family.
 
