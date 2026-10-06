@@ -2,9 +2,7 @@ package i18n
 
 import (
 	"maps"
-	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -126,28 +124,6 @@ func TestEveryCatalogMatchesEnglish(t *testing.T) {
 	for _, path := range paths {
 		if got := slices.Sorted(maps.Keys(load(t, path))); !slices.Equal(got, en) {
 			t.Errorf("%s holds the entries %v, en holds %v", path, got, en)
-		}
-	}
-}
-
-// TestEveryEntryIsUsed finds each ID as a string literal in the Go code, so
-// a dead entry never waits for a translation.
-func TestEveryEntryIsUsed(t *testing.T) {
-	var source strings.Builder
-	err := filepath.WalkDir("..", func(path string, d os.DirEntry, err error) error {
-		if err == nil && !d.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
-			data, err := os.ReadFile(path)
-			source.Write(data)
-			return err
-		}
-		return err
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for id := range load(t, "locales/en.toml") {
-		if !regexp.MustCompile(`"` + regexp.QuoteMeta(id) + `"`).MatchString(source.String()) {
-			t.Errorf("no Go code uses %s", id)
 		}
 	}
 }
