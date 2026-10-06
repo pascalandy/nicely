@@ -181,17 +181,23 @@ func unknownCommand(p *i18n.Printer, name string) contract.Problem {
 	}
 }
 
-// report prints a failed outcome and returns its exit code.
+// report prints an outcome and returns its exit code. An answer that
+// cannot be written is a runtime failure, whatever the verdict: when stderr
+// itself refuses it, the exit code is all that remains to tell.
 func report(p *i18n.Printer, g globals, o contract.Outcome, stdout, stderr io.Writer) int {
 	a := contract.Finish(o, summarizer(p))
+	var err error
 	if g.json {
-		if err := a.WriteJSON(stdout, stderr); err != nil {
-			panic(err)
-		}
+		err = a.WriteJSON(stdout, stderr)
 	} else {
 		for _, e := range append(a.Errors(), a.Warnings()...) {
-			_, _ = fmt.Fprintf(stderr, "%s\n  %s\n", e.Message, e.Hint)
+			if _, werr := fmt.Fprintf(stderr, "%s\n  %s\n", e.Message, e.Hint); werr != nil {
+				err = werr
+			}
 		}
+	}
+	if err != nil {
+		return int(contract.ExitRuntime)
 	}
 	return int(a.Exit)
 }

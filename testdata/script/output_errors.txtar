@@ -13,3 +13,10 @@ stderr 'Could not write the output'
 # The same commands succeed when the output can be written
 exec sh -c 'ncly --version >/dev/null'
 ! stderr .
+
+# When stderr refuses the error answer too, ncly still exits 1 and never panics
+exits 1 sh -c 'ncly nope 2>/dev/full'
+! stdout .
+exits 1 sh -c 'ncly nope --json 2>/dev/full'
+! stdout .
+exits 1 sh -c 'ncly --version --json >/dev/full 2>/dev/full'
