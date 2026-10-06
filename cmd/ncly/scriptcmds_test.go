@@ -16,6 +16,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/pascalandy/nicely/internal/contract"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -229,7 +230,6 @@ var (
 	marked  = regexp.MustCompile(`(?s)⟦.*?⟧`)
 	example = regexp.MustCompile(`(?m)^\s*\$ .*$`)
 	letter  = regexp.MustCompile(`\p{L}`)
-	code    = regexp.MustCompile(`^[A-Z][A-Z0-9_]+$`)
 )
 
 // cmdPseudo fails on any word of a stream that the pseudo-locale did not
@@ -252,7 +252,7 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 		case !letter.MatchString(word),
 			strings.HasPrefix(word, "-"),
 			word == "ncly",
-			code.MatchString(word),
+			isCode(word),
 			strings.HasPrefix(word, "<") || strings.HasPrefix(word, "["),
 			strings.HasPrefix(word, "v") && strings.Contains(word, "."),
 			slices.Contains(args[1:], word):
@@ -263,4 +263,11 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 	if len(stray) > 0 {
 		ts.Fatalf("pseudo: text outside the catalog on %s: %s", args[0], strings.Join(stray, " "))
 	}
+}
+
+// isCode reports whether a word is a registered error or warning code, the
+// only uppercase words that stay untranslated.
+func isCode(word string) bool {
+	_, isError := contract.Code(word).Exit()
+	return isError || contract.Code(word).IsWarning()
 }
