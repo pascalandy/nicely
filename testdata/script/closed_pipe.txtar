@@ -14,3 +14,12 @@ answer stderr RUNTIME
 env NCLY_JSON=
 exits 1 closedpipe ncly --help
 ! stderr '"ok"'
+
+# The scenario's language reaches the command too, and a host language never does
+env NCLY_LANG=en-XA
+exits 1 closedpipe ncly --help
+pseudo stderr
+env NCLY_LANG=en
+exits 1 closedpipe ncly --help
+stderr 'Could not write the output'
+! stderr '⟦'
