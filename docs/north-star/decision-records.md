@@ -180,7 +180,7 @@ Decided 2026-10-05. Cobra generates zsh, bash, and fish completions, and the pac
 
 ## D025 Keep rules in north-star and work in milestones
 
-Decided 2026-10-05. `docs/north-star/` holds the guide, the CLI spec, and this log. `docs/milestones/` holds one file per milestone, and M99 is the parking lot. When a milestone starts, it moves its draft spec into cli-spec.md and links to it.
+Decided 2026-10-05. `docs/north-star/` holds the guide, the CLI spec, Pascal's developer preferences, and this log. `docs/milestones/` holds one file per milestone, and M99 is the parking lot. When a milestone starts, it moves its draft spec into cli-spec.md and links to it.
 
 **Why.** Each rule has one source, so milestones cannot drift from the spec. Agents read the guide every session and the rest only when they need it.
 

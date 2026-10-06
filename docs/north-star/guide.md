@@ -91,6 +91,7 @@ Use one word per concept in code, docs, help, and commit messages. Add a term he
 
 - [cli-spec.md](cli-spec.md) holds the agent contract and every specified command. Read the sections you touch before changing a command.
 - [decision-records.md](decision-records.md) explains why each rule exists. Read it before you propose to change a rule.
+- [dev-preferences.md](dev-preferences.md) records how Pascal wants changes made, such as deciding the look with a published mockup.
 - The milestone files in `docs/milestones/` list the work in order, and [M99](../milestones/M99-parking-lot.md) parks every other idea.
 
 ## Boundaries to keep through the milestones

@@ -5,9 +5,10 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 ## Read in this order
 
 1. [docs/north-star/guide.md](docs/north-star/guide.md), at the start of every session.
-2. The current milestone in `docs/milestones/`: the lowest-numbered file whose status is not `done`.
-3. The sections of [docs/north-star/cli-spec.md](docs/north-star/cli-spec.md) that your task touches.
-4. [docs/north-star/decision-records.md](docs/north-star/decision-records.md), only when a rule blocks your task.
+2. [docs/north-star/dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup.
+3. The current milestone in `docs/milestones/`: the lowest-numbered file whose status is not `done`.
+4. The sections of [docs/north-star/cli-spec.md](docs/north-star/cli-spec.md) that your task touches.
+5. [docs/north-star/decision-records.md](docs/north-star/decision-records.md), only when a rule blocks your task.
 
 Take rules only from these files. `docs/archived/` holds history, such as the design chat.
 
@@ -62,7 +63,7 @@ tools/              a separate module that pins the dev tools, run through `just
 
 Run `lefthook install` once per clone, so the hooks format, lint, and scan each commit and test each push.
 
-- Build interactive screens from `internal/tui` only, so every command looks the same. Add a component there when the first command needs it.
+- Build interactive screens from `internal/tui` only, so every command looks the same. Add a component there when the first command needs it, after Pascal picks its look from a published mockup, as [dev-preferences.md](docs/north-star/dev-preferences.md#decide-the-look-with-a-published-mockup) asks.
 - Keep one declaration per command for help, completion, discovery, and validation, as [Command descriptions](docs/north-star/cli-spec.md#command-descriptions-m0) defines. Domain code owns the steps and resume evidence. Shared operation support follows [Operations](docs/north-star/cli-spec.md#operations-m0-contract-m1-execution).
 - Run every other program through `internal/run`, which implements [Programs that ncly runs](docs/north-star/cli-spec.md#programs-that-ncly-runs-m1). Start each program in its own process group, so a signal reaches its descendants, apply the timeout, and keep keys out of every log.
 - Write a shared file to a temporary file and rename it under a lock from `internal/platform`. Revalidate the destination while holding the lock. Give each run its own temporary files. A lock conflict follows [Retry safety](docs/north-star/cli-spec.md#retry-safety-m0), including effects already produced by this invocation.
