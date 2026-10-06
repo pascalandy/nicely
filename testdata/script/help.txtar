@@ -52,7 +52,8 @@ stderr 'Unknown command "-h"'
 exec ncly --lang en-XA --help
 pseudo stdout
 
-# The help has styles only when color is on: CLICOLOR_FORCE keeps them in a pipe
+# The help has styles only when color is on: CLICOLOR_FORCE keeps them in a pipe,
+# and an empty NO_COLOR keeps them too, as no-color.org defines
 env CLICOLOR_FORCE=1
 exec ncly --help
 stdout '\x1b\['
@@ -62,6 +63,8 @@ env NO_COLOR=1
 exec ncly --help
 ! stdout '\x1b\['
 env NO_COLOR=
+exec ncly --help
+stdout '\x1b\['
 env TERM=dumb
 exec ncly --help
 ! stdout '\x1b\['
