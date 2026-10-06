@@ -157,7 +157,7 @@ Each code maps to exactly one exit code. Core uses only the codes in this table,
 |---|---|---|---|
 | `USAGE_INVALID` | 2 | Unknown command, bad flag, or a missing value in non-interactive mode | M0 |
 | `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent | M0 |
-| `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type | M0 |
+| `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type, or cannot be read | M0 |
 | `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing or granting a key | M0 |
 | `RUNTIME` | 1 | Any other failure during work | M0 |
 | `NOT_FOUND` | 2 | The named skill, service, profile, or component does not exist | M1 |
@@ -195,10 +195,10 @@ Precedence, highest first: flags, environment variables, `config.local.toml`, `c
 | State: logs, locks, and run history | `~/.local/state/nicely/` |
 | Cache: extracted Python programs | `~/.cache/nicely/` |
 
-Each path honors `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, or `XDG_CACHE_HOME` when set. macOS uses the same paths as Linux. `NCLY_CONFIG` names another shared config file, and the local config is then read from the same folder.
+Each path honors `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, or `XDG_CACHE_HOME` when it holds an absolute path, as the XDG specification asks, and ignores a relative one. macOS uses the same paths as Linux. `NCLY_CONFIG` names another shared config file, and the local config is then read from the same folder.
 
 - A missing config file is not an error, and the defaults apply.
-- A syntax error or a value of the wrong type exits 78 with `CONFIG_INVALID`. `--help`, `--version`, and M1 command discovery still work with defaults. Discovery reports the fallback as specified below
+- A syntax error, a value of the wrong type, or a file that cannot be read exits 78 with `CONFIG_INVALID`, naming the file and, when the parser knows it, the line. `--help`, `--version`, and M1 command discovery still work with defaults. Discovery reports the fallback as specified below
 - An unknown key is a `CONFIG_UNKNOWN_KEY` warning in `ncly doctor`, never an error, so an older `ncly` reads a config written for a newer one.
 - `ncly` writes a config file only when the job of a command is to change the setup, such as adding a tap. It edits the file in place, keeps comments and formatting, and names the file it changed. Under `--dry-run`, it shows the change instead. Each such command states which file it writes.
 
