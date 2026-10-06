@@ -20,3 +20,11 @@ exits 1 sh -c 'ncly nope 2>/dev/full'
 exits 1 sh -c 'ncly nope --json 2>/dev/full'
 ! stdout .
 exits 1 sh -c 'ncly --version --json >/dev/full 2>/dev/full'
+
+# A completion script that cannot be written is a runtime failure, not a usage error
+exits 1 sh -c 'ncly completion bash --json >/dev/full'
+answer stderr RUNTIME
+exits 1 sh -c 'ncly completion zsh --json >/dev/full'
+answer stderr RUNTIME
+exits 1 sh -c 'ncly completion fish --json >/dev/full'
+answer stderr RUNTIME

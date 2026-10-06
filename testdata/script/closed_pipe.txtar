@@ -7,6 +7,10 @@ answer stderr RUNTIME
 exits 1 closedpipe ncly --help
 stderr 'Could not write the output'
 
+# A completion script to a closed reader is a runtime failure too
+exits 1 closedpipe ncly completion zsh --json
+answer stderr RUNTIME
+
 # The scenario's own environment reaches the command: NCLY_JSON=1 selects machine output
 env NCLY_JSON=1
 exits 1 closedpipe ncly --help
