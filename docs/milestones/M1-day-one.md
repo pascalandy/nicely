@@ -106,6 +106,12 @@ stdout '^<!-- skill-dir: .*/alpha -->'
 exits 2 ncly skill view nope --json
 stderr '"code":"NOT_FOUND"'
 
+# Doctor warns without failing when a folder name differs from its skill name
+# The archive holds skills/beta/SKILL.md with name: gamma
+exec ncly doctor skill --json
+stdout '"ok":true'
+stdout '"code":"SKILL_NAME_MISMATCH"'
+
 # Doctor reports on stdout and exits 78 when a key is missing
 exits 78 ncly doctor auth --json
 stdout '"ok":false'

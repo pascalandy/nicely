@@ -178,6 +178,7 @@ Warnings use codes from this table.
 | `CONFIG_UNKNOWN_KEY` | A config file holds a key that this version of `ncly` does not know | M0 |
 | `SKILL_SHADOWED` | Two skill folders hold the same skill name | M1 |
 | `SKILL_NO_SOURCE` | No skill folder is configured | M1 |
+| `SKILL_NAME_MISMATCH` | A skill's subfolder name differs from the `name` in its `SKILL.md` | M1 |
 | `CONFIG_DEFAULTS_USED` | Discovery used defaults because a config file could not be read | M1 |
 
 ## Configuration (M0)
@@ -353,7 +354,7 @@ ncly doctor [component] [--live] [--json]
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
 - When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` otherwise.
-- The `skill` component checks that each folder in `[skill] paths` exists and that each `SKILL.md` has a `name` and a `description`.
+- The `skill` component checks that each folder in `[skill] paths` exists and that each `SKILL.md` has a `name` and a `description`. It warns with `SKILL_NAME_MISMATCH` when a subfolder's name differs from its `name`.
 - In interactive mode, when a tool is missing and its install command for this system is known, doctor shows the command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and runs it only after a yes.
 - In non-interactive mode, doctor never installs anything. The hint of each failed check holds the command.
 - Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it exits 1 with `errors`.
@@ -396,6 +397,7 @@ ncly skill <name>
 ```
 
 - Skills come from the folders in `[skill] paths`. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter. Taps add more sources in M3.
+- A skill's subfolder takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works and `ncly doctor skill` warns.
 - When two folders hold the same skill name, the first folder in `paths` wins and `list` adds a `SKILL_SHADOWED` warning.
 - When no folder is configured, `list` returns an empty list and a `SKILL_NO_SOURCE` warning whose hint names `[skill] paths`.
 - `list` returns names and descriptions, sorted by name.
