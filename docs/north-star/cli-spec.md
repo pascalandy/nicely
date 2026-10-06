@@ -41,11 +41,11 @@ ncly
 └── transcript prompt list          M1
 ```
 
-Core reserves every name in the domain table of the [guide](guide.md#domains-and-commands), plus `help`, `version`, and `config`. An extension never runs under a reserved name.
+Core reserves every name in the domain table of the [guide](guide.md#domains-and-commands), plus `help`, `version`, and `config`. An extension never runs under a reserved name. A name that is neither a command of this version nor an installed extension fails with `USAGE_INVALID`, including a reserved name whose command arrives in a later milestone.
 
 ## Global flags (M0)
 
-Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. [Programs that ncly runs](#programs-that-ncly-runs-m1) receive the resolved values.
+Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. An `NCLY_` variable turns its flag on only when it equals `1`, and `NO_COLOR` turns color off when it holds any value. [Programs that ncly runs](#programs-that-ncly-runs-m1) receive the resolved values.
 
 | Flag | Variable | Default | Effect |
 |---|---|---|---|
@@ -88,7 +88,7 @@ stdout carries data. stderr carries progress, warnings, and errors. Without `--j
 
 With `--json`, every answer is one JSON object on one line, never a bare array. `ok` is `true` or `false` and agrees with the exit code. `contract_version` is the integer version of this public protocol, initially `1`. `--help`, `--version`, and `ncly completion` print text and ignore `--json`.
 
-Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON` and a valid `--json` flag before reporting an invalid command, unknown flag, or missing value, wherever that flag occurs before `--`. Help retains its documented precedence.
+Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON` and a valid `--json` flag before reporting an invalid command, unknown flag, or missing value, wherever that flag occurs before `--`. A flag that takes a value takes the next argument even when it starts with `-`, as the parser does, so `ncly --lang --json` sets the language and leaves machine mode off. Help retains its documented precedence.
 
 - On success, stdout holds the object. Progress is not shown, and stderr stays empty unless `--verbose` or `NCLY_DEBUG` adds lines.
 - On failure, stdout stays empty and the object ends stderr. With `--verbose` or `NCLY_DEBUG`, diagnostic lines come before it.
@@ -97,7 +97,7 @@ Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON`
 {"ok":false,"contract_version":1,"errors":[{"code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram"}]}
 ```
 
-`errors` describes the command's failure. The command computes its overall verdict first, then puts an error with the matching exit code first. Input order or the order in which failures arrive never determines retry safety. Item errors remain inside `results`. `warnings` holds objects of the same shape, may appear in any answer, and never changes the exit code.
+`errors` describes the command's failure. The command computes its overall verdict first, then puts an error with the matching exit code first. When the failures of the command itself map to different exit codes, the most cautious one leads: `130` or `143`, then `1`, `78`, `2`, and `75` only when every failure is temporary. Input order or the order in which failures arrive never determines retry safety. Item errors remain inside `results`. `warnings` holds objects of the same shape, may appear in any answer, and never changes the exit code.
 
 | Key | Meaning |
 |---|---|
