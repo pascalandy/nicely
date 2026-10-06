@@ -89,7 +89,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	}
 	var got []string
 	for _, c := range tree()[1:] {
-		if c.Name() != "help" && !c.Hidden {
+		if c.Name() != "help" {
 			got = append(got, strings.TrimPrefix(c.CommandPath(), "ncly "))
 		}
 	}
