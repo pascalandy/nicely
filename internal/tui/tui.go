@@ -6,41 +6,48 @@ package tui
 import (
 	"io"
 	"os"
-	"slices"
 	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/pascalandy/nicely/internal/contract"
+	"golang.org/x/term"
 )
 
 // The styles follow variant D of the T4 mockups: the quiet help of variant
 // A, with bold uppercase headings, and the errors of variant B, which lead
-// with their code.
+// with their code. They are plain SGR sequences rather than Lip Gloss,
+// whose package detects the terminal as it loads and can wait on
+// `tmux info` without a time limit.
 var (
-	heading      = lipgloss.NewStyle().Bold(true)
-	errorLabel   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Red)
-	warningLabel = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Yellow)
-	hintLabel    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Cyan)
+	heading      = ansi.Style{}.Bold()
+	errorLabel   = ansi.Style{}.Bold().ForegroundColor(ansi.Red)
+	warningLabel = ansi.Style{}.Bold().ForegroundColor(ansi.Yellow)
+	hintLabel    = ansi.Style{}.Bold().ForegroundColor(ansi.Cyan)
 )
 
 // Output wraps a stream so that styles become plain text when color is off.
-// noColor holds the --no-color flag when the user gave it, and it wins.
-// Otherwise NO_COLOR or TERM=dumb turns color off, even with CLICOLOR_FORCE,
-// and a stream that is not a terminal gets plain text unless CLICOLOR_FORCE
-// asks for color.
+// noColor holds the --no-color flag when the user gave it, and it wins over
+// NO_COLOR and TERM=dumb. Otherwise a non-empty NO_COLOR or TERM=dumb turns
+// color off, even with CLICOLOR_FORCE, and a stream that is not a terminal
+// gets plain text unless CLICOLOR_FORCE asks for color. The decision reads
+// only the environment and the stream, and never queries the terminal.
 func Output(w io.Writer, noColor *bool) io.Writer {
-	environ := os.Environ()
 	plain := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
 	if noColor != nil {
 		plain = *noColor
-		environ = slices.DeleteFunc(environ, func(v string) bool { return strings.HasPrefix(v, "NO_COLOR=") })
 	}
-	out := colorprofile.NewWriter(w, environ)
-	if plain {
-		out.Profile = colorprofile.NoTTY
+	force := os.Getenv("CLICOLOR_FORCE")
+	profile := colorprofile.NoTTY
+	if !plain && (isTerminal(w) || (force != "" && force != "0")) {
+		profile = colorprofile.ANSI
 	}
-	return out
+	return &colorprofile.Writer{Forward: w, Profile: profile}
+}
+
+func isTerminal(w io.Writer) bool {
+	f, ok := w.(interface{ Fd() uintptr })
+	return ok && term.IsTerminal(int(f.Fd()))
 }
 
 // Entry is one line of a list: a command or a flag, then its summary.
@@ -76,7 +83,7 @@ func Help(p HelpPage) string {
 		if len(lines) == 0 {
 			return
 		}
-		b.WriteString("\n" + heading.Render(strings.ToUpper(title)) + "\n")
+		b.WriteString("\n" + heading.Styled(strings.ToUpper(title)) + "\n")
 		for _, line := range lines {
 			b.WriteString("  " + line + "\n")
 		}
@@ -101,11 +108,11 @@ func columns(s Section) []string {
 		if s.Colon {
 			names[i] += ":"
 		}
-		width = max(width, lipgloss.Width(names[i]))
+		width = max(width, ansi.StringWidth(names[i]))
 	}
 	lines := make([]string, len(s.Entries))
 	for i, e := range s.Entries {
-		lines[i] = names[i] + strings.Repeat(" ", width-lipgloss.Width(names[i])+2) + e.Summary
+		lines[i] = names[i] + strings.Repeat(" ", width-ansi.StringWidth(names[i])+2) + e.Summary
 	}
 	return lines
 }
@@ -115,8 +122,8 @@ func columns(s Section) []string {
 // the hint label. label returns the translated label of a code.
 func Problems(errs, warnings []contract.Problem, label func(code contract.Code, warning bool) string, hint string) string {
 	var blocks []string
-	add := func(style lipgloss.Style, p contract.Problem, warning bool) {
-		blocks = append(blocks, style.Render(label(p.Code, warning))+" "+p.Message+"\n\n  "+hintLabel.Render(hint)+" "+p.Hint+"\n")
+	add := func(style ansi.Style, p contract.Problem, warning bool) {
+		blocks = append(blocks, style.Styled(label(p.Code, warning))+" "+p.Message+"\n\n  "+hintLabel.Styled(hint)+" "+p.Hint+"\n")
 	}
 	for _, p := range errs {
 		add(errorLabel, p, false)

@@ -1,0 +1,22 @@
+[!linux] skip 'the script command of util-linux gives the pseudo-terminal'
+[!exec:script] skip 'needs script for a pseudo-terminal'
+
+# Inside tmux, ncly never asks tmux about colors, so a stuck tmux server cannot block it.
+# The tmux stub logs its call and sleeps, so a call shows as tmux.log and a slow test.
+chmod 755 bin/tmux
+env PATH=$WORK/bin:$PATH
+env TMUX=/tmp/tmux-test/default,1,0
+env TERM=xterm-256color
+exec script -qec 'ncly --no-color --version' /dev/null
+stdout 'ncly v'
+! exists tmux.log
+exec script -qec 'ncly --help' /dev/null
+! exists tmux.log
+
+# On a terminal, the help keeps its styles
+stdout '\x1b\[1mUSAGE'
+
+-- bin/tmux --
+#!/bin/sh
+echo "$@" >> "$WORK/tmux.log"
+sleep 5
