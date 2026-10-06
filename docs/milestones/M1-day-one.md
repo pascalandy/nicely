@@ -112,6 +112,15 @@ exec ncly doctor skill --json
 stdout '"ok":true'
 stdout '"code":"SKILL_NAME_MISMATCH"'
 
+# A linked skill folder is listed once, and a broken link is skipped
+# [skill] paths lists skills, then shared
+symlink $WORK/skills/delta -> $WORK/shared/delta
+symlink $WORK/skills/ghost -> $WORK/nowhere
+exec ncly skill list --json
+stdout -count=1 '"name":"delta"'
+stdout '"path":"[^"]*/skills/delta"'
+! stdout SKILL_SHADOWED
+
 # Doctor reports on stdout and exits 78 when a key is missing
 exits 78 ncly doctor auth --json
 stdout '"ok":false'
