@@ -132,6 +132,14 @@ other = "Global flags"
 description = "Help page: heading above the example command lines."
 other = "Examples"
 
-["error.try"]
-description = "Error block: label before the command or action that fixes the error, as in `Try: ncly --help`."
-other = "Try:"
+["error.label"]
+description = "Error block: label that leads an error message. {{.Code}} is a code such as USAGE_INVALID, which stays as is. French puts a space before the colon."
+other = "error[{{.Code}}]:"
+
+["warning.label"]
+description = "Error block: label that leads a warning message. {{.Code}} is a code such as CONFIG_UNKNOWN_KEY, which stays as is. French puts a space before the colon."
+other = "warning[{{.Code}}]:"
+
+["error.hint"]
+description = "Error block: label before the command or action that fixes an error or a warning, as in `hint: ncly --help`."
+other = "hint:"

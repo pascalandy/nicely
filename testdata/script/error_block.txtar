@@ -1,4 +1,4 @@
-# Without --json, an error is a marked message, then the fix and the code
+# Without --json, an error leads with its code, then shows the fix
 exits 2 ncly nope
 ! stdout .
 cmp stderr want.txt
@@ -18,5 +18,6 @@ exits 2 ncly nope
 ! stderr '\x1b\['
 
 -- want.txt --
-✗ Unknown command "nope".
-  Try: ncly --help  USAGE_INVALID
+error[USAGE_INVALID]: Unknown command "nope".
+
+  hint: ncly --help

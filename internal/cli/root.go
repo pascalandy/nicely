@@ -198,7 +198,13 @@ func report(p *i18n.Printer, g globals, o contract.Outcome, stdout, stderr io.Wr
 	if g.json {
 		err = a.WriteJSON(stdout, stderr)
 	} else {
-		_, err = fmt.Fprint(tui.Output(stderr, g.noColor), tui.Problems(a.Errors(), a.Warnings(), p.T("error.try")))
+		label := func(code contract.Code, warning bool) string {
+			if warning {
+				return p.T("warning.label", map[string]any{"Code": code})
+			}
+			return p.T("error.label", map[string]any{"Code": code})
+		}
+		_, err = fmt.Fprint(tui.Output(stderr, g.noColor), tui.Problems(a.Errors(), a.Warnings(), label, p.T("error.hint")))
 	}
 	if err != nil {
 		return int(contract.ExitRuntime)

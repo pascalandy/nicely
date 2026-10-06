@@ -14,13 +14,14 @@ import (
 	"github.com/pascalandy/nicely/internal/contract"
 )
 
-// Styles are the styles of variant A in the T4 mockups: bold uppercase
-// headings, a red mark on errors, and dim labels.
+// The styles follow variant D of the T4 mockups: the quiet help of variant
+// A, with bold uppercase headings, and the errors of variant B, which lead
+// with their code.
 var (
-	heading     = lipgloss.NewStyle().Bold(true)
-	errorMark   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Red)
-	warningMark = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Yellow)
-	dim         = lipgloss.NewStyle().Faint(true)
+	heading      = lipgloss.NewStyle().Bold(true)
+	errorLabel   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Red)
+	warningLabel = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Yellow)
+	hintLabel    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Cyan)
 )
 
 // Output wraps a stream so that styles become plain text when color is off.
@@ -109,19 +110,19 @@ func columns(s Section) []string {
 	return lines
 }
 
-// Problems renders errors, then warnings, with the hint after a label such
-// as "Try:" and the code dimmed at the end of the hint line.
-func Problems(errs, warnings []contract.Problem, try string) string {
-	var b strings.Builder
-	write := func(mark string, p contract.Problem) {
-		b.WriteString(mark + " " + p.Message + "\n")
-		b.WriteString("  " + dim.Render(try) + " " + p.Hint + "  " + dim.Render(string(p.Code)) + "\n")
+// Problems renders errors, then warnings. Each one leads with a label that
+// carries its code, such as error[USAGE_INVALID]:, then shows its hint after
+// the hint label. label returns the translated label of a code.
+func Problems(errs, warnings []contract.Problem, label func(code contract.Code, warning bool) string, hint string) string {
+	var blocks []string
+	add := func(style lipgloss.Style, p contract.Problem, warning bool) {
+		blocks = append(blocks, style.Render(label(p.Code, warning))+" "+p.Message+"\n\n  "+hintLabel.Render(hint)+" "+p.Hint+"\n")
 	}
 	for _, p := range errs {
-		write(errorMark.Render("✗"), p)
+		add(errorLabel, p, false)
 	}
 	for _, p := range warnings {
-		write(warningMark.Render("!"), p)
+		add(warningLabel, p, true)
 	}
-	return b.String()
+	return strings.Join(blocks, "\n")
 }
