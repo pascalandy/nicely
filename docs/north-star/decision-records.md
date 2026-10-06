@@ -34,11 +34,11 @@ Decided 2026-10-05. Core holds what a stranger would use. Personal tools are ext
 
 ## D005 Add extensions the Git way and carry them in taps
 
-Decided 2026-10-05. An executable named `ncly-<domain>` becomes `ncly <domain>`. A tap is a Git repository that carries skills and extensions. Built-in commands always win over an extension with the same name. An extension receives the global flags as the variables in [cli-spec.md](cli-spec.md#global-flags-m0), and it prefixes its error codes with its domain.
+Decided 2026-10-05. An executable named `ncly-<domain>` becomes `ncly <domain>` when its manifest declares a compatible protocol and its capabilities. A tap is a Git repository that carries skills and extensions. Built-in commands always win over an extension with the same name. Source precedence is explicit, and discovery reports the selected source. An extension receives the global flags as the variables in [cli-spec.md](cli-spec.md#global-flags-m0), and it prefixes its error codes with its domain.
 
-**Why.** Any script becomes a command with a name and `chmod +x`, in any language. One private tap moves Pascal's tools to every machine. Git, `kubectl`, and cargo find their plugins the same way.
+**Why.** A script can join Nicely in any language. Its manifest lets an agent inspect what it supports before running it. One private tap moves Pascal's tools to every machine. Git, `kubectl`, and cargo find plugins by executable name, while Nicely also needs to verify their shared output contract.
 
-**Rejected.** A tap for skills only. Translating extension text from core, because core cannot know an extension's strings.
+**Rejected.** A tap for skills only. Translating extension text from core, because core cannot know an extension's strings. Guessing capabilities from an executable's name or version. Accepting malformed protocol output as a successful result.
 
 ## D006 Serve agents through the CLI itself
 
@@ -50,11 +50,11 @@ Decided 2026-10-05. Agents operate `ncly` through the shell. `ncly` launches age
 
 ## D007 Keep one stable agent contract
 
-Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes stay in English and stable. The exit codes and the error registry live in [cli-spec.md](cli-spec.md#exit-codes-m0). Each core error code maps to one exit code. Exit `78` means that a human must act, and exit `75` means that the same command is safe to rerun.
+Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes stay in English. [Compatibility](cli-spec.md#compatibility-m0) covers types, units, formats, meaning, required fields, nullability, enum values, and defined array order. Protocols and stored run records have versions from their first use. Each core error code maps to one exit code. Exit `78` means that a human must act. Exit `75` follows the [retry safety rule](cli-spec.md#retry-safety-m0) for the whole invocation, including finished items in a batch.
 
-**Why.** The transcript CLI already proved `0`, `1`, `2`, `75`, `130`, and `143` with agents. `78` is `EX_CONFIG` in `sysexits.h`, and it lets an agent tell "a human must act" from "the call was wrong". Agents branch on `code`, so a translated `message` never breaks a parser.
+**Why.** Agents branch on codes and values, so keeping a key while changing its unit can break a consumer. A temporary failure before a paid request can still follow a file write. Exit `75` therefore requires that all effects so far are safe to repeat, through absence of incompatible effects or proven idempotence. `78` is `EX_CONFIG` in `sysexits.h`, and it lets an agent tell "a human must act" from "the call was wrong".
 
-**Rejected.** A dedicated exit code 3 for a missing key. Exit 2 for a step that only a human can do, such as `ncly auth login` without a terminal or a broken config file, because the agent cannot fix those by changing the call.
+**Rejected.** Stability of key names alone. Treating every new enum value as compatible without an explicit rule for unknown values. Recording a breaking change in this log without a version and migration policy. Returning `75` for a lock conflict after effects that make the invocation unsafe to repeat. A dedicated exit code 3 for a missing key, or exit 2 for a step that only a human can do.
 
 ## D008 Use one flag for every confirmation
 
@@ -122,17 +122,19 @@ Decided 2026-10-05. Checks run through `just`, Lefthook, and `gh signoff`. GitHu
 
 ## D017 Write acceptance criteria as testscript scenarios
 
-Decided 2026-10-05. Each milestone states its acceptance criteria as testscript scenarios. End-to-end scenarios come before unit tests.
+Decided 2026-10-05. Each milestone states its acceptance criteria as testscript scenarios. End-to-end scenarios come before unit tests. M0 verifies the real parser, streams, modes, and shared outcome logic, including partial results. A later domain proves its effects, simulation, and recovery on its first real implementation.
 
-**Why.** Pascal writes the specifications and agents write the Go. A scenario reads like a terminal session, so Pascal checks behavior without reading Go.
+**Why.** Pascal writes the specifications and agents write the Go. A scenario reads like a terminal session, so Pascal checks behavior without reading Go. Parser errors and misplaced output can make a command unusable by agents even when its success path works.
+
+**Rejected.** Treating a contract fixture as proof that a future command avoids writes or duplicate paid requests. Stubbed services keep tests repeatable, but they do not prove that the real Python program and harness support the required protocol and restrictions.
 
 ## D018 Name the agent command `agent` and keep one profile registry
 
-Decided 2026-10-05. `ncly agent` runs a task through a harness from M2. Profiles live in the config from M1, as [cli-spec.md](cli-spec.md#agent-profiles-m1) defines, and every command that runs an agent reads them there. A depth limit stops agents from launching agents without end. `ncly agent` absorbs the `headless` skill.
+Decided 2026-10-05. `ncly agent` runs a task through a harness from M2. Profiles and the internal Go harness adapters start in M1, as [cli-spec.md](cli-spec.md#agent-profiles-m1) defines. Go owns the transcript summary from its first release and uses only the adapters that M1 needs. M2 exposes the public command and adds adapters. A depth limit stops agents from launching agents without end. `ncly agent` absorbs the `headless` skill.
 
-**Why.** Model IDs change every few months, so they belong in the config, not in code. With one registry from M1, `--profile` keeps its meaning when `ncly agent` arrives. "Harness" stays the internal term.
+**Why.** Model IDs change every few months, so they belong in the config, not in code. One registry and one owner of harness behavior keep profiles, tool restrictions, cancellation, and summary recovery consistent from M1. "Harness" stays the internal term.
 
-**Rejected.** "Infer", "chat", and "prompt", which mean little to most people or describe too little. Each project declaring its own inference settings. Transcript keeping its own profiles until M2, which would change `--profile` in v0.2.0.
+**Rejected.** "Infer", "chat", and "prompt", which mean little to most people or describe too little. Each project declaring its own inference settings. Python owning the summary until M2, which would require an ownership change as soon as the next domain arrives.
 
 ## D019 Put transcript in core without showcasing it
 
@@ -144,13 +146,13 @@ Decided 2026-10-05. `transcript` is a core domain: `ncly transcript run youtube`
 
 ## D020 Ship doctor, auth, skill, and transcript on day one
 
-Decided 2026-10-05. M1 contains `doctor`, `auth`, `skill`, and `transcript`, plus the agent profiles in the config. `ncly agent` waits for M2.
+Decided 2026-10-05. M1 contains `doctor`, `auth`, `skill`, and `transcript`, plus agent profiles, the internal summary adapter, and run inspection and explicit resume. `ncly agent` waits for M2. The real Python program joins the first complete transcript path, before release preparation.
 
-**Why.** Day one covers the setup of a new machine, skill discovery, and the first real command. Pascal has no need for an agent command on day one.
+**Why.** Day one covers the setup of a new machine, skill discovery, and the first real command. Transcript tests the shared operation contract against paid work and saved files. Early integration exposes ownership and protocol mismatches while they are still cheap to fix. Pascal has no need for a public agent command on day one.
 
 ## D021 Move skill requirements to a file
 
-Decided 2026-10-05. Skills declare their requirements in frontmatter today. From M3, skills and extensions declare them in a `nicely.toml` file next to them. Until then, `ncly doctor skill` checks only the structure of a skill.
+Decided 2026-10-05. Skills declare their requirements in frontmatter today. From M3, skills and extensions use one versioned manifest format. A skill keeps `nicely.toml` beside `SKILL.md`; an extension keeps `<executable>.toml` beside its executable so several extensions can share a directory. Until then, `ncly doctor skill` checks only the structure of a skill.
 
 **Why.** One file format serves skills and extensions alike. A frontmatter reader built in M1 would be thrown away in M3.
 
@@ -192,19 +194,19 @@ Decided 2026-10-05. Code, comments, docs, and commit messages are in English. Us
 
 ## D027 Answer in one JSON line with `ok` and `errors`
 
-Decided 2026-10-05. With `--json`, every answer other than help, the version, and a completion script is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`, and the first error decides the exit code. A report command keeps its report, with its own findings key, on stdout. JSON keys are only added. [cli-spec.md](cli-spec.md#output-m0) holds the details.
+Decided 2026-10-05. With `--json`, every answer other than help, the version, and a completion script is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`. The command determines its overall outcome before choosing the leading error and rendering the answer. That error agrees with the exit code, and item errors preserve their own causes. A report command keeps its report, with its own findings key, on stdout. [cli-spec.md](cli-spec.md#output-m0) holds the details.
 
-**Why.** Stripe, npm, JSON:API, and GraphQL all answer with error objects that carry a stable code. The key `errors` matches Pascal's script-output convention, so his Python scripts can become extensions by turning their error strings into objects. `ok` stays readable when an agent merges stdout and stderr. ESLint, ShellCheck, `terraform validate -json`, and `npm audit --json` keep their reports on stdout when a check fails. One line keeps `tail -n1 | jq` working.
+**Why.** Stripe, npm, JSON:API, and GraphQL all answer with error objects that carry a stable code. The key `errors` matches Pascal's script-output convention. `ok` stays readable when an agent merges stdout and stderr. A batch's first failure cannot decide whether earlier successful items are safe to repeat. ESLint, ShellCheck, `terraform validate -json`, and `npm audit --json` keep their reports on stdout when a check fails. One line keeps `tail -n1 | jq` working.
 
-**Rejected.** A flat error object without `ok`. A single `error` object. JSON by default without `--json`, because humans use the same commands. A report on stderr when a check fails.
+**Rejected.** A flat error object without `ok`. A single `error` object. JSON by default without `--json`, because humans use the same commands. A report on stderr when a check fails. Letting the first observed failure authorize a retry of the whole batch.
 
 ## D028 Keep outside text away from agent tools
 
-Decided 2026-10-05. Text from outside Nicely, such as a transcript or a web page, reaches an agent only with the agent's tools turned off.
+Decided 2026-10-05. Text from outside Nicely, such as a transcript or a web page, reaches an agent only with the agent's tools turned off. The adapter must support and enforce this mode or refuse the call. The planned `--check-unchanged` flag detects changes after a run and makes no promise to prevent writes.
 
 **Why.** A video can carry instructions. The transcript CLI already summarizes with a tool-free `claude --print` for that reason.
 
-**Rejected.** Relying on `--read-only`, which detects a change only after it happened.
+**Rejected.** Calling a post-run check `--read-only`. Relying on that check to prevent writes, or silently allowing tools when a harness cannot turn them off.
 
 ## D029 Decide early what is costly to change
 
@@ -216,16 +218,48 @@ Decided 2026-10-05. A rule that a later milestone would otherwise rewrite goes i
 
 ## D030 Treat extensions as trusted code and grant keys one by one
 
-Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` minus every key that is not granted to it, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines. No program runs in a sandbox. A key reaches an extension only after a human grants it in a terminal, and an update that declares a new key gets nothing until then.
+Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` minus every key that is not granted to it, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines. No program runs in a sandbox. A key reaches an extension only after a human grants it in a terminal. Grants stay on one machine and bind the extension's source and domain. An extension from a different source cannot inherit a grant through its name, and an update that declares a new key gets nothing until a human grants it.
 
 **Why.** Git, `kubectl`, `gh`, and cargo pass the user's environment to their plugins, and real tools need it, such as the SSH agent and proxies. An extension runs with the user's rights: on macOS, go-keyring stores keys through `/usr/bin/security`, which any process can call, and on Linux any program of the session can read an unlocked keychain. Grants are consent and protection against accidental leaks, not isolation, and the docs say so.
 
-**Rejected.** A minimal list of variables plus the ones a manifest declares, because it breaks tools that rely on the environment and still isolates nothing. Granting a key without a human, such as every key a tap declares when an agent adds the tap.
+**Rejected.** A minimal list of variables plus the ones a manifest declares, because it breaks tools that rely on the environment and still isolates nothing. Granting a key without a human, such as every key a tap declares when an agent adds the tap. Copying grants between machines with shared config, or treating the extension's command name as its identity.
 
 ## D031 Stop the whole process tree on cancel and keep finished work
 
-Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and their descendants, keeps every finished output, and exits 130 or 143 with the data that still applies, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines.
+Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and their descendants, keeps every finished output, and exits 130 or 143 with the data that still applies, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines. Run inspection distinguishes verified finished work from uncertain effects. Neither interruption code authorizes an automatic retry.
 
 **Why.** The transcript CLI starts its children in their own process groups, so a signal to its parent alone leaves `yt-dlp`, `ffmpeg`, or a harness running. A harness that hits its time limit sends SIGTERM. A finished transcript may already be billed, so cleanup must never delete it.
 
-**Rejected.** Signaling only the direct child. Deleting partial results on interrupt.
+**Rejected.** Signaling only the direct child. Deleting partial results on interrupt. Assuming a stopped process proves that its last external request had no effect.
+
+## D032 Keep small run records and resume explicitly
+
+Decided 2026-10-05. The [operation contract](cli-spec.md#operations-m0-contract-m1-execution) covers preparation, execution, inspection, and explicit resume. Domains own their steps and recovery rules. `internal/run` owns subprocess lifecycles. Records preserve the evidence needed to reuse finished work, with references to outputs rather than copies of their contents. M0 fixes the contract; M1 implements it for transcript and exposes [run commands](cli-spec.md#ncly-run-m1).
+
+**Why.** A new agent session must be able to tell whether Deepgram finished before a summary failed. Writing the intended non-repeatable effect before starting it leaves evidence even if the process dies before saving the result. Resume validates inputs, relevant configuration, and saved outputs. An uncertain paid request needs reconciliation or a human decision, because a missing response does not prove that nothing happened.
+
+**Rejected.** Restarting every invocation from scratch. Logs as the only record of completed work. Recording keys or duplicating all transcript content in history. A daemon, scheduler, or general workflow engine before a command needs one.
+
+## D033 Describe a command once for humans and agents
+
+Decided 2026-10-05. One [command declaration](cli-spec.md#command-descriptions-m0) supplies help, completion, targeted JSON discovery, and doctor prerequisites. It describes inputs, results, effects, and supported capabilities. Adapters and extensions declare only guarantees they can enforce.
+
+**Why.** An agent needs the relevant command's contract without loading every domain or probing by trial and error. Shared declarations keep help, preflight checks, and execution from making different promises. Discovery distinguishes support for a capability from readiness on the current machine.
+
+**Rejected.** Separate manually maintained command catalogs for agents. Dumping the whole command tree for every lookup. Treating an unknown capability as supported.
+
+## D034 Use the same preparation for simulation and execution
+
+Decided 2026-10-05. `--dry-run` and execution use the same preparation of inputs, profiles, destinations, and effects. A simulation distinguishes verified conditions from checks deferred until execution. The [dry-run contract](cli-spec.md#global-flags-m0) allows only documented, bounded cache preparation; it reads no key and creates no durable run record. Execution revalidates conditions that may have changed.
+
+**Why.** A separately written simulation can approve a destination that execution resolves differently. A dry run also cannot prove that a key works or reserve files against another process. Reporting these limits gives agents enough evidence to proceed without overstating what was checked.
+
+**Rejected.** Parallel implementations of planning and execution. Calling a simulation successful while silently skipping a required check. Treating a prior dry run as permission to overwrite a changed destination.
+
+## D035 Track ownership when synchronizing files
+
+Decided 2026-10-05. Tap and docs synchronization track the files they manage and detect user changes before replacing or removing them. A sync stages and validates each managed destination, then publishes that destination atomically under its lock. Unrelated destinations are not one transaction. [M3](../milestones/M3-extensions.md) and [M5](../milestones/M5-docs-hub.md) define their publication boundaries and recovery.
+
+**Why.** A repeated sync must remove stale generated files without deleting unrelated files or edits. Readers need a complete result, and an interrupted update must leave enough evidence to recover. Explicit ownership makes those decisions possible.
+
+**Rejected.** Replacing an entire destination without knowing who owns its files. Preserving every stale output forever. Publishing files one by one while readers can see an incomplete update.

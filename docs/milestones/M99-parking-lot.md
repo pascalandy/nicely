@@ -19,12 +19,11 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | `ncly skill run` | Runs a script of a skill with its prerequisites checked | Agents struggle to run skill scripts by path |
 | Agent code review | Exposes the built-in review mode of each harness through `ncly agent` | Pascal reviews code through `ncly agent` weekly |
 | Public docs build | `ncly docs build --public` builds and hosts only the `public` projects | A project needs public docs |
-| Progress events | Long commands stream step events as JSON Lines, which Go shows as a step list and agents can follow | A transcript run or a batch feels long, or an agent loses a long run to its time limit |
+| Progress events | Long commands expose live JSON Lines events and a step list. M1 already records effect boundaries internally and supports inspection after interruption | Live progress adds value beyond the saved run record |
 | Transcript in Go | Ports the Python transcript program to Go | Python in core blocks a release or a translation |
 | More languages | Spanish, Japanese, and others, through the M6 workflow | A user asks, or `fr-CA` proves the workflow |
 | Terminal demos | VHS recordings of key commands for the README and the docs | M4 ships |
 | First-run experience | What a new visitor sees first, and the marketing around it | M4 ships |
-| Contract version | `ncly --version --json` reports a version of the agent contract | Nicely nears 1.0, or an agent breaks on a contract change |
 | Project config | A `.nicely.toml` in a repository, read between the environment and the local config | A project needs its own profile or paths |
 | `ncly config` | `ncly config get`, `set`, and `list` edit the config with comments kept | Agents edit the config by hand often enough to break it |
 | Key checks for skills | `ncly doctor` checks the keys that skills declare in `nicely.toml`, replacing `just api-keys-validation` | M3 manifests exist |

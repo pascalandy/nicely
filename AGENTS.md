@@ -26,7 +26,7 @@ Pick the next unticked task of the current milestone, and set the milestone to `
 ```
 
 1. **Spec first.** Write the section in cli-spec.md before code, tagged with the milestone. When the milestone file holds a draft of it, move the draft and leave a link in its place. Done when a reader can call the command from the spec alone.
-2. **Scenario before code.** Scenarios live in `testdata/script/` as `.txtar` files. Cover the JSON success path, one failure with its error code and exit code, and `--dry-run` for a command that writes. Done when the new scenario fails for the expected reason.
+2. **Scenario before code.** Scenarios live in `testdata/script/` as `.txtar` files. Reuse the [M0 contract coverage](docs/milestones/M0-foundation.md#contract-coverage) and add the command's distinct risks. For writing or paid work, verify filesystem effects, partial results, and retry safety, not just the JSON text. Done when the scenario fails for the missing behavior. A shared-component test does not replace the first real command's end-to-end proof.
 3. **Code.** Follow [Code](#code). Done when the scenario passes.
 4. **Text.** Give each catalog entry an ID and a description of where the text appears, so a translator picks the right sense.
 5. **Checks.** When `just check` fails, fix the cause and rerun. After three failed attempts on the same check, stop and report what you tried.
@@ -52,6 +52,8 @@ internal/cli/       one package per domain or standalone command
 internal/contract/  output, error registry, exit codes, modes, and the streams every command writes to
 internal/i18n/      catalogs in locales/, lookup, plurals, and number, size, and date formats
 internal/config/    shared and local config files, environment, flags, and XDG paths
+internal/operation/ run records and result publication, first used by transcript in M1
+internal/agent/     harness adapters and profile execution, first used by summaries in M1
 internal/platform/  OS differences: open, clipboard, trash, keychain, and file locks
 internal/run/       runs other programs: Python programs, harnesses, and extensions
 internal/tui/       the shared interactive parts
@@ -60,8 +62,10 @@ testdata/script/    testscript scenarios
 ```
 
 - Build interactive screens from `internal/tui` only, so every command looks the same. Add a component there when the first command needs it.
+- Keep one declaration per command for help, completion, discovery, and validation, as [Command descriptions](docs/north-star/cli-spec.md#command-descriptions-m0) defines. Domain code owns the steps and resume evidence. Shared operation support follows [Operations](docs/north-star/cli-spec.md#operations-m0-contract-m1-execution).
 - Run every other program through `internal/run`, which implements [Programs that ncly runs](docs/north-star/cli-spec.md#programs-that-ncly-runs-m1). Start each program in its own process group, so a signal reaches its descendants, apply the timeout, and keep keys out of every log.
-- Write a shared file, such as a cache entry, a state file, or a config file, to a temporary file and rename it, under a lock from `internal/platform`. A lock held by another `ncly` exits 75.
+- Write a shared file to a temporary file and rename it under a lock from `internal/platform`. Revalidate the destination while holding the lock. Give each run its own temporary files. A lock conflict follows [Retry safety](docs/north-star/cli-spec.md#retry-safety-m0), including effects already produced by this invocation.
+- Before changing a machine-readable value or stored format, check [Compatibility](docs/north-star/cli-spec.md#compatibility-m0) and add a consumer case that proves the change preserves the promised meaning.
 - Move a deleted user file to the trash through `internal/platform`.
 - Send every string a human reads through the catalog. Name catalog IDs `<domain>.<thing>`, and never reuse an ID for a new meaning. Give every message that holds a number its plural forms. Format numbers, sizes, durations, and dates through `internal/i18n`. Let translated text set its own width.
 - In scenarios, point `HOME` and the XDG folders at `$WORK`, put stub executables in `PATH` for harnesses, `uv`, and paid services, and use the test keychain that lives only in the test binary. Run each command's scenarios once under the pseudo-locale, so text outside the catalog fails a check. `exits <code> <command>` asserts an exact exit code, because the built-in `! exec` only asserts a failure.

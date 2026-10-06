@@ -5,7 +5,7 @@ Release: v0.0.1
 
 ## Goal
 
-An installable `ncly` that does almost nothing yet, built on finished plumbing. Every later command lands on the same contract, catalogs, config, tests, and release pipeline, and no later milestone has to reshape them.
+An installable `ncly` that does almost nothing yet. It establishes the shared contract, catalogs, config, checks, and release pipeline. Responsibilities that constrain later milestones are settled here, while their implementation waits for the first consumer.
 
 ## Depends on
 
@@ -25,7 +25,7 @@ Pascal does these before T6. T1 to T5 do not need them.
 Do the tasks in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 
 - [ ] **T1 Skeleton.** `go.mod` with the module path `github.com/pascalandy/nicely`, `cmd/ncly`, and `--version`. A `justfile` with `check`, `test`, `lint`, and `signoff`. Lefthook runs format, lint, and gitleaks before a commit, and tests and scenarios before a push. The testscript runner with the `exits` command and `HOME` and the XDG folders inside `$WORK`. Go tools such as `govulncheck` and `go-licenses` are pinned with `tool` lines in `go.mod`.
-- [ ] **T2 Contract.** `internal/contract` implements the M0 sections of [cli-spec.md](../north-star/cli-spec.md): Output, Exit codes, Error codes, Modes, and the global flags with their variables. The root command sends an unknown name to an extension registry that holds nothing yet and skips reserved names. Help and completion read the same registry, so M3 fills it without reshaping the root. A test fails when cli-spec.md and the code disagree on the error registry, the exit codes, the global flags, or the command tree.
+- [ ] **T2 Contract.** `internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, Modes, and global flags from [cli-spec.md](../north-star/cli-spec.md). One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. Complete the M0 boundaries in [Contract coverage](#contract-coverage), including independent expected results. Check agreement with the spec on errors, exit codes, flags, and command declarations. Fix the Operations responsibilities now, while run records and resume arrive in M1.
 - [ ] **T3 Config.** The shared and local config files, their precedence, and the XDG paths, including state. `CONFIG_INVALID` for a broken file. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports in M1.
 - [ ] **T4 Text.** The English catalog, with a description per entry, and the parity test against `en`. The pseudo-locale `en-XA`, with scenarios for the help and for an error. Plural rules, number, size, and date formats, and language matching in `internal/i18n`. Help text comes from the catalog, so `--lang` is read before the command tree is built. Lip Gloss styles and the error block in `internal/tui`.
 - [ ] **T5 Completion.** `ncly completion zsh|bash|fish`.
@@ -40,6 +40,23 @@ Do the tasks in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 
 ## Acceptance
 
+### Contract coverage
+
+The contract suite exercises behavior, not the spelling of source code. Each guarantee has one primary test owner. A later domain adds coverage for its own effects and adapters instead of copying every shared test.
+
+| Guarantee | M0 proof | First real domain proof |
+|---|---|---|
+| Parser failures | The real binary handles unknown commands, unknown flags, missing values, and invalid flag values in JSON mode, with `--json` before or after the bad argument and through `NCLY_JSON` | Each command adds its distinct validation cases |
+| Streams and envelope | Parse the complete JSON answer, check `contract_version`, `ok`, exact exit code, and the correct stream. Test verbose diagnostics, warnings, and text-only help/version/completion exceptions | Report commands in M1 retain their reports on stdout when a check fails |
+| Partial results and retry | Direct tests of the actual shared verdict and rendering components retain successful items and reject 75 after non-repeatable writes, paid dispatch, or unknown effects. Reverse error arrival order to prove the verdict stays the same | M1 injects failure around real operation boundaries and verifies effects, not just fields |
+| Compatibility | Independent consumer cases cover types, units, nullability, required fields, enum policy, defined array order, and ignored optional fields | Python in M1 and extensions in M3 test incompatible messages before any new effect |
+| Dry run | Define the shared preparation/result contract and its conformance cases, including the bounded cache exception | The first writing commands in M1 compare user files, config, keychain, run records, and external calls before and after dry run |
+| Cancellation and resume | Define the signal verdicts and required partial-result representation | M1 checks real process cleanup, persisted evidence, lost stdout, and explicit resume |
+
+Direct component tests are justified where M0 exposes no real command that reaches the behavior. Test support stays in tests and calls production components. It does not implement an alternate CLI. Domain effects and resume are not marked verified until the first real command exercises them in M1.
+
+### CLI examples
+
 ```
 # The version goes to stdout and nothing goes to stderr
 exec ncly --version
@@ -49,7 +66,19 @@ stdout '^ncly v'
 # An unknown command fails as one JSON line
 exits 2 ncly nope --json
 ! stdout .
-stderr '^\{"ok":false,"errors":\[\{"code":"USAGE_INVALID"'
+stderr '"ok":false'
+stderr '"contract_version":1'
+stderr '"code":"USAGE_INVALID"'
+
+# Parser errors keep machine output even when --json follows the bad flag
+exits 2 ncly --unknown-flag --json
+! stdout .
+stderr '"code":"USAGE_INVALID"'
+
+# A missing flag value uses the same envelope
+exits 2 ncly --json --lang
+! stdout .
+stderr '"code":"USAGE_INVALID"'
 
 # A language without a catalog falls back to English
 exec ncly --lang xx --help
@@ -75,7 +104,7 @@ exec ncly --help
 lang =
 ```
 
-T4 sharpens the pseudo-locale scenario, so that it fails on any word outside the markers other than command names, flags, and examples.
+These snippets illustrate the scenarios. T2 also decodes complete JSON answers so a matching substring cannot hide extra text, a wrong type, or an extra object. T4 sharpens the pseudo-locale scenario so that it fails on any word outside the markers other than command names, flags, and examples.
 
 Manual checks on Pascal's machines:
 
@@ -86,5 +115,6 @@ Manual checks on Pascal's machines:
 
 - [ ] Every prerequisite and every task is ticked
 - [ ] Every acceptance scenario passes in `just check`
+- [ ] Every M0 proof in Contract coverage passes, and the M1 effect and resume proofs remain explicit M1 acceptance work
 - [ ] Both manual checks pass
 - [ ] v0.0.1 is tagged and released through `release.yml`
