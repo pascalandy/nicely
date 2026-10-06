@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"cmp"
 	"errors"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -137,13 +139,10 @@ type globals struct {
 	lang string
 }
 
-// resolveGlobals applies the precedence of cli-spec.md. configLang reads the
-// config only when neither --lang nor NCLY_LANG sets the language.
-func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool), configLang func() string) globals {
-	env := func(name string) string {
-		value, _ := lookupEnv(name)
-		return value
-	}
+// resolveGlobals applies the precedence of cli-spec.md. It reads the config
+// only when neither --lang nor NCLY_LANG sets the language.
+func resolveGlobals(line commandLine) globals {
+	env := os.Getenv
 	switchOr := func(name string, fallback bool) bool {
 		if on, given := line.switchOn(name); given {
 			return on
@@ -153,18 +152,10 @@ func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool), con
 	g := globals{
 		json:    switchOr("json", env("NCLY_JSON") == "1"),
 		noColor: switchOr("no-color", env("NO_COLOR") != "" || env("TERM") == "dumb"),
+		lang:    cmp.Or(line.last("lang"), env("NCLY_LANG")),
 	}
-	for _, source := range []func() string{
-		func() string { return line.last("lang") },
-		func() string { return env("NCLY_LANG") },
-		configLang,
-		func() string { return env("LC_ALL") },
-		func() string { return env("LC_MESSAGES") },
-		func() string { return env("LANG") },
-	} {
-		if g.lang = source(); g.lang != "" {
-			break
-		}
+	if g.lang == "" {
+		g.lang = cmp.Or(configLang(), env("LC_ALL"), env("LC_MESSAGES"), env("LANG"))
 	}
 	return g
 }

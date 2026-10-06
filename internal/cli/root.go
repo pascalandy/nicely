@@ -68,7 +68,7 @@ func Main(args []string, stdout, stderr *os.File) int {
 	// the language is known.
 	cmd, _, _ := newRoot(i18n.New(language.English)).Find(args)
 	line := scan(cmd, args)
-	g := resolveGlobals(line, os.LookupEnv, configLang)
+	g := resolveGlobals(line)
 	p := i18n.New(i18n.Match(g.lang))
 	root := newRoot(p)
 	out := &output{file: stdout}
