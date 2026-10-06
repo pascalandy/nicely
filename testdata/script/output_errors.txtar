@@ -10,7 +10,7 @@ stderr 'Could not write the output'
 exits 1 sh -c 'ncly >/dev/full'
 stderr 'Could not write the output'
 
-# The same commands succeed when the output can be written
+# The version succeeds when the output can be written
 exec sh -c 'ncly --version >/dev/null'
 ! stderr .
 
