@@ -13,12 +13,12 @@ Nothing.
 
 ## Prerequisites
 
-Pascal does these before T6. T1 to T5 do not need them.
+These must be done before T6. T1 to T5 do not need them. Only the AUR account needs Pascal.
 
-- [ ] The empty repository `pascalandy/homebrew-tap` exists
-- [ ] An AUR account exists, with an SSH key registered for it
-- [ ] The `pascalandy/nicely` repository has two secrets for `release.yml`: a token that can push to `pascalandy/homebrew-tap`, and the private half of the AUR SSH key
-- [ ] After T1, `main` requires the status check `signoff`
+- [x] The empty repository `pascalandy/homebrew-tap` exists
+- [ ] An AUR account exists, and the public key `nicely-release-aur` is registered in it
+- [x] The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
+- [x] After T1, `main` requires the status check `signoff`
 
 ## Tasks
 
