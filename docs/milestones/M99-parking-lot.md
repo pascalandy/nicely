@@ -13,6 +13,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | `--explain` | Prints the underlying command and a link to the wrapped tool | M4 commands wrap several tools |
 | `ncly tools` | A showcase of every curated tool, why it was chosen, and its credits | M4 ships |
 | Aliases | Git-style aliases in the config, such as `md = "markdown view"` | A command feels too long in daily use |
+| Completion after `--` | `ncly -- <Tab>` offers nothing, because ncly rejects a command name after `--`. Cobra offers the commands, so the fix answers Cobra's completion protocol in `Main` | A user hits it, or a command group starts taking arguments |
 | `ncly ignite` | Bootstraps a project with Pascal's setup: Git, just, Lefthook, and signoff, through Copier templates | Pascal starts his next new project |
 | `ncly skill pack` | Zips a skill for upload to the Claude apps | A skill must work in an app that cannot read GitHub |
 | `ncly skill index` | Generates the remote skills index that `just remote-skills` builds today | The skills repository moves its tooling into Nicely |
