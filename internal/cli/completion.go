@@ -21,7 +21,6 @@ var completionCommand = contract.Command{
 	},
 }
 
-// shells pairs each shell's declaration with the writer of its script.
 var shells = []struct {
 	command contract.Command
 	write   func(root *cobra.Command, w io.Writer) error
