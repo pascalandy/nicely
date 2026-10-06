@@ -36,7 +36,8 @@ exec ncly --help
 stdout '⟦'
 env LANG= LC_MESSAGES= LC_ALL=
 
-# The shared config sets the language, and the local config wins over it
+# The shared config wins over LC_ALL, and the local config wins over the shared config
+env LC_ALL=en
 mkdir .config/nicely
 cp shared.toml .config/nicely/config.toml
 exec ncly --help
