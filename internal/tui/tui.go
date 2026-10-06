@@ -27,19 +27,14 @@ var (
 )
 
 // Output wraps a stream so that styles become plain text when color is off.
-// noColor holds the --no-color flag when the user gave it, and it wins over
-// NO_COLOR and TERM=dumb. Otherwise a non-empty NO_COLOR or TERM=dumb turns
-// color off, even with CLICOLOR_FORCE, and a stream that is not a terminal
-// gets plain text unless CLICOLOR_FORCE asks for color. The decision reads
-// only the environment and the stream, and never queries the terminal.
-func Output(w io.Writer, noColor *bool) io.Writer {
-	plain := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
-	if noColor != nil {
-		plain = *noColor
-	}
+// noColor turns color off even with CLICOLOR_FORCE. Otherwise a stream that
+// is not a terminal gets plain text unless CLICOLOR_FORCE asks for color.
+// The decision reads only the environment and the stream, and never queries
+// the terminal.
+func Output(w io.Writer, noColor bool) io.Writer {
 	force := os.Getenv("CLICOLOR_FORCE")
 	profile := colorprofile.NoTTY
-	if !plain && (isTerminal(w) || (force != "" && force != "0")) {
+	if !noColor && (isTerminal(w) || (force != "" && force != "0")) {
 		profile = colorprofile.ANSI
 	}
 	return &colorprofile.Writer{Forward: w, Profile: profile}

@@ -31,7 +31,7 @@ const valueAnnotation = "ncly-value"
 
 // helpFunc prints the help page of a command from its declaration, in the
 // active language.
-func helpFunc(p *i18n.Printer, noColor *bool) func(*cobra.Command, []string) {
+func helpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, _ []string) {
 		// Reading the flags first merges the global flags into c.Flags(),
 		// which UseLine needs to add [flags]. Cobra skips that merge when it

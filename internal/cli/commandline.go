@@ -131,12 +131,10 @@ func (line commandLine) version() bool {
 
 // globals holds the resolved global flags. A flag wins over its variable.
 type globals struct {
-	json bool
+	json    bool
+	noColor bool
 	// lang is the language setting before matching, such as fr_CA.UTF-8.
 	lang string
-	// noColor holds --no-color when given. NO_COLOR and TERM=dumb apply
-	// otherwise, through tui.Output.
-	noColor *bool
 }
 
 // resolveGlobals applies the precedence of cli-spec.md. configLang reads the
@@ -146,14 +144,15 @@ func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool), con
 		value, _ := lookupEnv(name)
 		return value
 	}
-	var g globals
-	on, given := line.switchOn("json")
-	if !given {
-		on = env("NCLY_JSON") == "1"
+	switchOr := func(name string, fallback bool) bool {
+		if on, given := line.switchOn(name); given {
+			return on
+		}
+		return fallback
 	}
-	g.json = on
-	if on, given := line.switchOn("no-color"); given {
-		g.noColor = &on
+	g := globals{
+		json:    switchOr("json", env("NCLY_JSON") == "1"),
+		noColor: switchOr("no-color", env("NO_COLOR") != "" || env("TERM") == "dumb"),
 	}
 	for _, source := range []func() string{
 		func() string { return line.last("lang") },

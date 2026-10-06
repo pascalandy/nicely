@@ -87,6 +87,12 @@ env TERM=dumb
 exec ncly --help
 ! stdout '\x1b\['
 
+# --no-color=false wins over NO_COLOR and TERM=dumb, as each flag wins over its variable
+env NO_COLOR=1
+exec ncly --help --no-color=false
+stdout '\x1b\['
+env NO_COLOR= TERM=
+
 # The usage line keeps the positional arguments of a command
 exec ncly help help
 stdout '^  ncly help \[command\] \[flags\]$'
