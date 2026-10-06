@@ -1,0 +1,85 @@
+# English catalog. Each entry needs a description of where the text appears.
+
+["root.summary"]
+description = "One-line description of ncly at the top of its help page."
+other = "Curated CLI toolbox for humans and AI agents."
+
+["help.summary"]
+description = "Help page: summary of the `help` command, which prints the help of another command."
+other = "Show help for a command"
+
+["flag.help"]
+description = "Help page: description of the -h, --help flag."
+other = "Show help for a command"
+
+["flag.json"]
+description = "Help page: description of the --json flag, which makes ncly answer with one JSON object on one line."
+other = "Answer with one line of JSON"
+
+["flag.lang"]
+description = "Help page: description of the --lang flag. fr-CA is a language tag and stays as is."
+other = "Language of human text, such as fr-CA"
+
+["flag.no_color"]
+description = "Help page: description of the --no-color flag."
+other = "Print plain text"
+
+["flag.no_input"]
+description = "Help page: description of the --no-input flag, which stops ncly from asking questions."
+other = "Never prompt, even in a terminal"
+
+["flag.verbose"]
+description = "Help page: description of the -v, --verbose flag, which adds step details on stderr."
+other = "Add step details on stderr"
+
+["flag.version"]
+description = "Help page: description of the --version flag."
+other = "Print the version"
+
+["usage.unknown_command"]
+description = "Error when a word is not a command. {{.Name}} is the word the user typed."
+other = "Unknown command \"{{.Name}}\"."
+
+["usage.unknown_flag"]
+description = "Error when a flag does not exist. {{.Flag}} is the flag as typed, such as --nope or -z."
+other = "Unknown flag {{.Flag}}."
+
+["usage.flag_needs_value"]
+description = "Error when a flag that takes a value has none. {{.Flag}} is the flag, such as --lang."
+other = "The flag {{.Flag}} needs a value."
+
+["usage.invalid_flag_value"]
+description = "Error when a flag gets a value it cannot accept. {{.Flag}} is the flag, {{.Value}} the value typed."
+other = "The flag {{.Flag}} does not accept \"{{.Value}}\"."
+
+["usage.invalid_flag_syntax"]
+description = "Error when an argument looks like a flag but is malformed, such as ---x. {{.Arg}} is the argument."
+other = "The argument {{.Arg}} is not a valid flag."
+
+["usage.invalid"]
+description = "Error when the command line is wrong in a way no other message covers."
+other = "This command line is not valid."
+
+["outcome.interrupted"]
+description = "Error when Ctrl-C stopped a command. Finished files stay on disk."
+other = "Stopped by Ctrl-C. Finished work is kept."
+
+["outcome.terminated"]
+description = "Error when the SIGTERM signal stopped a command. Finished files stay on disk."
+other = "Stopped by SIGTERM. Finished work is kept."
+
+["outcome.temporary"]
+description = "Error when part of the work failed for a reason that may pass, and the same command is safe to run again."
+other = "Some work failed for a reason that may pass."
+
+["outcome.temporary_hint"]
+description = "Hint under outcome.temporary: what the user does next."
+other = "Run the same command again."
+
+["outcome.runtime"]
+description = "Error when part of the work failed and running the command again could repeat finished or paid work."
+other = "Some work failed, and running it again could repeat finished work."
+
+["outcome.check_hint"]
+description = "Hint under an error after which an automatic retry is not safe: what the user does next."
+other = "Check the results before you run anything again."

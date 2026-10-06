@@ -1,0 +1,29 @@
+# Bare ncly prints the help on stdout and exits 0
+exec ncly
+stdout '(?i)usage'
+! stderr .
+cp stdout bare.txt
+
+# --help and ncly help print the same text
+exec ncly --help
+cmp stdout bare.txt
+! stderr .
+exec ncly help
+cmp stdout bare.txt
+! stderr .
+
+# The help lists the global flags with their descriptions
+stdout '--json +Answer with one line of JSON'
+stdout '--no-input +Never prompt, even in a terminal'
+
+# Help wins over unknown flags and unknown commands, and ignores --json
+exec ncly --unknown-flag --help --json
+cmp stdout bare.txt
+! stderr .
+exec ncly nope -h
+cmp stdout bare.txt
+! stderr .
+env NCLY_JSON=1
+exec ncly --help
+cmp stdout bare.txt
+! stderr .

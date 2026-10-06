@@ -1,0 +1,17 @@
+# The dry-run conformance check ignores Nicely's cache, the one place a dry run may fill
+snapshot before
+mkdir $XDG_CACHE_HOME/nicely/python
+cp seed.txt $XDG_CACHE_HOME/nicely/python/seed.txt
+unchanged before
+
+# Any other write counts as a change, including config and state
+mkdir $XDG_CONFIG_HOME/nicely
+cp seed.txt $XDG_CONFIG_HOME/nicely/config.toml
+! unchanged before
+snapshot after-config
+mkdir $XDG_STATE_HOME/nicely
+cp seed.txt $XDG_STATE_HOME/nicely/run.json
+! unchanged after-config
+
+-- seed.txt --
+lang = "en"

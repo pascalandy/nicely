@@ -1,0 +1,67 @@
+# An unknown command fails as one JSON line on stderr
+exits 2 ncly nope --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"Unknown command \\"nope\\"."'
+stderr '"hint":"ncly --help"'
+
+# --json works before the bad argument too
+exits 2 ncly --json nope
+! stdout .
+answer stderr USAGE_INVALID
+
+# NCLY_JSON=1 selects machine output, and --json=false wins over it
+env NCLY_JSON=1
+exits 2 ncly nope
+! stdout .
+answer stderr USAGE_INVALID
+exits 2 ncly nope --json=false
+! stderr '"ok"'
+env NCLY_JSON=
+
+# An unknown flag keeps machine output when --json follows it
+exits 2 ncly --unknown-flag --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '--unknown-flag'
+stderr '"hint":"ncly --help"'
+
+# An unknown shorthand names its letter
+exits 2 ncly -z --json
+answer stderr USAGE_INVALID
+stderr '"message":"Unknown flag -z."'
+
+# A missing flag value uses the same envelope
+exits 2 ncly --json --lang
+! stdout .
+answer stderr USAGE_INVALID
+stderr '--lang'
+
+# An invalid flag value uses the same envelope
+exits 2 ncly --json --verbose=maybe
+! stdout .
+answer stderr USAGE_INVALID
+stderr 'maybe'
+
+# A flag that takes a value takes --json as that value, so machine mode stays off
+exits 2 ncly --lang --json nope
+! stdout .
+! stderr '"ok"'
+stderr 'Unknown command "nope"'
+
+# A reserved name never reaches the extension registry
+exits 2 ncly doctor --json
+answer stderr USAGE_INVALID
+stderr 'doctor'
+
+# Without --json, the failure is plain text that names the fix
+exits 2 ncly nope
+! stdout .
+! stderr '"ok"'
+stderr 'Unknown command "nope"'
+stderr 'ncly --help'
+
+# An unknown help topic is a usage error too
+exits 2 ncly help nope --json
+! stdout .
+answer stderr USAGE_INVALID
