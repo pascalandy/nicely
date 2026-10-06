@@ -111,3 +111,27 @@ other = "{{.N}} GB"
 ["size.terabytes"]
 description = "A size in terabytes, 1000 gigabytes each. {{.N}} is a number already formatted, such as 1.5. TB is the unit symbol."
 other = "{{.N}} TB"
+
+["help.usage"]
+description = "Help page: heading above the line that shows how to call the command."
+other = "Usage"
+
+["help.commands"]
+description = "Help page: heading above the list of commands."
+other = "Commands"
+
+["help.flags"]
+description = "Help page: heading above the flags of this command."
+other = "Flags"
+
+["help.global_flags"]
+description = "Help page: heading above the flags that every command accepts, such as --json."
+other = "Global flags"
+
+["help.examples"]
+description = "Help page: heading above the example command lines."
+other = "Examples"
+
+["error.try"]
+description = "Error block: label before the command or action that fixes the error, as in `Try: ncly --help`."
+other = "Try:"

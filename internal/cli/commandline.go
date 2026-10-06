@@ -134,6 +134,9 @@ type globals struct {
 	json bool
 	// lang is the language setting before matching, such as fr_CA.UTF-8.
 	lang string
+	// noColor holds --no-color when given. NO_COLOR and TERM=dumb apply
+	// otherwise, through tui.Output.
+	noColor *bool
 }
 
 // resolveGlobals applies the precedence of cli-spec.md. configLang reads the
@@ -149,6 +152,9 @@ func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool), con
 		on = env("NCLY_JSON") == "1"
 	}
 	g.json = on
+	if on, given := line.switchOn("no-color"); given {
+		g.noColor = &on
+	}
 	for _, source := range []func() string{
 		func() string { return line.last("lang") },
 		func() string { return env("NCLY_LANG") },
@@ -171,6 +177,7 @@ func addFlag(set *pflag.FlagSet, p *i18n.Printer, f contract.Flag) {
 		return
 	}
 	set.StringP(f.Name, f.Shorthand, "", p.T(f.Summary))
+	_ = set.SetAnnotation(f.Name, valueAnnotation, []string{f.Value})
 }
 
 // flagProblem turns a parser error into USAGE_INVALID with catalog text.

@@ -1,0 +1,22 @@
+# Without --json, an error is a marked message, then the fix and the code
+exits 2 ncly nope
+! stdout .
+cmp stderr want.txt
+
+# Under the pseudo-locale, every word of the error block comes from the catalog
+exits 2 ncly --lang en-XA nope
+pseudo stderr
+
+# The error block has styles only when color is on
+env CLICOLOR_FORCE=1
+exits 2 ncly nope
+stderr '\x1b\['
+exits 2 ncly nope --no-color
+! stderr '\x1b\['
+env NO_COLOR=1
+exits 2 ncly nope
+! stderr '\x1b\['
+
+-- want.txt --
+✗ Unknown command "nope".
+  Try: ncly --help  USAGE_INVALID

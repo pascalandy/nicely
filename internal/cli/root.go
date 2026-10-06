@@ -15,6 +15,7 @@ import (
 	"github.com/pascalandy/nicely/internal/config"
 	"github.com/pascalandy/nicely/internal/contract"
 	"github.com/pascalandy/nicely/internal/i18n"
+	"github.com/pascalandy/nicely/internal/tui"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/language"
 )
@@ -65,6 +66,7 @@ func Main(args []string, stdout, stderr *os.File) int {
 	root.SetArgs(args)
 	root.SetOut(out)
 	root.SetErr(stderr)
+	root.SetHelpFunc(helpFunc(p, g.noColor))
 	cmd, _, _ = root.Find(args)
 	var err error
 	switch {
@@ -127,7 +129,8 @@ func writeFailed(p *i18n.Printer) contract.Problem {
 func newRoot(p *i18n.Printer) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "ncly",
-		Short:         p.T("root.summary"),
+		Short:         p.T(rootCommand.Summary),
+		Example:       strings.Join(rootCommand.Examples, "\n"),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -147,8 +150,9 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 // helpCommand prints the same help as --help, and fails on an unknown topic.
 func helpCommand(p *i18n.Printer) *cobra.Command {
 	return &cobra.Command{
-		Use:   "help [command]",
-		Short: p.T("help.summary"),
+		Use:     "help [command]",
+		Short:   p.T(helpDeclaration.Summary),
+		Example: strings.Join(helpDeclaration.Examples, "\n"),
 		RunE: func(c *cobra.Command, args []string) error {
 			target, rest, err := c.Root().Find(args)
 			if err != nil || len(rest) > 0 {
@@ -194,11 +198,7 @@ func report(p *i18n.Printer, g globals, o contract.Outcome, stdout, stderr io.Wr
 	if g.json {
 		err = a.WriteJSON(stdout, stderr)
 	} else {
-		for _, e := range append(a.Errors(), a.Warnings()...) {
-			if _, werr := fmt.Fprintf(stderr, "%s\n  %s\n", e.Message, e.Hint); werr != nil {
-				err = werr
-			}
-		}
+		_, err = fmt.Fprint(tui.Output(stderr, g.noColor), tui.Problems(a.Errors(), a.Warnings(), p.T("error.try")))
 	}
 	if err != nil {
 		return int(contract.ExitRuntime)

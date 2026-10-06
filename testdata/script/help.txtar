@@ -1,6 +1,6 @@
 # Bare ncly prints the help on stdout and exits 0
 exec ncly
-stdout '(?i)usage'
+stdout 'Curated CLI toolbox'
 ! stderr .
 cp stdout bare.txt
 
@@ -12,9 +12,14 @@ exec ncly help
 cmp stdout bare.txt
 ! stderr .
 
-# The help lists the global flags with their descriptions
-stdout '--json +Answer with one line of JSON'
-stdout '--no-input +Never prompt, even in a terminal'
+# The help shows its sections, the global flags, and ends with examples
+stdout '^USAGE$'
+stdout '^  ncly \[flags\]$'
+stdout '^FLAGS$'
+stdout '^      --json +Answer with one line of JSON$'
+stdout '^      --lang <tag> +Language of human text'
+stdout '^EXAMPLES$'
+stdout '^  \$ ncly --version$'
 
 # Help wins over unknown flags and unknown commands, and ignores --json
 exec ncly --unknown-flag --help --json
@@ -42,3 +47,21 @@ cmp stdout bare.txt
 exits 2 ncly -- -h
 ! stdout .
 stderr 'Unknown command "-h"'
+
+# Under the pseudo-locale, every word of the help comes from the catalog
+exec ncly --lang en-XA --help
+pseudo stdout
+
+# The help has styles only when color is on: CLICOLOR_FORCE keeps them in a pipe
+env CLICOLOR_FORCE=1
+exec ncly --help
+stdout '\x1b\['
+exec ncly --help --no-color
+! stdout '\x1b\['
+env NO_COLOR=1
+exec ncly --help
+! stdout '\x1b\['
+env NO_COLOR=
+env TERM=dumb
+exec ncly --help
+! stdout '\x1b\['

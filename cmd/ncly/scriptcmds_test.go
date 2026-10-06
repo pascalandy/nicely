@@ -226,14 +226,17 @@ func closedPipe() {
 }
 
 var (
-	marked = regexp.MustCompile(`(?s)⟦.*?⟧`)
-	letter = regexp.MustCompile(`\p{L}`)
+	marked  = regexp.MustCompile(`(?s)⟦.*?⟧`)
+	example = regexp.MustCompile(`(?m)^\s*\$ .*$`)
+	letter  = regexp.MustCompile(`\p{L}`)
+	code    = regexp.MustCompile(`^[A-Z][A-Z0-9_]+$`)
 )
 
 // cmdPseudo fails on any word of a stream that the pseudo-locale did not
-// mark: pseudo <stdout|stderr> [word...]. Flags, ncly, placeholders such as
-// <tag>, version numbers, and the listed words, such as command names and
-// examples, stay unmarked because they are never translated.
+// mark: pseudo <stdout|stderr> [word...]. Example lines, flags, ncly, codes
+// such as USAGE_INVALID, placeholders such as <tag>, version numbers, and
+// the listed words, such as command names, stay unmarked because they are
+// never translated.
 func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 	if neg || len(args) < 1 || (args[0] != "stdout" && args[0] != "stderr") {
 		ts.Fatalf("usage: pseudo <stdout|stderr> [word...]")
@@ -243,12 +246,13 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("pseudo: no marked text on %s", args[0])
 	}
 	var stray []string
-	for _, word := range strings.Fields(marked.ReplaceAllString(text, " ")) {
+	for _, word := range strings.Fields(marked.ReplaceAllString(example.ReplaceAllString(text, ""), " ")) {
 		word = strings.Trim(word, `.,:;!?()"'`)
 		switch {
 		case !letter.MatchString(word),
 			strings.HasPrefix(word, "-"),
 			word == "ncly",
+			code.MatchString(word),
 			strings.HasPrefix(word, "<") || strings.HasPrefix(word, "["),
 			strings.HasPrefix(word, "v") && strings.Contains(word, "."),
 			slices.Contains(args[1:], word):
