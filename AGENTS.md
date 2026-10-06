@@ -33,8 +33,6 @@ Pick the next unticked task of the current milestone, and set the milestone to `
 6. **Docs.** Tick the boxes of the milestone that your work completes, and update README.md when a user would see the change. When every box of the "Done when" list is ticked, set the milestone status to `done`.
 7. **Sign off.** `just signoff` reruns the checks, then calls `gh signoff`. Always sign off through the recipe, because a bare `gh signoff` posts a green status without running anything.
 
-Until M0 lands `just check` and `just signoff`, run the checks that exist, skip steps 5 and 7, and name the skipped steps in the pull request body.
-
 ## Rules
 
 - Where cli-spec.md is silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in decision-records.md.
@@ -59,7 +57,10 @@ internal/run/       runs other programs: Python programs, harnesses, and extensi
 internal/tui/       the shared interactive parts
 python/             Python programs while they move to Go
 testdata/script/    testscript scenarios
+tools/              a separate module that pins the dev tools, run through `just`
 ```
+
+Run `lefthook install` once per clone, so the hooks format, lint, and scan each commit and test each push.
 
 - Build interactive screens from `internal/tui` only, so every command looks the same. Add a component there when the first command needs it.
 - Keep one declaration per command for help, completion, discovery, and validation, as [Command descriptions](docs/north-star/cli-spec.md#command-descriptions-m0) defines. Domain code owns the steps and resume evidence. Shared operation support follows [Operations](docs/north-star/cli-spec.md#operations-m0-contract-m1-execution).
