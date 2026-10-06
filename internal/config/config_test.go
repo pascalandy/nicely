@@ -58,6 +58,13 @@ func TestLocate(t *testing.T) {
 			t.Errorf("%s:\n got %+v\nwant %+v", c.name, got, c.want)
 		}
 	}
+	if got := Locate("", env(nil)); got != (Paths{}) {
+		t.Errorf("without a home, Locate = %+v, want no paths", got)
+	}
+	got := Locate("", env(map[string]string{"XDG_CONFIG_HOME": "/xdg/config"}))
+	if got.Shared != "/xdg/config/nicely/config.toml" || got.Data != "" {
+		t.Errorf("without a home but with XDG_CONFIG_HOME, Locate = %+v", got)
+	}
 }
 
 func files(t *testing.T, shared, local string) Paths {

@@ -29,24 +29,32 @@ type Paths struct {
 // Locate resolves the paths from home and the environment. An XDG variable
 // counts only when it holds an absolute path, as the XDG specification asks.
 // NCLY_CONFIG names another shared file, and the local file moves beside it.
+// Without an absolute home or XDG variable, a path stays empty, so nothing is
+// read from the current folder.
 func Locate(home string, lookupEnv func(string) (string, bool)) Paths {
 	dir := func(variable string, fallback ...string) string {
 		if value, _ := lookupEnv(variable); filepath.IsAbs(value) {
 			return filepath.Join(value, "nicely")
 		}
+		if !filepath.IsAbs(home) {
+			return ""
+		}
 		return filepath.Join(append(append([]string{home}, fallback...), "nicely")...)
 	}
-	shared := filepath.Join(dir("XDG_CONFIG_HOME", ".config"), "config.toml")
+	p := Paths{
+		Data:  dir("XDG_DATA_HOME", ".local", "share"),
+		State: dir("XDG_STATE_HOME", ".local", "state"),
+		Cache: dir("XDG_CACHE_HOME", ".cache"),
+	}
 	if value, _ := lookupEnv("NCLY_CONFIG"); value != "" {
-		shared = value
+		p.Shared = value
+	} else if config := dir("XDG_CONFIG_HOME", ".config"); config != "" {
+		p.Shared = filepath.Join(config, "config.toml")
 	}
-	return Paths{
-		Shared: shared,
-		Local:  filepath.Join(filepath.Dir(shared), "config.local.toml"),
-		Data:   dir("XDG_DATA_HOME", ".local", "share"),
-		State:  dir("XDG_STATE_HOME", ".local", "state"),
-		Cache:  dir("XDG_CACHE_HOME", ".cache"),
+	if p.Shared != "" {
+		p.Local = filepath.Join(filepath.Dir(p.Shared), "config.local.toml")
 	}
+	return p
 }
 
 // Config holds the keys that this version of ncly knows. A zero value means
@@ -81,6 +89,9 @@ func Load(p Paths) (Config, []Key, error) {
 	merged := map[string]any{}
 	var unknown []Key
 	for _, file := range []string{p.Shared, p.Local} {
+		if file == "" {
+			continue
+		}
 		text, err := os.ReadFile(file)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
