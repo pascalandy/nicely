@@ -74,6 +74,23 @@ exec ncly __complete --version ''
 stdout '^completion\t'
 ! stdout '^ncly v'
 
+# A request after global flags, as an alias such as ncly='ncly --no-input' sends it, keeps the protocol
+exec ncly --no-input __complete --help ''
+stdout '^completion\t'
+stdout '^:4\n\z'
+! stdout 'USAGE'
+exec ncly --no-color __completeNoDesc --version ''
+stdout '^completion$'
+stdout '^:4\n\z'
+! stdout '^ncly v'
+exec ncly --lang en __complete -h ''
+stdout '^completion\t'
+! stdout 'USAGE'
+
+# After --, __complete is an operand, never a completion request
+exits 2 ncly --json -- __complete ''
+answer stderr USAGE_INVALID
+
 # A command that takes no more words offers no file names
 exec ncly __complete completion zsh ''
 stdout '\A:4\n\z'
@@ -98,6 +115,12 @@ stdout '^:4\n\z'
 [bash-completion] exec bash -c 'source tab.sh && tab ncly completion z'
 [bash-completion] stdout '^zsh$'
 [bash-completion] ! stderr .
+
+# Tab through an alias that adds a global flag still offers commands after --help
+[bash-completion] exec bash -c 'source tab.sh && shopt -s expand_aliases && alias ncly="ncly --no-input" && tab ncly --help ""'
+[bash-completion] ! stderr .
+[bash-completion] stdout '^completion$'
+[bash-completion] ! stdout 'USAGE'
 
 -- broken.toml --
 lang =

@@ -70,7 +70,9 @@ func Main(args []string, stdout, stderr *os.File) int {
 	cmd, _, _ = root.Find(args)
 	// A completion request from the shell scripts answers in Cobra's protocol:
 	// the words it completes never ask for help or name a command to check.
-	completing := len(args) > 0 && (args[0] == cobra.ShellCompRequestCmd || args[0] == cobra.ShellCompNoDescRequestCmd)
+	// Global flags may come first, as an alias such as ncly='ncly --no-input'
+	// puts them there, so the request is the first word after the flags.
+	completing := len(line.words) > 0 && (line.words[0] == cobra.ShellCompRequestCmd || line.words[0] == cobra.ShellCompNoDescRequestCmd)
 	var err error
 	switch {
 	case completing:
