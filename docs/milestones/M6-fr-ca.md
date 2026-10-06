@@ -23,6 +23,8 @@ M1. Translate the catalog as it stands when this milestone starts. Later milesto
 
 **Formatting.** The plural rules and formats of `internal/i18n`, built in M0, apply. Confirm that French uses the singular for zero, as in "0 fichier", and a decimal comma, as in "1,5 Mo".
 
+Machine fields retain their types, units, enum values, and defined ordering in every locale. A duration such as `duration_ms` remains a number of milliseconds. Run IDs, step statuses, and retry decisions never depend on a translated string. Apply the M0 consumer cases under English, the pseudo-locale, and French.
+
 **Detection.** The language matching of M0 selects the new catalog for `fr_CA.UTF-8` and for a plain `fr`, as the Configuration section of [cli-spec.md](../north-star/cli-spec.md) says. Detection needs no new code.
 
 **README.** One line says the interface speaks Canadian French and how to select it.
