@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"runtime/debug"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/pascalandy/nicely/internal/contract"
 	"github.com/pascalandy/nicely/internal/i18n"
@@ -44,6 +46,10 @@ var extensionNames []string
 
 // Main runs ncly with args, without the program name, and returns its exit code.
 func Main(args []string, stdout, stderr *os.File) int {
+	// Go ends the process with SIGPIPE when the reader of stdout is gone,
+	// before ncly can report the lost output. Asking for the signal turns
+	// that write into an EPIPE error instead.
+	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
 	p := i18n.New("")
 	root := newRoot(p)
 	out := &output{file: stdout}

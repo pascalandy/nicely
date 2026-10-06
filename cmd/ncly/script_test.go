@@ -18,10 +18,11 @@ func TestScripts(t *testing.T) {
 		RequireUniqueNames:  true,
 		Setup:               setupHome,
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
-			"exits":     cmdExits,
-			"answer":    cmdAnswer,
-			"snapshot":  cmdSnapshot,
-			"unchanged": cmdUnchanged,
+			"exits":      cmdExits,
+			"answer":     cmdAnswer,
+			"snapshot":   cmdSnapshot,
+			"unchanged":  cmdUnchanged,
+			"closedpipe": cmdClosedPipe,
 		},
 	})
 }

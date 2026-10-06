@@ -13,3 +13,9 @@ stderr 'Could not write the output'
 # The same commands succeed when the output can be written
 exec sh -c 'ncly --version >/dev/null'
 ! stderr .
+
+# A reader that closed the pipe is a lost output too: exit 1 and RUNTIME, never a signal
+closedpipe 1 closed.err ncly --version --json
+grep '"code":"RUNTIME"' closed.err
+closedpipe 1 closed-help.err ncly --help
+grep 'Could not write the output' closed-help.err
