@@ -69,12 +69,12 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the M0
 // entries of the command tree, such as "completion zsh|bash|fish".
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
-	tree, err := specdoc.Block("../../docs/north-star/cli-spec.md", "Command tree")
+	spec, err := specdoc.Block("../../docs/north-star/cli-spec.md", "Command tree")
 	if err != nil {
 		t.Fatal(err)
 	}
 	var want []string
-	for _, line := range tree {
+	for _, line := range spec {
 		fields := strings.Fields(strings.TrimLeft(line, "│├└─ "))
 		if len(fields) < 2 || fields[len(fields)-1] != "M0" {
 			continue
@@ -88,16 +88,11 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 		}
 	}
 	var got []string
-	var walk func(c *cobra.Command)
-	walk = func(c *cobra.Command) {
-		for _, sub := range c.Commands() {
-			if sub.Name() != "help" && !sub.Hidden {
-				got = append(got, strings.TrimPrefix(sub.CommandPath(), "ncly "))
-				walk(sub)
-			}
+	for _, c := range tree()[1:] {
+		if c.Name() != "help" && !c.Hidden {
+			got = append(got, strings.TrimPrefix(c.CommandPath(), "ncly "))
 		}
 	}
-	walk(newRoot(i18n.New(language.English)))
 	slices.Sort(got)
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
@@ -105,20 +100,26 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	}
 }
 
-// TestEveryHelpPageEndsWithExamples checks the rule of the Usage section.
-func TestEveryHelpPageEndsWithExamples(t *testing.T) {
-	declarations := append([]contract.Command{rootCommand, helpDeclaration, completionCommand}, shellCommands()...)
-	for _, d := range declarations {
-		if n := len(d.Examples); n < 2 || n > 5 {
-			t.Errorf("ncly %s has %d examples, want 2 to 5", strings.Join(d.Path, " "), n)
+// TestEveryHelpPageHasTwoToFiveExamples checks the rule of the Usage section
+// on every command that ncly builds.
+func TestEveryHelpPageHasTwoToFiveExamples(t *testing.T) {
+	for _, c := range tree() {
+		if n := len(slices.Collect(strings.Lines(c.Example))); n < 2 || n > 5 {
+			t.Errorf("%s has %d examples, want 2 to 5", c.CommandPath(), n)
 		}
 	}
 }
 
-func shellCommands() []contract.Command {
-	var commands []contract.Command
-	for _, s := range shells {
-		commands = append(commands, s.command)
+// tree returns every command that ncly builds, the root first.
+func tree() []*cobra.Command {
+	var all []*cobra.Command
+	var walk func(c *cobra.Command)
+	walk = func(c *cobra.Command) {
+		all = append(all, c)
+		for _, sub := range c.Commands() {
+			walk(sub)
+		}
 	}
-	return commands
+	walk(newRoot(i18n.New(language.English)))
+	return all
 }
