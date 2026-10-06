@@ -147,6 +147,8 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 	for _, f := range globalFlags {
 		addFlag(root.PersistentFlags(), p, f)
 	}
+	// Cobra offers file names for a flag value, and a language tag is never one.
+	_ = root.RegisterFlagCompletionFunc("lang", cobra.NoFileCompletions)
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
 		return fail(flagProblem(p, c, err))
 	})

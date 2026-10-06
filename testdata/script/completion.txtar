@@ -99,6 +99,12 @@ stdout '\A:4\n\z'
 exec ncly __complete completion fish ''
 stdout '\A:4\n\z'
 
+# A language tag is never a file name, before or after a command
+exec ncly __complete --lang ''
+stdout '\A:4\n\z'
+exec ncly __complete completion zsh --lang ''
+stdout '\A:4\n\z'
+
 # ncly help completes command names, not file names
 exec ncly __complete help ''
 stdout '^completion\t'
