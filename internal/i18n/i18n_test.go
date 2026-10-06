@@ -76,6 +76,9 @@ func TestPluralForms(t *testing.T) {
 			t.Errorf("%s, %d: got %q, want %q", c.lang, c.count, got, c.want)
 		}
 	}
+	if got := newPrinter(b, language.English).N("files", 1, map[string]any{"Count": "2"}); got != "1 file" {
+		t.Errorf("a Count in data changed the count: got %q, want %q", got, "1 file")
+	}
 }
 
 func TestFormats(t *testing.T) {
