@@ -138,7 +138,7 @@ type globals struct {
 }
 
 // resolveGlobals applies the precedence of cli-spec.md. configLang reads the
-// config only when no flag or variable sets the language.
+// config only when neither --lang nor NCLY_LANG sets the language.
 func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool), configLang func() string) globals {
 	env := func(name string) string {
 		value, _ := lookupEnv(name)

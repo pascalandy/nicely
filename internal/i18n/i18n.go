@@ -122,8 +122,8 @@ func (p *Printer) Number(v float64, decimals int) string {
 // download tools count them.
 var sizeUnits = []string{"size.bytes", "size.kilobytes", "size.megabytes", "size.gigabytes", "size.terabytes"}
 
-// Size formats a byte count with one decimal in the largest unit that keeps
-// the number at 1 or more, such as 1.5 MB.
+// Size formats a byte count with at most one decimal in the largest unit
+// that keeps the number at 1 or more, such as 1.5 MB.
 func (p *Printer) Size(bytes int64) string {
 	value, unit := float64(bytes), 0
 	for value >= 1000 && unit < len(sizeUnits)-1 {
