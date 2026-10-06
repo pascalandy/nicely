@@ -65,3 +65,31 @@ stderr 'ncly --help'
 exits 2 ncly help nope --json
 ! stdout .
 answer stderr USAGE_INVALID
+
+# Words after -- are operands, and an unknown or reserved one is still a usage error
+exits 2 ncly --json -- nope
+! stdout .
+answer stderr USAGE_INVALID
+exits 2 ncly --json -- doctor
+! stdout .
+answer stderr USAGE_INVALID
+exits 2 ncly --json -- --help
+! stdout .
+answer stderr USAGE_INVALID
+stderr 'Unknown command \\"--help\\"'
+env NCLY_JSON=1
+exits 2 ncly -- nope
+! stdout .
+answer stderr USAGE_INVALID
+env NCLY_JSON=
+
+# The last valid --json wins, and an invalid one never cancels machine mode
+exits 2 ncly --json --json=bad
+! stdout .
+answer stderr USAGE_INVALID
+exits 2 ncly --json=bad --json
+! stdout .
+answer stderr USAGE_INVALID
+exits 2 ncly --json --json=false nope
+! stdout .
+! stderr '"ok"'

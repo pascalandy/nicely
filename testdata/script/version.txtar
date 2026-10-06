@@ -1,9 +1,22 @@
-# The version goes to stdout and nothing goes to stderr
+# The version goes to stdout, alone, and nothing goes to stderr
 exec ncly --version
-stdout '^ncly v\d+\.\d+\.\d+'
+stdout '\Ancly v\d+\.\d+\.\d+\S*\n\z'
 ! stderr .
 
-# The version exits 0 and ignores --json
+# --version is global: it works before or after a command, and ignores --json
 exits 0 ncly --version --json
-stdout '^ncly v'
+stdout '\Ancly v\S+\n\z'
 ! stderr .
+exec ncly --version help
+stdout '\Ancly v\S+\n\z'
+! stderr .
+exec ncly help --version
+stdout '\Ancly v\S+\n\z'
+! stderr .
+exec ncly help --version --json
+stdout '\Ancly v\S+\n\z'
+! stderr .
+
+# --help still wins over --version
+exec ncly --version --help
+stdout 'Curated CLI toolbox'

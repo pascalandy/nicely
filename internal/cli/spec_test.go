@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
 	"github.com/pascalandy/nicely/internal/specdoc"
 )
 
@@ -32,13 +31,8 @@ func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
 		spec = append(spec, f)
 	}
 
-	root := newRoot(i18n.New(""))
-	declared := slices.Clone(globalFlags)
-	if v := root.Flags().Lookup("version"); v != nil {
-		declared = append(declared, contract.Flag{Name: v.Name})
-	}
 	key := func(f contract.Flag) string { return f.Name + " " + f.Shorthand + " " + f.Value + " " + f.Env }
-	got, want := sortedKeys(declared, key), sortedKeys(spec, key)
+	got, want := sortedKeys(globalFlags, key), sortedKeys(spec, key)
 	if !slices.Equal(got, want) {
 		t.Errorf("cli-spec.md lists the global flags\n%q\nncly declares\n%q", want, got)
 	}

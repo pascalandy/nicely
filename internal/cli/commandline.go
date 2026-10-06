@@ -2,6 +2,7 @@ package cli
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -13,19 +14,22 @@ import (
 
 // commandLine is what the parser will find in the arguments of one command.
 type commandLine struct {
-	// words holds the positional words before "--".
+	// words holds the positional words in order, including every word after
+	// "--", which is never a flag.
 	words []string
-	// values holds the last value given to each known flag, by long name.
-	values map[string]string
+	// values holds every value given to each known flag, in order, by long
+	// name.
+	values map[string][]string
 }
 
 // scan reads args with the flags of cmd and the same rules as the parser: a
 // flag that takes a value takes the next argument even when it starts with
-// "-". An unknown flag counts as a switch, since the parser stops there.
+// "-". An unknown flag counts as a switch, and scanning goes on after it, so
+// help and machine mode hold wherever the parser would stop.
 func scan(cmd *cobra.Command, args []string) commandLine {
 	cmd.InheritedFlags() // merges the persistent flags of the parents into cmd.Flags()
 	flags := cmd.Flags()
-	line := commandLine{values: map[string]string{}}
+	line := commandLine{values: map[string][]string{}}
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		next := func() (string, bool) {
@@ -37,6 +41,7 @@ func scan(cmd *cobra.Command, args []string) commandLine {
 		}
 		switch {
 		case arg == "--":
+			line.words = append(line.words, args[i+1:]...)
 			return line
 		case strings.HasPrefix(arg, "--"):
 			name, value, inline := strings.Cut(arg[2:], "=")
@@ -44,12 +49,12 @@ func scan(cmd *cobra.Command, args []string) commandLine {
 			switch {
 			case f == nil:
 			case inline:
-				line.values[f.Name] = value
+				line.set(f, value)
 			case f.NoOptDefVal != "":
-				line.values[f.Name] = f.NoOptDefVal
+				line.set(f, f.NoOptDefVal)
 			default:
 				if value, ok := next(); ok {
-					line.values[f.Name] = value
+					line.set(f, value)
 				}
 			}
 		case strings.HasPrefix(arg, "-") && len(arg) > 1:
@@ -61,44 +66,53 @@ func scan(cmd *cobra.Command, args []string) commandLine {
 	return line
 }
 
-// shorthands reads a group such as -vh, -lfr, or -l fr.
+// shorthands reads a group such as -vh, -lfr, or -l fr. An unknown letter
+// counts as a switch, so -zh still asks for help.
 func (line *commandLine) shorthands(flags *pflag.FlagSet, group string, next func() (string, bool)) {
 	for j := 0; j < len(group); j++ {
 		f := flags.ShorthandLookup(group[j : j+1])
 		rest := group[j+1:]
 		switch {
 		case f == nil:
-			return
 		case strings.HasPrefix(rest, "="):
-			line.values[f.Name] = rest[1:]
+			line.set(f, rest[1:])
 			return
 		case f.NoOptDefVal != "":
-			line.values[f.Name] = f.NoOptDefVal
+			line.set(f, f.NoOptDefVal)
 		case rest != "":
-			line.values[f.Name] = rest
+			line.set(f, rest)
 			return
 		default:
 			if value, ok := next(); ok {
-				line.values[f.Name] = value
+				line.set(f, value)
 			}
 			return
 		}
 	}
 }
 
-// switchOn reports the value of a switch, and false when it is absent or its
-// value is not a boolean.
+func (line *commandLine) set(f *pflag.Flag, value string) {
+	line.values[f.Name] = append(line.values[f.Name], value)
+}
+
+// switchOn reports the last valid value of a switch. An invalid value, such
+// as --json=bad, is the parser's to report, and never cancels an earlier one.
 func (line commandLine) switchOn(name string) (on, given bool) {
-	value, present := line.values[name]
-	if !present {
-		return false, false
+	for _, value := range slices.Backward(line.values[name]) {
+		if on, err := strconv.ParseBool(value); err == nil {
+			return on, true
+		}
 	}
-	on, err := strconv.ParseBool(value)
-	return on, err == nil
+	return false, false
 }
 
 func (line commandLine) help() bool {
 	on, _ := line.switchOn("help")
+	return on
+}
+
+func (line commandLine) version() bool {
+	on, _ := line.switchOn("version")
 	return on
 }
 

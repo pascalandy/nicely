@@ -27,6 +27,7 @@ var globalFlags = []contract.Flag{
 	{Name: "no-color", Summary: "flag.no_color", Env: "NO_COLOR"},
 	{Name: "lang", Summary: "flag.lang", Value: "tag", Env: "NCLY_LANG"},
 	{Name: "verbose", Shorthand: "v", Summary: "flag.verbose", Env: "NCLY_VERBOSE"},
+	{Name: "version", Summary: "flag.version"},
 }
 
 // reservedNames are the names that only core may use, so an extension never
@@ -58,6 +59,10 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		_ = cmd.Help()
 		return 0
 	}
+	if line.version() {
+		_, _ = fmt.Fprintf(stdout, "ncly %s\n", releaseVersion())
+		return 0
+	}
 	if len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]) {
 		return report(p, g, contract.Outcome{Errors: []contract.Problem{unknownCommand(p, line.words[0])}}, stdout, stderr)
 	}
@@ -81,7 +86,6 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "ncly",
 		Short:         p.T("root.summary"),
-		Version:       releaseVersion(),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -89,9 +93,6 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 	for _, f := range globalFlags {
 		addFlag(root.PersistentFlags(), p, f)
 	}
-	// Declared here so that Cobra does not take -v, which belongs to --verbose.
-	root.Flags().Bool("version", false, p.T("flag.version"))
-	root.SetVersionTemplate("ncly {{.Version}}\n")
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
 		return &failure{contract.Outcome{Errors: []contract.Problem{flagProblem(p, c, err)}}}
 	})

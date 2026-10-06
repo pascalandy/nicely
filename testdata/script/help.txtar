@@ -27,3 +27,18 @@ env NCLY_JSON=1
 exec ncly --help
 cmp stdout bare.txt
 ! stderr .
+env NCLY_JSON=
+
+# Help wins inside a group of shorthands, whatever the order and an unknown letter
+exec ncly -zh
+cmp stdout bare.txt
+! stderr .
+exec ncly -hz
+cmp stdout bare.txt
+exec ncly -vzh
+cmp stdout bare.txt
+
+# After --, -h is an operand, not a request for help
+exits 2 ncly -- -h
+! stdout .
+stderr 'Unknown command "-h"'
