@@ -1,0 +1,79 @@
+# A language without a catalog falls back to English, without an error
+exec ncly --lang xx --help
+stdout 'Curated CLI toolbox'
+! stdout '⟦'
+! stderr .
+env LANG=C
+exec ncly --help
+! stdout '⟦'
+env LANG=
+
+# The pseudo-locale marks every catalog string of an error, and only those
+exits 2 ncly --lang en-XA nope
+! stdout .
+pseudo stderr
+stderr 'ncly --help'
+
+# In machine mode, codes and hints stay the same, and the message is translated
+exits 2 ncly --lang en-XA nope --json
+answer stderr USAGE_INVALID
+stderr '"message":"⟦'
+stderr '"hint":"ncly --help"'
+
+# The pseudo-locale needs an exact request: another English goes to English
+exec ncly --lang en-GB --help
+! stdout '⟦'
+
+# The language comes from LANG, then LC_MESSAGES, then LC_ALL, each over the one before
+env LANG=en_XA.UTF-8
+exec ncly --help
+stdout '⟦'
+env LC_MESSAGES=C
+exec ncly --help
+! stdout '⟦'
+env LC_ALL=en_XA
+exec ncly --help
+stdout '⟦'
+env LANG= LC_MESSAGES= LC_ALL=
+
+# The shared config sets the language, and the local config wins over it
+mkdir .config/nicely
+cp shared.toml .config/nicely/config.toml
+exec ncly --help
+stdout '⟦'
+cp local.toml .config/nicely/config.local.toml
+exec ncly --help
+! stdout '⟦'
+rm .config/nicely/config.local.toml
+
+# NCLY_LANG wins over the config, and --lang wins over NCLY_LANG
+env NCLY_LANG=en
+exec ncly --help
+! stdout '⟦'
+exec ncly --lang en-XA --help
+stdout '⟦'
+env NCLY_LANG=
+
+# NCLY_CONFIG names another shared file
+env NCLY_CONFIG=$WORK/dotfiles/ncly.toml
+exec ncly --help
+! stdout '⟦'
+mkdir dotfiles
+cp shared.toml dotfiles/ncly.toml
+exec ncly --help
+stdout '⟦'
+
+# A broken config never blocks the help or the version
+env NCLY_CONFIG=$WORK/broken.toml
+exec ncly --help
+stdout 'Curated CLI toolbox'
+! stderr .
+exec ncly --version
+stdout '^ncly v'
+
+-- shared.toml --
+lang = "en-XA"
+-- local.toml --
+lang = "en"
+-- broken.toml --
+lang =

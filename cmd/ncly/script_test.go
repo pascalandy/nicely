@@ -22,6 +22,7 @@ func TestScripts(t *testing.T) {
 			"answer":    cmdAnswer,
 			"snapshot":  cmdSnapshot,
 			"unchanged": cmdUnchanged,
+			"pseudo":    cmdPseudo,
 		},
 	})
 }

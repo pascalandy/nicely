@@ -12,9 +12,11 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/pascalandy/nicely/internal/config"
 	"github.com/pascalandy/nicely/internal/contract"
 	"github.com/pascalandy/nicely/internal/i18n"
 	"github.com/spf13/cobra"
+	"golang.org/x/text/language"
 )
 
 // version is set at link time by release builds:
@@ -50,18 +52,20 @@ func Main(args []string, stdout, stderr *os.File) int {
 	// before ncly can report the lost output. Asking for the signal turns
 	// that write into an EPIPE error instead.
 	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
-	p := i18n.New("")
+	// The parser stops at its first error, so read the command line first:
+	// the language, help, and machine mode must hold even when parsing fails.
+	// The help text comes from the catalog, so the tree is built again once
+	// the language is known.
+	cmd, _, _ := newRoot(i18n.New(language.English)).Find(args)
+	line := scan(cmd, args)
+	g := resolveGlobals(line, os.LookupEnv, configLang)
+	p := i18n.New(i18n.Match(g.lang))
 	root := newRoot(p)
 	out := &output{file: stdout}
 	root.SetArgs(args)
 	root.SetOut(out)
 	root.SetErr(stderr)
-
-	// The parser stops at its first error, so read the command line first:
-	// help and machine mode must hold even when parsing fails.
-	cmd, _, _ := root.Find(args)
-	line := scan(cmd, args)
-	g := resolveGlobals(line, os.LookupEnv)
+	cmd, _, _ = root.Find(args)
 	var err error
 	switch {
 	case line.help():
@@ -216,6 +220,17 @@ func summarizer(p *i18n.Printer) func(contract.Code) contract.Problem {
 		s := summaries[code]
 		return contract.Problem{Code: code, Message: p.T(s.message), Hint: p.T(s.hint)}
 	}
+}
+
+// configLang reads lang from the config files. A broken or missing file
+// gives no language, so the help still works with the defaults.
+func configLang() string {
+	home, _ := os.UserHomeDir()
+	cfg, _, err := config.Load(config.Locate(home, os.LookupEnv))
+	if err != nil {
+		return ""
+	}
+	return cfg.Lang
 }
 
 // releaseVersion prefers the linked version, then the version that Go stamps

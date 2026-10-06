@@ -91,3 +91,23 @@ other = "Could not write the output."
 ["output.write_failed_hint"]
 description = "Hint under output.write_failed: what the user checks before running the command again."
 other = "Check the file or pipe that receives the output, such as its free space."
+
+["size.bytes"]
+description = "A size in bytes. {{.N}} is a number already formatted for the language, such as 512. B is the symbol of the byte."
+other = "{{.N}} B"
+
+["size.kilobytes"]
+description = "A size in kilobytes, 1000 bytes each. {{.N}} is a number already formatted, such as 1.5. kB is the unit symbol."
+other = "{{.N}} kB"
+
+["size.megabytes"]
+description = "A size in megabytes, 1000 kilobytes each. {{.N}} is a number already formatted, such as 1.5. MB is the unit symbol."
+other = "{{.N}} MB"
+
+["size.gigabytes"]
+description = "A size in gigabytes, 1000 megabytes each. {{.N}} is a number already formatted, such as 1.5. GB is the unit symbol."
+other = "{{.N}} GB"
+
+["size.terabytes"]
+description = "A size in terabytes, 1000 gigabytes each. {{.N}} is a number already formatted, such as 1.5. TB is the unit symbol."
+other = "{{.N}} TB"

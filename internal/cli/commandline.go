@@ -110,6 +110,15 @@ func (line commandLine) switchOn(name string) (on, given bool) {
 	return false, false
 }
 
+// last returns the last value given to a flag that takes a value.
+func (line commandLine) last(name string) string {
+	values := line.values[name]
+	if len(values) == 0 {
+		return ""
+	}
+	return values[len(values)-1]
+}
+
 func (line commandLine) help() bool {
 	on, _ := line.switchOn("help")
 	return on
@@ -123,15 +132,36 @@ func (line commandLine) version() bool {
 // globals holds the resolved global flags. A flag wins over its variable.
 type globals struct {
 	json bool
+	// lang is the language setting before matching, such as fr_CA.UTF-8.
+	lang string
 }
 
-func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool)) globals {
+// resolveGlobals applies the precedence of cli-spec.md. configLang reads the
+// config only when no flag or variable sets the language.
+func resolveGlobals(line commandLine, lookupEnv func(string) (string, bool), configLang func() string) globals {
+	env := func(name string) string {
+		value, _ := lookupEnv(name)
+		return value
+	}
+	var g globals
 	on, given := line.switchOn("json")
 	if !given {
-		value, _ := lookupEnv("NCLY_JSON")
-		on = value == "1"
+		on = env("NCLY_JSON") == "1"
 	}
-	return globals{json: on}
+	g.json = on
+	for _, source := range []func() string{
+		func() string { return line.last("lang") },
+		func() string { return env("NCLY_LANG") },
+		configLang,
+		func() string { return env("LC_ALL") },
+		func() string { return env("LC_MESSAGES") },
+		func() string { return env("LANG") },
+	} {
+		if g.lang = source(); g.lang != "" {
+			break
+		}
+	}
+	return g
 }
 
 // addFlag registers a declared flag with its catalog description.
