@@ -68,8 +68,13 @@ func Main(args []string, stdout, stderr *os.File) int {
 	root.SetErr(stderr)
 	root.SetHelpFunc(helpFunc(p, g.noColor))
 	cmd, _, _ = root.Find(args)
+	// A completion request from the shell scripts answers in Cobra's protocol:
+	// the words it completes never ask for help or name a command to check.
+	completing := len(args) > 0 && (args[0] == cobra.ShellCompRequestCmd || args[0] == cobra.ShellCompNoDescRequestCmd)
 	var err error
 	switch {
+	case completing:
+		err = root.Execute()
 	case line.help():
 		err = cmd.Help()
 	case line.version():
@@ -162,6 +167,17 @@ func helpCommand(b builder) *cobra.Command {
 				return fail(b.unknownCommand(target, rest[0]))
 			}
 			return target.Help()
+		},
+		ValidArgsFunction: func(c *cobra.Command, args []string, _ string) ([]cobra.Completion, cobra.ShellCompDirective) {
+			var names []cobra.Completion
+			if target, rest, err := c.Root().Find(args); err == nil && len(rest) == 0 {
+				for _, sub := range target.Commands() {
+					if sub.IsAvailableCommand() {
+						names = append(names, cobra.CompletionWithDesc(sub.Name(), sub.Short))
+					}
+				}
+			}
+			return names, cobra.ShellCompDirectiveNoFileComp
 		},
 	}
 }

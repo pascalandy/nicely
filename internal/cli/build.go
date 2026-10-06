@@ -34,6 +34,14 @@ func (b builder) build(d contract.Command, run func(*cobra.Command, []string) er
 			})
 		},
 		RunE: run,
+		// Beyond its declared arguments, a command takes no word, so the
+		// shell must not offer file names either.
+		ValidArgsFunction: func(_ *cobra.Command, args []string, _ string) ([]cobra.Completion, cobra.ShellCompDirective) {
+			if len(args) >= len(d.Args) {
+				return nil, cobra.ShellCompDirectiveNoFileComp
+			}
+			return nil, cobra.ShellCompDirectiveDefault
+		},
 	}
 	if run == nil {
 		c.RunE = func(c *cobra.Command, _ []string) error { return c.Help() }

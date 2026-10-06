@@ -9,6 +9,11 @@ exec ncly completion fish
 stdout 'complete -c ncly'
 ! stderr .
 
+# --version after a shell prints the version alone, not a script
+exec ncly completion zsh --version
+stdout '\Ancly v\S+\n\z'
+! stderr .
+
 # A completion script is text, so --json changes nothing
 exec ncly completion zsh --json
 stdout '^#compdef ncly'
@@ -54,5 +59,60 @@ env NCLY_CONFIG=
 exec ncly --lang en-XA __complete ''
 stdout '^completion\t⟦'
 
+# Completing after --help, -h, or --version answers in the completion protocol, never with help
+exec ncly __complete --help ''
+stdout '^completion\t'
+stdout '^:4\n\z'
+! stdout 'USAGE'
+exec ncly __complete -h ''
+stdout '^completion\t'
+! stdout 'USAGE'
+exec ncly __complete completion --help ''
+stdout '^zsh\t'
+stdout '^:4\n\z'
+exec ncly __complete --version ''
+stdout '^completion\t'
+! stdout '^ncly v'
+
+# A command that takes no more words offers no file names
+exec ncly __complete completion zsh ''
+stdout '\A:4\n\z'
+exec ncly __complete completion bash ''
+stdout '\A:4\n\z'
+exec ncly __complete completion fish ''
+stdout '\A:4\n\z'
+
+# ncly help completes command names, not file names
+exec ncly __complete help ''
+stdout '^completion\t'
+stdout '^:4\n\z'
+exec ncly __complete help completion ''
+stdout '^zsh\t'
+stdout '^:4\n\z'
+
+# Tab in bash offers commands after --help, without an error, and no file after a shell
+[bash-completion] exec bash -c 'source tab.sh && tab ncly --help ""'
+[bash-completion] ! stderr .
+[bash-completion] stdout '^completion$'
+[bash-completion] ! stdout 'USAGE'
+[bash-completion] exec bash -c 'source tab.sh && tab ncly completion z'
+[bash-completion] stdout '^zsh$'
+[bash-completion] ! stderr .
+
 -- broken.toml --
 lang =
+-- tab.sh --
+# tab <words...> completes the last word as Tab does in bash, and prints the candidates.
+for f in /usr/share/bash-completion/bash_completion /opt/homebrew/share/bash-completion/bash_completion; do
+  [[ -r $f ]] && source "$f" && break
+done
+source <(ncly completion bash)
+# compopt works only inside a completion that readline started, which a script cannot start.
+compopt() { :; }
+tab() {
+  COMP_WORDS=("$@"); COMP_CWORD=$(( $# - 1 ))
+  COMP_LINE="$*"; COMP_POINT=${#COMP_LINE}
+  COMPREPLY=()
+  __start_ncly ncly "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
+  printf '%s\n' "${COMPREPLY[@]}"
+}
