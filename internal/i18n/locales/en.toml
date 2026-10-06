@@ -83,3 +83,11 @@ other = "Some work failed, and running it again could repeat finished work."
 ["outcome.check_hint"]
 description = "Hint under an error after which an automatic retry is not safe: what the user does next."
 other = "Check the results before you run anything again."
+
+["output.write_failed"]
+description = "Error when ncly could not write its result to the standard output, for example because the disk is full or the reader closed."
+other = "Could not write the output."
+
+["output.write_failed_hint"]
+description = "Hint under output.write_failed: what the user checks before running the command again."
+other = "Check the file or pipe that receives the output, such as its free space."

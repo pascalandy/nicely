@@ -1,0 +1,15 @@
+[!linux] skip 'needs /dev/full, which refuses every write'
+
+# A failed write of the output is a runtime failure, never a success
+exits 1 sh -c 'ncly --version >/dev/full'
+stderr 'Could not write the output'
+exits 1 sh -c 'ncly --version --json >/dev/full'
+answer stderr RUNTIME
+exits 1 sh -c 'ncly --help >/dev/full'
+stderr 'Could not write the output'
+exits 1 sh -c 'ncly >/dev/full'
+stderr 'Could not write the output'
+
+# The same commands succeed when the output can be written
+exec sh -c 'ncly --version >/dev/null'
+! stderr .

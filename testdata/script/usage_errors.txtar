@@ -93,3 +93,19 @@ answer stderr USAGE_INVALID
 exits 2 ncly --json --json=false nope
 ! stdout .
 ! stderr '"ok"'
+
+# After --, a built-in name is an operand too, never a command
+exits 2 ncly --json -- help nope
+! stdout .
+answer stderr USAGE_INVALID
+stderr 'Unknown command \\"help\\"'
+env NCLY_JSON=1
+exits 2 ncly -- help
+! stdout .
+answer stderr USAGE_INVALID
+env NCLY_JSON=
+
+# Help before -- still wins over the operands
+exec ncly --help -- help nope
+stdout 'Curated CLI toolbox'
+! stderr .

@@ -43,11 +43,12 @@ var reservedNames = []string{
 var extensionNames []string
 
 // Main runs ncly with args, without the program name, and returns its exit code.
-func Main(args []string, stdout, stderr io.Writer) int {
+func Main(args []string, stdout, stderr *os.File) int {
 	p := i18n.New("")
 	root := newRoot(p)
+	out := &output{file: stdout}
 	root.SetArgs(args)
-	root.SetOut(stdout)
+	root.SetOut(out)
 	root.SetErr(stderr)
 
 	// The parser stops at its first error, so read the command line first:
@@ -55,19 +56,23 @@ func Main(args []string, stdout, stderr io.Writer) int {
 	cmd, _, _ := root.Find(args)
 	line := scan(cmd, args)
 	g := resolveGlobals(line, os.LookupEnv)
-	if line.help() {
-		_ = cmd.Help()
-		return 0
-	}
-	if line.version() {
-		_, _ = fmt.Fprintf(stdout, "ncly %s\n", releaseVersion())
-		return 0
-	}
-	if len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]) {
+	var err error
+	switch {
+	case line.help():
+		err = cmd.Help()
+	case line.version():
+		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
+	case len(line.words) == 0 && len(line.operands) > 0:
+		// Operands after -- reach the root, which takes none.
+		return report(p, g, contract.Outcome{Errors: []contract.Problem{unknownCommand(p, line.operands[0])}}, stdout, stderr)
+	case len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]):
 		return report(p, g, contract.Outcome{Errors: []contract.Problem{unknownCommand(p, line.words[0])}}, stdout, stderr)
+	default:
+		err = root.Execute()
 	}
-
-	err := root.Execute()
+	if out.err != nil {
+		return report(p, g, contract.Outcome{Errors: []contract.Problem{writeFailed(p)}}, stdout, stderr)
+	}
 	if err == nil {
 		return 0
 	}
@@ -80,6 +85,33 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		}}}}
 	}
 	return report(p, g, failed.outcome, stdout, stderr)
+}
+
+// output passes writes to stdout and remembers the first that failed, so a
+// command whose output was lost never reports success. It keeps the methods
+// that terminal detection needs, and no other method of the file, so every
+// write goes through Write.
+type output struct {
+	file *os.File
+	err  error
+}
+
+func (o *output) Write(b []byte) (int, error) {
+	n, err := o.file.Write(b)
+	if err != nil && o.err == nil {
+		o.err = err
+	}
+	return n, err
+}
+
+func (o *output) Read(b []byte) (int, error) { return o.file.Read(b) }
+
+func (o *output) Close() error { return o.file.Close() }
+
+func (o *output) Fd() uintptr { return o.file.Fd() }
+
+func writeFailed(p *i18n.Printer) contract.Problem {
+	return contract.Problem{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")}
 }
 
 func newRoot(p *i18n.Printer) *cobra.Command {

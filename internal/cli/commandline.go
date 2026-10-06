@@ -14,9 +14,10 @@ import (
 
 // commandLine is what the parser will find in the arguments of one command.
 type commandLine struct {
-	// words holds the positional words in order, including every word after
-	// "--", which is never a flag.
+	// words holds the positional words before "--", in order.
 	words []string
+	// operands holds the words after "--", which are never flags or commands.
+	operands []string
 	// values holds every value given to each known flag, in order, by long
 	// name.
 	values map[string][]string
@@ -41,7 +42,7 @@ func scan(cmd *cobra.Command, args []string) commandLine {
 		}
 		switch {
 		case arg == "--":
-			line.words = append(line.words, args[i+1:]...)
+			line.operands = args[i+1:]
 			return line
 		case strings.HasPrefix(arg, "--"):
 			name, value, inline := strings.Cut(arg[2:], "=")
