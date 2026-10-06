@@ -40,6 +40,10 @@ other = "Print the version"
 description = "Error when a word is not a command. {{.Name}} is the word the user typed."
 other = "Unknown command \"{{.Name}}\"."
 
+["usage.unexpected_argument"]
+description = "Error when a command gets more arguments than it takes. {{.Arg}} is the first extra argument."
+other = "Unexpected argument \"{{.Arg}}\"."
+
 ["usage.unknown_flag"]
 description = "Error when a flag does not exist. {{.Flag}} is the flag as typed, such as --nope or -z."
 other = "Unknown flag {{.Flag}}."
@@ -159,7 +163,3 @@ other = "Print the completion script for bash"
 ["completion.fish_summary"]
 description = "Help page: summary of `ncly completion fish`. fish is the name of a shell and stays as is."
 other = "Print the completion script for fish"
-
-["usage.unexpected_argument"]
-description = "Error when a command gets more arguments than it takes. {{.Arg}} is the first extra argument."
-other = "Unexpected argument \"{{.Arg}}\"."
