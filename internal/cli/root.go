@@ -92,10 +92,10 @@ func Main(args []string, stdout, stderr *os.File) int {
 		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
 	case len(line.words) == 0 && len(line.operands) > 0:
 		// Operands after -- reach the root, which takes none.
-		problem := builder{p}.unknownCommand(root, line.operands[0])
+		problem := unknownCommand(p, root, line.operands[0])
 		return report(p, g, contract.Outcome{Errors: []contract.Problem{problem}}, stdout, stderr)
 	case len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]):
-		problem := builder{p}.unknownCommand(root, line.words[0])
+		problem := unknownCommand(p, root, line.words[0])
 		return report(p, g, contract.Outcome{Errors: []contract.Problem{problem}}, stdout, stderr)
 	default:
 		err = root.Execute()
@@ -152,11 +152,10 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
 		return fail(flagProblem(p, c, err))
 	})
-	b := builder{p}
-	help := helpCommand(b)
+	help := helpCommand(p)
 	root.SetHelpCommand(help)
 	root.AddCommand(help)
-	addCompletion(b, root)
+	addCompletion(p, root)
 	return root
 }
 

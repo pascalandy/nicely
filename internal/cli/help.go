@@ -18,18 +18,18 @@ var helpDeclaration = contract.Command{
 }
 
 // helpCommand prints the same help as --help, and fails on an unknown topic.
-func helpCommand(b builder) *cobra.Command {
+func helpCommand(p *i18n.Printer) *cobra.Command {
 	return &cobra.Command{
 		Use:     "help [command]",
-		Short:   b.p.T(helpDeclaration.Summary),
+		Short:   p.T(helpDeclaration.Summary),
 		Example: strings.Join(helpDeclaration.Examples, "\n"),
 		RunE: func(c *cobra.Command, args []string) error {
 			target, rest, err := c.Root().Find(args)
 			switch {
 			case err != nil:
-				return fail(b.unknownCommand(c.Root(), args[0]))
+				return fail(unknownCommand(p, c.Root(), args[0]))
 			case len(rest) > 0:
-				return fail(b.unknownCommand(target, rest[0]))
+				return fail(unknownCommand(p, target, rest[0]))
 			}
 			return target.Help()
 		},

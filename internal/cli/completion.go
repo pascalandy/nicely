@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/pascalandy/nicely/internal/contract"
+	"github.com/pascalandy/nicely/internal/i18n"
 	"github.com/spf13/cobra"
 )
 
@@ -51,10 +52,10 @@ var shells = []struct {
 	},
 }
 
-func addCompletion(b builder, root *cobra.Command) {
-	group := b.build(completionCommand, nil)
+func addCompletion(p *i18n.Printer, root *cobra.Command) {
+	group := build(p, completionCommand, nil)
 	for _, s := range shells {
-		group.AddCommand(b.build(s.command, func(c *cobra.Command, _ []string) error {
+		group.AddCommand(build(p, s.command, func(c *cobra.Command, _ []string) error {
 			return s.write(root, c.OutOrStdout())
 		}))
 	}
