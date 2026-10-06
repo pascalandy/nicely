@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"os"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -20,9 +19,9 @@ type commandLine struct {
 	words []string
 	// operands holds the words after "--", which are never flags or commands.
 	operands []string
-	// values holds every value given to each known flag, in order, by long
-	// name.
-	values map[string][]string
+	// values holds, by long name, the last value of each known flag that
+	// takes one, and the last valid value of each known switch.
+	values map[string]string
 }
 
 // scan reads args with the flags of cmd and the same rules as the parser: a
@@ -32,7 +31,7 @@ type commandLine struct {
 func scan(cmd *cobra.Command, args []string) commandLine {
 	cmd.InheritedFlags() // merges the persistent flags of the parents into cmd.Flags()
 	flags := cmd.Flags()
-	line := commandLine{values: map[string][]string{}}
+	line := commandLine{values: map[string]string{}}
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		next := func() (string, bool) {
@@ -98,27 +97,20 @@ func (line *commandLine) shorthands(flags *pflag.FlagSet, group string, next fun
 }
 
 func (line *commandLine) set(f *pflag.Flag, value string) {
-	line.values[f.Name] = append(line.values[f.Name], value)
+	if f.Value.Type() == "bool" {
+		if _, err := strconv.ParseBool(value); err != nil {
+			return
+		}
+	}
+	line.values[f.Name] = value
 }
 
 // switchOn reports the last valid value of a switch. An invalid value, such
 // as --json=bad, is the parser's to report, and never cancels an earlier one.
 func (line commandLine) switchOn(name string) (on, given bool) {
-	for _, value := range slices.Backward(line.values[name]) {
-		if on, err := strconv.ParseBool(value); err == nil {
-			return on, true
-		}
-	}
-	return false, false
-}
-
-// last returns the last value given to a flag that takes a value.
-func (line commandLine) last(name string) string {
-	values := line.values[name]
-	if len(values) == 0 {
-		return ""
-	}
-	return values[len(values)-1]
+	value, given := line.values[name]
+	on, _ = strconv.ParseBool(value)
+	return on, given
 }
 
 func (line commandLine) help() bool {
@@ -152,7 +144,7 @@ func resolveGlobals(line commandLine) globals {
 	g := globals{
 		json:    switchOr("json", env("NCLY_JSON") == "1"),
 		noColor: switchOr("no-color", env("NO_COLOR") != "" || env("TERM") == "dumb"),
-		lang:    cmp.Or(line.last("lang"), env("NCLY_LANG")),
+		lang:    cmp.Or(line.values["lang"], env("NCLY_LANG")),
 	}
 	if g.lang == "" {
 		g.lang = cmp.Or(configLang(), env("LC_ALL"), env("LC_MESSAGES"), env("LANG"))
