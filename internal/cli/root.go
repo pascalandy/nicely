@@ -76,7 +76,6 @@ func Main(args []string, stdout, stderr *os.File) int {
 	root.SetOut(out)
 	root.SetErr(stderr)
 	root.SetHelpFunc(helpFunc(p, g.noColor))
-	cmd, _, _ = root.Find(args)
 	// A completion request from the shell scripts answers in Cobra's protocol:
 	// the words it completes never ask for help or name a command to check.
 	// Global flags may come first, as an alias such as ncly='ncly --no-input'
@@ -87,21 +86,20 @@ func Main(args []string, stdout, stderr *os.File) int {
 	case completing:
 		err = root.Execute()
 	case line.help():
-		err = cmd.Help()
+		target, _, _ := root.Find(args)
+		err = target.Help()
 	case line.version():
 		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
 	case len(line.words) == 0 && len(line.operands) > 0:
 		// Operands after -- reach the root, which takes none.
-		problem := unknownCommand(p, root, line.operands[0])
-		return report(p, g, contract.Outcome{Errors: []contract.Problem{problem}}, stdout, stderr)
+		err = fail(unknownCommand(p, root, line.operands[0]))
 	case len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]):
-		problem := unknownCommand(p, root, line.words[0])
-		return report(p, g, contract.Outcome{Errors: []contract.Problem{problem}}, stdout, stderr)
+		err = fail(unknownCommand(p, root, line.words[0]))
 	default:
 		err = root.Execute()
 	}
 	if out.err != nil {
-		return report(p, g, contract.Outcome{Errors: []contract.Problem{writeFailed(p)}}, stdout, stderr)
+		err = fail(contract.Problem{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")})
 	}
 	if err == nil {
 		return 0
@@ -130,10 +128,6 @@ func (o *output) Write(b []byte) (int, error) {
 }
 
 func (o *output) Fd() uintptr { return o.file.Fd() }
-
-func writeFailed(p *i18n.Printer) contract.Problem {
-	return contract.Problem{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")}
-}
 
 func newRoot(p *i18n.Printer) *cobra.Command {
 	root := &cobra.Command{
