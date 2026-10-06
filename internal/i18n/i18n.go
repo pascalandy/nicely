@@ -81,8 +81,8 @@ func newPrinter(b *goi18n.Bundle, tag language.Tag) *Printer {
 	}
 }
 
-// T returns the message id, with data filling its template. A missing
-// message returns the id itself, so a scenario shows it.
+// T returns the catalog message for id, with data filling its template. A
+// missing message returns the id itself, so a scenario shows it.
 func (p *Printer) T(id string, data ...map[string]any) string {
 	cfg := &goi18n.LocalizeConfig{MessageID: id}
 	if len(data) > 0 {

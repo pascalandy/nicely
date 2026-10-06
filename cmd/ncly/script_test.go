@@ -30,7 +30,8 @@ func TestScripts(t *testing.T) {
 	})
 }
 
-// setupHome keeps every file that ncly reads or writes inside $WORK.
+// setupHome points HOME and the XDG folders at $WORK, so ncly never touches
+// the host's own config, data, state, or cache.
 func setupHome(env *testscript.Env) error {
 	home := env.WorkDir
 	env.Setenv("HOME", home)

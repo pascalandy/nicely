@@ -216,8 +216,8 @@ func summarizer(p *i18n.Printer) func(contract.Code) contract.Problem {
 	}
 }
 
-// configLang reads lang from the config files. A broken or missing file
-// gives no language, so the help still works with the defaults.
+// configLang reads lang from the config files. A load error gives no language,
+// so the help still works with the defaults.
 func configLang() string {
 	home, _ := os.UserHomeDir()
 	cfg, _, err := config.Load(config.Locate(home, os.LookupEnv))

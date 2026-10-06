@@ -29,8 +29,8 @@ type Paths struct {
 // Locate resolves the paths from home and the environment. An XDG variable
 // counts only when it holds an absolute path, as the XDG specification asks.
 // NCLY_CONFIG names another shared file, and the local file moves beside it.
-// Without an absolute home or XDG variable, a path stays empty, so nothing is
-// read from the current folder.
+// Without an absolute home or XDG variable, default paths stay empty instead
+// of resolving from the current folder.
 func Locate(home string, lookupEnv func(string) (string, bool)) Paths {
 	dir := func(variable string, fallback ...string) string {
 		if value, _ := lookupEnv(variable); filepath.IsAbs(value) {
