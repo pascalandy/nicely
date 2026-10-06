@@ -8,12 +8,6 @@ exec ncly --help
 ! stdout '⟦'
 env LANG=
 
-# The pseudo-locale marks every catalog string of an error, and only those
-exits 2 ncly --lang en-XA nope
-! stdout .
-pseudo stderr
-stderr 'ncly --help'
-
 # In machine mode, codes and hints stay the same, and the message is translated
 exits 2 ncly --lang en-XA nope --json
 answer stderr USAGE_INVALID

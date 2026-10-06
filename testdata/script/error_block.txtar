@@ -5,7 +5,9 @@ cmp stderr want.txt
 
 # Under the pseudo-locale, every word of the error block comes from the catalog
 exits 2 ncly --lang en-XA nope
+! stdout .
 pseudo stderr
+stderr 'ncly --help'
 
 # The error block has styles only when color is on
 env CLICOLOR_FORCE=1
