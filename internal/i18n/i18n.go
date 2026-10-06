@@ -7,6 +7,7 @@ package i18n
 import (
 	"embed"
 	"errors"
+	"maps"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -95,9 +96,7 @@ func (p *Printer) T(id string, data ...map[string]any) string {
 func (p *Printer) N(id string, count int, data ...map[string]any) string {
 	fill := map[string]any{}
 	if len(data) > 0 {
-		for k, v := range data[0] {
-			fill[k] = v
-		}
+		maps.Copy(fill, data[0])
 	}
 	fill["Count"] = p.Number(float64(count), 0)
 	return p.localize(&goi18n.LocalizeConfig{MessageID: id, PluralCount: count, TemplateData: fill})
