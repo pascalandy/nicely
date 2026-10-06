@@ -1,0 +1,58 @@
+package cli
+
+import (
+	"strings"
+
+	"github.com/pascalandy/nicely/internal/contract"
+	"github.com/pascalandy/nicely/internal/i18n"
+	"github.com/spf13/cobra"
+)
+
+// builder turns declarations into Cobra commands with catalog text.
+type builder struct{ p *i18n.Printer }
+
+// build makes the command that a declaration describes. A nil run makes a
+// command that groups others: alone it prints its help, and an unknown word
+// after it is a usage error.
+func (b builder) build(d contract.Command, run func(*cobra.Command, []string) error) *cobra.Command {
+	c := &cobra.Command{
+		Use:     d.Path[len(d.Path)-1],
+		Short:   b.p.T(d.Summary),
+		Example: strings.Join(d.Examples, "\n"),
+		Args: func(c *cobra.Command, args []string) error {
+			if len(args) <= len(d.Args) {
+				return nil
+			}
+			extra := args[len(d.Args)]
+			if c.HasSubCommands() {
+				return fail(b.unknownCommand(c, extra))
+			}
+			return fail(contract.Problem{
+				Code:    contract.UsageInvalid,
+				Message: b.p.T("usage.unexpected_argument", map[string]any{"Arg": extra}),
+				Hint:    c.CommandPath() + " --help",
+			})
+		},
+		RunE: run,
+	}
+	if run == nil {
+		c.RunE = func(c *cobra.Command, _ []string) error { return c.Help() }
+	}
+	for _, f := range d.Flags {
+		addFlag(c.Flags(), b.p, f)
+	}
+	return c
+}
+
+// unknownCommand reports a word that names no command under c.
+func (b builder) unknownCommand(c *cobra.Command, word string) contract.Problem {
+	return contract.Problem{
+		Code:    contract.UsageInvalid,
+		Message: b.p.T("usage.unknown_command", map[string]any{"Name": word}),
+		Hint:    c.CommandPath() + " --help",
+	}
+}
+
+func fail(problems ...contract.Problem) *failure {
+	return &failure{contract.Outcome{Errors: problems}}
+}

@@ -12,14 +12,22 @@ exec ncly help
 cmp stdout bare.txt
 ! stderr .
 
-# The help shows its sections, the global flags, and ends with examples
+# The help shows its sections, the commands, the global flags, and ends with examples
 stdout '^USAGE$'
-stdout '^  ncly \[flags\]$'
+stdout '^  ncly <command> \[flags\]$'
+stdout '^COMMANDS$'
+stdout '^  completion: +Print shell completion scripts$'
 stdout '^FLAGS$'
 stdout '^      --json +Answer with one line of JSON$'
 stdout '^      --lang <tag> +Language of human text'
 stdout '^EXAMPLES$'
 stdout '^  \$ ncly --version$'
+
+# A subcommand lists the global flags apart from its own
+exec ncly completion zsh --help
+stdout '^  ncly completion zsh \[flags\]$'
+stdout '^GLOBAL FLAGS$'
+! stdout '^COMMANDS$'
 
 # Help wins over unknown flags and unknown commands, and ignores --json
 exec ncly --unknown-flag --help --json
@@ -50,7 +58,11 @@ stderr 'Unknown command "-h"'
 
 # Under the pseudo-locale, every word of the help comes from the catalog
 exec ncly --lang en-XA --help
-pseudo stdout
+pseudo stdout completion
+exec ncly --lang en-XA completion --help
+pseudo stdout completion zsh bash fish
+exec ncly --lang en-XA completion zsh --help
+pseudo stdout completion zsh
 
 # The help has styles only when color is on: CLICOLOR_FORCE keeps them in a pipe,
 # and an empty NO_COLOR keeps them too, as no-color.org defines

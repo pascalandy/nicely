@@ -143,3 +143,23 @@ other = "warning[{{.Code}}]:"
 ["error.hint"]
 description = "Error block: label before the command or action that fixes an error or a warning, as in `hint: ncly --help`."
 other = "hint:"
+
+["completion.summary"]
+description = "Help page: summary of `ncly completion`, which prints scripts that let a shell complete ncly commands."
+other = "Print shell completion scripts"
+
+["completion.zsh_summary"]
+description = "Help page: summary of `ncly completion zsh`. zsh is the name of a shell and stays as is."
+other = "Print the completion script for zsh"
+
+["completion.bash_summary"]
+description = "Help page: summary of `ncly completion bash`. bash is the name of a shell and stays as is."
+other = "Print the completion script for bash"
+
+["completion.fish_summary"]
+description = "Help page: summary of `ncly completion fish`. fish is the name of a shell and stays as is."
+other = "Print the completion script for fish"
+
+["usage.unexpected_argument"]
+description = "Error when a command gets more arguments than it takes. {{.Arg}} is the first extra argument."
+other = "Unexpected argument \"{{.Arg}}\"."

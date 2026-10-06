@@ -76,9 +76,11 @@ func Main(args []string, stdout, stderr *os.File) int {
 		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
 	case len(line.words) == 0 && len(line.operands) > 0:
 		// Operands after -- reach the root, which takes none.
-		return report(p, g, contract.Outcome{Errors: []contract.Problem{unknownCommand(p, line.operands[0])}}, stdout, stderr)
+		problem := builder{p}.unknownCommand(root, line.operands[0])
+		return report(p, g, contract.Outcome{Errors: []contract.Problem{problem}}, stdout, stderr)
 	case len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]):
-		return report(p, g, contract.Outcome{Errors: []contract.Problem{unknownCommand(p, line.words[0])}}, stdout, stderr)
+		problem := builder{p}.unknownCommand(root, line.words[0])
+		return report(p, g, contract.Outcome{Errors: []contract.Problem{problem}}, stdout, stderr)
 	default:
 		err = root.Execute()
 	}
@@ -90,11 +92,7 @@ func Main(args []string, stdout, stderr *os.File) int {
 	}
 	var failed *failure
 	if !errors.As(err, &failed) {
-		failed = &failure{contract.Outcome{Errors: []contract.Problem{{
-			Code:    contract.UsageInvalid,
-			Message: p.T("usage.invalid"),
-			Hint:    "ncly --help",
-		}}}}
+		failed = fail(contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid"), Hint: "ncly --help"})
 	}
 	return report(p, g, failed.outcome, stdout, stderr)
 }
@@ -139,24 +137,29 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 		addFlag(root.PersistentFlags(), p, f)
 	}
 	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
-		return &failure{contract.Outcome{Errors: []contract.Problem{flagProblem(p, c, err)}}}
+		return fail(flagProblem(p, c, err))
 	})
-	help := helpCommand(p)
+	b := builder{p}
+	help := helpCommand(b)
 	root.SetHelpCommand(help)
 	root.AddCommand(help)
+	addCompletion(b, root)
 	return root
 }
 
 // helpCommand prints the same help as --help, and fails on an unknown topic.
-func helpCommand(p *i18n.Printer) *cobra.Command {
+func helpCommand(b builder) *cobra.Command {
 	return &cobra.Command{
 		Use:     "help [command]",
-		Short:   p.T(helpDeclaration.Summary),
+		Short:   b.p.T(helpDeclaration.Summary),
 		Example: strings.Join(helpDeclaration.Examples, "\n"),
 		RunE: func(c *cobra.Command, args []string) error {
 			target, rest, err := c.Root().Find(args)
-			if err != nil || len(rest) > 0 {
-				return &failure{contract.Outcome{Errors: []contract.Problem{unknownCommand(p, args[0])}}}
+			switch {
+			case err != nil:
+				return fail(b.unknownCommand(c.Root(), args[0]))
+			case len(rest) > 0:
+				return fail(b.unknownCommand(target, rest[0]))
 			}
 			return target.Help()
 		},
@@ -179,14 +182,6 @@ func isBuiltIn(root *cobra.Command, name string) bool {
 // A reserved name never resolves to an extension.
 func isExtension(name string) bool {
 	return !slices.Contains(reservedNames, name) && slices.Contains(extensionNames, name)
-}
-
-func unknownCommand(p *i18n.Printer, name string) contract.Problem {
-	return contract.Problem{
-		Code:    contract.UsageInvalid,
-		Message: p.T("usage.unknown_command", map[string]any{"Name": name}),
-		Hint:    "ncly --help",
-	}
 }
 
 // report prints an outcome and returns its exit code. An answer that

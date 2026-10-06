@@ -14,6 +14,7 @@ import (
 var rootCommand = contract.Command{
 	Summary: "root.summary",
 	Examples: []string{
+		`ncly completion zsh > "${fpath[1]}/_ncly"`,
 		`ncly --version`,
 		`NCLY_JSON=1 ncly help`,
 	},
@@ -22,7 +23,7 @@ var rootCommand = contract.Command{
 var helpDeclaration = contract.Command{
 	Path:     []string{"help"},
 	Summary:  "help.summary",
-	Examples: []string{`ncly help`, `ncly --help`},
+	Examples: []string{`ncly help`, `ncly help completion zsh`},
 }
 
 // valueAnnotation keeps the declared name of a flag's value, such as tag.

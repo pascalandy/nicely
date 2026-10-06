@@ -53,3 +53,29 @@ func Backticked(cell string) []string {
 	}
 	return spans
 }
+
+// Block returns the lines of the first fenced code block in the section
+// whose "## " heading starts with heading.
+func Block(path, heading string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var lines []string
+	inSection, inBlock := false, false
+	for line := range strings.Lines(string(data)) {
+		line = strings.TrimRight(line, "\n")
+		switch {
+		case strings.HasPrefix(line, "## "):
+			inSection = strings.HasPrefix(line, "## "+heading)
+		case inSection && strings.HasPrefix(line, "```"):
+			if inBlock {
+				return lines, nil
+			}
+			inBlock = true
+		case inBlock:
+			lines = append(lines, line)
+		}
+	}
+	return nil, fmt.Errorf("%s: no code block under %q", path, heading)
+}
