@@ -11,19 +11,40 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var rootCommand = contract.Command{
-	Summary: "root.summary",
-	Examples: []string{
-		`ncly completion zsh > "${fpath[1]}/_ncly"`,
-		`ncly --version`,
-		`NCLY_JSON=1 ncly help`,
-	},
-}
-
 var helpDeclaration = contract.Command{
 	Path:     []string{"help"},
 	Summary:  "help.summary",
 	Examples: []string{`ncly help`, `ncly help completion zsh`},
+}
+
+// helpCommand prints the same help as --help, and fails on an unknown topic.
+func helpCommand(b builder) *cobra.Command {
+	return &cobra.Command{
+		Use:     "help [command]",
+		Short:   b.p.T(helpDeclaration.Summary),
+		Example: strings.Join(helpDeclaration.Examples, "\n"),
+		RunE: func(c *cobra.Command, args []string) error {
+			target, rest, err := c.Root().Find(args)
+			switch {
+			case err != nil:
+				return fail(b.unknownCommand(c.Root(), args[0]))
+			case len(rest) > 0:
+				return fail(b.unknownCommand(target, rest[0]))
+			}
+			return target.Help()
+		},
+		ValidArgsFunction: func(c *cobra.Command, args []string, _ string) ([]cobra.Completion, cobra.ShellCompDirective) {
+			var names []cobra.Completion
+			if target, rest, err := c.Root().Find(args); err == nil && len(rest) == 0 {
+				for _, sub := range target.Commands() {
+					if sub.IsAvailableCommand() {
+						names = append(names, cobra.CompletionWithDesc(sub.Name(), sub.Short))
+					}
+				}
+			}
+			return names, cobra.ShellCompDirectiveNoFileComp
+		},
+	}
 }
 
 // valueAnnotation keeps the declared name of a flag's value, such as tag.

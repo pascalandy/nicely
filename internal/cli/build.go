@@ -60,7 +60,3 @@ func (b builder) unknownCommand(c *cobra.Command, word string) contract.Problem 
 		Hint:    c.CommandPath() + " --help",
 	}
 }
-
-func fail(problems ...contract.Problem) *failure {
-	return &failure{contract.Outcome{Errors: problems}}
-}

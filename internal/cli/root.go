@@ -35,6 +35,15 @@ var globalFlags = []contract.Flag{
 	{Name: "version", Summary: "flag.version"},
 }
 
+var rootCommand = contract.Command{
+	Summary: "root.summary",
+	Examples: []string{
+		`ncly completion zsh > "${fpath[1]}/_ncly"`,
+		`ncly --version`,
+		`NCLY_JSON=1 ncly help`,
+	},
+}
+
 // reservedNames are the names that only core may use, so an extension never
 // runs under them, even before core ships their command.
 var reservedNames = []string{
@@ -149,40 +158,14 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 	return root
 }
 
-// helpCommand prints the same help as --help, and fails on an unknown topic.
-func helpCommand(b builder) *cobra.Command {
-	return &cobra.Command{
-		Use:     "help [command]",
-		Short:   b.p.T(helpDeclaration.Summary),
-		Example: strings.Join(helpDeclaration.Examples, "\n"),
-		RunE: func(c *cobra.Command, args []string) error {
-			target, rest, err := c.Root().Find(args)
-			switch {
-			case err != nil:
-				return fail(b.unknownCommand(c.Root(), args[0]))
-			case len(rest) > 0:
-				return fail(b.unknownCommand(target, rest[0]))
-			}
-			return target.Help()
-		},
-		ValidArgsFunction: func(c *cobra.Command, args []string, _ string) ([]cobra.Completion, cobra.ShellCompDirective) {
-			var names []cobra.Completion
-			if target, rest, err := c.Root().Find(args); err == nil && len(rest) == 0 {
-				for _, sub := range target.Commands() {
-					if sub.IsAvailableCommand() {
-						names = append(names, cobra.CompletionWithDesc(sub.Name(), sub.Short))
-					}
-				}
-			}
-			return names, cobra.ShellCompDirectiveNoFileComp
-		},
-	}
-}
-
 // failure carries the outcome of a command that failed.
 type failure struct{ outcome contract.Outcome }
 
 func (f *failure) Error() string { return string(f.outcome.Errors[0].Code) }
+
+func fail(problems ...contract.Problem) *failure {
+	return &failure{contract.Outcome{Errors: problems}}
+}
 
 func isBuiltIn(root *cobra.Command, name string) bool {
 	return slices.ContainsFunc(root.Commands(), func(c *cobra.Command) bool { return c.Name() == name })
