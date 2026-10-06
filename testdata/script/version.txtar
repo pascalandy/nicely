@@ -1,0 +1,7 @@
+# The version goes to stdout and nothing goes to stderr
+exec ncly --version
+stdout '^ncly v\d+\.\d+\.\d+'
+! stderr .
+
+# The version exits 0
+exits 0 ncly --version

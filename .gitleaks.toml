@@ -1,0 +1,28 @@
+# Generic rules for this public repository, on top of the default rules.
+# Rules that name private hosts belong in lefthook-local.yml, which git ignores.
+title = "nicely"
+
+[extend]
+useDefault = true
+
+# The secret group holds the user name alone, because the default global
+# allowlist skips any finding that starts with /home/.
+[[rules]]
+id = "home-path"
+description = "A real home folder. Write /Users/me or /home/me instead"
+regex = '''(?:^|[\s"'`(=:,\[])/(?:Users|home)/([A-Za-z0-9._-]+)'''
+secretGroup = 1
+keywords = ["/users/", "/home/"]
+
+[[rules.allowlists]]
+regexes = ['''^(?:me|runner|linuxbrew)$''']
+
+[[rules]]
+id = "private-ip"
+description = "A private or Tailscale address. Write example.com instead"
+regex = '''\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7]))\.\d{1,3}\.\d{1,3}\b'''
+
+# `just gitleaks-rules` feeds these fixtures through the rules above.
+[[allowlists]]
+description = "Fixtures that prove the rules"
+paths = ['''^testdata/gitleaks/''']

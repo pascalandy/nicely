@@ -1,0 +1,8 @@
+path: /home/someone/notes
+cd /home/someone
+"/Users/someone/code"
+config = '/Users/someone/.config'
+host 192.168.1.20
+lan 10.0.0.12
+docker 172.20.0.5
+tailscale 100.101.12.3

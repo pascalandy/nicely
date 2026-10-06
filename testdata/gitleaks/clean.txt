@@ -1,0 +1,6 @@
+see `/Users/me/code/skills`
+cd /home/me
+brew /home/linuxbrew/.linuxbrew
+https://example.com/home/page
+version 10.15
+public 8.8.8.8
