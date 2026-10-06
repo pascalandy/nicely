@@ -68,12 +68,15 @@ func scan(cmd *cobra.Command, args []string) commandLine {
 }
 
 // shorthands reads a group such as -vh, -lfr, or -l fr. An unknown letter
-// counts as a switch, so -zh still asks for help.
+// counts as a switch, so -zh still asks for help. The text after = is the
+// value of the letter before it, so -z=h does not.
 func (line *commandLine) shorthands(flags *pflag.FlagSet, group string, next func() (string, bool)) {
 	for j := 0; j < len(group); j++ {
 		f := flags.ShorthandLookup(group[j : j+1])
 		rest := group[j+1:]
 		switch {
+		case f == nil && strings.HasPrefix(rest, "="):
+			return
 		case f == nil:
 		case strings.HasPrefix(rest, "="):
 			line.set(f, rest[1:])
