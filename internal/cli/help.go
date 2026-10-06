@@ -35,7 +35,7 @@ func helpFunc(p *i18n.Printer, noColor *bool) func(*cobra.Command, []string) {
 		page := tui.HelpPage{
 			Summary:       c.Short,
 			UsageTitle:    p.T("help.usage"),
-			Usage:         c.CommandPath() + " [flags]",
+			Usage:         c.UseLine(),
 			ExamplesTitle: p.T("help.examples"),
 		}
 		if c.Example != "" {

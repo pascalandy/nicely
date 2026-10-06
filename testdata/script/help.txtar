@@ -65,3 +65,7 @@ env NO_COLOR=
 env TERM=dumb
 exec ncly --help
 ! stdout '\x1b\['
+
+# The usage line keeps the positional arguments of a command
+exec ncly help help
+stdout '^  ncly help \[command\] \[flags\]$'
