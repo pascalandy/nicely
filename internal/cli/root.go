@@ -60,7 +60,8 @@ var extensionNames []string
 func Main(args []string, stdout, stderr *os.File) int {
 	// Go ends the process with SIGPIPE when the reader of stdout is gone,
 	// before ncly can report the lost output. Asking for the signal turns
-	// that write into an EPIPE error instead.
+	// that write into an EPIPE error instead. signal.Ignore would do the
+	// same, but every program that ncly runs would inherit the ignored signal.
 	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
 	// The parser stops at its first error, so read the command line first:
 	// the language, help, and machine mode must hold even when parsing fails.
