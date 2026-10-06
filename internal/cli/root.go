@@ -104,10 +104,9 @@ func Main(args []string, stdout, stderr *os.File) int {
 	return report(p, g, failed.outcome, stdout, stderr)
 }
 
-// output passes writes to stdout and remembers the first that failed, so a
-// command whose output was lost never reports success. It keeps the methods
-// that terminal detection needs, and no other method of the file, so every
-// write goes through Write.
+// output records the first failed write, so lost output never reports
+// success. Beyond Write, it keeps only Fd, for terminal detection, so that no
+// other method of the file can write around Write.
 type output struct {
 	file *os.File
 	err  error
@@ -120,10 +119,6 @@ func (o *output) Write(b []byte) (int, error) {
 	}
 	return n, err
 }
-
-func (o *output) Read(b []byte) (int, error) { return o.file.Read(b) }
-
-func (o *output) Close() error { return o.file.Close() }
 
 func (o *output) Fd() uintptr { return o.file.Fd() }
 
@@ -190,9 +185,6 @@ type failure struct{ outcome contract.Outcome }
 func (f *failure) Error() string { return string(f.outcome.Errors[0].Code) }
 
 func isBuiltIn(root *cobra.Command, name string) bool {
-	if name == cobra.ShellCompRequestCmd || name == cobra.ShellCompNoDescRequestCmd {
-		return true
-	}
 	return slices.ContainsFunc(root.Commands(), func(c *cobra.Command) bool { return c.Name() == name })
 }
 
