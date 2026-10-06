@@ -8,7 +8,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testscript.Main(m, map[string]func(){"ncly": main})
+	testscript.Main(m, map[string]func(){"ncly": main, "closedpipe": closedPipe})
 }
 
 func TestScripts(t *testing.T) {
@@ -18,11 +18,10 @@ func TestScripts(t *testing.T) {
 		RequireUniqueNames:  true,
 		Setup:               setupHome,
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
-			"exits":      cmdExits,
-			"answer":     cmdAnswer,
-			"snapshot":   cmdSnapshot,
-			"unchanged":  cmdUnchanged,
-			"closedpipe": cmdClosedPipe,
+			"exits":     cmdExits,
+			"answer":    cmdAnswer,
+			"snapshot":  cmdSnapshot,
+			"unchanged": cmdUnchanged,
 		},
 	})
 }

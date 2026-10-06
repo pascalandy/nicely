@@ -1,0 +1,16 @@
+# A reader that closed the pipe is a lost output too: exit 1 and RUNTIME, never a signal.
+# closedpipe runs ncly with a stdout pipe whose reader is already closed.
+exits 1 closedpipe ncly --version --json
+answer stderr RUNTIME
+exits 1 closedpipe ncly --help --json
+answer stderr RUNTIME
+exits 1 closedpipe ncly --help
+stderr 'Could not write the output'
+
+# The scenario's own environment reaches the command: NCLY_JSON=1 selects machine output
+env NCLY_JSON=1
+exits 1 closedpipe ncly --help
+answer stderr RUNTIME
+env NCLY_JSON=
+exits 1 closedpipe ncly --help
+! stderr '"ok"'

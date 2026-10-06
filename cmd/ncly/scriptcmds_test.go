@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/rogpeppe/go-internal/testscript"
 )
@@ -192,56 +193,33 @@ func compare(before, after map[string]string) []string {
 	return diff
 }
 
-// cmdClosedPipe runs a command whose stdout is a pipe with no reader left,
-// asserts its exit code, and saves its stderr to a file:
-// closedpipe <code> <stderr-file> <command> [args...]. A shell redirection
-// cannot close the reader before the first write, so the test does it.
-func cmdClosedPipe(ts *testscript.TestScript, neg bool, args []string) {
-	if neg || len(args) < 3 {
-		ts.Fatalf("usage: closedpipe <code> <stderr-file> <command> [args...]")
-	}
-	want, err := strconv.Atoi(args[0])
-	if err != nil {
-		ts.Fatalf("closedpipe: invalid code %q", args[0])
-	}
+// closedPipe is the closedpipe program of the scenarios: it runs its
+// arguments as a command whose stdout is a pipe with no reader left, and
+// exits with that command's code: closedpipe ncly --version. A shell
+// redirection cannot close the reader before the first write. As a program,
+// it runs with the scenario's environment, and its stderr is the command's.
+func closedPipe() {
 	reader, writer, err := os.Pipe()
-	ts.Check(err)
-	ts.Check(reader.Close())
-	defer func() { _ = writer.Close() }()
-	path, err := lookPath(ts, args[2])
-	ts.Check(err)
-	var stderr strings.Builder
-	cmd := exec.Command(path, args[3:]...)
-	cmd.Dir = ts.Getenv("WORK")
-	cmd.Env = append(os.Environ(), "HOME="+ts.Getenv("HOME"), "PATH="+ts.Getenv("PATH"),
-		"XDG_CONFIG_HOME="+ts.Getenv("XDG_CONFIG_HOME"), "XDG_CACHE_HOME="+ts.Getenv("XDG_CACHE_HOME"))
-	cmd.Stdout, cmd.Stderr = writer, &stderr
-	got := 0
+	if err == nil {
+		err = reader.Close()
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "closedpipe:", err)
+		os.Exit(127)
+	}
+	cmd := exec.Command(os.Args[1], os.Args[2:]...)
+	cmd.Stdout, cmd.Stderr = writer, os.Stderr
 	var exitErr *exec.ExitError
 	switch err := cmd.Run(); {
 	case err == nil:
+		os.Exit(0)
 	case errors.As(err, &exitErr):
-		got = exitErr.ExitCode()
-	default:
-		ts.Fatalf("closedpipe: %v", err)
-	}
-	ts.Check(os.WriteFile(ts.MkAbs(args[1]), []byte(stderr.String()), 0o600))
-	if got != want {
-		ts.Fatalf("%s exited with %d, want %d; stderr: %q", args[2], got, want, stderr.String())
-	}
-}
-
-// lookPath finds a command in the PATH of the script, which holds ncly.
-func lookPath(ts *testscript.TestScript, name string) (string, error) {
-	for _, dir := range filepath.SplitList(ts.Getenv("PATH")) {
-		if path := filepath.Join(dir, name); fileExists(path) {
-			return path, nil
+		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+			os.Exit(128 + int(status.Signal()))
 		}
+		os.Exit(exitErr.ExitCode())
+	default:
+		fmt.Fprintln(os.Stderr, "closedpipe:", err)
+		os.Exit(127)
 	}
-	return "", fmt.Errorf("%s not found in PATH", name)
-}
-
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir()
 }
