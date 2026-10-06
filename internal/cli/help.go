@@ -33,6 +33,10 @@ const valueAnnotation = "ncly-value"
 // active language.
 func helpFunc(p *i18n.Printer, noColor *bool) func(*cobra.Command, []string) {
 	return func(c *cobra.Command, _ []string) {
+		// Reading the flags first merges the global flags into c.Flags(),
+		// which UseLine needs to add [flags]. Cobra skips that merge when it
+		// reaches c without parsing, as in ncly help completion zsh.
+		local, inherited := c.LocalFlags(), c.InheritedFlags()
 		page := tui.HelpPage{
 			Summary:       c.Short,
 			UsageTitle:    p.T("help.usage"),
@@ -52,10 +56,10 @@ func helpFunc(p *i18n.Printer, noColor *bool) func(*cobra.Command, []string) {
 			page.Usage = c.CommandPath() + " <command> [flags]"
 			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.commands"), Entries: commands, Colon: true})
 		}
-		if flags := flagEntries(c.LocalFlags()); len(flags) > 0 {
+		if flags := flagEntries(local); len(flags) > 0 {
 			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.flags"), Entries: flags})
 		}
-		if flags := flagEntries(c.InheritedFlags()); len(flags) > 0 {
+		if flags := flagEntries(inherited); len(flags) > 0 {
 			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.global_flags"), Entries: flags})
 		}
 		_, _ = fmt.Fprint(tui.Output(c.OutOrStdout(), noColor), tui.Help(page))

@@ -29,6 +29,12 @@ stdout '^  ncly completion zsh \[flags\]$'
 stdout '^GLOBAL FLAGS$'
 ! stdout '^COMMANDS$'
 
+# ncly help prints the same page for a subcommand, usage line included
+cp stdout zsh-help.txt
+exec ncly help completion zsh
+cmp stdout zsh-help.txt
+! stderr .
+
 # Help wins over unknown flags and unknown commands, and ignores --json
 exec ncly --unknown-flag --help --json
 cmp stdout bare.txt
