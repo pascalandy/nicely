@@ -17,6 +17,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | `ncly skill pack` | Zips a skill for upload to the Claude apps | A skill must work in an app that cannot read GitHub |
 | `ncly skill index` | Generates the remote skills index that `just remote-skills` builds today | The skills repository moves its tooling into Nicely |
 | `ncly skill run` | Runs a script of a skill with its prerequisites checked | Agents struggle to run skill scripts by path |
+| MCP skills server | Serves skills over the MCP Skills extension, SEP-2640, from the `skill` domain package rather than from CLI output. Per-file manifests join `view --json` as optional fields, never `list`, which agents read whole. Research in [#10](https://github.com/pascalandy/nicely/issues/10) | A host Pascal uses supports SEP-2640 and cannot read skills from disk. `ncly skill pack` answers the same need |
 | Agent code review | Exposes the built-in review mode of each harness through `ncly agent` | Pascal reviews code through `ncly agent` weekly |
 | Public docs build | `ncly docs build --public` builds and hosts only the `public` projects | A project needs public docs |
 | Progress events | Long commands expose live JSON Lines events and a step list. M1 already records effect boundaries internally and supports inspection after interruption | Live progress adds value beyond the saved run record |
