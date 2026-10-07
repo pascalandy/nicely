@@ -58,7 +58,7 @@ The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archi
 - [x] 4. Text: n/a; no core text or catalog changes
 - [x] 5. Checks: `just release-check v0.0.1` passes, including `just check`, vulnerability and configuration checks, and the complete no-publish rehearsal
 - [x] 6. Docs: local preparation and its limits are recorded here; README still correctly says there is no release
-- [x] 7. Sign off: n/a for local-only preparation; no pushed head exists to sign off
+- [x] 7. Sign off: n/a during local-only preparation; a branch sent for review runs `just signoff`
 
 ## Out of scope
 
