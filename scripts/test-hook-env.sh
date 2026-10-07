@@ -9,13 +9,16 @@ fct_main() {
 	trap 'rm -rf "${NCLY_HOOK_TEST_ROOT}"' EXIT
 	caller="${test_dir}/caller"
 	mkdir -p "${caller}/tools" "${caller}/scripts" "${test_dir}/bin"
+	printf '[commit]\n gpgsign = true\n[gpg]\n program = %s/missing-signer\n' "${test_dir}" >"${test_dir}/signing.cfg"
+	export GIT_CONFIG_GLOBAL="${test_dir}/signing.cfg" GIT_CONFIG_NOSYSTEM=1
 	git -c init.templateDir= init --quiet "${caller}"
 	printf 'caller data\n' >"${caller}/sentinel.txt"
 	git -C "${caller}" add sentinel.txt
-	git -C "${caller}" -c core.hooksPath=/dev/null -c user.name=Test -c user.email=test@example.com commit --quiet -m caller
+	git -C "${caller}" -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=Test -c user.email=test@example.com commit --quiet -m caller
 	cp "${repo_root}/justfile" "${caller}/justfile"
-	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/release-check-test.sh"
-	cp "${caller}/scripts/release-check-test.sh" "${caller}/scripts/test-hook-env.sh"
+	cp "${repo_root}/scripts/release-check-test.sh" "${caller}/scripts/release-check-test.sh"
+	cp "${repo_root}/scripts/release-check.sh" "${caller}/scripts/release-check.sh"
+	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/test-hook-env.sh"
 	cat >"${test_dir}/bin/go" <<'SCRIPT'
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -24,7 +27,7 @@ cd "${foreign}"
 git -c init.templateDir= init --quiet
 printf 'foreign data\n' >marker.txt
 git add marker.txt
-git -c core.hooksPath=/dev/null -c user.name=Test -c user.email=test@example.com commit --quiet -m foreign
+git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=Test -c user.email=test@example.com commit --quiet -m foreign
 SCRIPT
 	chmod 755 "${test_dir}/bin/go"
 	before="$(git -C "${caller}" rev-parse HEAD)"

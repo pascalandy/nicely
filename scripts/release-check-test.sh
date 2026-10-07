@@ -31,7 +31,7 @@ SCRIPT
 	git -c init.templateDir= init --quiet
 	printf 'original\n' >source.txt
 	git add source.txt
-	git -c core.hooksPath=/dev/null -c user.name=Test -c user.email=test@example.com commit --quiet -m fixture
+	git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=Test -c user.email=test@example.com commit --quiet -m fixture
 	fct_fails_with 2 bash "${script}" v01.2.3
 	[[ ! -e "${test_root}/calls" ]]
 	printf 'new\n' >untracked.txt
