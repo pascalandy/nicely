@@ -31,10 +31,12 @@ Do the tasks in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 - [x] **T3 Config.** The shared and local config files, their precedence, and the XDG paths, including state. `CONFIG_INVALID` for a broken file. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports in M1.
 - [x] **T4 Text.** The English catalog, with a description per entry, and the parity test against `en`. The pseudo-locale `en-XA`, with scenarios for the help and for an error. Plural rules, number, size, and date formats, and language matching in `internal/i18n`. Help text comes from the catalog, so `--lang` is read before the command tree is built. Styles and the error block in `internal/tui`.
 - [x] **T5 Completion.** `ncly completion zsh|bash|fish`.
-- [ ] **T6 Release.** GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`.
+- [x] **T6 Release.** GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`. Prepared locally under the exception above; publishing remains gated by the AUR prerequisite and T7.
 - [ ] **T7 First release.** v0.0.1 is tagged and released through `release.yml`, and both manual checks pass.
 
 ### Local release preparation (T6)
+
+The full local check runs on Linux with Go, Git, just, gitleaks, shellcheck, shfmt, Ruby, GNU `install`, `shasum`, and `tar`. The tools module requires Go 1.27.1, which Go downloads when automatic toolchain downloads are enabled. The application module still requires Go 1.27.0.
 
 `just release-check vX.Y.Z` runs `just check`, the pinned `govulncheck` and `goreleaser check`, then prepares and checks a snapshot in its own temporary checkout. It accepts a release tag such as `v0.0.1`; an invalid tag fails before building. It uses no publishing credentials and invokes no publisher. A failed check returns a failure, never release readiness.
 
@@ -42,9 +44,21 @@ The snapshot contains four binary archives, for macOS and Linux on amd64 and arm
 
 The source archive contains the committed application source, `go.mod`, `go.sum`, and third-party notices. Building the extracted source must reproduce the requested version. Preparation uses an isolated committed checkout so that the source archive cannot silently omit the working changes being tested.
 
+Stage additions and deletions before running the recipe. It captures current tracked files and rejects untracked files, missing tracked files, symbolic links, and source changes during capture. Each attempt keeps a fresh scratch directory, by default `/tmp/ncly-release-check.XXXXXXXX`, with artifacts under `tree/dist`. The recipe prints the retained path on success or failure after capture starts. Remove the scratch directory after inspecting its artifacts.
+
 The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archive, verify its checksum, and install its binary, notices, and completions. The Homebrew formula uses the source archive and its actual checksum, builds `ncly` with the release version, installs its notices, and generates its completions. Local checks stage the AUR package using local artifact fixtures and check the formula's Ruby syntax; they do not install either package into Pascal's normal system.
 
 `release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. The first real dispatch, publishing authorization, macOS execution, and the two installation checks remain T7 work.
+
+#### T6 implementation checklist
+
+- [x] 1. Spec: n/a for `cli-spec.md`; no `ncly` command, flag, JSON key, or error code changes, and the development recipe contract is above
+- [x] 2. Scenario: executable release-tool and shell scenarios failed for missing behavior before implementation
+- [x] 3. Code: artifact checks, byte-identical source rebuilds for all four targets, both Linux AUR staging runs, and formula Ruby syntax pass
+- [x] 4. Text: n/a; no core text or catalog changes
+- [x] 5. Checks: `just release-check v0.0.1` passes, including `just check`, vulnerability and configuration checks, and the complete no-publish rehearsal
+- [x] 6. Docs: local preparation and its limits are recorded here; README still correctly says there is no release
+- [x] 7. Sign off: n/a for local-only preparation; no pushed head exists to sign off
 
 ## Out of scope
 
