@@ -14,9 +14,13 @@ check: fmt-check lint tidy-check test release-lint gitleaks-rules gitleaks
 # Run the Go tests and the testscript scenarios
 [group('checks')]
 test *args:
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
     go test ./... {{ args }}
-    cd tools && go test ./cmd/... {{ args }}
+    (cd tools && go test ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
+    bash scripts/test-hook-env.sh
 
 # Lint the Go code
 [group('checks')]
