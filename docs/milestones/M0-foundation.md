@@ -46,7 +46,16 @@ The source archive contains the committed application source, `go.mod`, `go.sum`
 
 Stage additions and deletions before running the recipe. It captures current tracked files and rejects untracked files, missing tracked files, symbolic links, and source changes during capture. Each attempt keeps a fresh scratch directory, by default `/tmp/ncly-release-check.XXXXXXXX`, with artifacts under `tree/dist`. The recipe prints the retained path on success or failure after capture starts. Remove the scratch directory after inspecting its artifacts.
 
-The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archive, verify its checksum, and install its binary, notices, and completions. The Homebrew formula uses the source archive and its actual checksum, builds `ncly` with the release version, installs its notices, and generates its completions. Local checks stage the AUR package using local artifact fixtures and check the formula's Ruby syntax; they do not install either package into Pascal's normal system.
+The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archive, verify its checksum, and install its binary, notices, and completions. The Homebrew formula uses the source archive and its actual checksum, builds `ncly` with the release version, installs its notices, and generates its completions. Each local check has one proof owner.
+
+| Owner | Local proof | Limit |
+|---|---|---|
+| Go [archive inspection](../../tools/cmd/release-artifacts/archive.go) and [source verification](../../tools/cmd/release-artifacts/verify.go) | Exactly four binary targets, archive contents, notices, completions, checksums, and byte-identical source rebuilds | AUR package proof belongs to Bash staging |
+| Bash [AUR staging](../../scripts/verify-aur.sh) | Evaluated package metadata, local checksums, and staged installation contents and modes for both Linux architectures | Package-manager installation remains T7 work |
+| Formula syntax check in [release-check.sh](../../scripts/release-check.sh) | Ruby accepts the generated Homebrew formula | The Homebrew build and installation remain T7 work |
+| Complete [release-check recipe](../../scripts/release-check.sh) | All local checks pass for the captured current tracked source, including final source stability and blocked-command checks | Publishing [prerequisites](#prerequisites) and T7 acceptance remain separate gates |
+
+A zero exit from the full recipe proves the local rehearsal for that captured source. On success, review the retained artifacts. On failure, use any retained files to diagnose the failed check. Fix the cause, then rerun the full recipe. A component check on retained artifacts proves only that component's result. A source change requires a fresh full recipe run.
 
 `release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. The first real dispatch, publishing authorization, macOS execution, and the two installation checks remain T7 work.
 

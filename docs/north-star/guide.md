@@ -25,7 +25,9 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 
 `ncly` also runs agents. Profiles in the config name a harness, a model, and an effort from M1. The internal agent service owns harness logic from M1, when transcript needs a summary. M2 exposes that service through `ncly agent` and adds the other adapters.
 
-An agent discovers a command, prepares its inputs, executes it, and inspects the results. Commands with paid work or reusable partial results keep a run record. After an interruption, an agent inspects that record and requests an explicit resume of the safe steps. A record does not keep a process alive. Nicely has no background worker or scheduler in these milestones.
+M0 exposes `--help`, `--version`, and `completion`. The agent lifecycle is planned for M1. An agent reads one command's declaration with [`ncly describe transcript run youtube --json`](cli-spec.md#ncly-describe-m1) to learn its supported capabilities. [`ncly doctor transcript --json`](cli-spec.md#ncly-doctor-m1) checks the current machine's prerequisites. The command's [`--dry-run`](cli-spec.md#operations-m0-contract-m1-execution) shares preparation with execution and reports checks still pending.
+
+From M1, commands with paid work or reusable partial results keep a run record. After execution or interruption, an agent inspects the saved operation's status and step evidence with [`ncly run view <run-id> --json`](cli-spec.md#ncly-run-m1). A successful inspection reports saved evidence. [Explicit resume](cli-spec.md#inspection-and-explicit-resume) separately validates which remaining steps are safe. A record does not keep a process alive. Nicely has no background worker or scheduler in these milestones.
 
 ## Principles
 
