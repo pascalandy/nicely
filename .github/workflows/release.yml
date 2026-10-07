@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       TAG: ${{ inputs.tag }}
+      GORELEASER_CURRENT_TAG: ${{ inputs.tag }}
     steps:
       - name: Validate release tag
         shell: bash
