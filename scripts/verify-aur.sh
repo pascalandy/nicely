@@ -2,11 +2,17 @@
 set -Eeuo pipefail
 
 fct_stage_package() (
-	local tag="${1}" dist="${2}" aur_arch="${3}" go_arch="${4}" stage archive source_file source_url checksum file mode
+	local tag="${1}" dist="${2}" aur_arch="${3}" go_arch="${4}" stage archive source_file source_url checksum file mode raw templated
 	local pkgname="" pkgver="" pkgdir=""
 	local -a source_x86_64=() source_aarch64=() sha256sums_x86_64=() sha256sums_aarch64=()
 	stage="${dist}/checks/aur-${aur_arch}"
 	archive="ncly_${tag#v}_linux_${go_arch}.tar.gz"
+	raw="$(cat "${dist}/aur/ncly-bin.pkgbuild")"
+	templated="https://github.com/pascalandy/nicely/releases/download/v\${pkgver}/ncly_\${pkgver}_linux_${go_arch}.tar.gz"
+	if [[ "${raw}" != *"${templated}"* ]]; then
+		printf 'AUR PKGBUILD URL is not tied to pkgver\n' >&2
+		return 1
+	fi
 	mkdir -p "${stage}/source" "${stage}/package"
 	cd "${stage}/source"
 	# shellcheck source=/dev/null
@@ -25,6 +31,8 @@ fct_stage_package() (
 	source_url="${source_file#*::}"
 	[[ "${source_url}" == "https://github.com/pascalandy/nicely/releases/download/${tag}/${archive}" ]]
 	printf '%s  %s\n' "${checksum}" "${dist}/${archive}" | shasum -a 256 --check >/dev/null
+	[[ $(awk '$1 == "pkgver" && $2 == "=" { print $3 }' "${dist}/aur/ncly-bin.srcinfo") == "${tag#v}" ]]
+	awk -v arch="${aur_arch}" '$1 == "arch" && $2 == "=" && $3 == arch { found = 1 } END { exit !found }' "${dist}/aur/ncly-bin.srcinfo"
 	[[ $(awk -v key="source_${aur_arch}" '$1 == key && $2 == "=" { print $3 }' "${dist}/aur/ncly-bin.srcinfo") == "${source_file}" ]]
 	[[ $(awk -v key="sha256sums_${aur_arch}" '$1 == key && $2 == "=" { print $3 }' "${dist}/aur/ncly-bin.srcinfo") == "${checksum}" ]]
 	cp "${dist}/${archive}" "${source_file%%::*}"

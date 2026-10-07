@@ -10,24 +10,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
-
-	"go.yaml.in/yaml/v3"
 )
 
 func command(dir string, env []string, name string, args ...string) ([]byte, error) {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
-	cmd.Env = slices.DeleteFunc(os.Environ(), func(s string) bool {
-		for _, e := range env {
-			if strings.HasPrefix(s, strings.SplitN(e, "=", 2)[0]+"=") {
-				return true
-			}
-		}
-		return false
-	})
-	cmd.Env = append(cmd.Env, env...)
+	// exec keeps the last value of a duplicated key.
+	cmd.Env = append(os.Environ(), env...)
 	out, err := cmd.Output()
 	if err != nil {
 		var failure *exec.ExitError
@@ -47,44 +37,8 @@ func targetEnv(t target) []string {
 	return []string{"GOOS=" + t.OS, "GOARCH=" + t.Arch, "CGO_ENABLED=0"}
 }
 
-func configuredTargets(tree string) ([]target, error) {
-	data, err := os.ReadFile(filepath.Join(tree, ".goreleaser.yaml"))
-	if err != nil {
-		return nil, err
-	}
-	var config struct {
-		Builds []struct {
-			GOOS   []string `yaml:"goos"`
-			GOARCH []string `yaml:"goarch"`
-		} `yaml:"builds"`
-	}
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-	var targets []target
-	for _, b := range config.Builds {
-		for _, os := range b.GOOS {
-			for _, arch := range b.GOARCH {
-				t := target{os, arch}
-				if slices.Contains(targets, t) {
-					return nil, fmt.Errorf("duplicate configured target %s/%s", os, arch)
-				}
-				targets = append(targets, t)
-			}
-		}
-	}
-	if len(targets) == 0 {
-		return nil, fmt.Errorf("release has no configured targets")
-	}
-	return targets, nil
-}
-
 func prepare(version, tree string) error {
 	tree, err := filepath.Abs(tree)
-	if err != nil {
-		return err
-	}
-	targets, err := configuredTargets(tree)
 	if err != nil {
 		return err
 	}
@@ -121,7 +75,7 @@ func prepare(version, tree string) error {
 		}
 	}
 	union := make(map[string][]byte)
-	for _, t := range targets {
+	for _, t := range releaseTargets {
 		dir := filepath.Join(root, "notices-"+t.OS+"-"+t.Arch)
 		if _, err := command(tree, targetEnv(t), licenses, "save", "./cmd/ncly", "--ignore=github.com/pascalandy/nicely", "--save_path="+dir); err != nil {
 			return err
@@ -149,9 +103,13 @@ func prepare(version, tree string) error {
 			return err
 		}
 	}
-	return checkSourceNotices(tree, filepath.Join(root, "notices"), targets)
+	return checkSourceNotices(tree, filepath.Join(root, "notices"), releaseTargets)
 }
 
+// checkSourceNotices reports a runtime dependency whose license or adjacent
+// NOTICE is absent from the collected tree. Packages in one module can carry
+// different licenses, so it walks from each package directory to the module
+// root and stops at the first recognized license.
 func checkSourceNotices(tree, notices string, targets []target) error {
 	collected, err := readTree(notices)
 	if err != nil {

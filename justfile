@@ -11,11 +11,12 @@ default:
 [group('checks')]
 check: fmt-check lint tidy-check test release-lint gitleaks-rules gitleaks
 
-# Run the Go tests and the testscript scenarios
+# Run the Go tests, the testscript scenarios, and the release script checks
 [group('checks')]
 test *args:
     #!/usr/bin/env bash
     set -Eeuo pipefail
+    # A hook or a caller can export GIT_DIR. Fixture commits must see a normal repository.
     while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
     go test ./... {{ args }}
     (cd tools && go test ./cmd/... {{ args }})

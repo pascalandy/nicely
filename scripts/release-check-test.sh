@@ -57,11 +57,15 @@ if [[ "${1:-}" == -C && "${3:-}" == env ]]; then
 	printf 'go1.27.1\n'
 	exit 0
 fi
-git -c log.showSignature=false -c column.ui=never rev-parse --is-inside-work-tree
+toplevel="$(git -c log.showSignature=false -c column.ui=never rev-parse --show-toplevel)"
+printf '%s\n' "${toplevel}"
 query_status=0
 git -c log.showSignature=false -c column.ui=never config gpg.program || query_status=$?
 [[ "${query_status}" == 1 && ! -s "${NCLY_BLOCKED_LOG}" ]]
-if git -c log.showSignature=false -c column.ui=never push origin HEAD:main; then
+push_status=0
+git -c log.showSignature=false -c column.ui=never push origin HEAD:main || push_status=$?
+blocked="$(grep -c 'git command blocked: push' "${NCLY_BLOCKED_LOG}" || true)"
+if [[ "${push_status}" == 0 || "${blocked}" != 1 ]]; then
 	printf 'Publisher passed the guard\n' >&2
 	exit 1
 fi
@@ -76,7 +80,8 @@ fi
 exit 77
 SCRIPT
 	fct_fails_with 77 bash "${script}" v0.0.1
-	[[ $(cat "${test_root}/stdout") == true ]]
+	scratch="$(sed -n 's/^Release rehearsal files retained at //p' "${test_root}/stderr")"
+	[[ "$(cat "${test_root}/stdout")" == "${scratch}/tree" ]]
 	[[ $(git show HEAD:source.txt) == original && -z $(git tag --list) ]]
 	printf 'Release-check validation and working-source capture passed\n'
 }

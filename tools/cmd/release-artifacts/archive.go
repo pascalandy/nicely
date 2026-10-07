@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -23,9 +24,12 @@ type entry struct {
 	Mode fs.FileMode
 }
 
-func fileHash(path string) ([32]byte, error) {
-	data, err := os.ReadFile(path)
-	return sha256.Sum256(data), err
+func fileHash(filename string) ([32]byte, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return sha256.Sum256(data), nil
 }
 
 func readArchive(filename string) (map[string]entry, error) {
@@ -70,10 +74,20 @@ func readArchive(filename string) (map[string]entry, error) {
 		}
 		files[name] = entry{data, fs.FileMode(h.Mode)}
 	}
+	// Reading past the last tar entry checks the gzip trailer checksum.
 	if _, err := io.Copy(io.Discard, gz); err != nil {
 		return nil, err
 	}
 	return files, nil
+}
+
+// releaseTargets is the closed set a release ships. .goreleaser.yaml builds
+// that set, and inspection rejects any other count.
+var releaseTargets = []target{
+	{"darwin", "amd64"},
+	{"darwin", "arm64"},
+	{"linux", "amd64"},
+	{"linux", "arm64"},
 }
 
 func inspect(version, tree, dist string) (release, error) {
@@ -101,7 +115,7 @@ func inspect(version, tree, dist string) (release, error) {
 		if err != nil {
 			return r, fmt.Errorf("%s: %w", name, err)
 		}
-		a := artifact{name, hash, files}
+		a := artifact{name, files}
 		if name == "ncly_"+numeric+"_source.tar.gz" {
 			r.Source = a
 			continue
@@ -128,8 +142,8 @@ func inspect(version, tree, dist string) (release, error) {
 			return r, err
 		}
 	}
-	if len(r.Binaries) != 4 {
-		return r, fmt.Errorf("release needs exactly four binary targets; got %d", len(r.Binaries))
+	if len(r.Binaries) != len(releaseTargets) {
+		return r, fmt.Errorf("release needs exactly %d binary targets; got %d", len(releaseTargets), len(r.Binaries))
 	}
 	for t, a := range r.Binaries {
 		if a.Name != "ncly_"+numeric+"_"+t.OS+"_"+t.Arch+".tar.gz" {
@@ -145,14 +159,7 @@ func inspect(version, tree, dist string) (release, error) {
 	if err := compareTree(r.Source.Files, "ncly-"+numeric+"/THIRD_PARTY_LICENSES", filepath.Join(tree, ".release/notices")); err != nil {
 		return r, err
 	}
-	var targets []target
-	for t := range r.Binaries {
-		targets = append(targets, t)
-	}
-	if err := checkSourceNotices(tree, filepath.Join(tree, ".release/notices"), targets); err != nil {
-		return r, err
-	}
-	return r, verifyAUR(r, dist)
+	return r, checkSourceNotices(tree, filepath.Join(tree, ".release/notices"), releaseTargets)
 }
 
 func readChecksums(dist string) (map[string]string, error) {
@@ -188,7 +195,7 @@ func binaryTarget(data []byte) (target, error) {
 		settings[s.Key] = s.Value
 	}
 	t := target{settings["GOOS"], settings["GOARCH"]}
-	if (t.OS != "linux" && t.OS != "darwin") || (t.Arch != "amd64" && t.Arch != "arm64") {
+	if !slices.Contains(releaseTargets, t) {
 		return t, fmt.Errorf("unsupported binary target %s/%s", t.OS, t.Arch)
 	}
 	if settings["CGO_ENABLED"] != "0" {

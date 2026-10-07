@@ -50,7 +50,7 @@ func TestReleaseArtifacts(t *testing.T) {
 		mutate       func(*testing.T, string, map[string]map[string][]byte)
 	}{
 		{name: "valid"},
-		{name: "missing target", reason: "four binary targets", mutate: func(t *testing.T, tree string, archives map[string]map[string][]byte) {
+		{name: "missing target", reason: "binary targets", mutate: func(t *testing.T, tree string, archives map[string]map[string][]byte) {
 			delete(archives, "ncly_0.0.1_linux_arm64.tar.gz")
 		}},
 		{name: "duplicate target", reason: "duplicate target", mutate: func(t *testing.T, tree string, archives map[string]map[string][]byte) {
@@ -238,20 +238,6 @@ func testArchives(t *testing.T, dist string, archives map[string]map[string][]by
 		fmt.Fprintf(&sums, "%x  %s\n", hash, name)
 	}
 	testWrite(t, filepath.Join(dist, "ncly_0.0.1_checksums.txt"), []byte(sums.String()))
-	var pkg, info strings.Builder
-	pkg.WriteString("pkgname='ncly-bin'\npkgver=0.0.1\narch=('x86_64' 'aarch64')\n")
-	info.WriteString("pkgbase = ncly-bin\n\tpkgver = 0.0.1\n")
-	for _, pair := range []struct{ goarch, aur string }{{"amd64", "x86_64"}, {"arm64", "aarch64"}} {
-		name := "ncly_0.0.1_linux_" + pair.goarch + ".tar.gz"
-		if _, exists := archives[name]; !exists {
-			continue
-		}
-		hash := sha256.Sum256(testRead(t, filepath.Join(dist, name)))
-		fmt.Fprintf(&pkg, "source_%s=(\"ncly-bin_${pkgver}_%s.tar.gz::https://github.com/pascalandy/nicely/releases/download/v${pkgver}/ncly_${pkgver}_linux_%s.tar.gz\")\nsha256sums_%s=('%x')\n", pair.aur, pair.aur, pair.goarch, pair.aur, hash)
-		fmt.Fprintf(&info, "\tarch = %s\n\tsource_%s = ncly-bin_0.0.1_%s.tar.gz::https://github.com/pascalandy/nicely/releases/download/v0.0.1/%s\n\tsha256sums_%s = %x\n", pair.aur, pair.aur, pair.aur, name, pair.aur, hash)
-	}
-	testWrite(t, filepath.Join(dist, "aur/ncly-bin.pkgbuild"), []byte(pkg.String()))
-	testWrite(t, filepath.Join(dist, "aur/ncly-bin.srcinfo"), []byte(info.String()))
 }
 
 func testCommand(t *testing.T, dir string, env []string, name string, args ...string) {

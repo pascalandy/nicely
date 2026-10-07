@@ -12,7 +12,6 @@ type (
 	target   struct{ OS, Arch string }
 	artifact struct {
 		Name  string
-		Hash  [32]byte
 		Files map[string]entry
 	}
 )
@@ -49,7 +48,7 @@ func run(args []string) error {
 		if err := verifySource(r, args[2]); err != nil {
 			return err
 		}
-		fmt.Printf("Verified %s: four binary targets, source, notices, completions, checksums, and AUR metadata\n", version)
+		fmt.Printf("Verified %s: four binary targets, source rebuilds, notices, completions, and checksums\n", version)
 		return nil
 	case args[0] == "formula" && len(args) == 3:
 		return writeFormula(version, args[2])

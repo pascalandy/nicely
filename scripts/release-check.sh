@@ -102,7 +102,8 @@ fct_execute_this() {
 	go_modcache="$(go env GOMODCACHE)"
 	go_toolchain="$(go -C "${root}/tools" env GOVERSION)"
 	git_path="$(command -v git)"
-	RELEASE_ENV=("PATH=${PATH}" "HOME=${RELEASE_SCRATCH}/home" "XDG_CONFIG_HOME=${RELEASE_SCRATCH}/home/config" "XDG_CACHE_HOME=${RELEASE_SCRATCH}/home/cache" "XDG_DATA_HOME=${RELEASE_SCRATCH}/home/data" "XDG_STATE_HOME=${RELEASE_SCRATCH}/home/state" "GOPATH=${go_path}" "GOCACHE=${go_cache}" "GOMODCACHE=${go_modcache}" "GOENV=off" "GOFLAGS=-mod=readonly" "GOTOOLCHAIN=${go_toolchain}" "CGO_ENABLED=0" "GIT_CONFIG_GLOBAL=/dev/null" "GIT_CONFIG_NOSYSTEM=1" "GORELEASER_CURRENT_TAG=${tag}" "NCLY_RELEASE_VERSION=${tag#v}" "AUR_SSH_KEY=" "NCLY_REAL_GIT=${git_path}" "NCLY_BLOCKED_LOG=${RELEASE_SCRATCH}/blocked-publishers.log")
+	fct_guards "${RELEASE_SCRATCH}/guards"
+	RELEASE_ENV=("PATH=${RELEASE_SCRATCH}/guards:${PATH}" "HOME=${RELEASE_SCRATCH}/home" "XDG_CONFIG_HOME=${RELEASE_SCRATCH}/home/config" "XDG_CACHE_HOME=${RELEASE_SCRATCH}/home/cache" "XDG_DATA_HOME=${RELEASE_SCRATCH}/home/data" "XDG_STATE_HOME=${RELEASE_SCRATCH}/home/state" "GOPATH=${go_path}" "GOCACHE=${go_cache}" "GOMODCACHE=${go_modcache}" "GOENV=off" "GOFLAGS=-mod=readonly" "GOTOOLCHAIN=${go_toolchain}" "CGO_ENABLED=0" "GIT_CONFIG_GLOBAL=/dev/null" "GIT_CONFIG_NOSYSTEM=1" "GORELEASER_CURRENT_TAG=${tag}" "NCLY_RELEASE_VERSION=${tag#v}" "AUR_SSH_KEY=" "NCLY_REAL_GIT=${git_path}" "NCLY_BLOCKED_LOG=${RELEASE_SCRATCH}/blocked-publishers.log")
 	for variable in HTTP_PROXY HTTPS_PROXY ALL_PROXY NO_PROXY SSL_CERT_FILE SSL_CERT_DIR; do
 		if [[ -n "${!variable:-}" ]]; then
 			RELEASE_ENV+=("${variable}=${!variable}")
@@ -112,8 +113,6 @@ fct_execute_this() {
 	fct_clean_environment "${git_path}" -C "${tree}" -c core.hooksPath=/dev/null add --all
 	fct_clean_environment "${git_path}" -C "${tree}" -c core.hooksPath=/dev/null -c user.name='Release rehearsal' -c user.email=release@example.com commit --quiet -m 'Capture release-check inputs'
 	fct_clean_environment "${git_path}" -C "${tree}" remote add origin https://github.com/pascalandy/nicely.git
-	fct_guards "${RELEASE_SCRATCH}/guards"
-	RELEASE_ENV[0]="PATH=${RELEASE_SCRATCH}/guards:${PATH}"
 	cd "${tree}"
 	fct_clean_environment go tool -modfile=tools/go.mod govulncheck ./...
 	fct_clean_environment go tool -modfile=tools/go.mod goreleaser check

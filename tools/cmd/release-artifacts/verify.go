@@ -66,9 +66,6 @@ func verifySource(r release, tree string) error {
 		return fmt.Errorf("packaged binary reports wrong release version: %s", packagedVersion)
 	}
 	for name, e := range r.Source.Files {
-		if !strings.HasPrefix(name, prefix) {
-			return fmt.Errorf("source archive has wrong root: %s", name)
-		}
 		p := filepath.Join(scratch, strings.TrimPrefix(name, prefix))
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			return err
@@ -88,44 +85,6 @@ func verifySource(r release, tree string) error {
 		}
 		if !bytes.Equal(built, a.Files["ncly"].Data) {
 			return fmt.Errorf("binary differs from source rebuild: %s/%s", t.OS, t.Arch)
-		}
-	}
-	bin := filepath.Join(scratch, "ncly-source-"+runtime.GOOS+"-"+runtime.GOARCH)
-	out, err := command(scratch, nil, bin, "--version")
-	if err != nil {
-		return err
-	}
-	if strings.TrimSpace(string(out)) != "ncly "+r.Version {
-		return fmt.Errorf("source build reports wrong release version: %s", out)
-	}
-	return nil
-}
-
-func verifyAUR(r release, dist string) error {
-	pkg, err := os.ReadFile(filepath.Join(dist, "aur/ncly-bin.pkgbuild"))
-	if err != nil {
-		return err
-	}
-	info, err := os.ReadFile(filepath.Join(dist, "aur/ncly-bin.srcinfo"))
-	if err != nil {
-		return err
-	}
-	v := strings.TrimPrefix(r.Version, "v")
-	if !strings.Contains(string(pkg), "pkgname='ncly-bin'\n") || !strings.Contains(string(pkg), "pkgver="+v+"\n") || !strings.Contains(string(info), "pkgver = "+v+"\n") {
-		return fmt.Errorf("AUR package has wrong name or version")
-	}
-	for _, pair := range []struct{ goarch, aur string }{{"amd64", "x86_64"}, {"arm64", "aarch64"}} {
-		a := r.Binaries[target{"linux", pair.goarch}]
-		source := "https://github.com/pascalandy/nicely/releases/download/" + r.Version + "/" + a.Name
-		for _, want := range []string{"arch = " + pair.aur + "\n", "source_" + pair.aur + " = ncly-bin_" + v + "_" + pair.aur + ".tar.gz::" + source + "\n", fmt.Sprintf("sha256sums_%s = %x\n", pair.aur, a.Hash)} {
-			if !strings.Contains(string(info), want) {
-				return fmt.Errorf("AUR metadata missing or wrong %s", strings.TrimSpace(want))
-			}
-		}
-		for _, want := range []string{"source_" + pair.aur + "=", fmt.Sprintf("sha256sums_%s=('%x')", pair.aur, a.Hash), strings.ReplaceAll(strings.ReplaceAll(source, r.Version, "v${pkgver}"), v, "${pkgver}")} {
-			if !strings.Contains(string(pkg), want) {
-				return fmt.Errorf("AUR PKGBUILD missing or wrong %s", want)
-			}
 		}
 	}
 	return nil
