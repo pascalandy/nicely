@@ -45,6 +45,39 @@ SCRIPT
 	cmp source.txt "${scratch}/tree/source.txt"
 	[[ $(git show HEAD:source.txt) == original && -z $(git tag --list) ]]
 	rm -rf "${scratch}"
+	printf '#!/usr/bin/env bash\nexit 0\n' >"${test_root}/bin/just"
+	cat >"${test_root}/bin/go" <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ "${1:-}" == env ]]; then
+	printf '%s\n' "${TMPDIR}"
+	exit 0
+fi
+if [[ "${1:-}" == -C && "${3:-}" == env ]]; then
+	printf 'go1.27.1\n'
+	exit 0
+fi
+git -c log.showSignature=false -c column.ui=never rev-parse --is-inside-work-tree
+query_status=0
+git -c log.showSignature=false -c column.ui=never config gpg.program || query_status=$?
+[[ "${query_status}" == 1 && ! -s "${NCLY_BLOCKED_LOG}" ]]
+if git -c log.showSignature=false -c column.ui=never push origin HEAD:main; then
+	printf 'Publisher passed the guard\n' >&2
+	exit 1
+fi
+if git -c core.sshCommand=ssh status; then
+	printf 'Unapproved git configuration passed the guard\n' >&2
+	exit 1
+fi
+if git -c log.showSignature=false -c column.ui=never config gpg.program gpg; then
+	printf 'Git configuration write passed the guard\n' >&2
+	exit 1
+fi
+exit 77
+SCRIPT
+	fct_fails_with 77 bash "${script}" v0.0.1
+	[[ $(cat "${test_root}/stdout") == true ]]
+	[[ $(git show HEAD:source.txt) == original && -z $(git tag --list) ]]
 	printf 'Release-check validation and working-source capture passed\n'
 }
 

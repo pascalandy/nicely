@@ -42,7 +42,7 @@ func TestReleaseArtifacts(t *testing.T) {
 	for _, target := range []string{"darwin_amd64", "darwin_arm64", "linux_amd64", "linux_arm64"} {
 		parts := strings.Split(target, "_")
 		bin := filepath.Join(t.TempDir(), "ncly")
-		testCommand(t, buildTree, []string{"GOOS=" + parts[0], "GOARCH=" + parts[1], "CGO_ENABLED=0"}, "go", "build", "-ldflags=-X github.com/pascalandy/nicely/internal/cli.version=v0.0.1", "-o", bin, "./cmd/ncly")
+		testCommand(t, buildTree, []string{"GOOS=" + parts[0], "GOARCH=" + parts[1], "CGO_ENABLED=0"}, "go", "build", "-trimpath", "-buildvcs=false", "-ldflags=-s -w -X github.com/pascalandy/nicely/internal/cli.version=v0.0.1", "-o", bin, "./cmd/ncly")
 		binaries[target] = testRead(t, bin)
 	}
 	cases := []struct {
@@ -82,10 +82,20 @@ func TestReleaseArtifacts(t *testing.T) {
 			testWrite(t, filepath.Join(bad, "go.mod"), []byte("module example.com/wrong\n\ngo 1.27.0\n"))
 			testWrite(t, filepath.Join(bad, "main.go"), []byte("package main\nimport \"fmt\"\nfunc main(){fmt.Println(\"ncly wrong\")}\n"))
 			bin := filepath.Join(t.TempDir(), "ncly")
-			testCommand(t, bad, []string{"CGO_ENABLED=0"}, "go", "build", "-ldflags=-X github.com/pascalandy/nicely/internal/cli.version=v0.0.1", "-o", bin, ".")
+			testCommand(t, bad, []string{"CGO_ENABLED=0"}, "go", "build", "-trimpath", "-buildvcs=false", "-ldflags=-s -w -X github.com/pascalandy/nicely/internal/cli.version=v0.0.1", "-o", bin, ".")
 			archives["ncly_0.0.1_"+runtime.GOOS+"_"+runtime.GOARCH+".tar.gz"]["ncly"] = testRead(t, bin)
 		}},
+		{name: "foreign binary differs", reason: "binary differs from source rebuild", mutate: func(t *testing.T, tree string, archives map[string]map[string][]byte) {
+			osName, arch := "darwin", "arm64"
+			if runtime.GOOS == osName && runtime.GOARCH == arch {
+				osName, arch = "linux", "amd64"
+			}
+			bin := filepath.Join(t.TempDir(), "ncly")
+			testCommand(t, tree, []string{"GOOS=" + osName, "GOARCH=" + arch, "CGO_ENABLED=0"}, "go", "build", "-trimpath", "-buildvcs=false", "-ldflags=-s -w -X github.com/pascalandy/nicely/internal/cli.version=v0.0.2", "-o", bin, "./cmd/ncly")
+			archives["ncly_0.0.1_"+osName+"_"+arch+".tar.gz"]["ncly"] = testRead(t, bin)
+		}},
 		{name: "wrong hash", reason: "checksum mismatch"},
+		{name: "corrupt gzip trailer", reason: "gzip: invalid checksum"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -97,7 +107,30 @@ func TestReleaseArtifacts(t *testing.T) {
 			if tc.name == "wrong hash" {
 				testWrite(t, filepath.Join(dist, "ncly_0.0.1_checksums.txt"), []byte(strings.Repeat("0", 64)+"  ncly_0.0.1_source.tar.gz\n"))
 			}
-			out, err := exec.CommandContext(t.Context(), tool, "verify", "v0.0.1", tree, dist).CombinedOutput()
+			if tc.name == "corrupt gzip trailer" {
+				path := filepath.Join(dist, "ncly_0.0.1_source.tar.gz")
+				data := testRead(t, path)
+				original := sha256.Sum256(data)
+				data[len(data)-8] ^= 0xff
+				testWrite(t, path, data)
+				corrupted := sha256.Sum256(data)
+				manifest := filepath.Join(dist, "ncly_0.0.1_checksums.txt")
+				testWrite(t, manifest, []byte(strings.ReplaceAll(string(testRead(t, manifest)), fmt.Sprintf("%x", original), fmt.Sprintf("%x", corrupted))))
+			}
+			cmd := exec.CommandContext(t.Context(), tool, "verify", "v0.0.1", tree, dist)
+			if tc.name == "valid" {
+				gitPath, err := exec.LookPath("git")
+				if err != nil {
+					t.Fatal(err)
+				}
+				guards := t.TempDir()
+				testWrite(t, filepath.Join(guards, "git"), []byte("#!/bin/sh\nif [ \"$1\" = ls-files ]; then exec \"$NCLY_TEST_GIT\" \"$@\"; fi\nprintf 'git command blocked: %s\\n' \"$*\" >&2\nexit 1\n"))
+				if err := os.Chmod(filepath.Join(guards, "git"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				cmd.Env = append(os.Environ(), "PATH="+guards+string(os.PathListSeparator)+os.Getenv("PATH"), "NCLY_TEST_GIT="+gitPath)
+			}
+			out, err := cmd.CombinedOutput()
 			if tc.reason != "" {
 				if err == nil || !strings.Contains(string(out), tc.reason) {
 					t.Fatalf("want rejection %q; got %s (%v)", tc.reason, out, err)
@@ -173,6 +206,11 @@ func testArchives(t *testing.T, dist string, archives map[string]map[string][]by
 		}
 		gz := gzip.NewWriter(f)
 		tw := tar.NewWriter(gz)
+		if strings.HasSuffix(name, "_source.tar.gz") {
+			if err := tw.WriteHeader(&tar.Header{Name: "pax_global_header", Typeflag: tar.TypeXGlobalHeader, PAXRecords: map[string]string{"comment": "git source archive fixture"}}); err != nil {
+				t.Fatal(err)
+			}
+		}
 		files := make([]string, 0, len(archives[name]))
 		for p := range archives[name] {
 			files = append(files, p)
@@ -201,7 +239,7 @@ func testArchives(t *testing.T, dist string, archives map[string]map[string][]by
 	}
 	testWrite(t, filepath.Join(dist, "ncly_0.0.1_checksums.txt"), []byte(sums.String()))
 	var pkg, info strings.Builder
-	pkg.WriteString("pkgname=ncly-bin\npkgver=0.0.1\narch=('x86_64' 'aarch64')\n")
+	pkg.WriteString("pkgname='ncly-bin'\npkgver=0.0.1\narch=('x86_64' 'aarch64')\n")
 	info.WriteString("pkgbase = ncly-bin\n\tpkgver = 0.0.1\n")
 	for _, pair := range []struct{ goarch, aur string }{{"amd64", "x86_64"}, {"arm64", "aarch64"}} {
 		name := "ncly_0.0.1_linux_" + pair.goarch + ".tar.gz"

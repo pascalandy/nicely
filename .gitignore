@@ -5,6 +5,7 @@
 /ncly
 /bin/
 /dist/
+/.release/
 *.test
 *.out
 coverage.*

@@ -1,6 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-golangci := "go tool -modfile=tools/go.mod golangci-lint"
+go-tools := 'GOTOOLCHAIN="$(go -C tools env GOVERSION)" go tool -modfile=tools/go.mod'
+golangci := go-tools + " golangci-lint"
 
 # List the recipes
 default:
@@ -8,22 +9,38 @@ default:
 
 # Run every check that signoff requires
 [group('checks')]
-check: fmt-check lint tidy-check test gitleaks-rules gitleaks
+check: fmt-check lint tidy-check test release-lint gitleaks-rules gitleaks
 
 # Run the Go tests and the testscript scenarios
 [group('checks')]
 test *args:
     go test ./... {{ args }}
+    cd tools && go test ./cmd/... {{ args }}
+    bash scripts/release-check-test.sh
 
 # Lint the Go code
 [group('checks')]
 lint:
     {{ golangci }} run ./...
+    cd tools && go tool golangci-lint run ./cmd/...
 
 # Fail when a Go file needs formatting
 [group('checks')]
 fmt-check:
     {{ golangci }} fmt --diff
+    cd tools && go tool golangci-lint fmt --diff
+
+# Check the release scripts and the dormant manual workflow
+[group('checks')]
+release-lint:
+    shellcheck scripts/*.sh
+    shfmt -d scripts/*.sh
+    {{ go-tools }} actionlint
+
+# Build and inspect a local release without publishing
+[group('checks')]
+release-check version:
+    bash scripts/release-check.sh {{ quote(version) }}
 
 # Fail when go.mod or tools/go.mod needs tidying
 [group('checks')]

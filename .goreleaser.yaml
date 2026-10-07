@@ -1,0 +1,90 @@
+version: 2
+project_name: ncly
+
+builds:
+  - id: ncly
+    main: ./cmd/ncly
+    binary: ncly
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+      - -buildvcs=false
+    ldflags:
+      - -s -w -X github.com/pascalandy/nicely/internal/cli.version=v{{ .Version }}
+
+archives:
+  - id: ncly
+    ids:
+      - ncly
+    formats:
+      - tar.gz
+    name_template: ncly_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - src: .release/notices
+        dst: THIRD_PARTY_LICENSES
+        info:
+          mode: 0644
+          mtime: '{{ .CommitDate }}'
+      - src: .release/completions
+        dst: completions
+        info:
+          mode: 0644
+          mtime: '{{ .CommitDate }}'
+
+source:
+  enabled: true
+  format: tar.gz
+  name_template: ncly_{{ .Version }}_source
+  prefix_template: ncly-{{ .Version }}/
+  files:
+    - src: .release/notices
+      dst: THIRD_PARTY_LICENSES
+      info:
+        mode: 0644
+        mtime: '{{ .CommitDate }}'
+
+checksum:
+  name_template: ncly_{{ .Version }}_checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: '{{ .Env.NCLY_RELEASE_VERSION }}'
+
+aurs:
+  - name: ncly-bin
+    ids:
+      - ncly
+    description: A curated CLI toolbox for humans and agents
+    homepage: https://github.com/pascalandy/nicely
+    license: MIT
+    git_url: ssh://aur@aur.archlinux.org/ncly-bin.git
+    private_key: '{{ .Env.AUR_SSH_KEY }}'
+    commit_author:
+      name: Nicely release
+      email: pascalandy@users.noreply.github.com
+    package: |
+      install -Dm755 ncly "${pkgdir}/usr/bin/ncly"
+      install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/ncly-bin/LICENSE"
+      install -d "${pkgdir}/usr/share/licenses/ncly-bin/THIRD_PARTY_LICENSES"
+      cp -R THIRD_PARTY_LICENSES/. "${pkgdir}/usr/share/licenses/ncly-bin/THIRD_PARTY_LICENSES/"
+      find "${pkgdir}/usr/share/licenses/ncly-bin/THIRD_PARTY_LICENSES" -type d -exec chmod 755 {} +
+      find "${pkgdir}/usr/share/licenses/ncly-bin/THIRD_PARTY_LICENSES" -type f -exec chmod 644 {} +
+      install -Dm644 completions/ncly.bash "${pkgdir}/usr/share/bash-completion/completions/ncly"
+      install -Dm644 completions/_ncly "${pkgdir}/usr/share/zsh/site-functions/_ncly"
+      install -Dm644 completions/ncly.fish "${pkgdir}/usr/share/fish/vendor_completions.d/ncly.fish"
+
+release:
+  github:
+    owner: pascalandy
+    name: nicely
+
+changelog:
+  use: git

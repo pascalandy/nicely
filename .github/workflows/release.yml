@@ -1,0 +1,122 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag (vX.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nicely-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - name: Validate release tag
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "${TAG}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+
+      - name: Check out the exact tag
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tagged commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$(git rev-parse HEAD)" == "$(git rev-parse --verify "refs/tags/${TAG}^{commit}")" ]]
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: tools/go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+
+      - name: Set up just
+        uses: extractions/setup-just@f8a3cce218d9f83db3a2ecd90e41ac3de6cdfd9b # v3
+        with:
+          just-version: '1.58.0'
+
+      - name: Install check tools
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck shfmt ruby
+          curl --fail --silent --show-error --location \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "${RUNNER_TEMP}/gitleaks.tar.gz"
+          printf '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  %s\n' "${RUNNER_TEMP}/gitleaks.tar.gz" | sha256sum --check
+          mkdir -p "${RUNNER_TEMP}/check-bin"
+          tar -xzf "${RUNNER_TEMP}/gitleaks.tar.gz" -C "${RUNNER_TEMP}/check-bin" gitleaks
+          printf '%s\n' "${RUNNER_TEMP}/check-bin" >>"${GITHUB_PATH}"
+
+      - name: Rehearse without publishing
+        shell: bash
+        run: just release-check "${TAG}"
+
+      - name: Prepare release assets
+        shell: bash
+        run: go run -C tools ./cmd/release-artifacts assets "${TAG}" "${GITHUB_WORKSPACE}"
+
+      - name: Publish archives and AUR package
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+        run: go tool -modfile=tools/go.mod goreleaser release --clean --fail-fast
+
+      - name: Render Homebrew source formula
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          go run -C tools ./cmd/release-artifacts formula "${TAG}" "${GITHUB_WORKSPACE}/dist"
+          ruby -c dist/Formula/ncly.rb
+
+      - name: Update Homebrew tap
+        shell: bash
+        env:
+          HOMEBREW_TAP_SSH_KEY: ${{ secrets.HOMEBREW_TAP_SSH_KEY }}
+        run: |
+          set -Eeuo pipefail
+          key="${RUNNER_TEMP}/homebrew-tap-key"
+          known_hosts="${RUNNER_TEMP}/homebrew-tap-hosts"
+          trap 'rm -f "${key}" "${known_hosts}"' EXIT
+          install -m600 /dev/null "${key}"
+          printf '%s\n' "${HOMEBREW_TAP_SSH_KEY}" >"${key}"
+          ssh-keyscan github.com >"${known_hosts}"
+          export GIT_SSH_COMMAND="ssh -i ${key} -o IdentitiesOnly=yes -o UserKnownHostsFile=${known_hosts} -o StrictHostKeyChecking=yes"
+          tap="${RUNNER_TEMP}/homebrew-tap"
+          git clone git@github.com:pascalandy/homebrew-tap.git "${tap}"
+          if git -C "${tap}" show-ref --verify --quiet refs/remotes/origin/main; then
+            git -C "${tap}" checkout main
+          elif [[ -z "$(git -C "${tap}" ls-remote origin)" ]]; then
+            git -C "${tap}" checkout --orphan main
+          else
+            printf 'Homebrew tap has history without a main branch\n' >&2
+            exit 1
+          fi
+          mkdir -p "${tap}/Formula"
+          cp dist/Formula/ncly.rb "${tap}/Formula/ncly.rb"
+          git -C "${tap}" add Formula/ncly.rb
+          if ! git -C "${tap}" diff --cached --quiet; then
+            git -C "${tap}" -c user.name='Nicely release' -c user.email=pascalandy@users.noreply.github.com \
+              commit -m "Update ncly to ${TAG}"
+            git -C "${tap}" push origin HEAD:main
+          fi
