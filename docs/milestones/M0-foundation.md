@@ -15,6 +15,8 @@ Nothing.
 
 These must be done before T6. T1 to T5 do not need them. Only the AUR account needs Pascal.
 
+Pascal approved an exception while AUR registration is paused: T6 may be prepared and checked locally before the account exists. Account and key registration remain required before publishing. Local preparation creates no tag, starts no GitHub workflow, changes no publishing key, and updates neither the AUR nor the Homebrew tap. The unchecked prerequisite below stays unchecked until registration is verified.
+
 - [x] The empty repository `pascalandy/homebrew-tap` exists
 - [ ] An AUR account exists, and the public key `nicely-release-aur` is registered in it
 - [x] The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
@@ -31,6 +33,18 @@ Do the tasks in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 - [x] **T5 Completion.** `ncly completion zsh|bash|fish`.
 - [ ] **T6 Release.** GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`.
 - [ ] **T7 First release.** v0.0.1 is tagged and released through `release.yml`, and both manual checks pass.
+
+### Local release preparation (T6)
+
+`just release-check vX.Y.Z` runs `just check`, the pinned `govulncheck` and `goreleaser check`, then prepares and checks a snapshot in its own temporary checkout. It accepts a release tag such as `v0.0.1`; an invalid tag fails before building. It uses no publishing credentials and invokes no publisher. A failed check returns a failure, never release readiness.
+
+The snapshot contains four binary archives, for macOS and Linux on amd64 and arm64, plus a source archive and their SHA256 checksums. Each binary archive contains `ncly`, its MIT license, the runtime dependencies' licenses and adjacent NOTICE files, and completions for bash, zsh, and fish. Completions are generated once with a host binary. The license collector runs as a host program against each target's dependency graph.
+
+The source archive contains the committed application source, `go.mod`, `go.sum`, and third-party notices. Building the extracted source must reproduce the requested version. Preparation uses an isolated committed checkout so that the source archive cannot silently omit the working changes being tested.
+
+The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archive, verify its checksum, and install its binary, notices, and completions. The Homebrew formula uses the source archive and its actual checksum, builds `ncly` with the release version, installs its notices, and generates its completions. Local checks stage the AUR package using local artifact fixtures and check the formula's Ruby syntax; they do not install either package into Pascal's normal system.
+
+`release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. The first real dispatch, publishing authorization, macOS execution, and the two installation checks remain T7 work.
 
 ## Out of scope
 
