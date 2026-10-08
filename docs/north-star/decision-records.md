@@ -196,7 +196,7 @@ Decided 2026-10-05. Code, comments, docs, and commit messages are in English. Us
 
 Decided 2026-10-05. With `--json`, every answer other than help, the version, and a completion script is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`. The command determines its overall outcome before choosing the leading error and rendering the answer. That error agrees with the exit code, and item errors preserve their own causes. A report command keeps its report, with its own findings key, on stdout. [cli-spec.md](cli-spec.md#output-m0) holds the details.
 
-**Why.** Stripe, npm, JSON:API, and GraphQL all answer with error objects that carry a stable code. The key `errors` matches Pascal's script-output convention. `ok` stays readable when an agent merges stdout and stderr. A batch's first failure cannot decide whether earlier successful items are safe to repeat. ESLint, ShellCheck, `terraform validate -json`, and `npm audit --json` keep their reports on stdout when a check fails. One line keeps `tail -n1 | jq` working.
+**Why.** Stripe, npm, JSON:API, and GraphQL all answer with error objects that carry a stable code. The key `errors` matches Pascal's script-output convention. `ok` stays readable when an agent merges stdout and stderr. M1 transcript operations always answer with `results`, including one item, so adding a URL does not change the shape and an item cause cannot authorize a whole-command retry. Only the overall exit 75 does that. ESLint, ShellCheck, `terraform validate -json`, and `npm audit --json` keep their reports on stdout when a check fails. One line keeps `tail -n1 | jq` working. Within one exit code, the leading error's hint identifies the first fix. For 78, config and terminal problems precede tools and keys. For 1, a specific refusal such as `RESUME_UNSAFE` precedes `RUNTIME`. For 2, a valid call precedes confirmation, a name, or depth.
 
 **Rejected.** A flat error object without `ok`. A single `error` object. JSON by default without `--json`, because humans use the same commands. A report on stderr when a check fails. Letting the first observed failure authorize a retry of the whole batch.
 
@@ -238,7 +238,7 @@ Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started 
 
 Decided 2026-10-05. The [operation contract](cli-spec.md#operations-m0-contract-m1-execution) covers preparation, execution, inspection, and explicit resume. Domains own their steps and recovery rules. `internal/run` owns subprocess lifecycles. Records preserve the evidence needed to reuse finished work, with references to outputs rather than copies of their contents. M0 fixes the contract; M1 implements it for transcript and exposes [run commands](cli-spec.md#ncly-run-m1).
 
-**Why.** A new agent session must be able to tell whether Deepgram finished before a summary failed. Writing the intended non-repeatable effect before starting it leaves evidence even if the process dies before saving the result. Resume validates inputs, relevant configuration, and saved outputs. An uncertain paid request needs reconciliation or a human decision, because a missing response does not prove that nothing happened.
+**Why.** A new agent session must be able to tell whether Deepgram finished before a summary failed. Writing the intended non-repeatable effect before starting it leaves evidence even if the process dies before saving the result. Resume validates inputs, relevant configuration, and saved outputs, and keeps the profile that the run recorded instead of reading it again. An uncertain paid request needs reconciliation or a human decision, because a missing response does not prove that nothing happened.
 
 **Rejected.** Restarting every invocation from scratch. Logs as the only record of completed work. Recording keys or duplicating all transcript content in history. A daemon, scheduler, or general workflow engine before a command needs one.
 
@@ -273,3 +273,27 @@ Decided 2026-10-07. Each run has one JSON record in the state directory, written
 **Why.** JSON matches the answer format, so inspection needs no second storage model. Atomic rename protects readers from incomplete JSON; syncing files and directory metadata protects the acknowledged intent across a crash within the platform's persistence guarantees. The operating system releases a lock when its owner dies, without a heartbeat. A pending step may have a failed preparation, so its saved problem retains the cause and hint. Filtering and short previews let a new session find relevant work without dumping unrelated batches. Later domains prove their own evidence instead of M1 promising their complete format.
 
 **Rejected.** SQLite, because one file per run needs no migration and an agent reads it with `jq`. A process ID in the record, because the operating system reuses process IDs. A heartbeat refreshed by a background worker, because Nicely has none.
+
+## D037 Summarize a saved transcript as a new operation
+
+Decided 2026-10-07. `ncly transcript summary run <run-id>` summarizes the verified transcripts of a saved run as a new recorded operation. `ncly run resume` never repeats a `summarize` step whose outcome is `unknown`, and the silent summary retries of the transcript CLI are gone. [cli-spec.md](cli-spec.md#ncly-transcript-summary-run) holds the rules.
+
+**Why.** A summary can bill, so a lost answer may already be charged. Resume never repeats that unknown request. A new operation copies verified transcript references, keeps its own prompt and profile, and writes a file named with its run ID. It leaves the source record valid and supports safe resume of its own never-started summary. Holding the source lock prevents a new summary racing its source executor. The caller explicitly chooses any new bill.
+
+**Rejected.** A resume flag that overrides an unknown step, because `--force` never makes an unknown effect safe. Treating every summary as free, because some profiles bill per call. Rerunning the whole transcript, which bills Deepgram again.
+
+## D038 Exchange acknowledged JSON Lines with the Python program
+
+Decided 2026-10-07. Go and Python exchange versioned JSON Lines. An initial plan fixes the item set for both dry run and execution. Python announces an intent before user-side output or Deepgram upload. Go records the selected destination before reserving it, completes the persistence barrier, then acknowledges the final folder. [cli-spec.md](cli-spec.md#protocol-with-the-python-program) holds the messages.
+
+**Why.** One preparation avoids selecting a different Zoom meeting during execution. Recording a destination after creating it loses ownership on interruption, so Go records it first. No paid call starts before the durable intent; a lost acknowledgement stops Python before upload. Persisted verified artifacts can establish completion after a lost final message, without another request. This is the temporary Python boundary, not a protocol imposed on future extensions.
+
+**Rejected.** Arguments plus one final JSON object, because Go could not record the intent before the upload. A separate file or socket, because stdin and stdout already connect the two processes.
+
+## D039 Let yt-dlp update without a release
+
+Decided 2026-10-07. The Python program names a minimum `yt-dlp` version, and `ncly` runs it with `--upgrade-package yt-dlp`, so each run uses the newest release. The other dependencies stay pinned. The Arc cookie adapter checks the `yt-dlp` function that it changes instead of an exact version, and a missing function falls back to anonymous access with a warning.
+
+**Why.** YouTube breaks `yt-dlp` every few weeks, and a fix must reach users without an `ncly` release. Pascal keeps Arc for YouTube, so the adapter stays.
+
+**Rejected.** An exact pin, which needs an `ncly` release for every YouTube change. The `yt-dlp` on `PATH`, because the Arc adapter changes `yt-dlp` inside the same process.
