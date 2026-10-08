@@ -23,6 +23,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | Public docs build | `ncly docs build --public` builds and hosts only the `public` projects | A project needs public docs |
 | Progress events | Long commands expose live JSON Lines events and a step list. M1 already records effect boundaries internally and supports inspection after interruption | Live progress adds value beyond the saved run record |
 | Transcript in Go | Ports the Python transcript program to Go | Python in core blocks a release or a translation |
+| Transcript on Omarchy | The paid end-to-end check of `ncly transcript` passes on Omarchy, with YouTube cookies from a Linux browser. [#23](https://github.com/pascalandy/nicely/issues/23) tracks it | Pascal needs transcripts on Omarchy |
 | More languages | Spanish, Japanese, and others, through the M6 workflow | A user asks, or `fr-CA` proves the workflow |
 | Terminal demos | VHS recordings of key commands for the README and the docs | M4 ships |
 | First-run experience | What a new visitor sees first, and the marketing around it | M4 ships |
@@ -31,5 +32,6 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | Key checks for skills | `ncly doctor` checks the keys that skills declare in `nicely.toml`, replacing `just api-keys-validation` | M3 manifests exist |
 | Man pages | Generated from Cobra and shipped in the packages | A user asks, or Nicely applies to homebrew-core |
 | Build provenance | GitHub artifact attestations for the release archives | Strangers install from the release archives |
+| AUR package | Publishes `ncly-bin` to the AUR, so that `yay -S ncly-bin` installs `ncly` and `ncly <Tab>` completes in bash on Omarchy. It needs an AUR account with the public key `nicely-release-aur`. Before T7 of M0, set `skip_upload: true` in the `aurs` section of `.goreleaser.yaml`, and update step 3 of Release in AGENTS.md. GoReleaser then still builds the package that `just release-check` verifies, and pushes nothing to the AUR. Without `skip_upload: true`, GoReleaser stops after the GitHub release and before the Homebrew tap update | AUR registration reopens |
 | homebrew-core | A formula in Homebrew's main repository | Nicely meets Homebrew's notability rules |
 | Windows | Support for Windows | Never planned. Revisit only on real demand |

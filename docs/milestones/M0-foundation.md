@@ -13,12 +13,9 @@ Nothing.
 
 ## Prerequisites
 
-These must be done before T6. T1 to T5 do not need them. Only the AUR account needs Pascal.
-
-Pascal approved an exception while AUR registration is paused: T6 may be prepared and checked locally before the account exists. Account and key registration remain required before publishing. Local preparation creates no tag, starts no GitHub workflow, changes no publishing key, and updates neither the AUR nor the Homebrew tap. The unchecked prerequisite below stays unchecked until registration is verified.
+These must be done before T6. T1 to T5 do not need them. The AUR account and its key `nicely-release-aur` moved to [M99](M99-parking-lot.md), with the AUR publication.
 
 - [x] The empty repository `pascalandy/homebrew-tap` exists
-- [ ] An AUR account exists, and the public key `nicely-release-aur` is registered in it
 - [x] The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
 - [x] After T1, `main` requires the status check `signoff`
 
@@ -31,8 +28,8 @@ Do the tasks in this order. [AGENTS.md](../../AGENTS.md#code) gives the layout.
 - [x] **T3 Config.** The shared and local config files, their precedence, and the XDG paths, including state. `CONFIG_INVALID` for a broken file. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports in M1.
 - [x] **T4 Text.** The English catalog, with a description per entry, and the parity test against `en`. The pseudo-locale `en-XA`, with scenarios for the help and for an error. Plural rules, number, size, and date formats, and language matching in `internal/i18n`. Help text comes from the catalog, so `--lang` is read before the command tree is built. Styles and the error block in `internal/tui`.
 - [x] **T5 Completion.** `ncly completion zsh|bash|fish`.
-- [x] **T6 Release.** GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`. Prepared locally under the exception above; publishing remains gated by the AUR prerequisite and T7.
-- [ ] **T7 First release.** v0.0.1 is tagged and released through `release.yml`, and both manual checks pass.
+- [x] **T6 Release.** GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`. Publishing waits for T7. The AUR publication moved to M99.
+- [ ] **T7 First release.** v0.0.1 is tagged and released through `release.yml`, and the manual check passes. Before the release, turn off the AUR upload, as the AUR row of [M99](M99-parking-lot.md) says.
 
 ### Local release preparation (T6)
 
@@ -51,13 +48,13 @@ The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archi
 | Owner | Local proof | Limit |
 |---|---|---|
 | Go [archive inspection](../../tools/cmd/release-artifacts/archive.go) and [source verification](../../tools/cmd/release-artifacts/verify.go) | Exactly four binary targets, archive contents, notices, completions, checksums, and byte-identical source rebuilds | AUR package proof belongs to Bash staging |
-| Bash [AUR staging](../../scripts/verify-aur.sh) | Evaluated package metadata, local checksums, and staged installation contents and modes for both Linux architectures | Package-manager installation remains T7 work |
+| Bash [AUR staging](../../scripts/verify-aur.sh) | Evaluated package metadata, local checksums, and staged installation contents and modes for both Linux architectures | AUR publication and installation moved to M99 |
 | Formula syntax check in [release-check.sh](../../scripts/release-check.sh) | Ruby accepts the generated Homebrew formula | The Homebrew build and installation remain T7 work |
 | Complete [release-check recipe](../../scripts/release-check.sh) | All local checks pass for the captured current tracked source, including final source stability and blocked-command checks | Publishing [prerequisites](#prerequisites) and T7 acceptance remain separate gates |
 
 A zero exit from the full recipe proves the local rehearsal for that captured source. On success, review the retained artifacts. On failure, use any retained files to diagnose the failed check. Fix the cause, then rerun the full recipe. A component check on retained artifacts proves only that component's result. A source change requires a fresh full recipe run.
 
-`release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. The first real dispatch, publishing authorization, macOS execution, and the two installation checks remain T7 work.
+`release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. The first real dispatch, publishing authorization, macOS execution, and the installation check remain T7 work.
 
 #### T6 implementation checklist
 
@@ -145,15 +142,12 @@ lang =
 
 These snippets illustrate the scenarios. T2 also decodes complete JSON answers so a matching substring cannot hide extra text, a wrong type, or an extra object. T4 sharpens the pseudo-locale scenario so that it fails on any word outside the markers other than command names, flags, and examples.
 
-Manual checks on Pascal's machines:
-
-1. On macOS, `brew install pascalandy/tap/ncly` builds `ncly`, then `ncly <Tab>` completes in zsh.
-2. On Omarchy, `yay -S ncly-bin`, then `ncly <Tab>` completes in bash.
+Manual check on Pascal's Mac: `brew install pascalandy/tap/ncly` builds `ncly`, then `ncly <Tab>` completes in zsh.
 
 ## Done when
 
 - [ ] Every prerequisite and every task is ticked
 - [ ] Every acceptance scenario passes in `just check`
 - [ ] Every M0 proof in Contract coverage passes, and the M1 effect and resume proofs remain explicit M1 acceptance work
-- [ ] Both manual checks pass
+- [ ] The manual check passes
 - [ ] v0.0.1 is tagged and released through `release.yml`

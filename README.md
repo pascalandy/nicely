@@ -3,37 +3,64 @@
 A curated, multilingual CLI toolbox that humans and AI agents operate equally well. The command is `ncly`.
 
 ```bash
-ncly doctor
-ncly skill list --json
-ncly transcript run youtube --url "https://www.youtube.com/watch?v=VIDEO_ID"
+ncly --help
+ncly --version
+ncly completion bash
 ```
 
 ## Status
 
 Nicely is in early development and has no release yet. [The guide](docs/north-star/guide.md) explains what it is and why. [The first milestone](docs/milestones/M0-foundation.md) is under way.
 
-## How it works
+The current M0 build implements help, the version, and shell completion. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
 
-- `ncly` groups tools by domain. `ncly video --help` shows everything Nicely does with a video.
-- Run a command without its flags in a terminal, and a short form asks for what is missing. Pass every flag, or call it from a script or an AI agent, and it runs without a question. Add `--json` for output a program can read.
-- `ncly doctor` lists what is missing on your machine and the command that fixes each item.
-- `ncly describe` lists installed capabilities. A targeted description tells an agent which inputs and modes a command supports
-- Transcript keeps a run record. `ncly run view` shows what finished, and `ncly run resume` continues supported steps after checking the saved evidence. Work does not continue in a background service
-- `ncly auth login` stores API keys in your OS keychain. Keys never sit in a config file.
-- Every message can be translated. English comes first, then Canadian French.
-- Personal tools plug in as extensions: an executable named `ncly-backup` with a compatible manifest becomes `ncly backup`. An extension runs with your rights, so add only taps you trust
-- One TOML file describes your setup and can travel between your machines. `ncly tap sync` brings a new machine to the same taps.
+## Planned commands
+
+[M1](docs/milestones/M1-day-one.md) adds `doctor`, `auth`, `skill`, `describe`, `transcript`, and `run`. Doctor checks local prerequisites, auth stores keys in the OS keychain, and discovery describes installed capabilities. Transcript produces files and a run record. Explicit resume verifies saved work before continuing it.
+
+Interactive forms will ask for missing values. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
+
+Later milestones add the public `agent` command in M2, taps and trusted extensions in M3, everyday domains in M4, a private docs hub in M5, and Canadian French in M6. The [guide's command table](docs/north-star/guide.md#domains-and-commands) records their scope.
+
+## Planned agent instructions (M1)
+
+M1 will verify this text in a fresh agent session before release. Once those commands ship, paste it into your agent instructions:
+
+```text
+Set NCLY_NO_INPUT=1 and NCLY_JSON=1 for ncly calls
+Use a targeted ncly describe, the appropriate ncly doctor component, then the command's --dry-run before execution
+Find skills with ncly skill list and read one with ncly skill view NAME
+Parse codes and fields, never translated messages. Transcript operation answers always use results[], even for one item
+Retain the invocation's RFC3339 start time, exit code, full stdout and stderr, and run_id
+Give the shell a timeout longer than ncly's timeout plus 15 seconds of cleanup and a margin
+Only overall exit 75 permits an automatic repeat of the same invocation. Item errors do not permit a retry. Relay human-action hints
+After lost output, use ncly run list --path 'transcript run youtube' --key URL --since RFC3339 --json with the original URL and start time. If the time is lost, omit --since. Preserve ambiguous matches
+Inspect candidates with ncly run view RUN_ID. active reports the execution lock. Never infer that a run is idle from its saved status
+For an inactive run, inspect ncly run resume RUN_ID --dry-run before explicitly resuming supported work
+Repeating the original transcript command transcribes and bills again. An explicit ncly transcript summary run RUN_ID reuses the transcript and may bill for a new summary
+```
+
+The [agent contract](docs/north-star/cli-spec.md) defines the fields and recovery rules. Saved records and verified output files retain work across sessions.
 
 ## Install
 
 There is no release yet. The first release installs with:
 
-| System | Command |
+| System | Installation |
 |---|---|
 | macOS | `brew install pascalandy/tap/ncly` |
-| Arch Linux, Omarchy | `yay -S ncly-bin`, or any AUR helper |
+| Linux | Download the archive for your architecture from the [releases page](https://github.com/pascalandy/nicely/releases) |
 
-Both packages include completions for zsh, bash, and fish.
+Homebrew installs the completions for zsh, bash, and fish. On Linux, extract the archive into an empty folder, then put `ncly` and its completions where your shell finds them:
+
+```bash
+install -Dm755 ncly ~/.local/bin/ncly
+install -Dm644 completions/ncly.bash ~/.local/share/bash-completion/completions/ncly
+install -Dm644 completions/_ncly ~/.local/share/zsh/site-functions/_ncly
+install -Dm644 completions/ncly.fish ~/.config/fish/completions/ncly.fish
+```
+
+These commands target the default folders: bash also needs the bash-completion package, and with custom XDG folders, use the folders that your shell reads instead. `~/.local/bin` must be on your `PATH`. For zsh, add `fpath=(~/.local/share/zsh/site-functions $fpath)` to `~/.zshrc` before `compinit` runs.
 
 ## Privacy
 

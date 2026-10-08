@@ -25,9 +25,20 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 
 `ncly` also runs agents. Profiles in the config name a harness, a model, and an effort from M1. The internal agent service owns harness logic from M1, when transcript needs a summary. M2 exposes that service through `ncly agent` and adds the other adapters.
 
-M0 exposes `--help`, `--version`, and `completion`. The agent lifecycle is planned for M1. An agent reads one command's declaration with [`ncly describe transcript run youtube --json`](cli-spec.md#ncly-describe-m1) to learn its supported capabilities. [`ncly doctor transcript --json`](cli-spec.md#ncly-doctor-m1) checks the current machine's prerequisites. The command's [`--dry-run`](cli-spec.md#operations-m0-contract-m1-execution) shares preparation with execution and reports checks still pending.
+M0 exposes `--help`, `--version`, and `completion`. M1 plans the control loop below. Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, discover one command, check readiness, prepare its invocation with dry run, then execute it.
 
-From M1, commands with paid work or reusable partial results keep a run record. After execution or interruption, an agent inspects the saved operation's status and step evidence with [`ncly run view <run-id> --json`](cli-spec.md#ncly-run-m1). A successful inspection reports saved evidence. [Explicit resume](cli-spec.md#inspection-and-explicit-resume) separately validates which remaining steps are safe. A record does not keep a process alive. Nicely has no background worker or scheduler in these milestones.
+| Source of truth | What it establishes |
+|---|---|
+| [Command declaration](cli-spec.md#ncly-describe-m1) | Installed capabilities, input constraints, result types, and supported modes |
+| [Doctor](cli-spec.md#ncly-doctor-m1) | Local readiness, with free network checks only on request |
+| [Dry run](cli-spec.md#operations-m0-contract-m1-execution) | The invocation's plan and checks still pending before execution |
+| [Run inspection](cli-spec.md#ncly-run-m1) | Saved step evidence and `active`, which reports whether a process holds the run lock |
+| Artifacts | The full output files, referenced by path and verified fingerprints |
+| [Explicit resume](cli-spec.md#inspection-and-explicit-resume) | The saved outputs that current verification permits the domain to reuse |
+
+Commands with paid work or reusable partial results keep records from M1. An agent inspects a recorded failure before choosing a recovery action. Overall exit 75 alone permits an automatic repeat of the same invocation. A saved status describes the operation's last recorded outcome; the execution lock establishes whether a process owns the run now.
+
+Records and verified outputs retain useful work across sessions. Explicit resume reuses that work and runs only safe remaining steps. Shared operation support owns records, locks, and result publication; the domain decides what to reuse or execute. Nicely needs no memory daemon, workflow interpreter, or generic engine for future domains. A record does not keep a process alive, and these milestones add no background worker or scheduler.
 
 ## Principles
 
@@ -102,8 +113,8 @@ Use one word per concept in code, docs, help, and commit messages. Add a term he
 |---|---|
 | Command declaration | Arguments, flags, result contract, effects, prerequisites, and capabilities used by discovery, help, completion, and validation |
 | Domain | Preparation, business steps, result verification, and evidence that permits resume |
-| Shared operation support | Run IDs, durable records, and publication of the domain's result |
+| Shared operation support | Run IDs, durable records, execution locks, and publication of the domain's result |
 | Program runner | Child environment, timeouts, signals, and process cleanup |
 | Platform support | Atomic file replacement, locks, keychain, and trash |
 
-M0 fixes these responsibilities and the contract. Each implementation arrives with its first consumer. M1 proves the operation contract on transcript before M2 and M3 reuse it. Future features do not require a general workflow engine in M0.
+M0 fixes these responsibilities and the contract. Each implementation arrives with its first consumer, including the declaration fields that M1 commands need. M1 proves the operation contract on transcript before M2 and M3 reuse it.

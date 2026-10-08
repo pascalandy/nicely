@@ -16,7 +16,7 @@ Decided 2026-10-05. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubbl
 
 Decided 2026-10-05. The project is Nicely, the command is `ncly`, the repository is `pascalandy/nicely`, and the Go module is `github.com/pascalandy/nicely`.
 
-**Why.** `nicely` is taken on PyPI and npm, but neither package installs a `nicely` command, and Nicely ships only through Homebrew and the AUR, where the name is free. `ncly` is free on PyPI, npm, crates.io, and Homebrew, and it is short to type.
+**Why.** `nicely` is taken on PyPI and npm, but neither package installs a `nicely` command. Nicely ships through Homebrew and GitHub release archives, later through the AUR too, and the name is free in Homebrew and the AUR. `ncly` is free on PyPI, npm, crates.io, and Homebrew, and it is short to type.
 
 ## D003 Put the domain first and keep one verb per action
 
@@ -108,9 +108,9 @@ Decided 2026-10-05. The repository is public from day one, under the MIT license
 
 ## D015 Target macOS and Linux with the same paths
 
-Decided 2026-10-05. Nicely runs on macOS and on Linux, with Omarchy as the reference. Both systems use XDG paths under `nicely`. On macOS, a formula in the Homebrew tap `pascalandy/homebrew-tap` builds `ncly` from source. On Arch, the AUR package `ncly-bin` installs the prebuilt binary.
+Decided 2026-10-05. Nicely runs on macOS and on Linux, with Omarchy as the reference. Both systems use XDG paths under `nicely`. On macOS, a formula in the Homebrew tap `pascalandy/homebrew-tap` builds `ncly` from source. On Linux, v0.0.1 ships prebuilt archives on GitHub. The AUR package `ncly-bin` follows when AUR registration reopens, as [M99](../milestones/M99-parking-lot.md) records.
 
-**Why.** Pascal moves toward Linux machines over the years, and the same paths everywhere keep his future dotfiles simple. A binary built on the user's machine never meets Gatekeeper, so Nicely needs no Apple Developer account, and Homebrew generates the completions itself. Homebrew builds `gh` from source the same way. The AUR is the native channel on Arch.
+**Why.** Pascal moves toward Linux machines over the years, and the same paths everywhere keep his future dotfiles simple. A binary built on the user's machine never meets Gatekeeper, so Nicely needs no Apple Developer account, and Homebrew generates the completions itself. Homebrew builds `gh` from source the same way. v0.0.1 installs with Homebrew or the Linux archive. The AUR, the native channel on Arch, follows when AUR registration reopens.
 
 **Rejected.** Signing and notarizing, which costs US$99 per year. A cask that strips the quarantine flag with `xattr`, which GoReleaser discourages. GoReleaser's `brews` section, deprecated in v2.10.
 
@@ -172,7 +172,7 @@ Decided 2026-10-05. The shared config describes the setup the user wants, and th
 
 ## D024 Ship completions with dynamic values
 
-Decided 2026-10-05. Cobra generates zsh, bash, and fish completions, and the packages install them. Completion suggests values such as skill names and profiles.
+Decided 2026-10-05. Cobra generates zsh, bash, and fish completions. For v0.0.1, Homebrew installs them and the Linux archive ships them. The AUR package will install them when AUR registration reopens. Completion suggests values such as skill names and profiles.
 
 **Why.** Completion is how a terminal user discovers flags and values. Cobra builds it from the command tree, so it never drifts from the commands.
 

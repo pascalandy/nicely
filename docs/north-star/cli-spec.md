@@ -340,7 +340,7 @@ The internal agent service checks `[agent] max_depth`, 2 by default, before ever
 ncly completion zsh|bash|fish
 ```
 
-Prints the completion script on stdout. The Homebrew and AUR packages install these scripts, so users run this command only for a manual setup.
+Prints the completion script on stdout. The Homebrew formula installs these scripts, and each Linux archive ships them in `completions/`. The AUR package will install them too, once it ships. Users run this command only for a manual setup.
 
 Completion also suggests values: skill names, auth services, profiles, transcript prompts, and doctor components.
 
