@@ -96,6 +96,7 @@ Linking twice leaves the same managed links. A source switch updates only a link
 - The complete manifest schema, response validation, and run-record integration for extensions that declare partial or paid work
 - Recovery of an interrupted tap/config/link update, with ownership evidence and retry rules for the whole invocation
 - How Pascal's Python scripts move from the `{"ok":false,"errors":["…"]}` strings of his script-output convention to the error objects of D027.
+- Whether an extension run in a terminal prompts for a missing grant, or always exits with `KEY_NOT_GRANTED` and points to the grant command.
 
 ## Out of scope
 

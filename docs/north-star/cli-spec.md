@@ -37,6 +37,7 @@ ncly
 ├── auth login|logout|status        M1
 ├── run list|view|resume             M1
 ├── skill list|view                 M1
+├── skill <name>                    M1
 ├── transcript run youtube|zoom     M1
 └── transcript prompt list          M1
 ```
@@ -142,13 +143,15 @@ An idempotence claim includes destinations, configuration, external actions, and
 |---|---|---|
 | `0` | Success | |
 | `1` | Runtime failure. Work may be partial or already billed. | No. Never rerun automatically. |
-| `2` | Invalid invocation: unknown command, bad flag, missing value, or missing confirmation | After fixing the call |
+| `2` | Invalid invocation: unknown command, bad flag, missing value, or missing confirmation | Fix the call. Inspect any returned `run_id` before continuing recorded work |
 | `75` | Temporary failure that meets every condition in Retry safety | Yes, with the same command |
-| `78` | A human must act: a key, a prerequisite, a config fix, or a step at a terminal | After the human runs the hint |
+| `78` | A human must act: a key, a prerequisite, a config fix, or a step at a terminal | Relay the hint. Inspect any returned `run_id` before continuing recorded work |
 | `130` | Interrupted by Ctrl-C | |
 | `143` | Terminated by SIGTERM | |
 
 Codes 124 to 127, and every code from 128 up other than 130 and 143, stay reserved for the shell.
+
+Only the overall process exit 75 permits an automatic repeat of the same invocation. An item error describes that item's cause, not the safety of repeating the whole command. A caller retains the complete answer and `run_id` before extracting artifact paths. After fixing a recorded failure, it inspects the run and requests an explicit resume instead of repeating the original command.
 
 ## Error codes (M0)
 
@@ -164,7 +167,7 @@ Each code maps to exactly one exit code. Core uses only the codes in this table,
 | `NOT_FOUND` | 2 | The named skill, service, profile, or component does not exist | M1 |
 | `AUTH_MISSING` | 78 | A required key is in neither the environment nor the keychain | M1 |
 | `PREREQ_MISSING` | 78 | A required tool is absent or too old | M1 |
-| `KEYRING_UNAVAILABLE` | 78 | A command needs a key that is not in the environment, and the OS keychain does not answer | M1 |
+| `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for the `auth` check of `ncly doctor` | M1 |
 | `TEMPORARY` | 75 | A temporary failure for which the whole invocation meets Retry safety | M0 |
 | `INTERRUPTED` | 130 | Ctrl-C stopped the command | M0 |
 | `TERMINATED` | 143 | SIGTERM stopped the command | M0 |
@@ -177,9 +180,11 @@ Warnings use codes from this table.
 | Code | When | Since |
 |---|---|---|
 | `CONFIG_UNKNOWN_KEY` | A config file holds a key that this version of `ncly` does not know | M0 |
-| `SKILL_SHADOWED` | Two skill folders hold the same skill name | M1 |
+| `SKILL_SHADOWED` | Two skills share a name, in two folders of `[skill] paths` or inside one | M1 |
 | `SKILL_NO_SOURCE` | No skill folder is configured | M1 |
 | `SKILL_NAME_MISMATCH` | A skill's subfolder name differs from the `name` in its `SKILL.md` | M1 |
+| `SKILL_INVALID` | A `SKILL.md` cannot be read, its frontmatter is invalid, or it lacks `name` or `description` | M1 |
+| `SKILL_SOURCE_MISSING` | A folder of `[skill] paths` is missing or cannot be read | M1 |
 | `CONFIG_DEFAULTS_USED` | Discovery used defaults because a config file could not be read | M1 |
 
 ## Configuration (M0)
@@ -199,7 +204,7 @@ Precedence, highest first: flags, environment variables, `config.local.toml`, `c
 Each path honors `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, or `XDG_CACHE_HOME` when it holds an absolute path, as the XDG specification asks, and ignores a relative one. macOS uses the same paths as Linux. `NCLY_CONFIG` names another shared config file, and the local config is then read from the same folder.
 
 - A missing config file is not an error, and the defaults apply.
-- A syntax error, a value of the wrong type, or a file that cannot be read exits 78 with `CONFIG_INVALID`, naming the file and, when the parser knows it, the line. `--help`, `--version`, `ncly completion`, and M1 command discovery still work with defaults. Discovery reports the fallback as specified below
+- A syntax error, a value of the wrong type, or a file that cannot be read exits 78 with `CONFIG_INVALID`, naming the file and, when the parser knows it, the line. `--help`, `--version`, `ncly completion`, and M1 discovery still work with defaults. Discovery reports its fallback. Doctor reports this failure on stdout as a failed `core.config` check and uses defaults only for checks independent of the invalid configuration
 - An unknown key is a `CONFIG_UNKNOWN_KEY` warning in `ncly doctor`, never an error, so an older `ncly` reads a config written for a newer one.
 - `ncly` writes a config file only when the job of a command is to change the setup, such as adding a tap. It edits the file in place, keeps comments and formatting, and names the file it changed. Under `--dry-run`, it shows the change instead. Each such command states which file it writes.
 
@@ -216,7 +221,7 @@ paths = ["~/code/skills"]
 
 ## Command descriptions (M0)
 
-One declaration per command supplies its argument and flag definitions, result contract, effects, prerequisites, examples, and supported modes. Help, completion, validation, `doctor`, and M1 discovery consume that declaration. Domain code owns the behavior. The declaration is not a workflow language.
+One declaration per command supplies help, completion, validation, and discovery. M0 implements the fields its commands use. M1 extends them with input constraints, result types, prerequisites, and configuration sources as each real command needs them. Domain code owns the behavior. The declaration is not a workflow language.
 
 Effects distinguish user writes, network access, and paid requests. Modes distinguish dry run, recorded execution, and resume. A missing declaration is not permission to assume a capability. A command may support recorded execution without supporting resume.
 
@@ -236,11 +241,59 @@ A run record contains its format version, `run_id`, command path, status, step o
 
 Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
 
-Records distinguish `running`, `completed`, `failed`, `interrupted`, and `unknown`. A step distinguishes `pending`, `completed`, `failed`, and `unknown`. Pending means the step has not started. A completed step names the evidence needed to reuse it, such as an artifact path and content fingerprint. The domain may leave an in-flight effect as unknown until it has a verified result.
+Records distinguish `running`, `completed`, `failed`, `interrupted`, and `unknown`. A step distinguishes `pending`, `completed`, `failed`, and `unknown`. Pending means its effect has not started; preparation may have failed. A completed step names the evidence needed to reuse it, such as an artifact path and content fingerprint. The domain may leave an in-flight effect as unknown until it has a verified result.
 
 Keep records under the XDG state directory and give every run its own temporary directory. Write each record atomically under a lock. Lock shared destinations or configuration at the point of mutation and revalidate while holding the lock. A conflict follows Retry safety, including effects already completed elsewhere in the run.
 
-Records survive the process. M1 retains them until the user removes them and never automatically deletes output artifacts. Listings are bounded. A missing record or an unsupported record version never causes the original operation to be started again.
+Records survive the process. M1 retains them until the user removes their JSON files and never automatically deletes output artifacts. Listings bound both record count and item-key previews. A missing record or an unsupported record version never causes the original operation to be started again.
+
+### Record format (M1)
+
+Each run has one record, `runs/<run_id>.json` in the state directory, such as `~/.local/state/nicely/runs/`. The record is one JSON object. While holding `runs/<run_id>.lock`, `ncly` writes a temporary file in the same directory, syncs that file, renames it, then syncs the parent directory. Newly created state directories are synced with their parents too. This persistence barrier finishes before acknowledging a non-repeatable effect. A failed barrier prevents the effect. Atomic visibility alone is not durable acknowledgement.
+
+The platform helper uses the durable flush supported by the system. On macOS, it also uses `F_FULLFSYNC` after syncing metadata, because [Apple's fsync documentation](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html) distinguishes an ordinary sync from flushing the drive cache. A failed required flush stops the operation. Persistence relies on the filesystem and device honoring these operations; Nicely cannot promise survival of arbitrary hardware failure.
+
+The execution process holds the run lock until it exits. A new operation that consumes a source run also holds that source's lock while it executes, to exclude a concurrent source resume. The operating system releases each lock when its owner dies. Lock files may remain; their existence alone does not establish ownership. Before recording a step as completed, the domain independently verifies its artifacts and syncs their files and containing directories.
+
+`run_id` is an opaque string of lowercase letters, digits, and hyphens, such as `20261007-214501-3f9a2c`. Readers never parse it. A run's temporary directory sits in the system temporary directory, carries the run ID in its name, and is removed when the run ends, including after Ctrl-C or SIGTERM.
+
+| Key | Type | Meaning |
+|---|---|---|
+| `format_version` | integer | The record format, initially `1`. A reader rejects any other value before work |
+| `run_id` | string | The run ID |
+| `path` | string | The command path, such as `transcript run youtube` |
+| `status` | string | `running`, `completed`, `failed`, `interrupted`, or `unknown` |
+| `started_at`, `updated_at` | string | UTC times in RFC 3339, such as `2026-10-07T21:45:01Z` |
+| `ncly_version` | string | The release that last wrote the record |
+| `attempts` | integer | The number of executions: 1, plus one per resume |
+| `inputs` | object | The non-secret inputs and their fingerprints, under keys that the domain defines |
+| `tools` | object | The version of each program that the run used, keyed by program name |
+| `items` | array | One object per input item, in input order. A command with one input has one item |
+
+Each item has `key`, a string that names the item, such as its URL, `output_dir`, the folder selected for its results, or `null` until the domain selects it, and `steps`, an array in execution order. The domain records `output_dir` before creating or writing that folder. Each step has these keys:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `id` | string | The step name that the domain defines, such as `transcribe` |
+| `status` | string | `pending`, `completed`, `failed`, or `unknown` |
+| `started_at`, `finished_at` | string or null | UTC times, `null` until the step starts or ends |
+| `artifacts` | array | One object per verified output, with `path`, `size_bytes`, and `sha256` |
+| `error` | object or null | The latest unsuccessful attempt's `code`, `message`, and `hint`, as in the public problem object. A preparation failure can leave the step `pending` with an error. An untouched pending or completed step has `null` |
+| `evidence` | object, optional | Data beyond `artifacts` that the domain needs to reuse the step, with its own `format_version`. A step without such data omits the key |
+
+The domain defines when its validated preparation creates the initial record, before its first user-side mutation or paid dispatch. It starts with pending steps and status `running`. A run's saved status follows this table:
+
+| Status | When written |
+|---|---|
+| `running` | The initial record and each explicit resume attempt |
+| `completed` | Every planned step has verified completion |
+| `failed` | Execution ends with a known error and no unknown step |
+| `interrupted` | Ctrl-C or SIGTERM stops execution, preserving each step's evidence |
+| `unknown` | Execution ends without a signal and at least one step has an unresolved effect |
+
+Abrupt death can leave `running` with no lock owner. Inspection preserves that saved status and reports `active: false`; it never invents completion or marks untouched pending steps unknown. Resume decides from the step evidence.
+
+Later domains reuse these keys where they fit and define their own evidence at their first consumer. M1 implements transcript only, without a generic extension evidence interpreter or workflow engine. Compatibility governs any later format change.
 
 ### Inspection and explicit resume
 
@@ -248,7 +301,7 @@ Inspection is read-only and reports saved evidence, not an assumption that a pro
 
 A supported resume reuses verified completed steps and continues only steps whose execution is known to be safe. It records each attempt under the same run ID. Changed or missing evidence returns `RESUME_UNSAFE` with an explanation and the artifacts still available. `--force` does not override uncertainty or make a non-repeatable effect safe.
 
-For example, a saved transcript and a summary that was never started permit a resume of the summary alone. An unanswered paid summary request is unknown and is not sent again automatically. A domain may reconcile an external result when it has a reliable lookup mechanism. Otherwise the user must inspect the evidence and explicitly choose any new operation that might repeat a charge.
+For example, a saved transcript and a summary that was never started permit a resume of the summary alone. An unanswered paid summary request is unknown and is not sent again automatically. A domain may resolve an unknown step from complete, independently verified local artifacts, or from a reliable external lookup. This establishes a reusable result; it never authorizes redispatch of an unresolved request. Otherwise the user must inspect the evidence and explicitly choose any new operation that might repeat a charge.
 
 Nicely has no background worker or scheduler in these milestones. A record makes work inspectable after a session ends. It does not keep the process alive or promise that an arbitrary harness task can resume.
 
@@ -258,30 +311,48 @@ Nicely has no background worker or scheduler in these milestones. A record makes
 ncly describe [command...] [--json]
 ```
 
-Without a command path, returns concise descriptions of installed commands. A path such as `transcript run youtube` returns that command's declaration. The JSON envelope contains `commands`, an array. Each entry identifies its command `path`, `summary`, `since`, and `source`. A detailed entry adds arguments, flags, the result contract, effects, prerequisites, and supported modes. Text is localized, while machine identifiers follow Compatibility. Unknown paths use `NOT_FOUND`.
+Without a command path, returns concise descriptions of installed commands. A path such as `transcript run youtube` returns that command's declaration. A path that names a group, such as `transcript`, returns the concise entries of the commands under it. The JSON envelope contains `commands`, an array. Text is localized, while machine identifiers follow Compatibility. Unknown paths use `NOT_FOUND`.
 
-M1 settles the nested descriptor fields in this section before code. Discovery works with default configuration when a config file is invalid, adds `CONFIG_DEFAULTS_USED`, and does not claim to have resolved a profile that it could not read.
+Each entry has `path`, such as `transcript run youtube`, `summary`, `since`, the release that added the command, such as `v0.1.0`, and `source`. `source` is `core` in M1. M3 adds sources for extensions, and a reader treats an unknown `source` as not core. A detailed entry adds these keys:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `args` | array | Positional arguments in order, each with `name`, `summary`, `type`, `required`, `variadic`, and `values`. `type` is `string`, `boolean`, `integer`, or `number`. `values` lists accepted typed values, or is empty. Only the last argument may be variadic |
+| `flags` | array | Own flags plus applicable write, output, and timeout flags. Each has `name`, `shorthand`, `value`, `type`, `required`, `variadic`, `values`, `default`, and `summary`. Names omit `--`. Empty `shorthand` means none, empty `value` means a switch. `default` is the typed default or `null` when none applies. Variadic means several values |
+| `flag_groups` | array | Each group has `flags`, an array of long flag names, and integer `min` and `max`, the permitted number supplied. Zoom's `latest` and `path` have `min: 1` and `max: 1` |
+| `result` | object | `kind`: `object`, `report`, `batch`, or `text`; `keys`: top-level successful data keys; `schema`: JSON Schema for normal JSON answers, including item fields, errors, types, nullability, and closed enums. `dry_run_schema` is present when supported. A text result ignores `--json`, has empty `keys`, and omits schemas |
+| `effects` | object | Conservative possible effects: `user_writes`, `network`, and `paid`. Dry run describes the selected invocation's effects |
+| `requires` | object | `bins` and `keys`, possible program and service prerequisites. Preparation selects the ones needed by this invocation, so a skipped summary requires no harness |
+| `modes` | object | The booleans `dry_run`, `recorded`, and `resume` |
+| `config` | array | Each config key that the command reads, with `key`, `value`, and `source`, which is a file path, an environment variable, or `default`. A secret value never appears |
+| `examples` | array | Full command lines |
+
+`requires` takes its name and its keys from the M3 manifest, so a static manifest can describe an extension's commands the same way. Discovery works with default configuration when a config file is invalid, adds `CONFIG_DEFAULTS_USED`, and does not claim to have resolved a profile that it could not read.
+
+Schemas use JSON Schema draft 2020-12, with all references resolved within the returned descriptor and no remote schema fetch. `keys` comes from that result definition, excluding `ok`, `contract_version`, `errors`, and `warnings`; a successful batch includes `results`. Flag types use the same scalar types as arguments. Schemas allow unknown optional fields as Compatibility requires. Declarations cover the current commands only; M1 needs no schema generator or custom constraint language for future domains. Validation uses required flags and groups from this declaration. For YouTube, `url` is required and variadic. For Zoom, exactly one of `latest` and `path` is required. Examples do not replace these constraints.
 
 ## ncly run (M1)
 
 ```
-ncly run list [--limit <count>] [--json]
+ncly run list [--path <command-path>] [--key <item-key>] [--since <time>] [--limit <count>] [--json]
 ncly run view <run-id> [--json]
 ncly run resume <run-id> [--dry-run] [--force] [--timeout <duration>] [--json]
 ```
 
-- `list` returns `runs`, newest first, with at most `--limit` entries, 20 by default. The count must be a positive integer
-- `view` returns `run`, including step outcomes and artifact references. A successful inspection exits 0 even when the saved run failed. Its top-level `ok` describes the inspection, and `run.status` describes the saved operation
+- `list` returns `runs`, sorted by `started_at` descending, then `run_id` ascending, with at most `--limit` entries, 20 by default. The count must be a positive integer. Filters combine with AND before limiting: `--path` exactly matches the command path, `--key` matches any item key, and `--since` includes runs whose `started_at` is at or after that RFC 3339 time. An invalid time is `USAGE_INVALID`
+- Each list entry has `run_id`, `path`, `status`, `started_at`, `updated_at`, `active`, `item_count`, and `keys`. `keys` previews at most the first three item keys in input order; filters still inspect every key. The top-level `more` boolean is true when additional matching records exceed the limit. Increase the limit or narrow the filters, without a database or index service
+- `view` returns `run`, the record of [Record format](#record-format-m1) plus `active`, including step outcomes and artifact references. A successful inspection exits 0 even when the saved run failed. Its top-level `ok` describes the inspection, and `run.status` describes the saved operation
 - `resume` follows Operations and returns the original domain's result with the same `run_id`. Dry run only describes the remaining steps and checks. The original command's timeout default applies unless overridden
 - An unknown run uses `NOT_FOUND`. An unsafe or unsupported resume uses `RESUME_UNSAFE`. For a command that supports resume, a completed run returns its verified saved result without running its steps again
+- When another process holds the run, `resume` exits 75 with `TEMPORARY` before any effect, with a hint naming `ncly run view <run-id>`. `active` is true while a process holds the run lock; inspecting a busy run does not permit a retry loop
 
-M1 settles the public run-summary and detail fields, record encoding, and lookup of a run after lost stdout before code. The invariants in Operations already apply to those choices.
+To find a run whose stdout was lost, filter by the original path and an item key, such as `ncly run list --path 'transcript run youtube' --key <url> --json`. Add `--since` when the retained invocation start time is known; a fresh session may omit it. Check `more`, then confirm candidates with `run view`, including their recorded inputs and complete item list. Report ambiguous matches instead of choosing the newest one. A call that failed during preparation before its first record write has no record. Absence from one limited list proves neither absence of a run nor absence of billing.
 
 ## Keys (M1)
 
 - A service has a name of lowercase letters and digits, such as `deepgram`. Its environment variable is the name in uppercase followed by `_API_KEY`, such as `DEEPGRAM_API_KEY`.
-- `ncly` reads a key from its environment variable first. It asks the keychain only when that variable is empty, and for `ncly auth`. The keychain entry uses the service `nicely` and the account named after the service.
-- Each keychain call has a time limit, and a keychain that does not answer in time counts as unavailable. A command that needs a key exits 78 with `KEYRING_UNAVAILABLE` when the key is missing from the environment and the keychain is unavailable, and its hint names the variable to export. When the keychain answers without the key, the code is `AUTH_MISSING`.
+- `ncly` reads a key from its environment variable first. It reads the key from the keychain only when that variable is empty. `ncly auth` and `ncly doctor` also check the keychain. The keychain entry uses the service `nicely` and the account named after the service.
+- Each keychain call has a time limit: 60 seconds in interactive mode, where a human can answer an unlock prompt, and 10 seconds otherwise. A keychain that does not answer in time counts as unavailable. A command that needs a key exits 78 with `KEYRING_UNAVAILABLE` when the key is missing from the environment and the keychain is unavailable, and its hint names the variable to export. When the keychain answers without the key, the code is `AUTH_MISSING`.
 - A key is never accepted as a flag. `ncly auth login` reads it from a masked field, or from stdin with `--stdin`.
 - A key is never printed. `ncly auth status` reports where a key comes from, never its value.
 
@@ -295,9 +366,9 @@ M1 settles the public run-summary and detail fields, record encoding, and lookup
 - The variables of the global flags carry their resolved values. `NCLY_VERSION` and `NCLY_CONTRACT_VERSION` identify the release and public protocol.
 - A harness receives `NCLY_AGENT_DEPTH` plus one.
 
-**Grants.** A program of core receives the keys that core declares for it. An extension receives a key only after a human grants that key to that extension in a terminal. `--force` never grants a key. When an update of an extension declares a new key, the extension does not start until a human grants it.
+**Grants.** A program of core receives the keys that core declares for it. The transcript Python program receives `DEEPGRAM_API_KEY`. A harness adapter declares the variables of its harness: `claude` receives `ANTHROPIC_API_KEY`, and `pi` uses its adapter's verified provider-to-variable mapping, such as `OPENROUTER_API_KEY`. It never derives a key variable by parsing translated help at runtime. A harness key is optional. `ncly` passes it when the environment or the keychain holds it, and otherwise the harness uses its own login. An unavailable keychain for an optional harness key does not block that fallback. An extension receives a key only after a human grants that key to that extension in a terminal. `--force` never grants a key. When an update of an extension declares a new key, the extension does not start until a human grants it.
 
-**Cancellation.** On Ctrl-C or SIGTERM, `ncly` sends the signal to every program it started and to their descendants. It sends SIGKILL to what still runs 15 seconds later, which leaves a Python program its own 10 seconds to stop its children. It keeps every finished output and removes only its own temporary files. It exits 130 with `INTERRUPTED` or 143 with `TERMINATED`, and under `--json` the answer keeps the data keys that apply, such as `output_dir` or the `results` of finished items. A second signal during this cleanup is ignored. A SIGKILL sent to `ncly` itself leaves no time to clean up.
+**Cancellation.** On Ctrl-C or SIGTERM, `ncly` sends the signal to every program it started and to every descendant that it can still reach. It sends SIGKILL to what still runs 15 seconds later, which leaves a Python program its own 10 seconds to stop its children. Before each signal, `ncly` finds descendants through their parent process, so a descendant that left the process group of its parent, as the children of the transcript CLI do, still receives the signal. On Linux, `ncly` registers as a child subreaper, so it also reaches a descendant whose parent already exited. macOS has no subreaper, so a descendant whose parent exited before the signal is the one exception there, and it keeps running. `ncly` keeps every finished output and removes only its own temporary files. It exits 130 with `INTERRUPTED` or 143 with `TERMINATED`, and under `--json` the answer keeps the data keys that apply, such as `output_dir` or the `results` of finished items. A second signal during this cleanup is ignored. A SIGKILL sent to `ncly` itself leaves no time to clean up.
 
 **Timeout.** The timeout covers the command's work and starts before child execution. On expiry, use the same process-tree cleanup as cancellation. A temporary failure before any paid request exits 75 only when Retry safety holds. Otherwise it exits 1. A caller's SIGTERM remains exit 143. Record finished work and unknown effects before returning when the process can still do so.
 
@@ -330,7 +401,14 @@ effort = "high"
 | `model` | A model ID that the harness accepts |
 | `effort` | A reasoning effort that the harness accepts |
 
-`--profile <name>` picks a profile, and `default_profile` applies without it. An unknown profile exits 2 with `NOT_FOUND`.
+`--profile <name>` picks a profile, and `default_profile` applies without it. An unknown profile exits 2 with `NOT_FOUND`. Without `--profile` and without `default_profile`, no profile applies, and each command that runs an agent states what it does then.
+
+M1 ships the adapters for `claude` and `pi`. A profile that names another harness fails with `CAPABILITY_UNSUPPORTED` until M2 adds its adapter. Each adapter turns the tools off, sends the task on stdin, and checks the answer:
+
+- `claude`, version 2.1.291 or later, runs with `--print`, `--model`, `--effort`, `--system-prompt`, and `--output-format json`. It turns tools off with `--tools ""`, `--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, `--setting-sources ""`, `--disable-slash-commands`, `--no-session-persistence`, and `--permission-mode dontAsk`. `--settings` turns hooks off and sets `CLAUDE_CODE_EFFORT_LEVEL`, which would otherwise override `--effort`. The answer is `result`, and `is_error` must be `false`. The effort is `low`, `medium`, `high`, `xhigh`, or `max`, and a profile for `claude` has no `provider`
+- `pi`, version 1.0.4 or later, runs with `--print`, `--model <provider>/<model>`, `--thinking`, and `--system-prompt`. It turns tools off with `--no-tools`, `--no-session`, `--no-skills`, `--no-prompt-templates`, `--no-context-files`, `--no-extensions`, and `--no-approve`. The answer is stdout, which must not be empty. The effort is `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`
+
+A profile with an effort that its harness rejects, or with a `provider` for `claude`, is `CONFIG_INVALID` when that profile is selected. Syntax errors and values of the wrong declared type still fail as Configuration defines. An unused profile's semantic constraint does not block skill inspection. A harness older than its listed version is `PREREQ_MISSING`. These invocations come from the transcript CLI, and their flags were checked against `--help` on 2026-10-07. M1 rechecks the real adapters and observes that material cannot invoke tools, hooks, MCP servers, or loaded extensions. A stub accepting flags or a real harness returning text is not that proof.
 
 The internal agent service checks `[agent] max_depth`, 2 by default, before every launch. `NCLY_AGENT_DEPTH` defaults to 0. A launch at or above the limit exits 2 with `DEPTH_LIMIT`. The child receives the depth plus one. This applies to transcript in M1 and the public agent command in M2.
 
@@ -347,17 +425,19 @@ Completion also suggests values: skill names, auth services, profiles, transcrip
 ## ncly doctor (M1)
 
 ```
-ncly doctor [component] [--live] [--json]
+ncly doctor [component] [--live] [--timeout <duration>] [--json]
 ```
 
 | Argument or flag | Effect |
 |---|---|
 | `component` | One of `core`, `auth`, `skill`, or `transcript`. Without it, doctor checks all of them. |
 | `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. |
+| `--timeout` | Bounds the checks, including local version probes and free network checks, 30 seconds by default. Installation after human confirmation is separate from those checks |
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
-- When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` otherwise.
-- The `skill` component checks that each folder in `[skill] paths` exists and that each `SKILL.md` has a `name` and a `description`. It warns with `SKILL_NAME_MISMATCH` when a subfolder's name differs from its `name`.
+- Invalid or unreadable config produces the failed `core.config` finding with `CONFIG_INVALID`, even for a selected component. Doctor continues independent checks and omits checks whose required configuration could not be resolved. It never reports those omitted checks as passing
+- When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` with `KEYRING_UNAVAILABLE` otherwise.
+- The `skill` component warns with `SKILL_SOURCE_MISSING` for a folder of `[skill] paths` that is missing or cannot be read. It warns with `SKILL_NAME_MISMATCH` when a subfolder's name differs from its `name`, and with `SKILL_INVALID` for a `SKILL.md` that cannot be read, whose frontmatter is invalid, or that lacks `name` or `description`.
 - In interactive mode, when a tool is missing and its install command for this system is known, doctor shows the command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and runs it only after a yes.
 - In non-interactive mode, doctor never installs anything. The hint of each failed check holds the command.
 - Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it exits 1 with `errors`.
@@ -378,12 +458,14 @@ ncly auth status [--json]
 
 Core uses one service in M1, `deepgram`, for `transcript`. Any other service name works the same way, so an extension's key is stored like a core key.
 
-- `login` stores the key in the keychain. Replacing a stored key asks for confirmation, or needs `--force` in non-interactive mode. In non-interactive mode without `--stdin`, `login` exits 78 with `TERMINAL_REQUIRED` and the hint ``Run `ncly auth login <service>` in a terminal``. An agent relays this hint to the human and never pipes a key itself.
+- `login` stores the key in the keychain. Replacing a stored key asks for confirmation, or needs `--force` in non-interactive mode. In non-interactive mode without `--stdin`, `login` exits 78 with `TERMINAL_REQUIRED` and the hint ``Run `ncly auth login <service>` in a terminal``. `TERMINAL_REQUIRED` wins over `KEYRING_UNAVAILABLE`, because `login` without a terminal and without `--stdin` never reaches the keychain. An agent relays this hint to the human and never pipes a key itself.
 - `logout` removes the key from the keychain. It asks for confirmation, or needs `--force` in non-interactive mode.
 - When the keychain is unavailable, `login` and `logout` exit 78 with `KEYRING_UNAVAILABLE`, and the hint names the environment variable to use instead.
-- `status` is a report command. It reports whether the keychain answers, then lists every service that core uses, plus, from M3, every service that an extension declares. `ok` is `false`, with exit 78, only when the keychain does not answer and a listed service has no key in the environment.
+- `status` is a report command. It reports whether the keychain answers, then lists every service that core uses, plus, from M3, every service that an extension declares. `ok` is `false`, with exit 78, only when the keychain does not answer and a listed service has no key in the environment. That service's entry then adds `code`, set to `KEYRING_UNAVAILABLE`, the code of the failed `auth` check in `ncly doctor`.
 
 For `login` and `logout`, `--dry-run` takes precedence over secret input and confirmation. It describes the intended action without reading stdin for a key, opening a keychain entry, or prompting. Checks that would require a keychain read, including whether login would replace a key, are reported as pending. This simulation does not require a terminal or `--stdin`.
+
+Their dry-run JSON has `dry_run: true`, `plan`, an array with one entry containing the service `key`, `action` (`login` or `logout`), and `effects` (`user_writes: true`, `network: false`, `paid: false`), plus `pending_checks`, whose entries have `id` and `message`. The check `auth.keychain` covers availability, existing keys, and any replacement confirmation. A successful login or logout answers `service` and `action`, never a key.
 
 ```json
 {"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"deepgram","configured":true,"source":"keychain"}]}
@@ -403,6 +485,9 @@ ncly skill <name>
 - A skill's subfolder takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works and `ncly doctor skill` warns.
 - A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links, and `skill link` creates them from M3. A broken link is not a skill, and `list` skips it.
 - When two folders hold the same skill name, the first folder in `paths` wins and `list` adds a `SKILL_SHADOWED` warning. Two subfolders that resolve to the same folder are one skill, listed with the path of the first, without a warning.
+- Inside one folder of `paths`, when two subfolders declare the same `name`, the subfolder whose name sorts first byte by byte wins, and `list` adds `SKILL_SHADOWED`.
+- A `SKILL.md` that cannot be read, whose frontmatter is invalid, or that lacks `name` or `description` is not a skill. `list` skips it and adds a `SKILL_INVALID` warning whose hint names the file to fix, and `view` answers `NOT_FOUND` for it.
+- A folder of `paths` that is missing or cannot be read is skipped. `list` continues with the other folders and adds a `SKILL_SOURCE_MISSING` warning whose hint names the folder, and `view` answers `NOT_FOUND` for a skill that no other folder holds.
 - When no folder is configured, `list` returns an empty list and a `SKILL_NO_SOURCE` warning whose hint names `[skill] paths`.
 - `list` returns names and descriptions, sorted by name.
 - `view` prints the `SKILL.md` of the skill. Its first line gives the folder, so the relative paths inside the skill resolve: `<!-- skill-dir: /Users/me/code/skills/transcript -->`. In interactive mode, Glamour renders the Markdown.
@@ -426,7 +511,7 @@ ncly transcript run zoom (--latest | --path <folder>) [--profile <name>] [--outp
 ncly transcript prompt list [--json]
 ```
 
-- A run needs the `deepgram` key and exits 78 with `AUTH_MISSING` without it.
+- A run needs the `deepgram` key. Without it, the run exits 78 with `AUTH_MISSING` or `KEYRING_UNAVAILABLE`, as [Keys](#keys-m1) defines.
 - `--profile` names an [agent profile](#agent-profiles-m1) for the summary.
 - `--dry-run` follows the [global definition](#global-flags-m0): it validates the plan without a key, a paid request, or a change to the user's files.
 - Exit 75 follows Retry safety, including any local writes. Never rerun an exit 1 automatically, because work may be partial or already billed

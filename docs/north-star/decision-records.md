@@ -6,7 +6,7 @@ Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From 
 
 ## D001 Build from scratch in Go with Cobra and Charm
 
-Decided 2026-10-05. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour for the interface. Until a form needs Huh or Bubble Tea, `internal/tui` styles text with `x/ansi` and `colorprofile`, both from Charm, without Lip Gloss: Lip Gloss v2.0.6 detects the terminal as its package loads, and inside tmux that runs `tmux info` with no time limit, so even `ncly --version` could hang. The first form must prove that its packages no longer probe at load, with the scenario `terminal.txtar`.
+Decided 2026-10-05. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour for the interface. Until a form needs Huh or Bubble Tea, `internal/tui` styles text with `x/ansi` and `colorprofile`, both from Charm, without Lip Gloss: Lip Gloss v2.0.6 detects the terminal as its package loads, and inside tmux that runs `tmux info` with no time limit, as [lipgloss#749](https://github.com/charmbracelet/lipgloss/issues/749) reports. Even `ncly --version` could hang. The first form must prove that its packages no longer probe at load, with the scenario `terminal.txtar`. The first command that needs Huh, a Bubbles spinner, or Glamour uses a Lip Gloss version that defers the call: an upstream release, or, after Pascal approves it, a fork wired through a `replace` line in `go.mod` and removed once upstream ships the fix. Until then, that command ships its non-interactive output first.
 
 **Why.** Cobra already carries the practices of `gh`, `kubectl`, and the Stripe CLI. The Charm libraries cover forms, spinners, styles, and Markdown in one family.
 
@@ -72,15 +72,15 @@ Decided 2026-10-05. A missing value opens a form in interactive mode and exits 2
 
 ## D010 Keep keys in the keychain or the environment
 
-Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [cli-spec.md](cli-spec.md#keys-m1) says. `ncly` asks the keychain only when the environment lacks the key, under a time limit, so an unavailable keychain blocks only a command that needs it. Agents relay the hint and never handle a key.
+Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [cli-spec.md](cli-spec.md#keys-m1) says. `ncly` reads a key from the keychain only when the environment lacks it. `ncly auth` and `ncly doctor` also check the keychain. Every call has a time limit, so an unavailable keychain blocks only a command that needs it. Agents relay the hint and never handle a key.
 
-**Why.** Each program owns its own keychain entries, as `gh` does with `gh:github.com`, so `logout` touches only Nicely's keys. The environment lets any other secret store feed `ncly`. Open service names let an extension declare a key that core does not know. A Linux machine reached over SSH often has no unlocked keychain, and go-keyring's unlock call has no time limit of its own.
+**Why.** Each program owns its own keychain entries, as `gh` does with `gh:github.com`, so `logout` touches only Nicely's keys. The environment lets any other secret store feed `ncly`. Open service names let an extension declare a key that core does not know. A Linux machine reached over SSH often has no unlocked keychain, and go-keyring's unlock call has no time limit of its own. `gh` wraps the same library with a 60-second limit on every call, which leaves a human time to answer an unlock prompt. Nicely keeps 60 seconds in interactive mode and waits 10 seconds otherwise, because an agent that waits a minute for a prompt nobody sees is stuck.
 
 **Rejected.** A fallback file. Sharing entries written by another tool, such as chezmoi's `service=deepgram, user=api_key`, because two programs would then own one entry. Remote commands that need keys, parked in M99.
 
 ## D011 Check locally by default, test live on request
 
-Decided 2026-10-05. `ncly doctor` stays on the machine by default. `--live` calls free endpoints only. An install runs only after a yes in a terminal.
+Decided 2026-10-05. `ncly doctor` stays on the machine by default. `--live` calls free endpoints only. Invalid config is a failed report finding on stdout, and independent checks still run. An install runs only after a yes in a terminal.
 
 **Why.** Doctor must be safe to run at any time. A live check proves a key works without a bill.
 
@@ -226,11 +226,13 @@ Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` mi
 
 ## D031 Stop the whole process tree on cancel and keep finished work
 
-Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and their descendants, keeps every finished output, and exits 130 or 143 with the data that still applies, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines. Run inspection distinguishes verified finished work from uncertain effects. Neither interruption code authorizes an automatic retry.
+Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and every descendant that it can still reach, orphans included on Linux, keeps every finished output, and exits 130 or 143 with the data that still applies, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs-m1) defines. Run inspection distinguishes verified finished work from uncertain effects. Neither interruption code authorizes an automatic retry.
 
 **Why.** The transcript CLI starts its children in their own process groups, so a signal to its parent alone leaves `yt-dlp`, `ffmpeg`, or a harness running. A harness that hits its time limit sends SIGTERM. A finished transcript may already be billed, so cleanup must never delete it.
 
-**Rejected.** Signaling only the direct child. Deleting partial results on interrupt. Assuming a stopped process proves that its last external request had no effect.
+`ncly` finds descendants through their parent process, because a signal to a process group misses the children that the transcript CLI starts in their own sessions. On Linux, `ncly` registers as a child subreaper, so an orphaned descendant stays reachable. macOS has no equivalent, so a descendant whose parent exited before the signal is the one exception there.
+
+**Rejected.** Signaling only the direct child. Relying on the Python program alone to stop its children, because the SIGKILL after 15 seconds leaves them running. Deleting partial results on interrupt. Assuming a stopped process proves that its last external request had no effect.
 
 ## D032 Keep small run records and resume explicitly
 
@@ -244,7 +246,7 @@ Decided 2026-10-05. The [operation contract](cli-spec.md#operations-m0-contract-
 
 Decided 2026-10-05. One [command declaration](cli-spec.md#command-descriptions-m0) supplies help, completion, targeted JSON discovery, and doctor prerequisites. It describes inputs, results, effects, and supported capabilities. Adapters and extensions declare only guarantees they can enforce.
 
-**Why.** An agent needs the relevant command's contract without loading every domain or probing by trial and error. Shared declarations keep help, preflight checks, and execution from making different promises. Discovery distinguishes support for a capability from readiness on the current machine.
+**Why.** An agent needs the relevant command's contract without loading every domain or probing by trial and error. Required flags, flag groups, and typed result schemas make that contract sufficient to build and parse a call. Shared declarations keep help, preflight checks, and execution from making different promises. Discovery describes possible effects and requirements; shared preparation selects those of the invocation. M0's declaration grows with its first M1 consumers, rather than pretending every field already exists.
 
 **Rejected.** Separate manually maintained command catalogs for agents. Dumping the whole command tree for every lookup. Treating an unknown capability as supported.
 
@@ -263,3 +265,11 @@ Decided 2026-10-05. Tap and docs synchronization track the files they manage and
 **Why.** A repeated sync must remove stale generated files without deleting unrelated files or edits. Readers need a complete result, and an interrupted update must leave enough evidence to recover. Explicit ownership makes those decisions possible.
 
 **Rejected.** Replacing an entire destination without knowing who owns its files. Preserving every stale output forever. Publishing files one by one while readers can see an incomplete update.
+
+## D036 Record each run in one JSON file that its executor locks
+
+Decided 2026-10-07. Each run has one JSON record in the state directory, written atomically and flushed before an effect is acknowledged. Its lock reports current ownership separately from saved status. A source consumer holds the source lock while executing too. `ncly run view` returns saved step evidence and recovery hints. `ncly run list` filters candidates before limiting them and bounds its item previews. [cli-spec.md](cli-spec.md#record-format-m1) holds the format.
+
+**Why.** JSON matches the answer format, so inspection needs no second storage model. Atomic rename protects readers from incomplete JSON; syncing files and directory metadata protects the acknowledged intent across a crash within the platform's persistence guarantees. The operating system releases a lock when its owner dies, without a heartbeat. A pending step may have a failed preparation, so its saved problem retains the cause and hint. Filtering and short previews let a new session find relevant work without dumping unrelated batches. Later domains prove their own evidence instead of M1 promising their complete format.
+
+**Rejected.** SQLite, because one file per run needs no migration and an agent reads it with `jq`. A process ID in the record, because the operating system reuses process IDs. A heartbeat refreshed by a background worker, because Nicely has none.
