@@ -5,11 +5,28 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 ## Read in this order
 
 1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), and [architecture.md](docs/north-star/architecture.md), at the start of every session.
-2. [docs/north-star/dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup and waiting for his review before a merge.
-3. Run `just next`. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) for core, and of `extensions/<name>/spec.md` for an extension.
-4. [docs/north-star/decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
+2. [dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup, keeping the docs a tower, and waiting for his review before a merge.
+3. Run `just next`. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
+4. A decision in [decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
 
 Take rules only from these files and the specs that your card links. `docs/archived/` holds history, such as the design chat. `just status` shows every milestone and the cards of the current one.
+
+## Find what you need
+
+Each file answers one question. Read a file when its row says so, and add to it when its row says so.
+
+| Question | File | Read when | Add to it when |
+|---|---|---|---|
+| What is Nicely, and how do agents use it? | [vision.md](docs/north-star/vision.md) | Every session | The purpose or the audience changes |
+| Which rules shape every design choice? | [principles.md](docs/north-star/principles.md) | Every session | Pascal adds or changes a principle, with its decision |
+| Where does each part live, and who owns it? | [architecture.md](docs/north-star/architecture.md) | Every session | A layer, a part, a package, or a domain appears |
+| What does a word mean, and which words to avoid? | [glossary.md](docs/north-star/glossary.md) | A word is unclear | Before the first use of a new term |
+| Which rules does every command follow? | [contract.md](docs/north-star/contract.md) | Your card links a section | A card adds a primitive, a flag, a code, or a format |
+| What do core's commands do? | [core-spec.md](docs/north-star/core-spec.md) | Your card links a section | A card adds or changes a command of core |
+| What do an extension's commands do? | `extensions/<name>/spec.md` | Your card links a section | A card adds or changes a command of that extension |
+| Why does a rule exist? | [decisions/](docs/north-star/decisions/README.md) | A rule blocks your card | A rule is chosen, changed, or replaced |
+| How does Pascal want changes made? | [dev-preferences.md](docs/north-star/dev-preferences.md) | Every session | Pascal states a new preference |
+| What is the plan? | [docs/milestones/](docs/milestones/) | `just next` names a milestone | Planning work. Any other idea goes to M99 |
 
 ## Work on a card
 
@@ -27,7 +44,7 @@ Copy this checklist into the pull request and tick each step when its condition 
 - [ ] 7. Sign off: `just signoff` passes
 ```
 
-1. **Spec first.** Write the section before code: in contract.md for core, or in `extensions/<name>/spec.md` for an extension. When a source that the section cites has changed, such as a harness version, fix the spec first. Done when a reader can call the command from the spec alone.
+1. **Spec first.** Write the section before code: in contract.md or core-spec.md for core, or in `extensions/<name>/spec.md` for an extension. When a source that the section cites has changed, such as a harness version, fix the spec first. Done when a reader can call the command from the spec alone.
 2. **Scenario before code.** Scenarios live in `testdata/script/` as `.txtar` files, under the names that the card's **Proves** line gives. Reuse the [M00 contract coverage](docs/milestones/M00-foundation.md#contract-coverage) and add the command's distinct risks. For writing or paid work, verify filesystem effects, partial results, and retry safety, not just the JSON text. Done when the scenario fails for the missing behavior. A shared-component test does not replace the first real command's end-to-end proof.
 3. **Code.** Follow [Code](#code). Done when the scenario passes.
 4. **Text.** Give each catalog entry an ID and a description of where the text appears, so a translator picks the right sense.
