@@ -30,6 +30,8 @@ test *args:
     while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
     go test ./... {{ args }}
     (cd tools && go test ./cmd/... {{ args }})
+    # Go caches the tools tests and never sees the docs they read, which sit outside their module, so check the plan and every link again here.
+    go -C tools run ./cmd/plan check "{{ justfile_directory() }}"
     bash scripts/release-check-test.sh
     bash scripts/test-hook-env.sh
 

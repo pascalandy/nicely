@@ -1,6 +1,7 @@
 // Command plan reads the milestone files and prints the next card, shows the
 // progress of every milestone, or checks that the files keep the format that
-// AGENTS.md describes. It takes the repository root:
+// AGENTS.md describes and that every link in the docs resolves. It takes the
+// repository root:
 //
 //	plan next|status|check <root>
 //
@@ -13,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -24,6 +26,14 @@ import (
 )
 
 const milestoneDir = "docs/milestones"
+
+// skippedDirs hold no links for checkDocs: check reads the milestones itself,
+// and archived history keeps the links of its time. skippedNames are folders
+// of fixtures, dependencies, and builds, wherever they sit.
+var (
+	skippedDirs  = []string{milestoneDir, "docs/archived"}
+	skippedNames = []string{"testdata", "node_modules", "dist"}
+)
 
 // maxAgentCards keeps a milestone small enough for one agent to finish and
 // for Pascal to follow.
@@ -85,6 +95,13 @@ func run(args []string, out io.Writer) error {
 	}
 	var b strings.Builder
 	problems := check(root, milestones)
+	if args[0] == "check" {
+		broken, err := checkDocs(root)
+		if err != nil {
+			return err
+		}
+		problems = append(problems, broken...)
+	}
 	switch {
 	case len(problems) > 0:
 		b.WriteString(strings.Join(problems, "\n") + "\n")
@@ -93,13 +110,13 @@ func run(args []string, out io.Writer) error {
 	case args[0] == "status":
 		status(&b, milestones)
 	default:
-		fmt.Fprintf(&b, "%s keeps the format\n", milestoneDir)
+		fmt.Fprintf(&b, "%s keeps the format, and every link in the docs resolves\n", milestoneDir)
 	}
 	if _, err := io.WriteString(out, b.String()); err != nil {
 		return err
 	}
 	if len(problems) > 0 {
-		return fmt.Errorf("%d problems in %s; fix them as AGENTS.md describes", len(problems), milestoneDir)
+		return fmt.Errorf("%d problems in the docs; fix them as AGENTS.md describes", len(problems))
 	}
 	return nil
 }
@@ -125,7 +142,7 @@ func load(root string) ([]*milestone, error) {
 }
 
 func parse(file, text string) *milestone {
-	m := &milestone{path: file, number: -1}
+	m := &milestone{path: file, number: -1, links: links(text)}
 	if match := fileName.FindStringSubmatch(path.Base(file)); match != nil {
 		m.id = match[1]
 		m.number, _ = strconv.Atoi(m.id[1:])
@@ -142,11 +159,6 @@ func parse(file, text string) *milestone {
 		}
 		if strings.HasPrefix(line, "```") {
 			fenced = !fenced
-		}
-		if !fenced {
-			for _, l := range mdLink.FindAllStringSubmatch(line, -1) {
-				m.links = append(m.links, docLink{l[1], n})
-			}
 		}
 		switch {
 		case fenced || strings.HasPrefix(line, "```"):
@@ -436,26 +448,91 @@ func (m *milestone) checkCycles() {
 // checkLinks reports a relative link whose file or heading is missing.
 func (m *milestone) checkLinks(root string) {
 	for _, l := range m.links {
-		if strings.Contains(l.target, "://") || strings.HasPrefix(l.target, "mailto:") {
-			continue
-		}
-		file, anchor, _ := strings.Cut(l.target, "#")
-		target := filepath.Join(root, filepath.FromSlash(m.path))
-		if file != "" {
-			target = filepath.Join(root, filepath.FromSlash(path.Join(path.Dir(m.path), file)))
-		}
-		info, err := os.Stat(target)
-		if err != nil {
-			m.problem(l.line, "the link %s points to a missing file", l.target)
-			continue
-		}
-		if anchor == "" || info.IsDir() || !strings.HasSuffix(target, ".md") {
-			continue
-		}
-		if !slices.Contains(anchors(target), anchor) {
-			m.problem(l.line, "the link %s points to a missing heading", l.target)
+		if why := brokenLink(root, m.path, l.target); why != "" {
+			m.problem(l.line, "%s", why)
 		}
 	}
+}
+
+// checkDocs reports the broken links of every Markdown file outside the
+// hidden folders and skippedDirs.
+func checkDocs(root string) ([]string, error) {
+	var problems []string
+	err := filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(root, name)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		if d.IsDir() {
+			if rel != "." && (strings.HasPrefix(d.Name(), ".") || slices.Contains(skippedDirs, rel) || slices.Contains(skippedNames, d.Name())) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(rel, ".md") {
+			return nil
+		}
+		data, err := os.ReadFile(name)
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("%s: %v", rel, err))
+			return nil
+		}
+		for _, l := range links(string(data)) {
+			if why := brokenLink(root, rel, l.target); why != "" {
+				problems = append(problems, fmt.Sprintf("%s:%d: %s", rel, l.line, why))
+			}
+		}
+		return nil
+	})
+	return problems, err
+}
+
+// links returns the Markdown links of text outside code: fenced blocks,
+// indented or not, and code spans.
+func links(text string) []docLink {
+	var found []docLink
+	fenced := false
+	for i, line := range strings.Split(text, "\n") {
+		if fence := strings.TrimLeft(line, " "); strings.HasPrefix(fence, "```") || strings.HasPrefix(fence, "~~~") {
+			fenced = !fenced
+			continue
+		}
+		if fenced {
+			continue
+		}
+		for _, l := range mdLink.FindAllStringSubmatch(codeSpan.ReplaceAllString(line, ""), -1) {
+			found = append(found, docLink{l[1], i + 1})
+		}
+	}
+	return found
+}
+
+// brokenLink says why target, a link in file, reaches no file or heading, or
+// returns "" when it does. file is a path from root.
+func brokenLink(root, file, target string) string {
+	if strings.Contains(target, "://") || strings.HasPrefix(target, "mailto:") {
+		return ""
+	}
+	name, anchor, _ := strings.Cut(target, "#")
+	full := filepath.Join(root, filepath.FromSlash(file))
+	if name != "" {
+		full = filepath.Join(root, filepath.FromSlash(path.Join(path.Dir(file), name)))
+	}
+	info, err := os.Stat(full)
+	if err != nil {
+		return fmt.Sprintf("the link %s points to a missing file", target)
+	}
+	if anchor == "" || info.IsDir() || !strings.HasSuffix(full, ".md") {
+		return ""
+	}
+	if !slices.Contains(anchors(full), anchor) {
+		return fmt.Sprintf("the link %s points to a missing heading", target)
+	}
+	return ""
 }
 
 var anchorCache = map[string][]string{}
