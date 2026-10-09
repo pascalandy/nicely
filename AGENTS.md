@@ -59,21 +59,7 @@ A milestone file holds `Status`, `Version`, and the sections **Demo**, an option
 
 ## Code
 
-```
-cmd/ncly/           entry point: wires core and the bundled extensions
-internal/cli/       the commands of core: dispatch, help, completion, describe, doctor, auth, run, and tap
-internal/contract/  output, error registry, exit codes, modes, declarations, and streams
-internal/i18n/      catalogs in locales/, lookup, plurals, and number, size, and date formats
-internal/config/    shared and local config files, environment, flags, and XDG paths
-internal/tui/       the shared interactive parts
-internal/specdoc/   reads the spec's tables for the tests that compare code and spec
-sdk/                from M02, the public packages that core and every Go extension share
-extensions/<name>/  one first-party extension: manifest, spec.md, SKILL.md, catalogs, scenarios, and code
-testdata/script/    testscript scenarios
-tools/              a separate module that pins the dev tools and holds the plan checker behind `just next`
-```
-
-[M02](docs/milestones/M02-sdk.md) moves the shared packages that exist by then, the contract, i18n, config, tui, the platform helpers, and the program runner of M01, from `internal/` to `sdk/`. A later shared service starts in `sdk/`, such as run records in M10. The keychain stays in core. The rules below name each package by its role.
+The [code map](docs/north-star/architecture.md#code-map) names the package and the spec section of each part. The rules below name each package by its role.
 
 Run `lefthook install` once per clone, so the hooks format, lint, and scan each commit and test each push.
 
