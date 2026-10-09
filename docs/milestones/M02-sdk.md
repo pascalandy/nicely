@@ -19,7 +19,7 @@ The SDK is the Go implementation of the contract between core and its extensions
 
 ## Open questions
 
-Settle each one in [Extensions](../north-star/contract.md#extensions) and [AGENTS.md](../../AGENTS.md#code), then delete this section.
+Settle each one in [Extensions](../north-star/contract.md#extensions) and the [code map](../north-star/architecture.md#code-map), then delete this section.
 
 - The package names and the public API of `sdk/`, and which helpers stay inside core
 - How `cmd/ncly` registers the bundled extensions, such as an explicit list rather than `init` side effects
@@ -37,7 +37,7 @@ Settle each one in [Extensions](../north-star/contract.md#extensions) and [AGENT
 
 ### M02-T1 Shared packages in sdk
 
-- **Read:** [Extensions](../north-star/contract.md#extensions), [AGENTS.md](../../AGENTS.md#code)
+- **Read:** [Extensions](../north-star/contract.md#extensions), [code map](../north-star/architecture.md#code-map)
 - **Proves:** `testdata/script/`, every existing scenario unchanged
 
 Move the shared packages to `sdk/` without changing behavior. Core imports them from there, and every existing scenario and test passes unchanged.
