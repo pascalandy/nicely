@@ -63,7 +63,7 @@ The `opencode` adapter, with its provider and its verified tools-off mode.
 
 ### M11-T5 Doctor agent
 
-- **Read:** [ncly doctor](../north-star/cli-spec.md#ncly-doctor)
+- **Read:** [ncly doctor](../north-star/contract.md#ncly-doctor)
 - **Proves:** `testdata/script/doctor_agent.txtar`
 
 The `agent` component checks that the harness of each profile is installed, without starting one.

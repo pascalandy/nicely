@@ -1,5 +1,5 @@
 // Package config locates Nicely's folders and reads the shared and local
-// config files, as the Configuration section of cli-spec.md defines them.
+// config files, as the Configuration section of contract.md defines them.
 package config
 
 import (

@@ -28,7 +28,7 @@ Once the `skill` extension ships, one line in your agent instructions will teach
 Before using ncly, run ncly skill view nicely
 ```
 
-The bundled `nicely` skill covers discovery, readiness, dry run, retry safety, inspection, and explicit resume, and each extension ships a skill for its own commands. The [agent contract](docs/north-star/cli-spec.md) defines the fields and recovery rules. Saved records and verified output files retain work across sessions.
+The bundled `nicely` skill covers discovery, readiness, dry run, retry safety, inspection, and explicit resume, and each extension ships a skill for its own commands. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules. Saved records and verified output files retain work across sessions.
 
 ## Install
 

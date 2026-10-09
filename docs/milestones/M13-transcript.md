@@ -41,28 +41,28 @@ Copy the program, and make `just check` run ruff, pyright, and pytest on it thro
 
 ### M13-T2 Protocol and dry run
 
-- **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Dry-run answer](../north-star/cli-spec.md#dry-run-answer), [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
+- **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Dry-run answer](../north-star/contract.md#dry-run-answer), [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
 - **Proves:** `testdata/script/transcript_protocol.txtar`, `testdata/script/transcript_dry_run.txtar`
 
 Embed and extract the program, run it with the `uv` flags of the spec, and exchange `request` and `plan`. A stub `uv` proves that Go handles the protocol. The real program and the real `uv` prove a dry run from an empty cache. Compare user files, config, keychain, and state before and after the dry run: only documented cache writes, no key read, paid call, harness start, or new user folder. Detect a new empty result folder explicitly, because `snapshot` ignores folders.
 
 ### M13-T3 Transcription with a record
 
-- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Record format](../north-star/cli-spec.md#record-format)
+- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Record format](../north-star/contract.md#record-format)
 - **Proves:** `testdata/script/transcript_run.txtar`, `testdata/script/transcript_barrier.txtar`, `testdata/script/transcript_keys.txtar`
 
 Record the validated items before any user-side write or paid dispatch. Go records each destination before reserving it and completes the persistence barrier before sending `ack`; a failed barrier sends no `ack` and starts no upload. Complete one run through the actual Go, the real `uv`, the actual Python, the test transport, verified artifacts, and a record inspected in a new process with `ncly run view`. Answers use `results` for one item and for many. A missing key exits 78 with `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, and a granted key in the environment works when the keychain is unavailable.
 
 ### M13-T4 Failures
 
-- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Retry safety](../north-star/cli-spec.md#retry-safety), [Output](../north-star/cli-spec.md#output)
+- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Retry safety](../north-star/contract.md#retry-safety), [Output](../north-star/contract.md#output)
 - **Proves:** `testdata/script/transcript_failures.txtar`, `testdata/script/transcript_protocol_errors.txtar`
 
 Stop before paid dispatch, and after dispatch but before the response. A failure before the intent keeps its cause as the pending step's code, message, and hint. A 504 after upload counts exactly one request, so transport retries are off, and ends with exit 1 and an unknown transcription. Malformed Python messages and timeouts fail as the spec defines. Item codes are causes; only the overall exit can permit a retry.
 
 ### M13-T5 Interruption and contenders
 
-- **Read:** [Programs that ncly runs](../north-star/cli-spec.md#programs-that-ncly-runs), [Records and evidence](../north-star/cli-spec.md#records-and-evidence)
+- **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Records and evidence](../north-star/contract.md#records-and-evidence)
 - **Proves:** `testdata/script/transcript_cancel.txtar`, `testdata/script/transcript_contenders.txtar`
 
 Ctrl-C stops the whole tree, keeps the result folder and its finished file, and answers `INTERRUPTED` with `output_dir`. A signal takes precedence over partial batch errors. Two contenders against one destination and one record keep every artifact, and the locks and the overall exit follow Retry safety after earlier effects.

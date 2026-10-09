@@ -31,7 +31,7 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 
 ### M09-T1 Extension and install
 
-- **Read:** [extensions/agent/spec.md](../../extensions/agent/spec.md), [Extensions](../north-star/cli-spec.md#extensions)
+- **Read:** [extensions/agent/spec.md](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/agent_install.txtar`
 
 Create `extensions/agent/` with its manifest, spec, and `SKILL.md`, built as `ncly-agent` on `sdk/`. `just install` builds it into the data folder, and `ncly agent --help` reaches it through core.

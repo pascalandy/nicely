@@ -149,7 +149,7 @@ func Finish(o Outcome, summarize func(Code) Problem) Answer {
 }
 
 // mustRegister panics on a code missing from the registry, because core uses
-// only the codes that cli-spec.md lists.
+// only the codes that contract.md lists.
 func mustRegister(o Outcome) {
 	check := func(p Problem, warning bool) {
 		_, isError := p.Code.Exit()

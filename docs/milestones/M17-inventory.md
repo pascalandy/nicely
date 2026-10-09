@@ -22,7 +22,7 @@ The table has one row per tool: the tool, its domain, where it goes, which is a 
 
 Move these into each domain's spec when its milestone becomes ready.
 
-- The main input is the one positional argument: a file, a folder, or a glob. A folder or a glob processes a batch with one overall progress bar, and `--json` answers with `results`, as [Output](../north-star/cli-spec.md#output) defines
+- The main input is the one positional argument: a file, a folder, or a glob. A folder or a glob processes a batch with one overall progress bar, and `--json` answers with `results`, as [Output](../north-star/contract.md#output) defines
 - `--output` picks the destination. `--dry-run` lists every file the command would write
 - Preparation expands and orders inputs once, detects duplicate destinations and input/output collisions, and validates the whole batch before effects. Execution revalidates destinations under their resource locks
 - Publish a completed artifact from a temporary file, preserve successful items after another item fails, and record reusable partial work through the SDK's records. Resume verifies artifacts before skipping them. The overall exit follows Retry safety across all items, even though these commands make no paid request

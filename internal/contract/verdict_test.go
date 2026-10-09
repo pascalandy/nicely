@@ -66,7 +66,7 @@ func TestFinishPanicsOnAnUnregisteredCode(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			defer func() {
 				if recover() == nil {
-					t.Error("Finish accepted a code that cli-spec.md does not register")
+					t.Error("Finish accepted a code that contract.md does not register")
 				}
 			}()
 			Finish(o, func(Code) Problem { return Problem{} })

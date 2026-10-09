@@ -15,7 +15,7 @@ Repeat until the parity test passes: an agent lists the keys missing from `fr-CA
 
 The plural rules and formats of the i18n package apply. French uses the singular for zero, as in "0 fichier", and a decimal comma, as in "1,5 Mo". Machine fields keep their types, units, enum values, and defined ordering in every locale. A duration such as `duration_ms` stays a number of milliseconds. Run IDs, step statuses, and retry decisions never depend on a translated string.
 
-The language matching of M00 selects the new catalog for `fr_CA.UTF-8` and for a plain `fr`, as [Configuration](../north-star/cli-spec.md#configuration) says, so detection needs no new code. The docs stay in English, and other languages wait in M99.
+The language matching of M00 selects the new catalog for `fr_CA.UTF-8` and for a plain `fr`, as [Configuration](../north-star/contract.md#configuration) says, so detection needs no new code. The docs stay in English, and other languages wait in M99.
 
 ```
 # The system language selects French
@@ -42,21 +42,21 @@ stderr '"hint":"ncly auth login deepgram"'
 
 ### M22-T1 Translate core
 
-- **Read:** [Configuration](../north-star/cli-spec.md#configuration)
+- **Read:** [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `testdata/script/language_fr.txtar`
 
 A complete `fr-CA` catalog for core that passes the parity test against `en`. The system language selects it.
 
 ### M22-T2 Translate the first-party extensions
 
-- **Read:** [Extensions](../north-star/cli-spec.md#extensions)
+- **Read:** [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/language_fr_extensions.txtar`
 
 A complete `fr-CA` catalog for each first-party extension. The agent contract stays the same under English, the pseudo-locale, and French.
 
 ### M22-T3 Formats and README
 
-- **Read:** [Configuration](../north-star/cli-spec.md#configuration)
+- **Read:** [Configuration](../north-star/contract.md#configuration)
 - **Proves:** the plural and number cases in the i18n package's unit test
 
 A unit test covers the French plural and number rules, because no single command shows them all. README.md says in one line that the interface speaks Canadian French and how to select it.

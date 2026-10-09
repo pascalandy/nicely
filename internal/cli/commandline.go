@@ -131,7 +131,7 @@ type globals struct {
 	lang string
 }
 
-// resolveGlobals applies the precedence of cli-spec.md. It reads the config
+// resolveGlobals applies the precedence of contract.md. It reads the config
 // only when neither --lang nor NCLY_LANG sets the language.
 func resolveGlobals(line commandLine) globals {
 	env := os.Getenv

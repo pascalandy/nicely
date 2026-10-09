@@ -9,10 +9,10 @@ import (
 	"github.com/pascalandy/nicely/internal/specdoc"
 )
 
-const cliSpec = "../../docs/north-star/cli-spec.md"
+const contractDoc = "../../docs/north-star/contract.md"
 
 func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
-	tables, err := specdoc.Tables(cliSpec, "Error codes")
+	tables, err := specdoc.Tables(contractDoc, "Error codes")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 		code[e.code] = e.exit
 	}
 	if !maps.Equal(spec, code) {
-		t.Errorf("cli-spec.md lists the M00 error codes %v, the registry holds %v", spec, code)
+		t.Errorf("contract.md lists the M00 error codes %v, the registry holds %v", spec, code)
 	}
 
 	var warnings []Code
@@ -38,12 +38,12 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 		}
 	}
 	if !slices.Equal(warnings, warningCodes) {
-		t.Errorf("cli-spec.md lists the M00 warning codes %v, the registry holds %v", warnings, warningCodes)
+		t.Errorf("contract.md lists the M00 warning codes %v, the registry holds %v", warnings, warningCodes)
 	}
 }
 
 func TestExitCodesAgreeWithTheSpec(t *testing.T) {
-	tables, err := specdoc.Tables(cliSpec, "Exit codes")
+	tables, err := specdoc.Tables(contractDoc, "Exit codes")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,6 +61,6 @@ func TestExitCodesAgreeWithTheSpec(t *testing.T) {
 	slices.Sort(spec)
 	slices.Sort(code)
 	if !slices.Equal(spec, code) {
-		t.Errorf("cli-spec.md lists the exit codes %v, the registry uses %v", spec, code)
+		t.Errorf("contract.md lists the exit codes %v, the registry uses %v", spec, code)
 	}
 }

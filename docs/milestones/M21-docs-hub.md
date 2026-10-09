@@ -25,7 +25,7 @@ ncly docs check [--json]
 - `serve` opens a local preview in the browser. Nothing leaves the machine
 - `check` runs gitleaks, with any rules the user adds locally, on the hub before anything is published. It is a report command. A leak exits 78 with `DOCS_LEAK_FOUND`, because a human must review and fix it before anything moves
 
-`scan`, `serve`, and `check` join the verb table of [Usage](../north-star/cli-spec.md#usage).
+`scan`, `serve`, and `check` join the verb table of [Usage](../north-star/contract.md#usage).
 
 ```toml
 [docs]

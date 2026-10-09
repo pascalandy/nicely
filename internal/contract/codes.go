@@ -1,6 +1,6 @@
 // Package contract holds the agent contract that every command shares: exit
 // codes, the error registry, answers and their verdict, modes, and command
-// declarations. docs/north-star/cli-spec.md is the source of truth.
+// declarations. docs/north-star/contract.md is the source of truth.
 package contract
 
 // ExitCode is the process exit status of an invocation.

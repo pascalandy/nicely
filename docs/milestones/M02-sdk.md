@@ -19,7 +19,7 @@ The SDK is the Go implementation of the contract between core and its extensions
 
 ## Open questions
 
-Settle each one in [Extensions](../north-star/cli-spec.md#extensions) and [AGENTS.md](../../AGENTS.md#code), then delete this section.
+Settle each one in [Extensions](../north-star/contract.md#extensions) and [AGENTS.md](../../AGENTS.md#code), then delete this section.
 
 - The package names and the public API of `sdk/`, and which helpers stay inside core
 - How `cmd/ncly` registers the bundled extensions, such as an explicit list rather than `init` side effects
@@ -37,7 +37,7 @@ Settle each one in [Extensions](../north-star/cli-spec.md#extensions) and [AGENT
 
 ### M02-T1 Shared packages in sdk
 
-- **Read:** [Extensions](../north-star/cli-spec.md#extensions), [AGENTS.md](../../AGENTS.md#code)
+- **Read:** [Extensions](../north-star/contract.md#extensions), [AGENTS.md](../../AGENTS.md#code)
 - **Proves:** `testdata/script/`, every existing scenario unchanged
 
 Move the shared packages to `sdk/` without changing behavior. Core imports them from there, and every existing scenario and test passes unchanged.
@@ -51,14 +51,14 @@ Add the lint rule that keeps `sdk/` and `extensions/` away from `internal/`.
 
 ### M02-T3 Extension codes and catalogs
 
-- **Read:** [Error codes](../north-star/cli-spec.md#error-codes), [Extensions](../north-star/cli-spec.md#extensions)
+- **Read:** [Error codes](../north-star/contract.md#error-codes), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/sdk_extension.txtar`
 
 A Go fixture extension built on `sdk/` registers a prefixed code and its own catalog. Its answers match a core command's envelope, exit codes, and error block, and its text is marked under the pseudo-locale. A code without the domain prefix fails at registration.
 
 ### M02-T4 Bundled transport
 
-- **Read:** [Extensions](../north-star/cli-spec.md#extensions)
+- **Read:** [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/bundled_extension.txtar`
 
 The same fixture, compiled into a test build of `ncly`, answers exactly as its external build does. A bundled extension wins over an external one with the same name, and its name joins the reserved names.

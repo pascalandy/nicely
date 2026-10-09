@@ -1,6 +1,6 @@
 # agent extension spec
 
-`agent` is a first-party external extension, built as `ncly-agent` from this folder. It runs a task through a harness with a profile from the config, and it owns every harness behavior: profiles, adapters, tools-off mode, and the depth limit. It stays out of core because Nicely needs no agent to operate. Other extensions use it through the CLI, as transcript does for its summary. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M09](../../docs/milestones/M09-agent-profiles.md) builds profiles and dry run, [M10](../../docs/milestones/M10-agent-run.md) execution, and [M11](../../docs/milestones/M11-harnesses.md) the other harnesses.
+`agent` is a first-party external extension, built as `ncly-agent` from this folder. It runs a task through a harness with a profile from the config, and it owns every harness behavior: profiles, adapters, tools-off mode, and the depth limit. It stays out of core because Nicely needs no agent to operate. Other extensions use it through the CLI, as transcript does for its summary. It follows the agent contract of [contract.md](../../docs/north-star/contract.md). [M09](../../docs/milestones/M09-agent-profiles.md) builds profiles and dry run, [M10](../../docs/milestones/M10-agent-run.md) execution, and [M11](../../docs/milestones/M11-harnesses.md) the other harnesses.
 
 ## ncly agent
 
@@ -17,7 +17,7 @@ ncly agent profile view <name> [--json]
 - `--dry-run` uses the shared preparation and shows the resolved profile, the requested mode, and the redacted harness invocation without starting the harness. It resolves the profile and checks the depth, the harness version, and tools-off support, so another extension can check a run and record its profile before any paid work, as transcript does before it transcribes
 - `--check-unchanged` compares tracked and untracked files under `--cwd` after the run. Ignored files do not count. It reports a change but does not prevent writes, undo them, or inspect effects outside that folder. No `--read-only` flag promises protection that this check cannot provide
 - Profile inspection states the adapter's supported modes and any compatibility check still pending. An unsupported tools-off request fails before launching outside material
-- A run records its execution before the harness starts, as [Records and evidence](../../docs/north-star/cli-spec.md#records-and-evidence) defines. Its one step turns `unknown` before the harness starts, and `failed` only when the harness never started. A general harness task is inspectable but not resumable, and a nonzero exit or a missing answer never justifies launching the task again
+- A run records its execution before the harness starts, as [Records and evidence](../../docs/north-star/contract.md#records-and-evidence) defines. Its one step turns `unknown` before the harness starts, and `failed` only when the harness never started. A general harness task is inspectable but not resumable, and a nonzero exit or a missing answer never justifies launching the task again
 - Every failure before the harness starts exits 2 or 78: `NOT_FOUND` for an unknown profile, `PREREQ_MISSING` for a missing or too old harness, `CAPABILITY_UNSUPPORTED` for a mode that the adapter cannot enforce, and `AGENT_DEPTH_LIMIT`. After a harness starts, a failure exits 1 and must never be rerun automatically. Cancellation keeps 130 or 143 and takes precedence over item failures. A caller, such as transcript, relies on this split to tell a harness that never started from one that may have billed
 
 ```bash
@@ -65,7 +65,7 @@ M09 builds the adapters for `claude` and `pi`, and M11 adds `codex`, `grok`, and
 
 A harness older than its listed version is `PREREQ_MISSING`. These invocations come from the transcript CLI, and their flags were checked against `--help` on 2026-10-07. M10 rechecks the real adapters and observes that material cannot invoke tools, hooks, MCP servers, or loaded extensions. A stub accepting flags or a real harness returning text is not that proof.
 
-Each adapter declares the key variables of its harness as optional keys: `claude` reads `ANTHROPIC_API_KEY`, and `pi` uses its adapter's verified provider-to-variable mapping, such as `OPENROUTER_API_KEY`. An adapter never derives a key variable by parsing translated help at runtime. The harness receives a key only when a human granted it to `agent`, and otherwise uses its own login, as [Programs that ncly runs](../../docs/north-star/cli-spec.md#programs-that-ncly-runs) defines.
+Each adapter declares the key variables of its harness as optional keys: `claude` reads `ANTHROPIC_API_KEY`, and `pi` uses its adapter's verified provider-to-variable mapping, such as `OPENROUTER_API_KEY`. An adapter never derives a key variable by parsing translated help at runtime. The harness receives a key only when a human granted it to `agent`, and otherwise uses its own login, as [Programs that ncly runs](../../docs/north-star/contract.md#programs-that-ncly-runs) defines.
 
 ## Depth limit
 

@@ -13,7 +13,7 @@ import (
 )
 
 func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
-	tables, err := specdoc.Tables("../../docs/north-star/cli-spec.md", "Global flags")
+	tables, err := specdoc.Tables("../../docs/north-star/contract.md", "Global flags")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
 	key := func(f contract.Flag) string { return f.Name + " " + f.Shorthand + " " + f.Value + " " + f.Env }
 	got, want := sortedKeys(globalFlags, key), sortedKeys(spec, key)
 	if !slices.Equal(got, want) {
-		t.Errorf("cli-spec.md lists the global flags\n%q\nncly declares\n%q", want, got)
+		t.Errorf("contract.md lists the global flags\n%q\nncly declares\n%q", want, got)
 	}
 }
 
@@ -73,7 +73,7 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the M00
 // entries of the command tree, such as "completion zsh|bash|fish".
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
-	spec, err := specdoc.Block("../../docs/north-star/cli-spec.md", "Command tree")
+	spec, err := specdoc.Block("../../docs/north-star/contract.md", "Command tree")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	slices.Sort(got)
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
-		t.Errorf("cli-spec.md lists the M00 commands %q, ncly declares %q", want, got)
+		t.Errorf("contract.md lists the M00 commands %q, ncly declares %q", want, got)
 	}
 }
 

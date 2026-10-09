@@ -29,13 +29,13 @@ ncly skill link [<name>] [--harness <name>] [--dry-run]
 - Explicit `[skill] paths` win in their configured order, followed by taps in shared configuration order after local overrides. `ncly skill view <tap>/<name>` selects a tap skill. Discovery reports its origin, revision, and any shadowing
 - `skill link` symlinks skills into the skill folder of each harness, one line per harness in `[skill.link]`, such as `claude = "~/.claude/skills"`. Linking twice leaves the same managed links. A source switch updates only a link that Nicely owns and that the user has not changed. An existing user file or unmanaged link is a conflict. Tap removal checks its links first: a user-modified link blocks removal, and unchanged managed links go with the tap. Dry run lists these effects before any config edit or trash operation
 
-`link` joins the verb table of [Usage](../north-star/cli-spec.md#usage). A public registry of extensions and signed extensions stay out of scope.
+`link` joins the verb table of [Usage](../north-star/contract.md#usage). A public registry of extensions and signed extensions stay out of scope.
 
 Scenarios build a local Git repository as a fixture tap and add it with a file path URL. A counted extension stub and filesystem checks prove dry run and retry behavior. Metadata alone does not prove conformance.
 
 ## Open questions
 
-Settle each one in a new `ncly tap` section of [cli-spec.md](../north-star/cli-spec.md), then delete this section.
+Settle each one in a new `ncly tap` section of [contract.md](../north-star/contract.md), then delete this section.
 
 - The canonical tap ID for arbitrary Git URLs, avoiding collisions between hosts, and its mapping to local storage
 - The editor for config files. `tomledit` keeps comments and formatting
@@ -56,7 +56,7 @@ Settle each one in a new `ncly tap` section of [cli-spec.md](../north-star/cli-s
 
 ### M12-T1 Tap add and list
 
-- **Read:** [Configuration](../north-star/cli-spec.md#configuration), [Grants](../north-star/cli-spec.md#grants)
+- **Read:** [Configuration](../north-star/contract.md#configuration), [Grants](../north-star/contract.md#grants)
 - **Proves:** `testdata/script/tap_add.txtar`
 
 `ncly tap add` clones a fixture tap, writes it into the shared config, and asks for each declared key in a terminal. `ncly tap list` shows each tap's identity and revision.
@@ -70,7 +70,7 @@ Settle each one in a new `ncly tap` section of [cli-spec.md](../north-star/cli-s
 
 ### M12-T3 Extensions and skills from taps
 
-- **Read:** [Extensions](../north-star/cli-spec.md#extensions), [ncly skill](../../extensions/skill/spec.md#ncly-skill)
+- **Read:** [Extensions](../north-star/contract.md#extensions), [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `testdata/script/tap_extensions.txtar`
 
 A tap's extensions become domains and its skills join `ncly skill list`, with deterministic precedence. Two taps that publish the same domain are reported, and an update that declares a new key gets nothing until a human grants it.
@@ -84,7 +84,7 @@ A tap's extensions become domains and its skills join `ncly skill list`, with de
 
 ### M12-T5 The official tap
 
-- **Read:** [Extensions](../north-star/cli-spec.md#extensions)
+- **Read:** [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/tap_official.txtar`
 
 A user without the repository installs `agent` from the official tap, and `just install` gives way to it, as the `ncly tap` section settles. Every later first-party extension, such as `transcript`, ships the same way.

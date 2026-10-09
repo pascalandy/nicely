@@ -44,21 +44,21 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 
 ### M16-T3 Doctor and cookies
 
-- **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/cli-spec.md#ncly-doctor)
+- **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/contract.md#ncly-doctor)
 - **Proves:** `testdata/script/transcript_doctor.txtar`, `testdata/script/transcript_cookies.txtar`
 
 `ncly doctor transcript` takes over the checks of the transcript CLI's `doctor --source`: `uv`, Python 3.12 or later with its install command, and the browser cookies. `--live` checks the key against a free Deepgram endpoint. Unreadable cookies fall back to anonymous access with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`, once in a batch's top-level `warnings`.
 
 ### M16-T4 Spinner and transcript skill
 
-- **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output](../north-star/cli-spec.md#output)
+- **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output](../north-star/contract.md#output)
 - **Proves:** `testdata/script/transcript_spinner.txtar`, `extensions/transcript/SKILL.md`
 
 A run shows one spinner on a terminal, in the picked look, and none in JSON or non-interactive mode. Write the transcript skill.
 
 ### M16-T5 Fresh-session check
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Inspection and explicit resume](../north-star/cli-spec.md#inspection-and-explicit-resume)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
 - **Proves:** the session's transcript, attached to the pull request
 
 An agent in a fresh session, given only the line that points to `ncly skill view nicely`, discovers a command, plans it, inspects a recorded failure without full transcripts or logs, then dry-runs and explicitly resumes supported work without repeating a paid step. Fix the skills until it does.

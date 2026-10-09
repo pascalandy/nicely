@@ -1,6 +1,6 @@
 # Decision records
 
-Each entry records what was decided, why, and what was rejected. An entry states its decision briefly, and the [guide](guide.md), [cli-spec.md](cli-spec.md), and the extension specs hold the full rules.
+Each entry records what was decided, why, and what was rejected. An entry states its decision briefly, and the [guide](guide.md), [contract.md](contract.md), and the extension specs hold the full rules.
 
 Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From v0.0.1, add a new entry that names the entry it replaces, and mark the old entry `Replaced by Dxxx`.
 
@@ -20,7 +20,7 @@ Decided 2026-10-05. The project is Nicely, the command is `ncly`, the repository
 
 ## D003 Put the domain first and keep one verb per action
 
-Decided 2026-10-05. Commands follow the grammar in [cli-spec.md](cli-spec.md#usage): `ncly <domain> [<resource>] <verb>`, with singular nouns and one verb per action across domains.
+Decided 2026-10-05. Commands follow the grammar in [contract.md](contract.md#usage): `ncly <domain> [<resource>] <verb>`, with singular nouns and one verb per action across domains.
 
 **Why.** An agent explores one domain at a time, so `ncly video --help` costs fewer tokens than a flat list of fifty verbs. Options stay specific to their domain. Names become predictable: after `ncly image convert`, an agent guesses `ncly video convert`. The verbs are those of `gh`, which agents already know.
 
@@ -36,7 +36,7 @@ Decided 2026-10-05, revised 2026-10-09. Core is a small host: dispatch, help, co
 
 ## D005 Add extensions the Git way and carry them in taps
 
-Decided 2026-10-05, revised 2026-10-09. An executable named `ncly-<domain>` becomes `ncly <domain>` when its manifest declares a compatible protocol and its capabilities. A bundled extension is a Go package compiled into `ncly` with the same manifest, as [Extensions](cli-spec.md#extensions) defines. A tap is a Git repository that carries skills and extensions, like a Pi package. Core commands and bundled extensions always win over an external extension with the same name. Source precedence is explicit, and discovery reports the selected source. An extension receives the global flags as the variables in [cli-spec.md](cli-spec.md#global-flags), and it prefixes its own error codes with its domain.
+Decided 2026-10-05, revised 2026-10-09. An executable named `ncly-<domain>` becomes `ncly <domain>` when its manifest declares a compatible protocol and its capabilities. A bundled extension is a Go package compiled into `ncly` with the same manifest, as [Extensions](contract.md#extensions) defines. A tap is a Git repository that carries skills and extensions, like a Pi package. Core commands and bundled extensions always win over an external extension with the same name. Source precedence is explicit, and discovery reports the selected source. An extension receives the global flags as the variables in [contract.md](contract.md#global-flags), and it prefixes its own error codes with its domain.
 
 **Why.** A script can join Nicely in any language. Its manifest lets an agent inspect what it supports before running it. One private tap moves Pascal's tools to every machine. Git, `kubectl`, and cargo find plugins by executable name, while Nicely also needs to verify their shared output contract.
 
@@ -52,7 +52,7 @@ Decided 2026-10-05. Agents operate `ncly` through the shell. `ncly` launches age
 
 ## D007 Keep one stable agent contract
 
-Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes stay in English. [Compatibility](cli-spec.md#compatibility) covers types, units, formats, meaning, required fields, nullability, enum values, and defined array order. Protocols and stored run records have versions from their first use. Each core error code maps to one exit code. Exit `78` means that a human must act. Exit `75` follows the [retry safety rule](cli-spec.md#retry-safety) for the whole invocation, including finished items in a batch.
+Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes stay in English. [Compatibility](contract.md#compatibility) covers types, units, formats, meaning, required fields, nullability, enum values, and defined array order. Protocols and stored run records have versions from their first use. Each core error code maps to one exit code. Exit `78` means that a human must act. Exit `75` follows the [retry safety rule](contract.md#retry-safety) for the whole invocation, including finished items in a batch.
 
 **Why.** Agents branch on codes and values, so keeping a key while changing its unit can break a consumer. A temporary failure before a paid request can still follow a file write. Exit `75` therefore requires that all effects so far are safe to repeat, through absence of incompatible effects or proven idempotence. `78` is `EX_CONFIG` in `sysexits.h`, and it lets an agent tell "a human must act" from "the call was wrong".
 
@@ -74,7 +74,7 @@ Decided 2026-10-05. A missing value opens a form in interactive mode and exits 2
 
 ## D010 Keep keys in the keychain or the environment
 
-Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [cli-spec.md](cli-spec.md#keys) says. `ncly` reads a key from the keychain only when the environment lacks it. `ncly auth` and `ncly doctor` also check the keychain. Every call has a time limit, so an unavailable keychain blocks only a command that needs it. Agents relay the hint and never handle a key.
+Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [contract.md](contract.md#keys) says. `ncly` reads a key from the keychain only when the environment lacks it. `ncly auth` and `ncly doctor` also check the keychain. Every call has a time limit, so an unavailable keychain blocks only a command that needs it. Agents relay the hint and never handle a key.
 
 **Why.** Each program owns its own keychain entries, as `gh` does with `gh:github.com`, so `logout` touches only Nicely's keys. The environment lets any other secret store feed `ncly`. Open service names let an extension declare a key that core does not know. A Linux machine reached over SSH often has no unlocked keychain, and go-keyring's unlock call has no time limit of its own. `gh` wraps the same library with a 60-second limit on every call, which leaves a human time to answer an unlock prompt. Nicely keeps 60 seconds in interactive mode and waits 10 seconds otherwise, because an agent that waits a minute for a prompt nobody sees is stuck.
 
@@ -168,7 +168,7 @@ Decided 2026-10-05. Each project in the docs hub is `public`, `private`, or `exc
 
 ## D023 Configure with a shared TOML file and a local one
 
-Decided 2026-10-05. The shared config describes the setup the user wants, and the local config overrides it on one machine, as [cli-spec.md](cli-spec.md#configuration) defines. `ncly` edits a config file only through a command whose job is to change the setup, and it keeps comments and formatting. An unknown key is a warning. Nicely's own environment variables start with `NCLY_`.
+Decided 2026-10-05. The shared config describes the setup the user wants, and the local config overrides it on one machine, as [contract.md](contract.md#configuration) defines. `ncly` edits a config file only through a command whose job is to change the setup, and it keeps comments and formatting. An unknown key is a warning. Nicely's own environment variables start with `NCLY_`.
 
 **Why.** TOML is easy to read and edit, and Pascal's tools already use it. One shared file lets a new machine reach the same setup, for example with `ncly tap sync`. The local file keeps machine paths out of the shared one. A warning on unknown keys keeps older versions of `ncly` working.
 
@@ -198,7 +198,7 @@ Decided 2026-10-05. Code, comments, docs, and commit messages are in English. Us
 
 ## D027 Answer in one JSON line with `ok` and `errors`
 
-Decided 2026-10-05. With `--json`, every answer other than help, the version, and a completion script is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`. The command determines its overall outcome before choosing the leading error and rendering the answer. That error agrees with the exit code, and item errors preserve their own causes. A report command keeps its report, with its own findings key, on stdout. [cli-spec.md](cli-spec.md#output) holds the details.
+Decided 2026-10-05. With `--json`, every answer other than help, the version, and a completion script is one JSON object on one line with `ok`. A failure lists `errors`, each with `code`, `message`, and `hint`. The command determines its overall outcome before choosing the leading error and rendering the answer. That error agrees with the exit code, and item errors preserve their own causes. A report command keeps its report, with its own findings key, on stdout. [contract.md](contract.md#output) holds the details.
 
 **Why.** Stripe, npm, JSON:API, and GraphQL all answer with error objects that carry a stable code. The key `errors` matches Pascal's script-output convention. `ok` stays readable when an agent merges stdout and stderr. Transcript operations always answer with `results`, including one item, so adding a URL does not change the shape and an item cause cannot authorize a whole-command retry. Only the overall exit 75 does that. ESLint, ShellCheck, `terraform validate -json`, and `npm audit --json` keep their reports on stdout when a check fails. One line keeps `tail -n1 | jq` working. Within one exit code, the leading error's hint identifies the first fix. For 78, config and terminal problems precede tools and keys. For 1, a specific refusal such as `RESUME_UNSAFE` precedes `RUNTIME`. For 2, a valid call precedes confirmation, a name, or an extension's own code.
 
@@ -222,7 +222,7 @@ Decided 2026-10-05. A rule that a later milestone would otherwise rewrite goes i
 
 ## D030 Treat extensions as trusted code and grant keys one by one
 
-Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` minus every key that is not granted to it, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs) defines. No program runs in a sandbox. A key reaches an extension only after a human grants it in a terminal. Grants stay on one machine and bind the extension's source and domain. An extension from a different source cannot inherit a grant through its name, and an update that declares a new key gets nothing until a human grants it.
+Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` minus every key that is not granted to it, as [contract.md](contract.md#programs-that-ncly-runs) defines. No program runs in a sandbox. A key reaches an extension only after a human grants it in a terminal. Grants stay on one machine and bind the extension's source and domain. An extension from a different source cannot inherit a grant through its name, and an update that declares a new key gets nothing until a human grants it.
 
 **Why.** Git, `kubectl`, `gh`, and cargo pass the user's environment to their plugins, and real tools need it, such as the SSH agent and proxies. An extension runs with the user's rights: on macOS, go-keyring stores keys through `/usr/bin/security`, which any process can call, and on Linux any program of the session can read an unlocked keychain. Grants are consent and protection against accidental leaks, not isolation, and the docs say so.
 
@@ -230,7 +230,7 @@ Decided 2026-10-05. A program that `ncly` runs gets the environment of `ncly` mi
 
 ## D031 Stop the whole process tree on cancel and keep finished work
 
-Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and every descendant that it can still reach, orphans included on Linux, keeps every finished output, and exits 130 or 143 with the data that still applies, as [cli-spec.md](cli-spec.md#programs-that-ncly-runs) defines. Run inspection distinguishes verified finished work from uncertain effects. Neither interruption code authorizes an automatic retry.
+Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started and every descendant that it can still reach, orphans included on Linux, keeps every finished output, and exits 130 or 143 with the data that still applies, as [contract.md](contract.md#programs-that-ncly-runs) defines. Run inspection distinguishes verified finished work from uncertain effects. Neither interruption code authorizes an automatic retry.
 
 **Why.** The transcript CLI starts its children in their own process groups, so a signal to its parent alone leaves `yt-dlp`, `ffmpeg`, or a harness running. A harness that hits its time limit sends SIGTERM. A finished transcript may already be billed, so cleanup must never delete it.
 
@@ -240,7 +240,7 @@ Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started 
 
 ## D032 Keep small run records and resume explicitly
 
-Decided 2026-10-05. The [operation contract](cli-spec.md#operations) covers preparation, execution, inspection, and explicit resume. Domains own their steps and recovery rules. The program runner owns subprocess lifecycles. Records preserve the evidence needed to reuse finished work, with references to outputs rather than copies of their contents. M00 fixed the contract. `ncly agent run` in M10 and transcript from M13 implement it, and core exposes the [run commands](cli-spec.md#ncly-run).
+Decided 2026-10-05. The [operation contract](contract.md#operations) covers preparation, execution, inspection, and explicit resume. Domains own their steps and recovery rules. The program runner owns subprocess lifecycles. Records preserve the evidence needed to reuse finished work, with references to outputs rather than copies of their contents. M00 fixed the contract. `ncly agent run` in M10 and transcript from M13 implement it, and core exposes the [run commands](contract.md#ncly-run).
 
 **Why.** A new agent session must be able to tell whether Deepgram finished before a summary failed. Writing the intended non-repeatable effect before starting it leaves evidence even if the process dies before saving the result. Resume validates inputs, relevant configuration, and saved outputs, and keeps the profile that the run recorded instead of reading it again. An uncertain paid request needs reconciliation or a human decision, because a missing response does not prove that nothing happened.
 
@@ -248,7 +248,7 @@ Decided 2026-10-05. The [operation contract](cli-spec.md#operations) covers prep
 
 ## D033 Describe a command once for humans and agents
 
-Decided 2026-10-05. One [command declaration](cli-spec.md#command-descriptions) supplies help, completion, targeted JSON discovery, and doctor prerequisites. It describes inputs, results, effects, and supported capabilities. Adapters and extensions declare only guarantees they can enforce.
+Decided 2026-10-05. One [command declaration](contract.md#command-descriptions) supplies help, completion, targeted JSON discovery, and doctor prerequisites. It describes inputs, results, effects, and supported capabilities. Adapters and extensions declare only guarantees they can enforce.
 
 **Why.** An agent needs the relevant command's contract without loading every domain or probing by trial and error. Required flags, flag groups, and typed result schemas make that contract sufficient to build and parse a call. Shared declarations keep help, preflight checks, and execution from making different promises. Discovery describes possible effects and requirements; shared preparation selects those of the invocation. M00's declaration grows with its first consumers, rather than pretending every field already exists. An extension's manifest holds the same declarations.
 
@@ -256,7 +256,7 @@ Decided 2026-10-05. One [command declaration](cli-spec.md#command-descriptions) 
 
 ## D034 Use the same preparation for simulation and execution
 
-Decided 2026-10-05. `--dry-run` and execution use the same preparation of inputs, profiles, destinations, and effects. A simulation distinguishes verified conditions from checks deferred until execution. The [dry-run contract](cli-spec.md#global-flags) allows only documented, bounded cache preparation; it reads no key and creates no durable run record. Execution revalidates conditions that may have changed.
+Decided 2026-10-05. `--dry-run` and execution use the same preparation of inputs, profiles, destinations, and effects. A simulation distinguishes verified conditions from checks deferred until execution. The [dry-run contract](contract.md#global-flags) allows only documented, bounded cache preparation; it reads no key and creates no durable run record. Execution revalidates conditions that may have changed.
 
 **Why.** A separately written simulation can approve a destination that execution resolves differently. A dry run also cannot prove that a key works or reserve files against another process. Reporting these limits gives agents enough evidence to proceed without overstating what was checked.
 
@@ -272,7 +272,7 @@ Decided 2026-10-05. Tap and docs synchronization track the files they manage and
 
 ## D036 Record each run in one JSON file that its executor locks
 
-Decided 2026-10-07. Each run has one JSON record in the state directory, written atomically and flushed before an effect is acknowledged. Its lock reports current ownership separately from saved status. A source consumer holds the source lock while executing too. `ncly run view` returns saved step evidence and recovery hints. `ncly run list` filters candidates before limiting them and bounds its item previews. [cli-spec.md](cli-spec.md#record-format) holds the format.
+Decided 2026-10-07. Each run has one JSON record in the state directory, written atomically and flushed before an effect is acknowledged. Its lock reports current ownership separately from saved status. A source consumer holds the source lock while executing too. `ncly run view` returns saved step evidence and recovery hints. `ncly run list` filters candidates before limiting them and bounds its item previews. [contract.md](contract.md#record-format) holds the format.
 
 **Why.** JSON matches the answer format, so inspection needs no second storage model. Atomic rename protects readers from incomplete JSON; syncing files and directory metadata protects the acknowledged intent across a crash within the platform's persistence guarantees. The operating system releases a lock when its owner dies, without a heartbeat. A pending step may have a failed preparation, so its saved problem retains the cause and hint. Filtering and short previews let a new session find relevant work without dumping unrelated batches. Each extension proves its own evidence instead of core promising its complete format.
 
@@ -280,7 +280,7 @@ Decided 2026-10-07. Each run has one JSON record in the state directory, written
 
 ## D037 Summarize a saved transcript as a new operation
 
-Decided 2026-10-07. `ncly transcript summary run <run-id>` summarizes the verified transcripts of a saved run as a new recorded operation. `ncly run resume` never repeats a `summarize` step whose outcome is `unknown`, and the silent summary retries of the transcript CLI are gone. [cli-spec.md](../../extensions/transcript/spec.md#ncly-transcript-summary-run) holds the rules.
+Decided 2026-10-07. `ncly transcript summary run <run-id>` summarizes the verified transcripts of a saved run as a new recorded operation. `ncly run resume` never repeats a `summarize` step whose outcome is `unknown`, and the silent summary retries of the transcript CLI are gone. [transcript's spec](../../extensions/transcript/spec.md#ncly-transcript-summary-run) holds the rules.
 
 **Why.** A summary can bill, so a lost answer may already be charged. Resume never repeats that unknown request. A new operation copies verified transcript references, keeps its own prompt and profile, and writes a file named with its run ID. It leaves the source record valid and supports safe resume of its own never-started summary. Holding the source lock prevents a new summary racing its source executor. The caller explicitly chooses any new bill.
 
@@ -288,7 +288,7 @@ Decided 2026-10-07. `ncly transcript summary run <run-id>` summarizes the verifi
 
 ## D038 Exchange acknowledged JSON Lines with the Python program
 
-Decided 2026-10-07. Go and Python exchange versioned JSON Lines. An initial plan fixes the item set for both dry run and execution. Python announces an intent before user-side output or Deepgram upload. Go records the selected destination before reserving it, completes the persistence barrier, then acknowledges the final folder. [cli-spec.md](../../extensions/transcript/spec.md#protocol-with-the-python-program) holds the messages.
+Decided 2026-10-07. Go and Python exchange versioned JSON Lines. An initial plan fixes the item set for both dry run and execution. Python announces an intent before user-side output or Deepgram upload. Go records the selected destination before reserving it, completes the persistence barrier, then acknowledges the final folder. [transcript's spec](../../extensions/transcript/spec.md#protocol-with-the-python-program) holds the messages.
 
 **Why.** One preparation avoids selecting a different Zoom meeting during execution. Recording a destination after creating it loses ownership on interruption, so Go records it first. No paid call starts before the durable intent; a lost acknowledgement stops Python before upload. Persisted verified artifacts can establish completion after a lost final message, without another request. This is the temporary Python boundary, not a protocol imposed on future extensions.
 

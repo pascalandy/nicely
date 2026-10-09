@@ -1,6 +1,6 @@
 # skill extension spec
 
-`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/cli-spec.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M03](../../docs/milestones/M03-skill.md) builds it, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
+`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the agent contract of [contract.md](../../docs/north-star/contract.md). [M03](../../docs/milestones/M03-skill.md) builds it, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
 
 ## ncly skill
 

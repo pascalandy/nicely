@@ -37,28 +37,28 @@ The first release, v0.0.1, waits for Pascal, as [Release](../../AGENTS.md#releas
 
 ### M00-T2 Contract
 
-- **Read:** [Output](../north-star/cli-spec.md#output), [Exit codes](../north-star/cli-spec.md#exit-codes), [Command descriptions](../north-star/cli-spec.md#command-descriptions)
+- **Read:** [Output](../north-star/contract.md#output), [Exit codes](../north-star/contract.md#exit-codes), [Command descriptions](../north-star/contract.md#command-descriptions)
 - **Proves:** `testdata/script/usage_errors.txtar`, `testdata/script/output_errors.txtar`, `testdata/script/closed_pipe.txtar`, `testdata/script/dry_run_conformance.txtar`, `internal/contract/spec_test.go`
 
-`internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, Modes, and global flags from [cli-spec.md](../north-star/cli-spec.md). One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. The M00 boundaries in [Contract coverage](#contract-coverage) are complete, including independent expected results. Tests check agreement with the spec on errors, exit codes, flags, and command declarations. The Operations responsibilities are fixed, while run records and resume wait for their first consumer.
+`internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, Modes, and global flags from [contract.md](../north-star/contract.md). One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. The M00 boundaries in [Contract coverage](#contract-coverage) are complete, including independent expected results. Tests check agreement with the spec on errors, exit codes, flags, and command declarations. The Operations responsibilities are fixed, while run records and resume wait for their first consumer.
 
 ### M00-T3 Config
 
-- **Read:** [Configuration](../north-star/cli-spec.md#configuration)
+- **Read:** [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `internal/config/config_test.go`, `testdata/script/language.txtar`
 
 The shared and local config files, their precedence, and the XDG paths, including state. `CONFIG_INVALID` for a broken file. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports.
 
 ### M00-T4 Text
 
-- **Read:** [Configuration](../north-star/cli-spec.md#configuration)
+- **Read:** [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `testdata/script/help.txtar`, `testdata/script/language.txtar`, `testdata/script/error_block.txtar`, `testdata/script/terminal.txtar`, `internal/i18n/i18n_test.go`
 
 The English catalog, with a description per entry, and the parity test against `en`. The pseudo-locale `en-XA`, with scenarios for the help and for an error. Plural rules, number, size, and date formats, and language matching in `internal/i18n`. Help text comes from the catalog, so `--lang` is read before the command tree is built. Styles and the error block in `internal/tui`.
 
 ### M00-T5 Completion
 
-- **Read:** [ncly completion](../north-star/cli-spec.md#ncly-completion)
+- **Read:** [ncly completion](../north-star/contract.md#ncly-completion)
 - **Proves:** `testdata/script/completion.txtar`
 
 `ncly completion zsh|bash|fish`.
