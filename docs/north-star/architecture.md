@@ -11,7 +11,7 @@ Nicely is a small core, and everything it does for a user is an extension, in th
 
 ## Layers
 
-The parts form a stack. Each box names its layer, what it holds, and, in italics, the design word for its role, as the [glossary](glossary.md) defines it.
+The parts form a stack. Each box names its layer, what it holds, and, in italics, the design word for its role, as the [glossary](glossary.md#design-vocabulary) defines it.
 
 ```mermaid
 %%{init: {"flowchart": {"nodeSpacing": 20, "rankSpacing": 24, "wrappingWidth": 600, "subGraphTitleMargin": {"top": 8, "bottom": 12}}}}%%
