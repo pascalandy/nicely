@@ -9,7 +9,7 @@ Version: v0.5.0
 
 ## Scope
 
-Implement [ncly doctor](../north-star/cli-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M14](M14-transcript-finish.md). Doctor adds bounded local `--version` probes to the program runner that M01 brought.
+Implement [ncly doctor](../north-star/cli-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M16](M16-transcript-finish.md). Doctor adds bounded local `--version` probes to the program runner that M01 brought.
 
 ## Open questions
 

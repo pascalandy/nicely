@@ -80,11 +80,11 @@ Records and verified outputs retain useful work across sessions. Explicit resume
 | `describe` | Describes installed commands and their capabilities | core | M04 |
 | `doctor` | Checks tools, keys, extensions, and components | core | M05 |
 | `auth` | Stores keys and grants them to extensions | core | M06, grants in M08 |
-| `run` | Lists, inspects, and explicitly resumes recorded operations | core | M10, resume in M13 |
-| `tap` | Adds and syncs repositories of skills and extensions | core | M15 |
+| `run` | Lists, inspects, and explicitly resumes recorded operations | core | M10, resume in M15 |
+| `tap` | Adds and syncs repositories of skills and extensions | core | M12 |
 | `skill` | Lists and views skills for agents, including the `nicely` skill | bundled | M03 |
-| `agent` | Runs a task through a harness and a profile | external | M09 and M10 |
-| `transcript` | Transcribes YouTube and Zoom audio, then summarizes it | external | M11 to M14 |
+| `agent` | Runs a task through a harness and a profile | external | M09 to M11 |
+| `transcript` | Transcribes YouTube and Zoom audio, then summarizes it | external | M13 to M16 |
 | `markdown`, `video`, `image` | Everyday tasks that need no configuration | external | M18 to M20, after the inventory of M17 |
 | `docs` | Gathers project docs into one private site | external | M21 |
 

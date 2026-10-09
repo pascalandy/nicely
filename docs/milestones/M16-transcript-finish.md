@@ -1,7 +1,7 @@
-# M14 Transcript finish
+# M16 Transcript finish
 
 Status: planned
-Version: v0.14.0
+Version: v0.16.0
 
 ## Demo
 
@@ -21,41 +21,41 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M14-T1 | Zoom | agent | — | todo |
-| M14-T2 | Prompts and open | agent | — | todo |
-| M14-T3 | Doctor and cookies | agent | — | todo |
-| M14-T4 | Spinner and transcript skill | agent | M14-T1, M14-T2 | todo |
-| M14-T5 | Fresh-session check | agent | M14-T3, M14-T4 | todo |
+| M16-T1 | Zoom | agent | — | todo |
+| M16-T2 | Prompts and open | agent | — | todo |
+| M16-T3 | Doctor and cookies | agent | — | todo |
+| M16-T4 | Spinner and transcript skill | agent | M16-T1, M16-T2 | todo |
+| M16-T5 | Fresh-session check | agent | M16-T3, M16-T4 | todo |
 
-### M14-T1 Zoom
+### M16-T1 Zoom
 
 - **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
 - **Proves:** `testdata/script/transcript_zoom.txtar`
 
 `ncly transcript run zoom` with `--latest` or `--path`. Python selects the audio once and Go records its fingerprint. A meeting folder without audio is `NOT_FOUND`, and the folder's name becomes the title.
 
-### M14-T2 Prompts and open
+### M16-T2 Prompts and open
 
 - **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
 - **Proves:** `testdata/script/transcript_prompt.txtar`, `testdata/script/transcript_open.txtar`
 
 `ncly transcript prompt list` with the precedence of `prompt_paths` over the bundled prompts. `--open` opens each result folder as it appears, never during a dry run. Completion suggests profiles and prompts.
 
-### M14-T3 Doctor and cookies
+### M16-T3 Doctor and cookies
 
 - **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/cli-spec.md#ncly-doctor)
 - **Proves:** `testdata/script/transcript_doctor.txtar`, `testdata/script/transcript_cookies.txtar`
 
 `ncly doctor transcript` takes over the checks of the transcript CLI's `doctor --source`: `uv`, Python 3.12 or later with its install command, and the browser cookies. `--live` checks the key against a free Deepgram endpoint. Unreadable cookies fall back to anonymous access with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`, once in a batch's top-level `warnings`.
 
-### M14-T4 Spinner and transcript skill
+### M16-T4 Spinner and transcript skill
 
 - **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output](../north-star/cli-spec.md#output)
 - **Proves:** `testdata/script/transcript_spinner.txtar`, `extensions/transcript/SKILL.md`
 
 A run shows one spinner on a terminal, in the picked look, and none in JSON or non-interactive mode. Write the transcript skill.
 
-### M14-T5 Fresh-session check
+### M16-T5 Fresh-session check
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Inspection and explicit resume](../north-star/cli-spec.md#inspection-and-explicit-resume)
 - **Proves:** the session's transcript, attached to the pull request

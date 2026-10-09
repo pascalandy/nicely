@@ -11,7 +11,7 @@ Version: v0.3.0
 
 `skill` is bundled because an agent needs it to operate Nicely: one line in an agent's instructions, `ncly skill view nicely`, replaces the long text that README.md used to plan. Its spec is [extensions/skill/spec.md](../../extensions/skill/spec.md). Output stays plain in this milestone. The styled list and the Markdown rendering of `view` arrive in [M07](M07-forms.md).
 
-The draft of the `nicely` skill, from the agent instructions that README.md planned. Lines about transcript move to the transcript skill in [M14](M14-transcript-finish.md):
+The draft of the `nicely` skill, from the agent instructions that README.md planned. Lines about transcript move to the transcript skill in [M16](M16-transcript-finish.md):
 
 ```text
 Set NCLY_NO_INPUT=1 and NCLY_JSON=1 for ncly calls

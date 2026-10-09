@@ -55,4 +55,4 @@ Pascal reviews the table and approves it, with any changes he asks for.
 - **Read:** [Scope](#scope), [AGENTS.md](../../AGENTS.md#make-a-milestone-ready)
 - **Proves:** `docs/milestones/`, with the milestones of the approved domains
 
-Confirm or replace M18 to M20 from the approved table. A further domain takes the number after the last milestone, so no milestone changes its number.
+Confirm or replace M18 to M20 from the approved table. Give a further domain the number after M20 and renumber the milestones that follow, as [AGENTS.md](../../AGENTS.md#make-a-milestone-ready) allows.

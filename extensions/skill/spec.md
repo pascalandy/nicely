@@ -1,6 +1,6 @@
 # skill extension spec
 
-`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/cli-spec.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M03](../../docs/milestones/M03-skill.md) builds it, and [M15](../../docs/milestones/M15-taps.md) adds taps and `skill link`.
+`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/cli-spec.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M03](../../docs/milestones/M03-skill.md) builds it, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
 
 ## ncly skill
 
@@ -10,9 +10,9 @@ ncly skill view <name> [--json]
 ncly skill <name>
 ```
 
-- Skills come from the folders in `[skill] paths`, then from the `nicely` skill that ships inside `ncly`, then from installed extensions. Taps add more sources in M15. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
+- Skills come from the folders in `[skill] paths`, then from the `nicely` skill that ships inside `ncly`, then from installed extensions. Taps add more sources in M12. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
 - A skill's subfolder takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works and `ncly doctor skill` warns.
-- A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links, and `skill link` creates them from M15. A broken link is not a skill, and `list` skips it.
+- A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links, and `skill link` creates them from M12. A broken link is not a skill, and `list` skips it.
 - When two sources hold the same skill name, the first source wins and `list` adds a `SKILL_SHADOWED` warning. Two subfolders that resolve to the same folder are one skill, listed with the path of the first, without a warning.
 - Inside one folder of `paths`, when two subfolders declare the same `name`, the subfolder whose name sorts first byte by byte wins, and `list` adds `SKILL_SHADOWED`.
 - A `SKILL.md` that cannot be read, whose frontmatter is invalid, or that lacks `name` or `description` is not a skill. `list` skips it and adds a `SKILL_INVALID` warning whose hint names the file to fix, and `view` answers `NOT_FOUND` for it.

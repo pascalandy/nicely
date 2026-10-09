@@ -6,7 +6,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 
 | Idea | What it would do | Revisit when |
 |---|---|---|
-| Routines | `ncly routine run <name>` runs a named sequence of commands from the config | The fleet extension of M15 works and a repeated sequence shows up |
+| Routines | `ncly routine run <name>` runs a named sequence of commands from the config | The fleet extension of M12 works and a repeated sequence shows up |
 | Remote commands | `--host` runs a command on another machine over SSH, including `ncly doctor --host` | A remote task needs Nicely, or a remote command needs a key |
 | Dotfiles for Linux machines | A dotfiles repository that carries the shared config to each Omarchy machine | Pascal adds a second Linux machine. This lives outside Nicely |
 | Launcher | A bare `ncly` in interactive mode opens a fuzzy command palette, and prints help everywhere else | The everyday domains of M18 to M20 exist |
@@ -29,7 +29,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | First-run experience | What a new visitor sees first, and the marketing around it | The everyday domains ship |
 | Project config | A `.nicely.toml` in a repository, read between the environment and the local config | A project needs its own profile or paths |
 | `ncly config` | `ncly config get`, `set`, and `list` edit the config with comments kept | Agents edit the config by hand often enough to break it |
-| Key checks for skills | `ncly doctor` checks the keys that skills declare in `nicely.toml`, replacing `just api-keys-validation` | Taps carry skills with manifests, in M15 |
+| Key checks for skills | `ncly doctor` checks the keys that skills declare in `nicely.toml`, replacing `just api-keys-validation` | Taps carry skills with manifests, in M12 |
 | Man pages | Generated from Cobra and shipped in the packages | A user asks, or Nicely applies to homebrew-core |
 | Build provenance | GitHub artifact attestations for the release archives | Strangers install from the release archives |
 | AUR package | Publishes `ncly-bin` to the AUR, so that `yay -S ncly-bin` installs `ncly` and `ncly <Tab>` completes in bash on Omarchy. It needs an AUR account with the public key `nicely-release-aur`. Before the first release, set `skip_upload: true` in the `aurs` section of `.goreleaser.yaml`, and update step 3 of Release in AGENTS.md. GoReleaser then still builds the package that `just release-check` verifies, and pushes nothing to the AUR. Without `skip_upload: true`, GoReleaser stops after the GitHub release and before the Homebrew tap update | AUR registration reopens |

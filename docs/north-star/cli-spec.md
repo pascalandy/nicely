@@ -38,8 +38,8 @@ ncly
 ├── doctor [component]              M05
 ├── auth login|logout|status        M06
 ├── run list|view                   M10
-├── run resume <run-id>             M13
-└── tap add|list|sync|remove        M15
+├── run resume <run-id>             M15
+└── tap add|list|sync|remove        M12
 ```
 
 `<domain>` is an extension. `skill` is the bundled extension, as [Extensions](#extensions) defines, and [extensions/skill/spec.md](../../extensions/skill/spec.md) specifies it. External extensions, such as `agent` and `transcript`, list their commands in their own specs.
@@ -175,8 +175,8 @@ Each code maps to exactly one exit code. This table holds core's codes, and a mi
 | `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for the `auth` check of `ncly doctor` | M06 |
 | `KEY_NOT_GRANTED` | 78 | An extension needs a key that no human granted to it | M08 |
 | `CAPABILITY_UNSUPPORTED` | 78 | The selected program cannot enforce a required mode or protocol | M09 |
-| `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401 | M11 |
-| `RESUME_UNSAFE` | 1 | A run cannot safely continue because evidence is missing, changed, uncertain, or unsupported | M13 |
+| `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401 | M13 |
+| `RESUME_UNSAFE` | 1 | A run cannot safely continue because evidence is missing, changed, uncertain, or unsupported | M15 |
 
 Warnings use codes from this table, and an extension's own warnings start with its domain, such as `SKILL_SHADOWED`.
 

@@ -132,7 +132,7 @@ Decided 2026-10-05. Each card names the testscript scenarios that prove it. End-
 
 ## D018 Run agents through the `agent` extension with one profile registry
 
-Decided 2026-10-05, revised 2026-10-09. `agent` is a first-party external extension. `ncly agent run` runs a task through a harness, and the extension owns the profiles, the harness adapters, tools-off mode, and the depth limit, as [its spec](../../extensions/agent/spec.md) defines. Profiles and dry run come in M09, execution in M10, and the other harnesses in M16. Transcript summarizes through `ncly agent run --json`, as any other extension would. A depth limit stops agents from launching agents without end. `ncly agent` absorbs the `headless` skill.
+Decided 2026-10-05, revised 2026-10-09. `agent` is a first-party external extension. `ncly agent run` runs a task through a harness, and the extension owns the profiles, the harness adapters, tools-off mode, and the depth limit, as [its spec](../../extensions/agent/spec.md) defines. Profiles and dry run come in M09, execution in M10, and the other harnesses in M11. Transcript summarizes through `ncly agent run --json`, as any other extension would. A depth limit stops agents from launching agents without end. `ncly agent` absorbs the `headless` skill.
 
 **Why.** Model IDs change every few months, so they belong in the config, not in code. One registry and one owner of harness behavior keep profiles, tool restrictions, cancellation, and summary recovery consistent. Composing through the CLI tests the same interface that agents use. A simple one-step command is the easiest first consumer of run records. "Harness" stays the internal term.
 
@@ -156,7 +156,7 @@ Decided 2026-10-05, revised 2026-10-09. The extension host comes first, in M01, 
 
 ## D021 Move skill requirements to a file
 
-Decided 2026-10-05. Skills declare their requirements in frontmatter today. Extensions use one versioned manifest format from M01, and skills join it when taps carry them in M15. A skill keeps `nicely.toml` beside `SKILL.md`; an extension keeps `<executable>.toml` beside its executable so several extensions can share a directory. Until then, `ncly doctor skill` checks only the structure of a skill.
+Decided 2026-10-05. Skills declare their requirements in frontmatter today. Extensions use one versioned manifest format from M01, and skills join it when taps carry them in M12. A skill keeps `nicely.toml` beside `SKILL.md`; an extension keeps `<executable>.toml` beside its executable so several extensions can share a directory. Until then, `ncly doctor skill` checks only the structure of a skill.
 
 **Why.** One file format serves skills and extensions alike. A frontmatter reader for requirements would be thrown away once manifests exist.
 
@@ -240,7 +240,7 @@ Decided 2026-10-05. On Ctrl-C or SIGTERM, `ncly` stops every program it started 
 
 ## D032 Keep small run records and resume explicitly
 
-Decided 2026-10-05. The [operation contract](cli-spec.md#operations) covers preparation, execution, inspection, and explicit resume. Domains own their steps and recovery rules. The program runner owns subprocess lifecycles. Records preserve the evidence needed to reuse finished work, with references to outputs rather than copies of their contents. M00 fixed the contract. `ncly agent run` in M10 and transcript from M11 implement it, and core exposes the [run commands](cli-spec.md#ncly-run).
+Decided 2026-10-05. The [operation contract](cli-spec.md#operations) covers preparation, execution, inspection, and explicit resume. Domains own their steps and recovery rules. The program runner owns subprocess lifecycles. Records preserve the evidence needed to reuse finished work, with references to outputs rather than copies of their contents. M00 fixed the contract. `ncly agent run` in M10 and transcript from M13 implement it, and core exposes the [run commands](cli-spec.md#ncly-run).
 
 **Why.** A new agent session must be able to tell whether Deepgram finished before a summary failed. Writing the intended non-repeatable effect before starting it leaves evidence even if the process dies before saving the result. Resume validates inputs, relevant configuration, and saved outputs, and keeps the profile that the run recorded instead of reading it again. An uncertain paid request needs reconciliation or a human decision, because a missing response does not prove that nothing happened.
 
@@ -264,7 +264,7 @@ Decided 2026-10-05. `--dry-run` and execution use the same preparation of inputs
 
 ## D035 Track ownership when synchronizing files
 
-Decided 2026-10-05. Tap and docs synchronization track the files they manage and detect user changes before replacing or removing them. A sync stages and validates each managed destination, then publishes that destination atomically under its lock. Unrelated destinations are not one transaction. [M15](../milestones/M15-taps.md) and [M21](../milestones/M21-docs-hub.md) define their publication boundaries and recovery.
+Decided 2026-10-05. Tap and docs synchronization track the files they manage and detect user changes before replacing or removing them. A sync stages and validates each managed destination, then publishes that destination atomically under its lock. Unrelated destinations are not one transaction. [M12](../milestones/M12-taps.md) and [M21](../milestones/M21-docs-hub.md) define their publication boundaries and recovery.
 
 **Why.** A repeated sync must remove stale generated files without deleting unrelated files or edits. Readers need a complete result, and an interrupted update must leave enough evidence to recover. Explicit ownership makes those decisions possible.
 
@@ -320,7 +320,7 @@ Decided 2026-10-09. First-party extensions live in `extensions/<name>/`, in the 
 
 ## D042 Plan work as milestones of small cards
 
-Decided 2026-10-09. A milestone is one capability that a sentence can demonstrate, with at most five agent cards. A card is one pull request, with its dependencies, its owner, the spec sections to read, and the scenarios that prove it. A decision of Pascal's that later cards wait on is a card with the owner Pascal; a step of his that nothing waits on, such as a check on his Mac, sits under **After this milestone** and blocks nothing. No checkbox exists outside a card, so a milestone is done when all its cards are. A planned milestone with open questions becomes ready in one pull request that settles them in the spec and finishes its cards; without open questions, its first card starts it. Milestones go in order. `just next` prints the one card to do, and `just status` shows the progress. `just test` checks this format.
+Decided 2026-10-09. A milestone is one capability that a sentence can demonstrate, with at most five agent cards. A card is one pull request, with its dependencies, its owner, the spec sections to read, and the scenarios that prove it. A decision of Pascal's that later cards wait on is a card with the owner Pascal; a step of his that nothing waits on, such as a check on his Mac, sits under **After this milestone** and blocks nothing. No checkbox exists outside a card, so a milestone is done when all its cards are. A planned milestone with open questions becomes ready in one pull request that settles them in the spec and finishes its cards; without open questions, its first card starts it. Milestones go in order. The order puts first what later milestones build on, keeps the milestones of one extension together, and puts Pascal's own tools before the everyday domains that make a first impression. Only a milestone without a done card changes its number, in a pull request that only changes the plan. `just next` prints the one card to do, and `just status` shows the progress. `just test` checks this format.
 
 **Why.** Large milestones with tasks, acceptance boxes, a done-when list, and a to-define list let agents pick one task and leave the rest, and Pascal could no longer follow the project. One computed pointer leaves nothing to interpret, and every piece of work has an owner and a proof.
 

@@ -109,14 +109,14 @@ The contract suite exercises behavior, not the spelling of source code. Each gua
 |---|---|---|
 | Parser failures | The real binary handles unknown commands, unknown flags, missing values, and invalid flag values in JSON mode, with `--json` before or after the bad argument and through `NCLY_JSON` | Each command adds its distinct validation cases |
 | Streams and envelope | Parse the complete JSON answer, check `contract_version`, `ok`, exact exit code, and the correct stream. Test verbose diagnostics, warnings, and text-only help/version/completion exceptions | Doctor in M05 and `auth status` in M06 keep their reports on stdout when a check fails |
-| Partial results and retry | Direct tests of the actual shared verdict and rendering components retain successful items and reject 75 after non-repeatable writes, paid dispatch, or unknown effects. Reverse error arrival order to prove the verdict stays the same | `agent run` in M10 and transcript in M11 inject failures around real operation boundaries and verify effects, not just fields |
-| Compatibility | Independent consumer cases cover types, units, nullability, required fields, enum policy, defined array order, and ignored optional fields | Extensions in M01 and the transcript Python program in M11 test incompatible messages before any new effect |
-| Dry run | Define the shared preparation/result contract and its conformance cases, including the bounded cache exception | Auth in M06 and transcript in M11 compare user files, config, keychain, run records, and external calls before and after dry run |
-| Cancellation and resume | Define the signal verdicts and required partial-result representation | M01 checks process cleanup on an extension. M10, M11, and M13 check persisted evidence, lost stdout, and explicit resume |
+| Partial results and retry | Direct tests of the actual shared verdict and rendering components retain successful items and reject 75 after non-repeatable writes, paid dispatch, or unknown effects. Reverse error arrival order to prove the verdict stays the same | `agent run` in M10 and transcript in M13 inject failures around real operation boundaries and verify effects, not just fields |
+| Compatibility | Independent consumer cases cover types, units, nullability, required fields, enum policy, defined array order, and ignored optional fields | Extensions in M01 and the transcript Python program in M13 test incompatible messages before any new effect |
+| Dry run | Define the shared preparation/result contract and its conformance cases, including the bounded cache exception | Auth in M06 and transcript in M13 compare user files, config, keychain, run records, and external calls before and after dry run |
+| Cancellation and resume | Define the signal verdicts and required partial-result representation | M01 checks process cleanup on an extension. M10, M13, and M15 check persisted evidence, lost stdout, and explicit resume |
 
 No M00 key carries a unit, so the first key with one, such as `duration_ms`, adds its own consumer case. The scenario commands `snapshot` and `unchanged` are the dry-run conformance check: they compare every file under `$HOME` except Nicely's cache.
 
-Direct component tests are justified where M00 exposes no real command that reaches the behavior. Test support stays in tests and calls production components. It does not implement an alternate CLI. Effects and resume are not marked verified until the first real command exercises them, from M10 to M13.
+Direct component tests are justified where M00 exposes no real command that reaches the behavior. Test support stays in tests and calls production components. It does not implement an alternate CLI. Effects and resume are not marked verified until the first real command exercises them, from M10 to M15.
 
 ## CLI examples
 

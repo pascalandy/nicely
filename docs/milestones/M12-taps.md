@@ -1,11 +1,11 @@
-# M15 Taps
+# M12 Taps
 
 Status: planned
-Version: v0.15.0
+Version: v0.12.0
 
 ## Demo
 
-`ncly tap add` brings a Git repository's skills and extensions to this machine, and installs `agent` and `transcript` from the official tap.
+`ncly tap add` brings a Git repository's skills and extensions to this machine, and installs `agent` from the official tap.
 
 ## Scope
 
@@ -48,46 +48,46 @@ Settle each one in a new `ncly tap` section of [cli-spec.md](../north-star/cli-s
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M15-T1 | Tap add and list | agent | — | todo |
-| M15-T2 | Tap sync and remove | agent | M15-T1 | todo |
-| M15-T3 | Extensions and skills from taps | agent | M15-T1 | todo |
-| M15-T4 | Skill link | agent | M15-T3 | todo |
-| M15-T5 | The official tap | agent | M15-T3 | todo |
+| M12-T1 | Tap add and list | agent | — | todo |
+| M12-T2 | Tap sync and remove | agent | M12-T1 | todo |
+| M12-T3 | Extensions and skills from taps | agent | M12-T1 | todo |
+| M12-T4 | Skill link | agent | M12-T3 | todo |
+| M12-T5 | The official tap | agent | M12-T3 | todo |
 
-### M15-T1 Tap add and list
+### M12-T1 Tap add and list
 
 - **Read:** [Configuration](../north-star/cli-spec.md#configuration), [Grants](../north-star/cli-spec.md#grants)
 - **Proves:** `testdata/script/tap_add.txtar`
 
 `ncly tap add` clones a fixture tap, writes it into the shared config, and asks for each declared key in a terminal. `ncly tap list` shows each tap's identity and revision.
 
-### M15-T2 Tap sync and remove
+### M12-T2 Tap sync and remove
 
 - **Read:** [D035](../north-star/decision-records.md#d035-track-ownership-when-synchronizing-files)
 - **Proves:** `testdata/script/tap_sync.txtar`, `testdata/script/tap_remove.txtar`
 
 `sync` publishes each destination under its lock, preserves local edits as conflicts, and survives a repeated or interrupted sync. `remove` moves the clone to the trash.
 
-### M15-T3 Extensions and skills from taps
+### M12-T3 Extensions and skills from taps
 
 - **Read:** [Extensions](../north-star/cli-spec.md#extensions), [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `testdata/script/tap_extensions.txtar`
 
 A tap's extensions become domains and its skills join `ncly skill list`, with deterministic precedence. Two taps that publish the same domain are reported, and an update that declares a new key gets nothing until a human grants it.
 
-### M15-T4 Skill link
+### M12-T4 Skill link
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `testdata/script/skill_link.txtar`
 
 `ncly skill link` with managed links, conflicts, and the checks that tap removal makes first.
 
-### M15-T5 The official tap
+### M12-T5 The official tap
 
 - **Read:** [Extensions](../north-star/cli-spec.md#extensions)
 - **Proves:** `testdata/script/tap_official.txtar`
 
-Install `agent` and `transcript` from the official tap as the open questions settle, without the repository.
+Install `agent` from the official tap as the open questions settle, without the repository. Every later first-party extension, such as `transcript`, ships the same way.
 
 ## After this milestone
 

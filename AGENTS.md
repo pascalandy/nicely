@@ -46,7 +46,7 @@ When `just next` names a planned milestone with open questions, make it ready in
 
 A planned milestone without open questions needs no separate pull request: `just next` prints its first card, and that card's pull request also sets the milestone to `active`.
 
-A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, **Cards**, and an optional **After this milestone**. **Cards** holds a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line that links what to read and a **Proves** line that names its proof. `just test` checks this format, including the links. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one, so no milestone ever changes its number.
+A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, **Cards**, and an optional **After this milestone**. **Cards** holds a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line that links what to read and a **Proves** line that names its proof. `just test` checks this format, including the links. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one. To change the order, renumber only milestones without a done card, in a pull request that only changes the plan.
 
 ## Rules
 

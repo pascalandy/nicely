@@ -9,7 +9,7 @@ Version: v0.9.0
 
 ## Scope
 
-`agent` is the first real external extension: Nicely needs no agent to operate, so it ships outside the binary. It lives in `extensions/agent/`, builds as `ncly-agent`, and owns profiles, harness adapters, tools-off mode, and the depth limit, as [extensions/agent/spec.md](../../extensions/agent/spec.md) defines. This milestone reads profiles and prepares runs. Execution and its records arrive in [M10](M10-agent-run.md), and the other harnesses in [M16](M16-harnesses.md).
+`agent` is the first real external extension: Nicely needs no agent to operate, so it ships outside the binary. It lives in `extensions/agent/`, builds as `ncly-agent`, and owns profiles, harness adapters, tools-off mode, and the depth limit, as [extensions/agent/spec.md](../../extensions/agent/spec.md) defines. This milestone reads profiles and prepares runs. Execution and its records arrive in [M10](M10-agent-run.md), and the other harnesses in [M11](M11-harnesses.md).
 
 Before taps exist, `just install` builds the first-party extensions and puts them where core finds them.
 
@@ -19,7 +19,7 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 
 - Whether `ncly agent run` reads stdin without `-` when stdin is a pipe, given that some harnesses leave stdin open
 - The answer keys of `ncly agent run` that transcript records: `run_id`, `answer`, `profile`, `harness`, the harness version, `model`, and `duration_ms`
-- How a user without the repository installs a first-party external extension before taps arrive in M15
+- How a user without the repository installs a first-party external extension before taps arrive in M12
 
 ## Cards
 

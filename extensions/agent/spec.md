@@ -1,6 +1,6 @@
 # agent extension spec
 
-`agent` is a first-party external extension, built as `ncly-agent` from this folder. It runs a task through a harness with a profile from the config, and it owns every harness behavior: profiles, adapters, tools-off mode, and the depth limit. It stays out of core because Nicely needs no agent to operate. Other extensions use it through the CLI, as transcript does for its summary. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M09](../../docs/milestones/M09-agent-profiles.md) builds profiles and dry run, [M10](../../docs/milestones/M10-agent-run.md) execution, and [M16](../../docs/milestones/M16-harnesses.md) the other harnesses.
+`agent` is a first-party external extension, built as `ncly-agent` from this folder. It runs a task through a harness with a profile from the config, and it owns every harness behavior: profiles, adapters, tools-off mode, and the depth limit. It stays out of core because Nicely needs no agent to operate. Other extensions use it through the CLI, as transcript does for its summary. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M09](../../docs/milestones/M09-agent-profiles.md) builds profiles and dry run, [M10](../../docs/milestones/M10-agent-run.md) execution, and [M11](../../docs/milestones/M11-harnesses.md) the other harnesses.
 
 ## ncly agent
 
@@ -58,7 +58,7 @@ A profile with an effort that its harness rejects, or with a `provider` for `cla
 
 ## Adapters
 
-M09 builds the adapters for `claude` and `pi`, and M16 adds `codex`, `grok`, and `opencode`. Until then, a profile that names another harness fails with `CAPABILITY_UNSUPPORTED`. Each adapter turns the tools off, sends the task on stdin, and checks the answer:
+M09 builds the adapters for `claude` and `pi`, and M11 adds `codex`, `grok`, and `opencode`. Until then, a profile that names another harness fails with `CAPABILITY_UNSUPPORTED`. Each adapter turns the tools off, sends the task on stdin, and checks the answer:
 
 - `claude`, version 2.1.291 or later, runs with `--print`, `--model`, `--effort`, `--system-prompt`, and `--output-format json`. It turns tools off with `--tools ""`, `--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, `--setting-sources ""`, `--disable-slash-commands`, `--no-session-persistence`, and `--permission-mode dontAsk`. `--settings` turns hooks off and sets `CLAUDE_CODE_EFFORT_LEVEL`, which would otherwise override `--effort`. The answer is `result`, and `is_error` must be `false`. The effort is `low`, `medium`, `high`, `xhigh`, or `max`, and a profile for `claude` has no `provider`
 - `pi`, version 1.0.4 or later, runs with `--print`, `--model <provider>/<model>`, `--thinking`, and `--system-prompt`. It turns tools off with `--no-tools`, `--no-session`, `--no-skills`, `--no-prompt-templates`, `--no-context-files`, `--no-extensions`, and `--no-approve`. The answer is stdout, which must not be empty. The effort is `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`
@@ -76,4 +76,4 @@ Each adapter declares the key variables of its harness as optional keys: `claude
 | Code | Exit | When | Since |
 |---|---|---|---|
 | `AGENT_DEPTH_LIMIT` | 2 | Starting a harness would exceed the configured agent depth | M09 |
-| `AGENT_FILES_CHANGED` | 1 | Files covered by `--check-unchanged` changed during the run | M16 |
+| `AGENT_FILES_CHANGED` | 1 | Files covered by `--check-unchanged` changed during the run | M11 |

@@ -1,6 +1,6 @@
 # transcript extension spec
 
-`transcript` is a first-party external extension, built as `ncly-transcript` from this folder. It transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through the [agent extension](../agent/spec.md), which it calls through the CLI. It embeds a Python program while that program moves to Go. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M11](../../docs/milestones/M11-transcript.md) builds transcription, [M12](../../docs/milestones/M12-transcript-summary.md) the summary, [M13](../../docs/milestones/M13-resume.md) resume, and [M14](../../docs/milestones/M14-transcript-finish.md) the rest.
+`transcript` is a first-party external extension, built as `ncly-transcript` from this folder. It transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through the [agent extension](../agent/spec.md), which it calls through the CLI. It embeds a Python program while that program moves to Go. It follows the agent contract of [cli-spec.md](../../docs/north-star/cli-spec.md). [M13](../../docs/milestones/M13-transcript.md) builds transcription, [M14](../../docs/milestones/M14-transcript-summary.md) the summary, [M15](../../docs/milestones/M15-resume.md) resume, and [M16](../../docs/milestones/M16-transcript-finish.md) the rest.
 
 ## ncly transcript
 
@@ -78,7 +78,7 @@ These options of the transcript CLI change:
 | `--preview` | Removed, because `ncly markdown view` renders a summary from M18 |
 | `list prompts` | `ncly transcript prompt list` |
 | `list profiles` | `ncly agent profile list` |
-| `list models` | Removed. M16 decides whether `ncly agent model list` replaces it |
+| `list models` | Removed. M11 decides whether `ncly agent model list` replaces it |
 | `doctor --source` | `ncly doctor transcript` |
 
 ### Steps and resume
@@ -225,12 +225,12 @@ Transcript answers with core's codes and these of its own. For exit 1, `RESUME_U
 
 | Code | Exit | When | Since |
 |---|---|---|---|
-| `TRANSCRIPT_DOWNLOAD_FAILED` | 1 | `yt-dlp` could not fetch the audio of a video, for a reason other than the network | M11 |
+| `TRANSCRIPT_DOWNLOAD_FAILED` | 1 | `yt-dlp` could not fetch the audio of a video, for a reason other than the network | M13 |
 
 | Warning | When | Since |
 |---|---|---|
-| `TRANSCRIPT_SUMMARY_SKIPPED` | No profile applies, so a transcript run saved the transcript without a summary | M12 |
-| `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | The configured browser's cookies could not be read, so the download used anonymous access | M14 |
+| `TRANSCRIPT_SUMMARY_SKIPPED` | No profile applies, so a transcript run saved the transcript without a summary | M14 |
+| `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | The configured browser's cookies could not be read, so the download used anonymous access | M16 |
 
 ## Examples
 

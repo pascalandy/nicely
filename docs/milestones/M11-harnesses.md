@@ -1,7 +1,7 @@
-# M16 Harnesses
+# M11 Harnesses
 
 Status: planned
-Version: v0.16.0
+Version: v0.11.0
 
 ## Demo
 
@@ -27,41 +27,41 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M16-T1 | Codex adapter | agent | — | todo |
-| M16-T2 | Grok adapter | agent | — | todo |
-| M16-T3 | OpenCode adapter | agent | — | todo |
-| M16-T4 | Check unchanged | agent | — | todo |
-| M16-T5 | Doctor agent | agent | — | todo |
+| M11-T1 | Codex adapter | agent | — | todo |
+| M11-T2 | Grok adapter | agent | — | todo |
+| M11-T3 | OpenCode adapter | agent | — | todo |
+| M11-T4 | Check unchanged | agent | — | todo |
+| M11-T5 | Doctor agent | agent | — | todo |
 
-### M16-T1 Codex adapter
+### M11-T1 Codex adapter
 
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
 - **Proves:** `testdata/script/agent_codex.txtar`
 
 The `codex` adapter, with its verified tools-off mode.
 
-### M16-T2 Grok adapter
+### M11-T2 Grok adapter
 
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
 - **Proves:** `testdata/script/agent_grok.txtar`
 
 The `grok` adapter, with its verified tools-off mode.
 
-### M16-T3 OpenCode adapter
+### M11-T3 OpenCode adapter
 
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
 - **Proves:** `testdata/script/agent_opencode.txtar`
 
 The `opencode` adapter, with its provider and its verified tools-off mode.
 
-### M16-T4 Check unchanged
+### M11-T4 Check unchanged
 
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent)
 - **Proves:** `testdata/script/agent_check_unchanged.txtar`
 
 `--check-unchanged` exits 1 with `AGENT_FILES_CHANGED` when a covered file changed during the run, and reports nothing about ignored files.
 
-### M16-T5 Doctor agent
+### M11-T5 Doctor agent
 
 - **Read:** [ncly doctor](../north-star/cli-spec.md#ncly-doctor)
 - **Proves:** `testdata/script/doctor_agent.txtar`
