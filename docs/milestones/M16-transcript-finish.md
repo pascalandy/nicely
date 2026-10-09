@@ -44,7 +44,7 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 
 ### M16-T3 Doctor and cookies
 
-- **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/contract.md#ncly-doctor)
+- **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor)
 - **Proves:** `testdata/script/transcript_doctor.txtar`, `testdata/script/transcript_cookies.txtar`
 
 `ncly doctor transcript` takes over the checks of the transcript CLI's `doctor --source`: `uv`, Python 3.12 or later with its install command, and the browser cookies. `--live` checks the key against a free Deepgram endpoint. Unreadable cookies fall back to anonymous access with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`, once in a batch's top-level `warnings`.

@@ -54,7 +54,7 @@ An extension from another source, under the same name, inherits no grant. An upd
 
 ### M08-T4 Status and doctor
 
-- **Read:** [ncly auth](../north-star/contract.md#ncly-auth), [ncly doctor](../north-star/contract.md#ncly-doctor)
+- **Read:** [ncly auth](../north-star/core-spec.md#ncly-auth), [ncly doctor](../north-star/core-spec.md#ncly-doctor)
 - **Proves:** `testdata/script/grant_status.txtar`
 
 `ncly auth status` lists the services that extensions declare, with their grants. The `extensions` component of `ncly doctor` reports every grant that no extension declares anymore.

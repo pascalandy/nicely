@@ -46,10 +46,10 @@ Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, read the bundled `nicely` skill 
 
 | Source of truth | What it establishes |
 |---|---|
-| [Command declaration](contract.md#ncly-describe) | Installed capabilities, input constraints, result types, and supported modes |
-| [Doctor](contract.md#ncly-doctor) | Local readiness, with free network checks only on request |
+| [Command declaration](core-spec.md#ncly-describe) | Installed capabilities, input constraints, result types, and supported modes |
+| [Doctor](core-spec.md#ncly-doctor) | Local readiness, with free network checks only on request |
 | [Dry run](contract.md#operations) | The invocation's plan and checks still pending before execution |
-| [Run inspection](contract.md#ncly-run) | Saved step evidence and `active`, which reports whether a process holds the run lock |
+| [Run inspection](core-spec.md#ncly-run) | Saved step evidence and `active`, which reports whether a process holds the run lock |
 | Artifacts | The full output files, referenced by path and verified fingerprints |
 | [Explicit resume](contract.md#inspection-and-explicit-resume) | The saved outputs that current verification permits the extension to reuse |
 

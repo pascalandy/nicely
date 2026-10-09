@@ -9,7 +9,7 @@ Version: v0.10.0
 
 ## Scope
 
-`ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. Record support starts in `sdk/`, as [Records and evidence](../north-star/contract.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/contract.md#ncly-run) `list` and `view`. Resume waits for [M15](M15-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
+`ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. Record support starts in `sdk/`, as [Records and evidence](../north-star/contract.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/core-spec.md#ncly-run) `list` and `view`. Resume waits for [M15](M15-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
 
 ## Open questions
 
@@ -37,14 +37,14 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 
 ### M10-T2 Run list
 
-- **Read:** [ncly run](../north-star/contract.md#ncly-run)
+- **Read:** [ncly run](../north-star/core-spec.md#ncly-run)
 - **Proves:** `testdata/script/run_list.txtar`
 
 `ncly run list` sorts, filters before the limit, and reports `more` and bounded item-key previews. An invalid time is `USAGE_INVALID`.
 
 ### M10-T3 Run view
 
-- **Read:** [ncly run](../north-star/contract.md#ncly-run), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
+- **Read:** [ncly run](../north-star/core-spec.md#ncly-run), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
 - **Proves:** `testdata/script/run_view.txtar`
 
 `ncly run view` returns the record plus `active`, which comes from the lock and never from the saved status. A failed saved run still exits 0. An unknown run is `NOT_FOUND`, and an unsupported record version is reported, never read as a known format.

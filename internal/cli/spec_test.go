@@ -73,7 +73,7 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the M00
 // entries of the command tree, such as "completion zsh|bash|fish".
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
-	spec, err := specdoc.Block("../../docs/north-star/contract.md", "Command tree")
+	spec, err := specdoc.Block("../../docs/north-star/core-spec.md", "Command tree")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	slices.Sort(got)
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
-		t.Errorf("contract.md lists the M00 commands %q, ncly declares %q", want, got)
+		t.Errorf("core-spec.md lists the M00 commands %q, ncly declares %q", want, got)
 	}
 }
 

@@ -35,7 +35,7 @@ Scenarios build a local Git repository as a fixture tap and add it with a file p
 
 ## Open questions
 
-Settle each one in a new `ncly tap` section of [contract.md](../north-star/contract.md), then delete this section.
+Settle each one in a new `ncly tap` section of [core-spec.md](../north-star/core-spec.md), then delete this section.
 
 - The canonical tap ID for arbitrary Git URLs, avoiding collisions between hosts, and its mapping to local storage
 - The editor for config files. `tomledit` keeps comments and formatting

@@ -35,14 +35,14 @@ Use a Lip Gloss version that no longer probes the terminal at load: an upstream 
 
 ### M07-T3 Login form and confirmation
 
-- **Read:** [ncly auth](../north-star/contract.md#ncly-auth), [Modes](../north-star/contract.md#modes)
+- **Read:** [ncly auth](../north-star/core-spec.md#ncly-auth), [Modes](../north-star/contract.md#modes)
 - **Proves:** `testdata/script/auth_form.txtar`
 
 In interactive mode, `ncly auth login` asks for the key in a masked field, and a replacement or a logout asks for confirmation, in the picked looks. After the form, `ncly` prints the equivalent command after `Next time:`.
 
 ### M07-T4 Styled reports and skill view
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [ncly doctor](../north-star/contract.md#ncly-doctor), [Output](../north-star/contract.md#output)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Output](../north-star/contract.md#output)
 - **Proves:** `testdata/script/styles.txtar`
 
 `skill list`, `auth status`, and the doctor report use the picked styles on a terminal, and plain text elsewhere. `skill view` renders its Markdown through Glamour in interactive mode.

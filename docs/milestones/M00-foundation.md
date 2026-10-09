@@ -58,7 +58,7 @@ The English catalog, with a description per entry, and the parity test against `
 
 ### M00-T5 Completion
 
-- **Read:** [ncly completion](../north-star/contract.md#ncly-completion)
+- **Read:** [ncly completion](../north-star/core-spec.md#ncly-completion)
 - **Proves:** `testdata/script/completion.txtar`
 
 `ncly completion zsh|bash|fish`.

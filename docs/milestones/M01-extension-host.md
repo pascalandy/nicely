@@ -75,7 +75,7 @@ The program runner's first version: Ctrl-C and SIGTERM reach the extension and e
 
 ### M01-T4 Help and completion
 
-- **Read:** [Extensions](../north-star/contract.md#extensions), [Usage](../north-star/contract.md#usage), [ncly completion](../north-star/contract.md#ncly-completion)
+- **Read:** [Extensions](../north-star/contract.md#extensions), [Usage](../north-star/contract.md#usage), [ncly completion](../north-star/core-spec.md#ncly-completion)
 - **Proves:** `testdata/script/extension_help.txtar`
 
 `ncly --help` shows extensions in their own section, in the existing help style, with the description from their manifest. `ncly hello --help` and `ncly help hello` show the extension's help without starting it, and completion offers its commands and flags. Run the scenario once under the pseudo-locale, as the open questions settle for extension text.

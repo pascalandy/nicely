@@ -13,7 +13,7 @@ Core finds the extension that owns a record from its command path and hands it t
 
 ## Open questions
 
-Settle each one in [ncly run](../north-star/contract.md#ncly-run) and [Extensions](../north-star/contract.md#extensions), then delete this section.
+Settle each one in [ncly run](../north-star/core-spec.md#ncly-run) and [Extensions](../north-star/contract.md#extensions), then delete this section.
 
 - How core hands a resume to the extension that owns a record: the manifest's `resume` mode, and the argument or variable that names the run
 - How core answers `RESUME_UNSAFE` for a command whose manifest declares no resume, before starting the extension
@@ -30,7 +30,7 @@ Settle each one in [ncly run](../north-star/contract.md#ncly-run) and [Extension
 
 ### M15-T1 Resume dispatch
 
-- **Read:** [ncly run](../north-star/contract.md#ncly-run), [Extensions](../north-star/contract.md#extensions)
+- **Read:** [ncly run](../north-star/core-spec.md#ncly-run), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/run_resume.txtar`
 
 `ncly run resume <run-id>` hands the run to the extension that owns it. An unknown run is `NOT_FOUND`, a run held by another process exits 75 with `TEMPORARY` and a `run view` hint before any effect, and an unsupported command or record version is `RESUME_UNSAFE`. Dry run describes the remaining steps only.
@@ -58,7 +58,7 @@ A changed input or artifact, missing or mismatched evidence, an unknown summary,
 
 ### M15-T5 Recover lost output
 
-- **Read:** [ncly run](../north-star/contract.md#ncly-run)
+- **Read:** [ncly run](../north-star/core-spec.md#ncly-run)
 - **Proves:** `testdata/script/run_recovery.txtar`
 
 Lose stdout, add more than 20 unrelated runs, and recover the run through filters applied before the limit, with `more` and bounded item-key previews. Repeat without a remembered start time. Preserve ambiguous matches, and keep the saved `run.status` apart from the lock-based `active`.
