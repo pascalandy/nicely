@@ -44,16 +44,16 @@ var rootCommand = contract.Command{
 	},
 }
 
-// reservedNames are the names that only core may use, so an extension never
-// runs under them, even before core ships their command.
+// reservedNames are the names of core's commands and of the bundled
+// extensions, so an external extension never runs under them, even before
+// core ships their command. M01 derives them from the declarations.
 var reservedNames = []string{
-	"completion", "describe", "doctor", "auth", "skill", "transcript", "run",
-	"agent", "tap", "markdown", "video", "image", "docs",
+	"completion", "describe", "doctor", "auth", "run", "tap", "skill",
 	"help", "version", "config",
 }
 
 // extensionNames lists the domains that installed extensions add. Discovery
-// arrives in M3, so it stays empty.
+// arrives in M01, so it stays empty.
 var extensionNames []string
 
 // Main runs ncly with args, without the program name, and returns its exit code.

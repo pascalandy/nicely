@@ -41,6 +41,8 @@ func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
 	}
 }
 
+// TestReservedNamesAgreeWithTheGuide compares the reserved names with the
+// core and bundled rows of the guide's domain table.
 func TestReservedNamesAgreeWithTheGuide(t *testing.T) {
 	tables, err := specdoc.Tables("../../docs/north-star/guide.md", "Domains and commands")
 	if err != nil {
@@ -48,7 +50,9 @@ func TestReservedNamesAgreeWithTheGuide(t *testing.T) {
 	}
 	want := []string{"help", "version", "config"}
 	for _, row := range tables[0] {
-		want = append(want, specdoc.Backticked(row[0])...)
+		if row[2] == "core" || row[2] == "bundled" {
+			want = append(want, specdoc.Backticked(row[0])...)
+		}
 	}
 	slices.Sort(want)
 	got := slices.Sorted(slices.Values(reservedNames))
@@ -66,7 +70,7 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 	return keys
 }
 
-// TestCommandsAgreeWithTheSpec compares the declared commands with the M0
+// TestCommandsAgreeWithTheSpec compares the declared commands with the M00
 // entries of the command tree, such as "completion zsh|bash|fish".
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	spec, err := specdoc.Block("../../docs/north-star/cli-spec.md", "Command tree")
@@ -76,7 +80,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	var want []string
 	for _, line := range spec {
 		fields := strings.Fields(strings.TrimLeft(line, "│├└─ "))
-		if len(fields) < 2 || fields[len(fields)-1] != "M0" {
+		if len(fields) < 2 || fields[len(fields)-1] != "M00" {
 			continue
 		}
 		path := fields[0]
@@ -96,7 +100,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	slices.Sort(got)
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
-		t.Errorf("cli-spec.md lists the M0 commands %q, ncly declares %q", want, got)
+		t.Errorf("cli-spec.md lists the M00 commands %q, ncly declares %q", want, got)
 	}
 }
 

@@ -18,7 +18,7 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 	}
 	spec := map[Code]ExitCode{}
 	for _, row := range tables[0] {
-		if row[3] == "M0" {
+		if row[3] == "M00" {
 			exit, _ := strconv.Atoi(row[1])
 			spec[Code(specdoc.Backticked(row[0])[0])] = ExitCode(exit)
 		}
@@ -28,17 +28,17 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 		code[e.code] = e.exit
 	}
 	if !maps.Equal(spec, code) {
-		t.Errorf("cli-spec.md lists the M0 error codes %v, the registry holds %v", spec, code)
+		t.Errorf("cli-spec.md lists the M00 error codes %v, the registry holds %v", spec, code)
 	}
 
 	var warnings []Code
 	for _, row := range tables[1] {
-		if row[2] == "M0" {
+		if row[2] == "M00" {
 			warnings = append(warnings, Code(specdoc.Backticked(row[0])[0]))
 		}
 	}
 	if !slices.Equal(warnings, warningCodes) {
-		t.Errorf("cli-spec.md lists the M0 warning codes %v, the registry holds %v", warnings, warningCodes)
+		t.Errorf("cli-spec.md lists the M00 warning codes %v, the registry holds %v", warnings, warningCodes)
 	}
 }
 
