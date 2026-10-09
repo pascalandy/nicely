@@ -7,6 +7,16 @@ golangci := go-tools + " golangci-lint"
 default:
     @just --list
 
+# Print the next card of the plan, or the step that unblocks it
+[group('plan')]
+next:
+    @go -C tools run ./cmd/plan next "{{ justfile_directory() }}"
+
+# Show every milestone and the cards of the current one
+[group('plan')]
+status:
+    @go -C tools run ./cmd/plan status "{{ justfile_directory() }}"
+
 # Run every check that signoff requires
 [group('checks')]
 check: fmt-check lint tidy-check test release-lint gitleaks-rules gitleaks
