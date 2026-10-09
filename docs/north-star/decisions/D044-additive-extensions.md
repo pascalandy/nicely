@@ -1,0 +1,7 @@
+# D044 Let extensions add commands, never change core
+
+Decided 2026-10-09. An extension adds a domain and its commands. It never changes how core or another extension behaves: it has no hook into dispatch, answers, or the run of another command. Core calling a command that an extension declares, such as for completion values or doctor checks, is no hook: the extension answers through the contract, and core decides what to do with the answer. A behavior that several commands share keeps the owners of the [code map](../architecture.md#code-map): core owns host behavior, such as dispatch, answer checks, and grants; the SDK provides shared mechanisms, such as run records and the program runner; and each extension owns its domain's steps, including its paid requests. Being needed by several commands does not make a behavior core's. [M99](../../milestones/M99-parking-lot.md) parks hooks until a need appears.
+
+**Why.** An extension reaches core only through its environment and the CLI, as [D040](D040-wire-contract.md) decides, so it has nothing to hook into, and a toolbox of domains needs no hook. Each command's behavior stays readable from its own spec, and an extension can be written in any language. Pi extensions also hook the lifecycle of their host, which suits an agent loop that runs in one process.
+
+**Rejected.** Hooks that let an extension change core's behavior, as Pi extensions do, because they would need a protocol between processes before any domain needs one, and every hook becomes a promise that the contract keeps forever.

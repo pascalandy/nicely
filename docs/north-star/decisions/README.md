@@ -49,3 +49,4 @@ Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From 
 | [D041](D041-first-party-extensions.md) | Keep first-party extensions in the Nicely repository |
 | [D042](D042-milestones-and-cards.md) | Plan work as milestones of small cards |
 | [D043](D043-milestone-versions.md) | Number milestones by the release that ships them, and release separately |
+| [D044](D044-additive-extensions.md) | Let extensions add commands, never change core |
