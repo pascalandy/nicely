@@ -1,0 +1,7 @@
+# D010 Keep keys in the keychain or the environment
+
+Decided 2026-10-05. Keys live in environment variables or in the OS keychain through go-keyring, under the service `nicely` and an account named after the service. The environment wins. Any service name works, and its variable name derives from it, as [contract.md](../contract.md#keys) says. `ncly` reads a key from the keychain only when the environment lacks it. `ncly auth` and `ncly doctor` also check the keychain. Every call has a time limit, so an unavailable keychain blocks only a command that needs it. Agents relay the hint and never handle a key.
+
+**Why.** Each program owns its own keychain entries, as `gh` does with `gh:github.com`, so `logout` touches only Nicely's keys. The environment lets any other secret store feed `ncly`. Open service names let an extension declare a key that core does not know. A Linux machine reached over SSH often has no unlocked keychain, and go-keyring's unlock call has no time limit of its own. `gh` wraps the same library with a 60-second limit on every call, which leaves a human time to answer an unlock prompt. Nicely keeps 60 seconds in interactive mode and waits 10 seconds otherwise, because an agent that waits a minute for a prompt nobody sees is stuck.
+
+**Rejected.** A fallback file. Sharing entries written by another tool, such as chezmoi's `service=deepgram, user=api_key`, because two programs would then own one entry. Remote commands that need keys, parked in M99.

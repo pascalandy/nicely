@@ -9,7 +9,7 @@ Version: v0.21.0
 
 ## Scope
 
-Each project keeps its own `docs/` folder, and the `docs` extension gathers them, as [D022](../north-star/decision-records.md#d022-keep-docs-private-by-default) decides.
+Each project keeps its own `docs/` folder, and the `docs` extension gathers them, as [D022](../north-star/decisions/D022-private-docs.md) decides.
 
 ```
 ncly docs scan <dir> [--dry-run]
@@ -73,7 +73,7 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 
 ### M21-T2 Sync
 
-- **Read:** [Scope](#scope), [D035](../north-star/decision-records.md#d035-track-ownership-when-synchronizing-files)
+- **Read:** [Scope](#scope), [D035](../north-star/decisions/D035-sync-ownership.md)
 - **Proves:** `testdata/script/docs_sync.txtar`
 
 `sync` never copies an excluded project, preserves user edits and source files, and resumes an interrupted publication whose navigation references only published copies.

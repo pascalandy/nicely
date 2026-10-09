@@ -210,7 +210,7 @@ Discovery reads declarations and static extension manifests. It starts no harnes
 
 ## Extensions
 
-Core is a small host. Every domain that does work for the user is an extension, as [D004](decision-records.md#d004-keep-core-minimal-and-make-every-domain-an-extension) decides. An extension comes in one of two transports, with one manifest format and one contract:
+Core is a small host. Every domain that does work for the user is an extension, as [D004](decisions/D004-minimal-core.md) decides. An extension comes in one of two transports, with one manifest format and one contract:
 
 - A **bundled** extension is a Go package compiled into `ncly`, with its manifest embedded. Only what an agent needs to operate Nicely is bundled: `skill`, in M03
 - An **external** extension is an executable named `ncly-<domain>`, with its manifest `ncly-<domain>.toml` beside it, found in `~/.local/share/nicely/extensions/` first, then in `PATH` order, and later brought by taps. The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
@@ -324,7 +324,7 @@ A new item has `output`, the output folder that will hold its result folder. An 
 
 ## Grants
 
-A key reaches an extension only after a human grants that key to that extension in a terminal, as [D030](decision-records.md#d030-treat-extensions-as-trusted-code-and-grant-keys-one-by-one) decides. `--force` never grants a key. Grants stay on one machine, in local state, and bind the key to the extension's domain and source. An extension from another source inherits no grant through its name. An update that declares a new key gets nothing until a human grants it. Core never refuses to start an extension over a key, because only the extension knows whether this invocation needs it: a summary-only resume of transcript needs no Deepgram key. The extension answers `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED` when it lacks a key it needs. Grants are consent and protection against accidental leaks, not isolation.
+A key reaches an extension only after a human grants that key to that extension in a terminal, as [D030](decisions/D030-trusted-extensions.md) decides. `--force` never grants a key. Grants stay on one machine, in local state, and bind the key to the extension's domain and source. An extension from another source inherits no grant through its name. An update that declares a new key gets nothing until a human grants it. Core never refuses to start an extension over a key, because only the extension knows whether this invocation needs it: a summary-only resume of transcript needs no Deepgram key. The extension answers `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED` when it lacks a key it needs. Grants are consent and protection against accidental leaks, not isolation.
 
 In a nested call, such as transcript calling `ncly agent run`, core passes the keys of the inner extension from the keychain, or from the environment that reached it. A key that exists only in the outer shell's environment does not cross an extension that was not granted it, so the harness key of a nested agent run comes from the keychain, or the harness uses its own login. [M08](../milestones/M08-grants.md) settles the grant command and its record here.
 

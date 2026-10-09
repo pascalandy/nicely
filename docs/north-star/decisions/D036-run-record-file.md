@@ -1,0 +1,7 @@
+# D036 Record each run in one JSON file that its executor locks
+
+Decided 2026-10-07. Each run has one JSON record in the state directory, written atomically and flushed before an effect is acknowledged. Its lock reports current ownership separately from saved status. A source consumer holds the source lock while executing too. `ncly run view` returns saved step evidence and recovery hints. `ncly run list` filters candidates before limiting them and bounds its item previews. [contract.md](../contract.md#record-format) holds the format.
+
+**Why.** JSON matches the answer format, so inspection needs no second storage model. Atomic rename protects readers from incomplete JSON; syncing files and directory metadata protects the acknowledged intent across a crash within the platform's persistence guarantees. The operating system releases a lock when its owner dies, without a heartbeat. A pending step may have a failed preparation, so its saved problem retains the cause and hint. Filtering and short previews let a new session find relevant work without dumping unrelated batches. Each extension proves its own evidence instead of core promising its complete format.
+
+**Rejected.** SQLite, because one file per run needs no migration and an agent reads it with `jq`. A process ID in the record, because the operating system reuses process IDs. A heartbeat refreshed by a background worker, because Nicely has none.

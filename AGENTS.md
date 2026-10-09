@@ -7,7 +7,7 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), and [architecture.md](docs/north-star/architecture.md), at the start of every session.
 2. [docs/north-star/dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup and waiting for his review before a merge.
 3. Run `just next`. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) for core, and of `extensions/<name>/spec.md` for an extension.
-4. [docs/north-star/decision-records.md](docs/north-star/decision-records.md), only when a rule blocks your card.
+4. [docs/north-star/decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
 
 Take rules only from these files and the specs that your card links. `docs/archived/` holds history, such as the design chat. `just status` shows every milestone and the cards of the current one.
 
@@ -50,11 +50,11 @@ A milestone file holds `Status`, `Version`, and the sections **Demo**, an option
 
 ## Rules
 
-- Where the specs are silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in decision-records.md.
+- Where the specs are silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in a new decision in [decisions/](docs/north-star/decisions/README.md).
 - Prefer end-to-end testscript scenarios. Write a unit test only for logic that a scenario cannot reach.
 - Write code, comments, docs, and commit messages in English.
 - Stay inside your card. Write any other idea as one line in [M99](docs/milestones/M99-parking-lot.md), then continue.
-- To change a principle or the agent contract, add or fix an entry in decision-records.md. Ask Pascal before merging, unless Pascal asked for the change.
+- To change a principle or the agent contract, add or fix a decision in [decisions/](docs/north-star/decisions/README.md). Ask Pascal before merging, unless Pascal asked for the change.
 - Use placeholders such as `/Users/me`, `host-a`, and `example.com` in code, tests, and docs. The pre-commit hook runs gitleaks with generic rules for home paths and private IP ranges. Rules that name Pascal's hosts live in `lefthook-local.yml`, which git ignores.
 
 ## Code
@@ -99,7 +99,7 @@ Keep the history linear. Rebase the branch onto origin/main, sign off its head, 
 
 ## Release
 
-Release only when Pascal asks. A release is never a card, so it never blocks a milestone. Milestone `M<n>` ships in `v0.<n>.0`, M00 in v0.0.1, and a fix between two milestones takes the next patch number, as [D043](docs/north-star/decision-records.md#d043-number-milestones-by-the-release-that-ships-them-and-release-separately) decides.
+Release only when Pascal asks. A release is never a card, so it never blocks a milestone. Milestone `M<n>` ships in `v0.<n>.0`, M00 in v0.0.1, and a fix between two milestones takes the next patch number, as [D043](docs/north-star/decisions/D043-milestone-versions.md) decides.
 
 1. Run `just release-check vX.Y.Z` and fix anything it reports.
 2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.

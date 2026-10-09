@@ -23,7 +23,7 @@ ncly skill link [<name>] [--harness <name>] [--dry-run]
 - A tap has a canonical source identity that distinguishes hosts and repositories. Record its resolved revision and each extension's origin. Two executables with the same domain do not share an identity merely because their names match
 - The shared config lists the taps. `add` writes the tap into it and clones the tap below `~/.local/share/nicely/taps/`, keyed by its canonical source identity, with the user's own Git credentials. Nicely handles no Git authentication
 - `add` lists the keys that the tap's extensions declare and asks the human to grant each one. Without a terminal, `add` grants nothing, and `--force` never grants a key
-- `sync` stages updates for the configured taps, validates their manifests, and publishes each managed destination under a lock, as [D035](../north-star/decision-records.md#d035-track-ownership-when-synchronizing-files) decides. It records the resolved revisions. Each destination has its own atomic publication boundary; unrelated taps are not one transaction. Local edits are preserved and reported as conflicts. When an update declares a new key, the extension does not start until a human grants it
+- `sync` stages updates for the configured taps, validates their manifests, and publishes each managed destination under a lock, as [D035](../north-star/decisions/D035-sync-ownership.md) decides. It records the resolved revisions. Each destination has its own atomic publication boundary; unrelated taps are not one transaction. Local edits are preserved and reported as conflicts. When an update declares a new key, the extension does not start until a human grants it
 - `remove` takes the tap out of the shared config and moves its clone to the trash
 - A tap holds `skills/<name>/SKILL.md` and `extensions/ncly-<domain>` with `extensions/ncly-<domain>.toml`. A skill keeps its requirements in `nicely.toml` beside its `SKILL.md`, in the manifest format of M01
 - Explicit `[skill] paths` win in their configured order, followed by taps in shared configuration order after local overrides. `ncly skill view <tap>/<name>` selects a tap skill. Discovery reports its origin, revision, and any shadowing
@@ -63,7 +63,7 @@ Settle each one in a new `ncly tap` section of [core-spec.md](../north-star/core
 
 ### M12-T2 Tap sync and remove
 
-- **Read:** [D035](../north-star/decision-records.md#d035-track-ownership-when-synchronizing-files)
+- **Read:** [D035](../north-star/decisions/D035-sync-ownership.md)
 - **Proves:** `testdata/script/tap_sync.txtar`, `testdata/script/tap_remove.txtar`
 
 `sync` publishes each destination under its lock, preserves local edits as conflicts, and survives a repeated or interrupted sync. `remove` moves the clone to the trash.

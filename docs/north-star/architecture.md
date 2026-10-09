@@ -49,7 +49,7 @@ Core reserves the names of the core and bundled rows. `transcript` is not the fi
 ## Where the details live
 
 - [contract.md](contract.md) holds the agent contract and the commands of core. Each extension's spec lives in `extensions/<name>/spec.md`, such as [transcript's](../../extensions/transcript/spec.md). Read the sections that your card links before changing a command.
-- [decision-records.md](decision-records.md) explains why each rule exists. Read it before you propose to change a rule.
+- [decisions/](decisions/README.md) explains why each rule exists. Read it before you propose to change a rule.
 - [dev-preferences.md](dev-preferences.md) records how Pascal wants changes made, such as deciding the look with a published mockup.
 - The milestone files in `docs/milestones/` list the work as cards, in order. `just next` prints the card to do, `just status` shows the progress, and [M99](../milestones/M99-parking-lot.md) parks every other idea.
 

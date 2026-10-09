@@ -11,7 +11,7 @@ ncly agent profile view <name> [--json]
 ```
 
 - The argument is the task. Material to work on comes from `--input` or stdin
-- Material runs with the harness's tools turned off, as [D028](../../docs/north-star/decision-records.md#d028-keep-outside-text-away-from-agent-tools) requires. A task without material may use tools
+- Material runs with the harness's tools turned off, as [D028](../../docs/north-star/decisions/D028-outside-text.md) requires. A task without material may use tools
 - The answer goes to stdout. `--json` uses the common envelope and returns `run_id`, `answer`, `profile`, `harness`, `model`, and `duration_ms`
 - `--harness`, `--model`, `--effort`, and `--provider` describe a profile on the command line, without reading the config, and exclude `--profile`. A caller that recorded a resolved profile, such as transcript for a resume, passes it this way, so a later change to the config never changes the run
 - `--dry-run` uses the shared preparation and shows the resolved profile, the requested mode, and the redacted harness invocation without starting the harness. It resolves the profile and checks the depth, the harness version, and tools-off support, so another extension can check a run and record its profile before any paid work, as transcript does before it transcribes

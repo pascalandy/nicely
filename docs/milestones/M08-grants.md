@@ -9,7 +9,7 @@ A human grants the `deepgram` key to a test extension, which then receives it, w
 
 ## Scope
 
-Implement [Grants](../north-star/contract.md#grants). A key reaches an extension only after a human grants it in a terminal, as [D030](../north-star/decision-records.md#d030-treat-extensions-as-trusted-code-and-grant-keys-one-by-one) decides. Grants live in local state and bind the key to the extension's domain and source. A replacement source needs new consent. An update that declares a new key gets nothing until a human grants it. `--force` never grants a key. Core never refuses to start an extension over a key; the extension reports the key it lacks. Grants are consent, not a sandbox.
+Implement [Grants](../north-star/contract.md#grants). A key reaches an extension only after a human grants it in a terminal, as [D030](../north-star/decisions/D030-trusted-extensions.md) decides. Grants live in local state and bind the key to the extension's domain and source. A replacement source needs new consent. An update that declares a new key gets nothing until a human grants it. `--force` never grants a key. Core never refuses to start an extension over a key; the extension reports the key it lacks. Grants are consent, not a sandbox.
 
 ## Open questions
 

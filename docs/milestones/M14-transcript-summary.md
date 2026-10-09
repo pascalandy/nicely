@@ -9,7 +9,7 @@ A transcript run summarizes through `ncly agent run` with tools off, and `ncly t
 
 ## Scope
 
-Transcript composes with the `agent` extension through the CLI, the same way an agent would. The agent extension owns profiles, adapters, tools-off mode, and the depth limit, and transcript owns the summary step and its record. See [extensions/transcript/spec.md](../../extensions/transcript/spec.md#ncly-transcript-summary-run) and [D037](../north-star/decision-records.md#d037-summarize-a-saved-transcript-as-a-new-operation).
+Transcript composes with the `agent` extension through the CLI, the same way an agent would. The agent extension owns profiles, adapters, tools-off mode, and the depth limit, and transcript owns the summary step and its record. See [extensions/transcript/spec.md](../../extensions/transcript/spec.md#ncly-transcript-summary-run) and [D037](../north-star/decisions/D037-summary-operation.md).
 
 ## Open questions
 

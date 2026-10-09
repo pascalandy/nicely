@@ -1,0 +1,7 @@
+# D001 Build from scratch in Go with Cobra and Charm
+
+Decided 2026-10-05. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour for the interface. Until a form needs Huh or Bubble Tea, `internal/tui` styles text with `x/ansi` and `colorprofile`, both from Charm, without Lip Gloss: Lip Gloss v2.0.6 detects the terminal as its package loads, and inside tmux that runs `tmux info` with no time limit, as [lipgloss#749](https://github.com/charmbracelet/lipgloss/issues/749) reports. Even `ncly --version` could hang. The first form must prove that its packages no longer probe at load, with the scenario `terminal.txtar`. The first command that needs Huh, a Bubbles spinner, or Glamour uses a Lip Gloss version that defers the call: an upstream release, or, after Pascal approves it, a fork wired through a `replace` line in `go.mod` and removed once upstream ships the fix. Until then, that command ships its non-interactive output first.
+
+**Why.** Cobra already carries the practices of `gh`, `kubectl`, and the Stripe CLI. The Charm libraries cover forms, spinners, styles, and Markdown in one family.
+
+**Rejected.** Forking the Stripe CLI, because most of its code is Stripe-specific, such as login, webhooks, API resources, and fixtures. Fang, because its source hard-codes the help headings `usage`, `flags`, `examples`, and `ERROR` in English and takes `-v` for `--version`, which Nicely uses for `--verbose`. Checked on 2026-10-05.
