@@ -1,6 +1,20 @@
-# ncly CLI spec
+# Contract
 
-This file is the contract of Nicely's core: the agent contract that every command and every extension follows, and the commands of core. Each extension's commands live in its own spec, such as [extensions/transcript/spec.md](../../extensions/transcript/spec.md). The command tree and the code tables name the milestone that brings each entry. A milestone becomes ready only once the sections that its cards read are written, here or in its extension's spec.
+This file is the contract that every command follows, core's and each extension's: what humans and agents type, what core and an extension exchange, and what scripts parse. Core's commands live in [core-spec.md](core-spec.md), and each extension's in its own spec, such as [transcript's](../../extensions/transcript/spec.md). The code tables name the milestone that brings each entry. A milestone becomes ready only once the sections that its cards read are written, here, in core-spec.md, or in its extension's spec.
+
+## Primitives
+
+Every command and every extension composes these primitives. Two interfaces carry them: the CLI, which humans, agents, and extensions call, and the wire between core and an extension, as [D040](decisions/D040-wire-contract.md) decides. Each primitive is defined once, in the section that the table links.
+
+| Primitive | Interface | Defined in |
+|---|---|---|
+| Domain, resource, and verb | CLI | [Usage](#usage) |
+| Flag | CLI | [Global flags](#global-flags) |
+| Manifest | Wire | [Extensions](#extensions) and [Command descriptions](#command-descriptions) |
+| Environment | Wire | [Programs that ncly runs](#programs-that-ncly-runs) |
+| Answer | Both | [Output](#output) |
+| Exit code | Both | [Exit codes](#exit-codes) |
+| Run record | Wire | [Record format](#record-format) |
 
 ## Usage
 
@@ -206,7 +220,7 @@ One declaration per command supplies help, completion, validation, and discovery
 
 Effects distinguish user writes, network access, and paid requests. Modes distinguish dry run, recorded execution, and resume. A missing declaration is not permission to assume a capability. A command may support recorded execution without supporting resume.
 
-Discovery reads declarations and static extension manifests. It starts no harness or extension and reads no key. Detailed discovery is scoped to one command, and summary listings omit full schemas and skill bodies. Resolved configuration identifies the source file or environment variable for non-secret values. Secret values never appear.
+[ncly describe](core-spec.md#ncly-describe) lists the fields of a declaration. Discovery reads declarations and static extension manifests. It starts no harness or extension and reads no key. Detailed discovery is scoped to one command, and summary listings omit full schemas and skill bodies. Resolved configuration identifies the source file or environment variable for non-secret values. Secret values never appear.
 
 ## Extensions
 

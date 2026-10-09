@@ -1,6 +1,6 @@
 # core spec
 
-This file specifies the commands of core. They follow the agent contract of [contract.md](contract.md), as the commands of every extension do.
+This file specifies the commands of core. They follow [contract.md](contract.md), as every extension's commands do. The command tree names the milestone that brings each command.
 
 ## Command tree
 
