@@ -30,7 +30,7 @@ Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From 
 | [D022](D022-private-docs.md) | Keep docs private by default |
 | [D023](D023-shared-and-local-config.md) | Configure with a shared TOML file and a local one |
 | [D024](D024-dynamic-completions.md) | Ship completions with dynamic values |
-| [D025](D025-docs-layout.md) | Keep rules in north-star and the extension specs, and work in milestones |
+| [D025](D025-docs-layout.md) | Split the docs by question, and work in milestones |
 | [D026](D026-english.md) | Write the repository in English |
 | [D027](D027-json-answer.md) | Answer in one JSON line with `ok` and `errors` |
 | [D028](D028-outside-text.md) | Keep outside text away from agent tools |
