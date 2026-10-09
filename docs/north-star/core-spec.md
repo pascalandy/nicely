@@ -19,7 +19,7 @@ ncly
 
 `<domain>` is an extension. `skill` is the bundled extension, as [Extensions](contract.md#extensions) defines, and [extensions/skill/spec.md](../../extensions/skill/spec.md) specifies it. External extensions, such as `agent` and `transcript`, list their commands in their own specs.
 
-Core reserves the names of its own commands and of the bundled extensions, the rows marked core or bundled in the domain table of the [guide](guide.md#domains-and-commands), plus `help`, `version`, and `config`. An external extension never runs under a reserved name. A name that is neither a command of this version nor an installed extension fails with `USAGE_INVALID`, including a reserved name whose command arrives in a later milestone.
+Core reserves the names of its own commands and of the bundled extensions, the rows marked core or bundled in the [domain table](architecture.md#domains-and-commands), plus `help`, `version`, and `config`. An external extension never runs under a reserved name. A name that is neither a command of this version nor an installed extension fails with `USAGE_INVALID`, including a reserved name whose command arrives in a later milestone.
 
 ## ncly describe
 

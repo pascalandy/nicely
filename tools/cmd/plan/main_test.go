@@ -192,7 +192,7 @@ func TestCheckDocs(t *testing.T) {
 	cases := []struct {
 		name, file, text, want string
 	}{
-		{"missing file", "docs/north-star/guide.md", "See [the spec](spec.md).\n", "docs/north-star/guide.md:1: the link spec.md points to a missing file"},
+		{"missing file", "docs/north-star/vision.md", "See [the spec](spec.md).\n", "docs/north-star/vision.md:1: the link spec.md points to a missing file"},
 		{"missing heading", "AGENTS.md", "# AGENTS.md\n\n## Code\n\nSee [Rules](#rules).\n", "AGENTS.md:5: the link #rules points to a missing heading"},
 		{"missing heading in another file", "extensions/skill/spec.md", "[Code](../../AGENTS.md#rules)\n", "extensions/skill/spec.md:1: the link ../../AGENTS.md#rules points to a missing heading"},
 		{"link text in a code span", "README.md", "See [`ncly`](gone.md).\n", "README.md:1: the link gone.md points to a missing file"},
@@ -230,7 +230,7 @@ func TestCheckDocsReportsAnUnreadableFile(t *testing.T) {
 func TestCheckDocsPasses(t *testing.T) {
 	root := repository(t, nil)
 	write(t, filepath.Join(root, "AGENTS.md"), "# AGENTS.md\n\n## Code\n")
-	write(t, filepath.Join(root, "docs", "north-star", "guide.md"), "[Code](../../AGENTS.md#code), [site](https://example.com), [folder](../milestones/)\n\n```\n[example](gone.md)\n```\n")
+	write(t, filepath.Join(root, "docs", "north-star", "vision.md"), "[Code](../../AGENTS.md#code), [site](https://example.com), [folder](../milestones/)\n\n```\n[example](gone.md)\n```\n")
 	write(t, filepath.Join(root, "docs", "archived", "chat.md"), "[old](gone.md)\n")
 	write(t, filepath.Join(root, "extensions", "markdown", "testdata", "broken.md"), "[old](gone.md)\n")
 	write(t, filepath.Join(root, "docs", "north-star", "code.md"), "Write `[a](gone.md)` for a link.\n\n- A list\n\n  ~~~\n  [example](gone.md)\n  ~~~\n")

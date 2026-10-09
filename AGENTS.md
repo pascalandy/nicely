@@ -4,7 +4,7 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 
 ## Read in this order
 
-1. [docs/north-star/guide.md](docs/north-star/guide.md), at the start of every session.
+1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), and [architecture.md](docs/north-star/architecture.md), at the start of every session.
 2. [docs/north-star/dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup and waiting for his review before a merge.
 3. Run `just next`. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) for core, and of `extensions/<name>/spec.md` for an extension.
 4. [docs/north-star/decision-records.md](docs/north-star/decision-records.md), only when a rule blocks your card.
@@ -89,7 +89,7 @@ Run `lefthook install` once per clone, so the hooks format, lint, and scan each 
 
 ## Commit
 
-Write each commit message as `<emoji> <type>: <scope>: <summary>`, such as `📚 docs: guide: add the report command term`. The `commit` skill lists the types and the body format.
+Write each commit message as `<emoji> <type>: <scope>: <summary>`, such as `📚 docs: glossary: add the report command term`. The `commit` skill lists the types and the body format.
 
 ## Merge
 

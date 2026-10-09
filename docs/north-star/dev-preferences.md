@@ -1,6 +1,6 @@
 # Developer preferences
 
-This file records how Pascal wants changes made, where the guide and the spec are silent. Each rule applies to every agent and every milestone.
+This file records how Pascal wants changes made, where the principles and the specs are silent. Each rule applies to every agent and every milestone.
 
 ## Decide the look with a published mockup
 

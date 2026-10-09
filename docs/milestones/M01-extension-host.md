@@ -12,7 +12,7 @@ Version: v0.1.0
 Core finds executables named `ncly-<domain>`, reads their manifests without running them, starts them, and checks what they answer. This milestone uses fixture extensions only. The first bundled extension, `skill`, arrives in [M03](M03-skill.md), and the first real external one, `agent`, in [M09](M09-agent-profiles.md).
 
 - Discovery looks in `~/.local/share/nicely/extensions/` first, then in `PATH` order. Dispatch requires a manifest with a compatible protocol. A missing or incompatible manifest is reported without starting the executable
-- Core commands and bundled extensions always win over an external extension with the same name. The explicit `reservedNames` of `internal/cli/root.go` stays, because it also reserves names whose command arrives later, and a test keeps it equal to the guide's domain table
+- Core commands and bundled extensions always win over an external extension with the same name. The explicit `reservedNames` of `internal/cli/root.go` stays, because it also reserves names whose command arrives later, and a test keeps it equal to the [domain table](../north-star/architecture.md#domains-and-commands)
 - An extension receives the environment that [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) defines. No key reaches it until grants arrive in [M08](M08-grants.md)
 - With `--json`, core checks the answer: one JSON line, `ok`, a compatible `contract_version`, codes from core's registry or prefixed with the domain, and an exit code that agrees with them. Anything else is a protocol failure, never a success
 - Ctrl-C and SIGTERM stop the extension's whole process tree. This brings the program runner, which doctor's probes, the SDK, and every extension reuse later

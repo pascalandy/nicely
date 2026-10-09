@@ -10,13 +10,13 @@ ncly completion bash
 
 ## Status
 
-Nicely is in early development and has no release yet. [The guide](docs/north-star/guide.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
+Nicely is in early development and has no release yet. [The vision](docs/north-star/vision.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
 
 The current build implements help, the version, and shell completion. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
 
 ## Planned commands
 
-Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It finds extensions named `ncly-<domain>`, and it bundles one extension, `skill`, which agents use to learn Nicely. Everything else is an extension, including the first ones: `agent`, which runs a task through Claude Code, Pi, and other harnesses, and `transcript`, which transcribes YouTube and Zoom audio and summarizes it through `agent`. Taps arrive between the two, so `transcript` installs from the official tap. Everyday domains such as `markdown` and `video`, a private docs hub, and Canadian French follow. The [guide's command table](docs/north-star/guide.md#domains-and-commands) records their scope.
+Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It finds extensions named `ncly-<domain>`, and it bundles one extension, `skill`, which agents use to learn Nicely. Everything else is an extension, including the first ones: `agent`, which runs a task through Claude Code, Pi, and other harnesses, and `transcript`, which transcribes YouTube and Zoom audio and summarizes it through `agent`. Taps arrive between the two, so `transcript` installs from the official tap. Everyday domains such as `markdown` and `video`, a private docs hub, and Canadian French follow. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
 
 Interactive forms will ask for missing values. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 

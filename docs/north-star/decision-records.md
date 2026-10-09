@@ -1,6 +1,6 @@
 # Decision records
 
-Each entry records what was decided, why, and what was rejected. An entry states its decision briefly, and the [guide](guide.md), [contract.md](contract.md), and the extension specs hold the full rules.
+Each entry records what was decided, why, and what was rejected. An entry states its decision briefly, and [principles.md](principles.md), [contract.md](contract.md), [core-spec.md](core-spec.md), and the extension specs hold the full rules.
 
 Until v0.0.1 ships, fix an entry in place, because git keeps the old text. From v0.0.1, add a new entry that names the entry it replaces, and mark the old entry `Replaced by Dxxx`.
 
@@ -28,7 +28,7 @@ Decided 2026-10-05. Commands follow the grammar in [contract.md](contract.md#usa
 
 ## D004 Keep core minimal and make every domain an extension
 
-Decided 2026-10-05, revised 2026-10-09. Core is a small host: dispatch, help, completion, `describe`, `doctor`, `auth` with grants, `run`, and `tap`. Everything that Nicely does for a user is an extension, with one manifest format and one contract. Only what an agent needs to operate Nicely is bundled into `ncly`: the `skill` extension and its `nicely` skill. Every other domain is external, including the first-party `agent`, `transcript`, and the everyday domains, and Pascal's personal tools stay in his private tap. The guide's domain table says where each one lives, and the milestones decide when it ships.
+Decided 2026-10-05, revised 2026-10-09. Core is a small host: dispatch, help, completion, `describe`, `doctor`, `auth` with grants, `run`, and `tap`. Everything that Nicely does for a user is an extension, with one manifest format and one contract. Only what an agent needs to operate Nicely is bundled into `ncly`: the `skill` extension and its `nicely` skill. Every other domain is external, including the first-party `agent`, `transcript`, and the everyday domains, and Pascal's personal tools stay in his private tap. The [domain table](architecture.md#domains-and-commands) says where each one lives, and the milestones decide when it ships.
 
 **Why.** Nicely aims for the composability of Pi v1: a minimal core where adding a capability never edits core. Building domains inside core first would force a rewrite when extensions arrive, and would leave the extension contract unproven until late. Shipping first-party domains as extensions proves the contract on our own work. Nicely needs no agent to operate, so even `agent` is external.
 

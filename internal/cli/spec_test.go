@@ -41,10 +41,10 @@ func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
 	}
 }
 
-// TestReservedNamesAgreeWithTheGuide compares the reserved names with the
-// core and bundled rows of the guide's domain table.
-func TestReservedNamesAgreeWithTheGuide(t *testing.T) {
-	tables, err := specdoc.Tables("../../docs/north-star/guide.md", "Domains and commands")
+// TestReservedNamesAgreeWithTheDomainTable compares the reserved names with the
+// core and bundled rows of the domain table in architecture.md.
+func TestReservedNamesAgreeWithTheDomainTable(t *testing.T) {
+	tables, err := specdoc.Tables("../../docs/north-star/architecture.md", "Domains and commands")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestReservedNamesAgreeWithTheGuide(t *testing.T) {
 	slices.Sort(want)
 	got := slices.Sorted(slices.Values(reservedNames))
 	if !slices.Equal(got, want) {
-		t.Errorf("the guide reserves %v, ncly reserves %v", want, got)
+		t.Errorf("architecture.md reserves %v, ncly reserves %v", want, got)
 	}
 }
 

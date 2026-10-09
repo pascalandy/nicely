@@ -64,7 +64,7 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 
 ### M03-T3 The nicely skill
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Agents in both directions](../north-star/guide.md#agents-in-both-directions)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Agents in both directions](../north-star/vision.md#agents-in-both-directions)
 - **Proves:** `testdata/script/skill_nicely.txtar`
 
 The skill extension embeds the `nicely` skill, which `list` shows with its bundled source. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`.
