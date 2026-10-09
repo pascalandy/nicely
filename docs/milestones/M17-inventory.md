@@ -9,7 +9,7 @@ Pascal approves a table of the tools he uses, each with the domain that would ca
 
 ## Scope
 
-A first-time visitor should get value from Nicely with no configuration and no key. The everyday domains come from an inventory of the tools Pascal uses. [M18](M18-markdown.md), [M19](M19-video.md), and [M20](M20-image.md) hold the current candidates, and this milestone confirms, replaces, or adds them.
+A first-time visitor should get value from Nicely with no configuration and no key, so a command that needs a key belongs to no everyday domain. The everyday domains come from an inventory of the tools Pascal uses. [M18](M18-markdown.md), [M19](M19-video.md), and [M20](M20-image.md) hold the current candidates, and this milestone confirms, replaces, or adds them.
 
 Collect the tools on Pascal's machines:
 
@@ -28,6 +28,7 @@ Move these into each domain's spec when its milestone becomes ready.
 - Publish a completed artifact from a temporary file, preserve successful items after another item fails, and record reusable partial work through the SDK's records. Resume verifies artifacts before skipping them. The overall exit follows Retry safety across all items, even though these commands make no paid request
 - Without input in interactive mode, a file picker opens in the folder set by `input` under `[paths]` in the config
 - A wrapped tool, such as `ffmpeg`, is no package dependency. `ncly doctor` offers to install it, and the AUR package lists it in `optdepends`. Homebrew discourages optional dependencies, so the formula leaves it out
+- Each command runs with no config file on macOS and on Omarchy
 - Each domain also verifies an interrupted batch, changed destinations after dry run, and a repeat invocation, comparing actual files and tool calls. A free conversion that already overwrote a non-repeatable destination must not report 75 merely because its later error was temporary
 
 ## Cards

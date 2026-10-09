@@ -9,7 +9,7 @@ Version: v0.10.0
 
 ## Scope
 
-`ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. The SDK writes the records, as [Records and evidence](../north-star/cli-spec.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/cli-spec.md#ncly-run) `list` and `view`. Resume waits for [M13](M13-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
+`ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. Record support starts in `sdk/`, as [Records and evidence](../north-star/cli-spec.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/cli-spec.md#ncly-run) `list` and `view`. Resume waits for [M13](M13-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
 
 ## Open questions
 

@@ -5,11 +5,11 @@ Version: v0.15.0
 
 ## Demo
 
-`ncly tap add` brings a Git repository's skills and extensions to this machine, and `ncly fleet sync` runs from Pascal's private tap.
+`ncly tap add` brings a Git repository's skills and extensions to this machine, and installs `agent` and `transcript` from the official tap.
 
 ## Scope
 
-A tap is a Git repository that carries skills and extensions, like a Pi package. The nicely repository is the official tap of the first-party extensions. Fleet sync becomes Pascal's first personal extension.
+A tap is a Git repository that carries skills and extensions, like a Pi package. The nicely repository is the official tap of the first-party extensions.
 
 ```
 ncly tap add <owner/repo | git-url> [--dry-run]
@@ -29,9 +29,9 @@ ncly skill link [<name>] [--harness <name>] [--dry-run]
 - Explicit `[skill] paths` win in their configured order, followed by taps in shared configuration order after local overrides. `ncly skill view <tap>/<name>` selects a tap skill. Discovery reports its origin, revision, and any shadowing
 - `skill link` symlinks skills into the skill folder of each harness, one line per harness in `[skill.link]`, such as `claude = "~/.claude/skills"`. Linking twice leaves the same managed links. A source switch updates only a link that Nicely owns and that the user has not changed. An existing user file or unmanaged link is a conflict. Tap removal checks its links first: a user-modified link blocks removal, and unchanged managed links go with the tap. Dry run lists these effects before any config edit or trash operation
 
-Scenarios build a local Git repository as a fixture tap and add it with a file path URL. A counted extension stub and filesystem checks prove dry run and retry behavior. Metadata alone does not prove conformance.
+`link` joins the verb table of [Usage](../north-star/cli-spec.md#usage). A public registry of extensions and signed extensions stay out of scope.
 
-After this milestone, outside this repository and without a card: the `sync`, `install-skills`, and `sync-fleet` recipes of `pascalandy/skills` can retire. Pascal decides when.
+Scenarios build a local Git repository as a fixture tap and add it with a file path URL. A counted extension stub and filesystem checks prove dry run and retry behavior. Metadata alone does not prove conformance.
 
 ## Open questions
 
@@ -53,7 +53,6 @@ Settle each one in a new `ncly tap` section of [cli-spec.md](../north-star/cli-s
 | M15-T3 | Extensions and skills from taps | agent | M15-T1 | todo |
 | M15-T4 | Skill link | agent | M15-T3 | todo |
 | M15-T5 | The official tap | agent | M15-T3 | todo |
-| M15-T6 | Fleet on two machines | Pascal | M15-T4 | todo |
 
 ### M15-T1 Tap add and list
 
@@ -90,6 +89,9 @@ A tap's extensions become domains and its skills join `ncly skill list`, with de
 
 Install `agent` and `transcript` from the official tap as the open questions settle, without the repository.
 
-### M15-T6 Fleet on two machines
+## After this milestone
 
-An agent turns Pascal's `sync-fleet` script into `ncly-fleet` in his private tap. Pascal runs `ncly fleet sync` on macOS and on Omarchy, and `ncly skill link` replaces `just install-skills` on one machine.
+These steps live outside this repository and block no card. Pascal decides when.
+
+- An agent turns Pascal's `sync-fleet` script into `ncly-fleet` in his private tap, his first personal extension, and Pascal runs `ncly fleet sync` on macOS and on Omarchy
+- `ncly skill link` replaces `just install-skills` on one machine, and the `sync`, `install-skills`, and `sync-fleet` recipes of `pascalandy/skills` retire

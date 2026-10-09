@@ -105,6 +105,11 @@ func TestNext(t *testing.T) {
 			want: []string{"Next: make M01 Host ready", "- Which manifest format?"},
 		},
 		{
+			name:  "a planned milestone without open questions starts with its first card",
+			files: map[string]string{"M01-host.md": edit(host, "Status: ready", "Status: planned")},
+			want:  []string{"Next card: M01-T2 Manifest", "M01 has no open questions, so this pull request also sets it to active."},
+		},
+		{
 			name:  "every milestone done",
 			files: map[string]string{},
 			want:  []string{"Every milestone is done"},
@@ -161,7 +166,11 @@ func TestCheck(t *testing.T) {
 		{"out of order", "M02-next.md", edit(edit(foundation, "# M00 Foundation", "# M02 Next"), "M00-T1", "M02-T1"), "milestones go in order, so M02 cannot start before M01 is done"},
 		{"broken anchor", "M01-host.md", edit(host, "[Demo](#demo)", "[Demo](#nowhere)"), "the link #nowhere points to a missing heading"},
 		{"broken file", "M01-host.md", edit(host, "[Demo](#demo)", "[Spec](../spec.md)"), "the link ../spec.md points to a missing file"},
-		{"bad version", "M01-host.md", edit(host, "Version: v0.1.0", "Version: 0.1"), "Version must name the release"},
+		{"bad version", "M01-host.md", edit(host, "Version: v0.1.0", "Version: v0.2.0"), "Version must be v0.1.0, the release that ships M01"},
+		{"empty reading", "M01-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:**\n- **Proves:** `testdata/manifest.txtar`"), "M01-T2 needs a \"- **Read:**\" line that links"},
+		{"reading without a link", "M01-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:** the spec\n- **Proves:** `testdata/manifest.txtar`"), "M01-T2 needs a \"- **Read:**\" line that links"},
+		{"empty proof", "M01-host.md", edit(host, "- **Proves:** `testdata/help.txtar`", "- **Proves:**"), "M01-T3 needs a \"- **Proves:**\" line"},
+		{"done card with a missing proof outside a folder", "M00-foundation.md", edit(foundation, "`proof.txt`", "`missing.txt`"), "its proof missing.txt does not exist"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

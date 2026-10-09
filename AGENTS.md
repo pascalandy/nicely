@@ -37,14 +37,16 @@ Copy this checklist into the pull request and tick each step when its condition 
 
 ## Make a milestone ready
 
-When `just next` names a planned milestone, make it ready in one pull request, which Pascal reviews like any other:
+When `just next` names a planned milestone with open questions, make it ready in one pull request, which Pascal reviews like any other:
 
 1. Settle each open question in the spec that it names, then delete the **Open questions** section. Ask Pascal only what is his to decide, such as a look, a cost, or a principle.
-2. Finish the cards. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. A milestone has at most five agent cards: split a bigger one into two milestones. A decision or a check that only Pascal can make is a card whose owner is `Pascal`, and the cards that wait for it depend on it.
+2. Finish the cards. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. A milestone has at most five agent cards: split a bigger one into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.
 3. Keep the demo to one sentence that the cards prove together.
 4. Set the status to `ready`. `just next` then prints the first card.
 
-A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, and **Cards**: a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line and a **Proves** line. `just test` checks this format, including the links. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one, so no milestone ever changes its number.
+A planned milestone without open questions needs no separate pull request: `just next` prints its first card, and that card's pull request also sets the milestone to `active`.
+
+A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, **Cards**, and an optional **After this milestone**. **Cards** holds a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line that links what to read and a **Proves** line that names its proof. `just test` checks this format, including the links. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one, so no milestone ever changes its number.
 
 ## Rules
 
@@ -71,12 +73,12 @@ testdata/script/    testscript scenarios
 tools/              a separate module that pins the dev tools and holds the plan checker behind `just next`
 ```
 
-[M02](docs/milestones/M02-sdk.md) moves the shared packages, the contract, i18n, config, tui, the platform helpers, the program runner, and run records, from `internal/` to `sdk/`. The keychain stays in core. Until then, the rules below name each package by its role.
+[M02](docs/milestones/M02-sdk.md) moves the shared packages that exist by then, the contract, i18n, config, tui, the platform helpers, and the program runner of M01, from `internal/` to `sdk/`. A later shared service starts in `sdk/`, such as run records in M10. The keychain stays in core. The rules below name each package by its role.
 
 Run `lefthook install` once per clone, so the hooks format, lint, and scan each commit and test each push.
 
 - Keep `sdk/` and `extensions/` free of imports from `internal/`. An extension reaches core through its environment and the CLI, and another extension only through the CLI, as [Extensions](docs/north-star/cli-spec.md#extensions) says. Adding a domain never edits core.
-- Build interactive screens from the shared tui package only, so every command looks the same. Add a component there when the first command needs it, after Pascal picks its look from a published mockup, as [dev-preferences.md](docs/north-star/dev-preferences.md#decide-the-look-with-a-published-mockup) asks.
+- Build interactive screens from the shared tui package only, so every command looks the same. Add a component there when the first command needs it, after Pascal picks its look from a published mockup, as [dev-preferences.md](docs/north-star/dev-preferences.md#decide-the-look-with-a-published-mockup) asks. Until Pascal picks the looks in [M07](docs/milestones/M07-forms.md), a new command reuses the help and error styles of M00 and prints the rest as plain text, so it waits on no mockup.
 - Keep one declaration per command for help, completion, discovery, and validation, as [Command descriptions](docs/north-star/cli-spec.md#command-descriptions) defines. An extension's manifest holds its declarations. The extension owns its steps and resume evidence. Record support follows [Operations](docs/north-star/cli-spec.md#operations).
 - Run every other program through the program runner, which implements [Programs that ncly runs](docs/north-star/cli-spec.md#programs-that-ncly-runs). Start each program in its own process group, reach a descendant that left it as that section defines, apply the timeout, and keep keys out of every log.
 - Write a shared file to a temporary file and rename it under a lock from the platform helpers. Revalidate the destination while holding the lock. Give each run its own temporary files. A lock conflict follows [Retry safety](docs/north-star/cli-spec.md#retry-safety), including effects already produced by this invocation.

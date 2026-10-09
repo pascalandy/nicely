@@ -46,7 +46,7 @@ var rootCommand = contract.Command{
 
 // reservedNames are the names of core's commands and of the bundled
 // extensions, so an external extension never runs under them, even before
-// core ships their command. M01 derives them from the declarations.
+// core ships their command.
 var reservedNames = []string{
 	"completion", "describe", "doctor", "auth", "run", "tap", "skill",
 	"help", "version", "config",

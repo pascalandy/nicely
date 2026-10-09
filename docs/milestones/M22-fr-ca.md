@@ -15,7 +15,7 @@ Repeat until the parity test passes: an agent lists the keys missing from `fr-CA
 
 The plural rules and formats of the i18n package apply. French uses the singular for zero, as in "0 fichier", and a decimal comma, as in "1,5 Mo". Machine fields keep their types, units, enum values, and defined ordering in every locale. A duration such as `duration_ms` stays a number of milliseconds. Run IDs, step statuses, and retry decisions never depend on a translated string.
 
-The language matching of M00 selects the new catalog for `fr_CA.UTF-8` and for a plain `fr`, as [Configuration](../north-star/cli-spec.md#configuration) says, so detection needs no new code.
+The language matching of M00 selects the new catalog for `fr_CA.UTF-8` and for a plain `fr`, as [Configuration](../north-star/cli-spec.md#configuration) says, so detection needs no new code. The docs stay in English, and other languages wait in M99.
 
 ```
 # The system language selects French

@@ -32,7 +32,7 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 - **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [ncly agent](../../extensions/agent/spec.md#ncly-agent)
 - **Proves:** `testdata/script/transcript_summary.txtar`
 
-Preparation calls `ncly agent run --dry-run --json` with the profile before any transcription dispatch. The summary is its own recorded step, written as `<prompt-name>-<run-id>.md`. Without a profile, the run saves the transcript and adds `TRANSCRIPT_SUMMARY_SKIPPED`. `--no-summary` excludes `--profile` and `--prompt`. With a profile but without the agent extension, the run fails with `PREREQ_MISSING` before transcription.
+Preparation calls `ncly agent run --dry-run --json` with the profile before any transcription dispatch, and records the resolved profile, which the summary passes back to `ncly agent run` as flags. The summary is its own recorded step, written as `<prompt-name>-<run-id>.md`. Without a profile, the run saves the transcript and adds `TRANSCRIPT_SUMMARY_SKIPPED`. `--no-summary` excludes `--profile` and `--prompt`. With a profile but without the agent extension, the run fails with `PREREQ_MISSING` before transcription.
 
 ### M12-T2 Summary failures
 

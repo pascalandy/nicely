@@ -140,4 +140,4 @@ Use one word per concept in code, docs, help, and commit messages. Add a term he
 | Program runner | Child environment, timeouts, signals, and process cleanup |
 | Platform support | Atomic file replacement, locks, keychain, and trash |
 
-M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host in M01, the SDK in M02, and records with `ncly agent run` in M10.
+M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.

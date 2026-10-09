@@ -5,7 +5,7 @@ Version: v0.21.0
 
 ## Demo
 
-Pascal reads the docs of every project in one private local site that `ncly docs` gathers.
+`ncly docs` gathers the docs of every project into one private local site that never leaks a key.
 
 ## Scope
 
@@ -48,8 +48,6 @@ old-test   = { path = "~/code/old-test", visibility = "exclude" }
 
 **Partial work.** Sync uses the operation contract. Revalidate sources, ownership, and artifacts before a resume. The overall verdict covers earlier published projects and navigation too. Dry run reports copies, replacements, removals, and unresolved conflicts without editing config or the run record.
 
-**The word "docs" in agent sessions.** Add this line to Pascal's global agent instructions: when Pascal says "docs", he means `ncly docs`.
-
 ## Open questions
 
 Settle each one in `extensions/docs/spec.md`, then delete this section.
@@ -65,7 +63,6 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 | M21-T2 | Sync | agent | M21-T1 | todo |
 | M21-T3 | Serve | agent | M21-T2 | todo |
 | M21-T4 | Check | agent | M21-T2 | todo |
-| M21-T5 | Read every project in one site | Pascal | M21-T3, M21-T4 | todo |
 
 ### M21-T1 Scan and list
 
@@ -95,6 +92,9 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 
 `check` reports a planted fake key on stdout and exits 78 with `DOCS_LEAK_FOUND`.
 
-### M21-T5 Read every project in one site
+## After this milestone
 
-Pascal reads the docs of all his projects in one local site.
+These steps wait on Pascal and block no card. Pascal decides when.
+
+- Pascal reads the docs of all his projects in one local site
+- Pascal's global agent instructions say that "docs" means `ncly docs`

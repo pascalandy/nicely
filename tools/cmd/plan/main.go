@@ -39,7 +39,6 @@ var (
 	titleLine   = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
 	cardID      = regexp.MustCompile(`^M\d\d-T\d+$`)
 	cardHeading = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
-	version     = regexp.MustCompile(`^v\d+\.\d+\.\d+$`)
 	checkbox    = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
 	codeSpan    = regexp.MustCompile("`([^`]+)`")
 	mdLink      = regexp.MustCompile(`\]\(([^)\s]+)\)`)
@@ -317,8 +316,13 @@ func (m *milestone) checkMilestone(root string) {
 	if !slices.Contains(milestoneStatuses, m.status) {
 		m.problem(0, "Status must be one of %s", strings.Join(milestoneStatuses, ", "))
 	}
-	if !version.MatchString(m.version) {
-		m.problem(0, "Version must name the release that ships the milestone, such as v0.1.0")
+	// M<n> ships in v0.<n>.0, and M00 in v0.0.1, as decision D043 says.
+	want := fmt.Sprintf("v0.%d.0", m.number)
+	if m.number == 0 {
+		want = "v0.0.1"
+	}
+	if m.version != want {
+		m.problem(0, "Version must be %s, the release that ships %s", want, m.id)
 	}
 	if !m.hasDemo {
 		m.problem(0, "a milestone needs a \"## Demo\" section")
@@ -383,21 +387,21 @@ func (m *milestone) checkCard(root string, c *card, ids map[string]bool) {
 	if c.owner != "agent" {
 		return
 	}
-	if _, ok := c.field("Read"); !ok {
+	if read, _ := c.field("Read"); !mdLink.MatchString(read) {
 		m.problem(c.line, "the agent card %s needs a \"- **Read:**\" line that links what to read", c.id)
 	}
-	proves, ok := c.field("Proves")
-	if !ok {
+	proves, _ := c.field("Proves")
+	if proves == "" {
 		m.problem(c.line, "the agent card %s needs a \"- **Proves:**\" line that names its proof", c.id)
 	}
 	if c.status != "done" {
 		return
 	}
+	// A done card's proof exists: every code span of its Proves line is a
+	// path from the repository root.
 	for _, span := range codeSpan.FindAllStringSubmatch(proves, -1) {
-		if p := span[1]; strings.Contains(p, "/") {
-			if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(p))); err != nil {
-				m.problem(c.line, "%s is done, but its proof %s does not exist", c.id, p)
-			}
+		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(span[1]))); err != nil {
+			m.problem(c.line, "%s is done, but its proof %s does not exist", c.id, span[1])
 		}
 	}
 }
@@ -517,7 +521,7 @@ func next(out *strings.Builder, milestones []*milestone) {
 		fmt.Fprintln(out, "Every milestone is done. Plan the next one, as \"Make a milestone ready\" in AGENTS.md says.")
 		return
 	}
-	if m.status == "planned" {
+	if m.status == "planned" && (m.open != nil || len(m.cards) == 0) {
 		fmt.Fprintf(out, "Next: make %s %s ready\nFile: %s\n\n", m.id, m.title, m.path)
 		fmt.Fprintln(out, "The milestone is planned. Settle its open questions in the spec, finish its cards, and set its status to ready, in one pull request, as \"Make a milestone ready\" in AGENTS.md says.")
 		if len(m.open) > 0 {
@@ -554,6 +558,9 @@ func next(out *strings.Builder, milestones []*milestone) {
 	c := agent[0]
 	fmt.Fprintf(out, "Next card: %s %s\nMilestone: %s %s, which ships in %s\nFile: %s\n\n%s\n\n", c.id, c.title, m.id, m.title, m.version, m.path, body(c))
 	fmt.Fprintln(out, "Follow \"Work on a card\" in AGENTS.md. The pull request sets this card to done.")
+	if m.status == "planned" {
+		fmt.Fprintf(out, "%s has no open questions, so this pull request also sets it to active.\n", m.id)
+	}
 }
 
 func body(c *card) string {

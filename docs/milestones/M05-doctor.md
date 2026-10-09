@@ -9,7 +9,7 @@ Version: v0.5.0
 
 ## Scope
 
-Implement [ncly doctor](../north-star/cli-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M14](M14-transcript-finish.md). Doctor is the first command that runs another program, so it brings the smallest program runner: bounded local `--version` probes.
+Implement [ncly doctor](../north-star/cli-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M14](M14-transcript-finish.md). Doctor adds bounded local `--version` probes to the program runner that M01 brought.
 
 ## Open questions
 
@@ -41,7 +41,7 @@ Add the path that keeps a failed report on stdout, because an ordinary failed an
 - **Read:** [ncly doctor](../north-star/cli-spec.md#ncly-doctor), [Programs that ncly runs](../north-star/cli-spec.md#programs-that-ncly-runs)
 - **Proves:** `testdata/script/doctor_probe.txtar`
 
-The program runner's first path: a bounded local `--version` probe of each required program. `--timeout` bounds the checks, 30 seconds by default. A missing or too old program fails with `PREREQ_MISSING`, and a probe that hangs ends at the timeout.
+Add a bounded local `--version` probe of each required program to the program runner. `--timeout` bounds the checks, 30 seconds by default. A missing or too old program fails with `PREREQ_MISSING`, and a probe that hangs ends at the timeout.
 
 ### M05-T3 Extensions component
 

@@ -43,7 +43,7 @@ Create `extensions/agent/` with its manifest, spec, and `SKILL.md`, built as `nc
 - **Read:** [Profiles](../../extensions/agent/spec.md#profiles)
 - **Proves:** `testdata/script/agent_profile.txtar`
 
-`[agent.profiles]` and `default_profile` in the config, with `ncly agent profile list` and `ncly agent profile view <name>`. An unknown profile exits 2 with `NOT_FOUND`. A profile's semantic constraint fails with `CONFIG_INVALID` only when a command selects that profile.
+`[agent.profiles]` and `default_profile` in the config, with `ncly agent profile list` and `ncly agent profile view <name>`. `--harness`, `--model`, `--effort`, and `--provider` describe a profile without reading the config. An unknown profile exits 2 with `NOT_FOUND`. A profile's semantic constraint fails with `CONFIG_INVALID` only when a command selects that profile.
 
 ### M09-T3 Claude adapter dry run
 

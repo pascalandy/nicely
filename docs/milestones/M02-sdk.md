@@ -11,7 +11,7 @@ A Go test extension built only on the public `sdk/` packages answers exactly lik
 
 The SDK is the Go implementation of the contract between core and its extensions. Core uses it too, so there is one implementation of each shared layer.
 
-- Move the packages that extensions share from `internal/` to `sdk/`: the contract, i18n, config, and the platform helpers they need. Core imports them from there. The keychain stays in core, because an extension receives its keys in its environment
+- Move the packages that extensions share from `internal/` to `sdk/`: the contract, i18n, config, tui, the platform helpers they need, and the program runner of M01. A service that does not exist yet, such as run records, starts in `sdk/` later. Core imports them from there. The keychain stays in core, because an extension receives its keys in its environment
 - An extension registers its own codes, each prefixed with its domain and mapped to one exit code, and its own catalog
 - One entry point serves both transports: the same Go package runs as `ncly-<domain>` or compiles into `ncly` as a bundled extension, with the same manifest
 - A lint rule forbids `sdk/` and `extensions/` to import `internal/`, so a bundled extension can leave the binary without a rewrite

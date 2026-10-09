@@ -5,14 +5,11 @@ Version: v0.14.0
 
 ## Demo
 
-Pascal transcribes a real Zoom meeting and a YouTube video on his Mac with his prompts, and a fresh agent session does the same with only the `nicely` skill.
+`ncly transcript` handles Zoom, prompts, and `--open` with a spinner, and a fresh agent session uses it with only the `nicely` skill.
 
 ## Scope
 
-The rest of [extensions/transcript/spec.md](../../extensions/transcript/spec.md): Zoom, prompts, `--open`, the doctor checks, browser cookies, the spinner in the look Pascal picked in M07, and the transcript skill. Then the real paid check, which only Pascal runs.
-
-After this milestone, outside this repository and without a card: in `pascalandy/skills`, the `transcript` skill points to `ncly`, the `transcript` and `transcript-cli` recipes retire, `verify-transcript` checks `ncly`, and the Python copy there is deleted. Pascal decides when.
-
+The rest of [extensions/transcript/spec.md](../../extensions/transcript/spec.md): Zoom, prompts, `--open`, the doctor checks, browser cookies, the spinner in the look Pascal picked in M07, and the transcript skill. 
 ## Open questions
 
 Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.
@@ -29,7 +26,6 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 | M14-T3 | Doctor and cookies | agent | — | todo |
 | M14-T4 | Spinner and transcript skill | agent | M14-T1, M14-T2 | todo |
 | M14-T5 | Fresh-session check | agent | M14-T3, M14-T4 | todo |
-| M14-T6 | Paid check on the Mac | Pascal | M14-T5 | todo |
 
 ### M14-T1 Zoom
 
@@ -66,6 +62,9 @@ A run shows one spinner on a terminal, in the picked look, and none in JSON or n
 
 An agent in a fresh session, given only the line that points to `ncly skill view nicely`, discovers a command, plans it, inspects a recorded failure without full transcripts or logs, then dry-runs and explicitly resumes supported work without repeating a paid step. Fix the skills until it does.
 
-### M14-T6 Paid check on the Mac
+## After this milestone
 
-Pascal moves his key once per machine, `chezmoi secret keyring get --service=deepgram --user=api_key | ncly auth login deepgram --stdin`, and grants it to transcript. Then he runs the paid end-to-end check from the transcript README against its listed test video, on macOS, from a local session on the Mac. Omarchy waits for [#23](https://github.com/pascalandy/nicely/issues/23).
+These steps wait on Pascal and block no card. Pascal decides when.
+
+- Pascal moves his key once per machine, `chezmoi secret keyring get --service=deepgram --user=api_key | ncly auth login deepgram --stdin`, grants it to transcript, then runs the paid end-to-end check from the transcript README against its listed test video, on macOS, from a local session on the Mac. Omarchy waits for [#23](https://github.com/pascalandy/nicely/issues/23)
+- In `pascalandy/skills`, the `transcript` skill points to `ncly`, the `transcript` and `transcript-cli` recipes retire, `verify-transcript` checks `ncly`, and the Python copy there is deleted

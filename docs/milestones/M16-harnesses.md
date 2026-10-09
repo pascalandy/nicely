@@ -11,11 +11,9 @@ Version: v0.16.0
 
 Extend the `claude` and `pi` adapters of M09 with `codex`, `grok`, and `opencode`. Use the `headless` skill's existing adapters and notes where available. Each adapter declares supported versions, tools-off behavior, input delivery, cancellation, and result parsing, and its declared modes are validated on the real installed harness before they are enabled.
 
-`--check-unchanged` compares tracked and untracked files under `--cwd` after the run. Ignored files do not count. It reports a change but does not prevent writes, undo them, or inspect effects outside that folder, as [D028](../north-star/decision-records.md#d028-keep-outside-text-away-from-agent-tools) says.
+`--check-unchanged` reports the files that a run changed, with the limits that [ncly agent](../../extensions/agent/spec.md#ncly-agent) states. Write-prevention sandboxes and cost tracking stay out of scope.
 
 A new `agent` component of `ncly doctor` checks that the harness of each profile is installed. It never starts a harness, because a run can bill.
-
-After this milestone, outside this repository and without a card: the `headless` skill points to `ncly agent`. Pascal decides when.
 
 ## Open questions
 
@@ -34,7 +32,6 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 | M16-T3 | OpenCode adapter | agent | — | todo |
 | M16-T4 | Check unchanged | agent | — | todo |
 | M16-T5 | Doctor agent | agent | — | todo |
-| M16-T6 | Real runs with five harnesses | Pascal | M16-T1, M16-T2, M16-T3 | todo |
 
 ### M16-T1 Codex adapter
 
@@ -71,6 +68,9 @@ The `opencode` adapter, with its provider and its verified tools-off mode.
 
 The `agent` component checks that the harness of each profile is installed, without starting one.
 
-### M16-T6 Real runs with five harnesses
+## After this milestone
 
-Pascal runs a real task with each of the five harnesses he has installed, after an agent has verified the modes that each adapter declares.
+These steps wait on Pascal and block no card. Pascal decides when.
+
+- Pascal runs a real task with each of the five harnesses he has installed
+- The `headless` skill of `pascalandy/skills` points to `ncly agent`

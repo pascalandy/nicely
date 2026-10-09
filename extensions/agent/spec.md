@@ -5,7 +5,7 @@
 ## ncly agent
 
 ```
-ncly agent run [task] [--profile <name>] [--input <file> | -] [--cwd <dir>] [--check-unchanged] [--timeout <duration>] [--dry-run] [--json]
+ncly agent run [task] [--profile <name> | --harness <name> --model <id> --effort <level> [--provider <name>]] [--input <file> | -] [--cwd <dir>] [--check-unchanged] [--timeout <duration>] [--dry-run] [--json]
 ncly agent profile list [--json]
 ncly agent profile view <name> [--json]
 ```
@@ -13,7 +13,8 @@ ncly agent profile view <name> [--json]
 - The argument is the task. Material to work on comes from `--input` or stdin
 - Material runs with the harness's tools turned off, as [D028](../../docs/north-star/decision-records.md#d028-keep-outside-text-away-from-agent-tools) requires. A task without material may use tools
 - The answer goes to stdout. `--json` uses the common envelope and returns `run_id`, `answer`, `profile`, `harness`, `model`, and `duration_ms`
-- `--dry-run` uses the shared preparation and shows the profile, the requested mode, and the redacted harness invocation without starting the harness. It resolves the profile and checks the depth, the harness version, and tools-off support, so another extension can check a run before any paid work, as transcript does before it transcribes
+- `--harness`, `--model`, `--effort`, and `--provider` describe a profile on the command line, without reading the config, and exclude `--profile`. A caller that recorded a resolved profile, such as transcript for a resume, passes it this way, so a later change to the config never changes the run
+- `--dry-run` uses the shared preparation and shows the resolved profile, the requested mode, and the redacted harness invocation without starting the harness. It resolves the profile and checks the depth, the harness version, and tools-off support, so another extension can check a run and record its profile before any paid work, as transcript does before it transcribes
 - `--check-unchanged` compares tracked and untracked files under `--cwd` after the run. Ignored files do not count. It reports a change but does not prevent writes, undo them, or inspect effects outside that folder. No `--read-only` flag promises protection that this check cannot provide
 - Profile inspection states the adapter's supported modes and any compatibility check still pending. An unsupported tools-off request fails before launching outside material
 - A run records its execution before the harness starts, as [Records and evidence](../../docs/north-star/cli-spec.md#records-and-evidence) defines. Its one step turns `unknown` before the harness starts, and `failed` only when the harness never started. A general harness task is inspectable but not resumable, and a nonzero exit or a missing answer never justifies launching the task again
