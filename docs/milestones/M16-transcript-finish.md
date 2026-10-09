@@ -9,7 +9,8 @@ Version: v0.16.0
 
 ## Scope
 
-The rest of [extensions/transcript/spec.md](../../extensions/transcript/spec.md): Zoom, prompts, `--open`, the doctor checks, browser cookies, the spinner in the look Pascal picked in M07, and the transcript skill. 
+The rest of [extensions/transcript/spec.md](../../extensions/transcript/spec.md): Zoom, prompts, `--open`, the doctor checks, browser cookies, the spinner in the look Pascal picked in M07, and the transcript skill.
+
 ## Open questions
 
 Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.

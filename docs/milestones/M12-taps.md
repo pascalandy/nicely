@@ -87,7 +87,7 @@ A tap's extensions become domains and its skills join `ncly skill list`, with de
 - **Read:** [Extensions](../north-star/cli-spec.md#extensions)
 - **Proves:** `testdata/script/tap_official.txtar`
 
-Install `agent` from the official tap as the open questions settle, without the repository. Every later first-party extension, such as `transcript`, ships the same way.
+A user without the repository installs `agent` from the official tap, and `just install` gives way to it, as the `ncly tap` section settles. Every later first-party extension, such as `transcript`, ships the same way.
 
 ## After this milestone
 
