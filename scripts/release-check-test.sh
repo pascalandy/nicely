@@ -17,10 +17,14 @@ fct_main() {
 	local script test_root scratch
 	script="$(cd "${BASH_SOURCE[0]%/*}" && pwd -P)/release-check.sh"
 	test_root="$(mktemp -d "${TMPDIR:-/tmp}/ncly-release-test.XXXXXXXX")"
-	# macOS links /var to /private/var, and git prints the resolved path, so compare against the resolved root.
-	test_root="$(cd "${test_root}" && pwd -P)"
 	readonly NCLY_RELEASE_TEST_ROOT="${test_root}"
 	trap 'rm -rf "${NCLY_RELEASE_TEST_ROOT}"' EXIT
+	# macOS reaches TMPDIR through the /var link, and git prints the resolved path.
+	# Reach the root through a link on every machine, so Linux proves the resolution too.
+	mkdir "${test_root}/real"
+	ln -s real "${test_root}/link"
+	test_root="${test_root}/link"
+	test_root="$(cd "${test_root}" && pwd -P)"
 	mkdir -p "${test_root}/repo" "${test_root}/bin"
 	cat >"${test_root}/bin/just" <<'SCRIPT'
 #!/usr/bin/env bash
