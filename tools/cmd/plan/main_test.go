@@ -213,6 +213,51 @@ func TestCheckDocs(t *testing.T) {
 	}
 }
 
+func TestCheckDecisions(t *testing.T) {
+	index := "# Decisions\n\n| Decision | Title |\n|---|---|\n| [D001](D001-first.md) | First |\n"
+	cases := []struct {
+		name, file, text, want string
+	}{
+		{"no row in the index", "D002-second.md", "# D002 Second\n", "D002-second.md: the decision needs a row"},
+		{"title of another number", "D002-second.md", "# D009 Second\n", "D002-second.md:1: the first line must be \"# D002 <title>\""},
+		{"number taken twice", "D001-again.md", "# D001 Again\n", "uses the same number"},
+		{"bad file name", "D2-second.md", "# D2 Second\n", "D2-second.md: the file name must look like D001-short-title.md"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := repository(t, nil)
+			dir := filepath.Join(root, "docs", "north-star", "decisions")
+			write(t, filepath.Join(dir, "README.md"), index)
+			write(t, filepath.Join(dir, "D001-first.md"), "# D001 First\n")
+			write(t, filepath.Join(dir, tc.file), tc.text)
+			var out strings.Builder
+			if err := run([]string{"check", root}, &out); err == nil {
+				t.Fatalf("check passed:\n%s", tc.text)
+			}
+			if !strings.Contains(out.String(), tc.want) {
+				t.Errorf("check lacks %q:\n%s", tc.want, out.String())
+			}
+		})
+	}
+}
+
+func TestCheckSessionFiles(t *testing.T) {
+	root := repository(t, nil)
+	write(t, filepath.Join(root, "AGENTS.md"), strings.Repeat("line\n", 151))
+	var out strings.Builder
+	if err := run([]string{"check", root}, &out); err == nil {
+		t.Fatal("check passed a 151-line AGENTS.md")
+	}
+	if !strings.Contains(out.String(), "AGENTS.md: 151 lines, more than the 150") {
+		t.Errorf("check lacks the long file:\n%s", out.String())
+	}
+	write(t, filepath.Join(root, "AGENTS.md"), strings.Repeat("line\n", 150))
+	out.Reset()
+	if err := run([]string{"check", root}, &out); err != nil {
+		t.Fatalf("check refused a 150-line AGENTS.md: %v\n%s", err, out.String())
+	}
+}
+
 func TestCheckDocsReportsAnUnreadableFile(t *testing.T) {
 	root := repository(t, nil)
 	if err := os.Symlink("gone.md", filepath.Join(root, "dangling.md")); err != nil {

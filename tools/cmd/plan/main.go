@@ -25,7 +25,22 @@ import (
 	"unicode"
 )
 
-const milestoneDir = "docs/milestones"
+const (
+	milestoneDir = "docs/milestones"
+	decisionDir  = "docs/north-star/decisions"
+	// maxSessionLines bounds each file that agents read every session, as
+	// "Keep the docs a tower" in dev-preferences.md asks.
+	maxSessionLines = 150
+)
+
+// everySession lists the files that AGENTS.md has agents read every session.
+var everySession = []string{
+	"AGENTS.md",
+	"docs/north-star/vision.md",
+	"docs/north-star/principles.md",
+	"docs/north-star/architecture.md",
+	"docs/north-star/dev-preferences.md",
+}
 
 // skippedDirs hold no links for checkDocs: check reads the milestones itself,
 // and archived history keeps the links of its time. skippedNames are folders
@@ -45,13 +60,14 @@ var (
 	owners            = []string{"agent", "Pascal"}
 	cardHeader        = []string{"Card", "Title", "Owner", "Depends on", "Status"}
 
-	fileName    = regexp.MustCompile(`^(M\d\d)-[a-z0-9-]+\.md$`)
-	titleLine   = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
-	cardID      = regexp.MustCompile(`^M\d\d-T\d+$`)
-	cardHeading = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
-	checkbox    = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
-	codeSpan    = regexp.MustCompile("`([^`]+)`")
-	mdLink      = regexp.MustCompile(`\]\(([^)\s]+)\)`)
+	fileName     = regexp.MustCompile(`^(M\d\d)-[a-z0-9-]+\.md$`)
+	decisionName = regexp.MustCompile(`^(D\d{3})-[a-z0-9-]+\.md$`)
+	titleLine    = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
+	cardID       = regexp.MustCompile(`^M\d\d-T\d+$`)
+	cardHeading  = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
+	checkbox     = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
+	codeSpan     = regexp.MustCompile("`([^`]+)`")
+	mdLink       = regexp.MustCompile(`\]\(([^)\s]+)\)`)
 )
 
 type milestone struct {
@@ -101,6 +117,8 @@ func run(args []string, out io.Writer) error {
 			return err
 		}
 		problems = append(problems, broken...)
+		problems = append(problems, checkDecisions(root)...)
+		problems = append(problems, checkSessionFiles(root)...)
 	}
 	switch {
 	case len(problems) > 0:
@@ -110,7 +128,7 @@ func run(args []string, out io.Writer) error {
 	case args[0] == "status":
 		status(&b, milestones)
 	default:
-		fmt.Fprintf(&b, "%s keeps the format, and every link in the docs resolves\n", milestoneDir)
+		fmt.Fprintf(&b, "%s keeps the format, and the docs pass every check\n", milestoneDir)
 	}
 	if _, err := io.WriteString(out, b.String()); err != nil {
 		return err
@@ -489,6 +507,63 @@ func checkDocs(root string) ([]string, error) {
 		return nil
 	})
 	return problems, err
+}
+
+// checkDecisions reports a decision file whose name, title, or number breaks
+// the rules of decisions/README.md, or that has no row in that index.
+func checkDecisions(root string) []string {
+	entries, err := os.ReadDir(filepath.Join(root, decisionDir))
+	if err != nil {
+		return nil
+	}
+	index, _ := os.ReadFile(filepath.Join(root, decisionDir, "README.md"))
+	var problems []string
+	seen := map[string]string{}
+	for _, e := range entries {
+		if e.IsDir() || e.Name() == "README.md" {
+			continue
+		}
+		where := decisionDir + "/" + e.Name()
+		match := decisionName.FindStringSubmatch(e.Name())
+		if match == nil {
+			problems = append(problems, where+": the file name must look like D001-short-title.md")
+			continue
+		}
+		id := match[1]
+		if other, taken := seen[id]; taken {
+			problems = append(problems, fmt.Sprintf("%s: %s uses the same number", where, other))
+		}
+		seen[id] = e.Name()
+		data, err := os.ReadFile(filepath.Join(root, decisionDir, e.Name()))
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("%s: %v", where, err))
+			continue
+		}
+		if !strings.HasPrefix(string(data), "# "+id+" ") {
+			problems = append(problems, fmt.Sprintf("%s:1: the first line must be \"# %s <title>\"", where, id))
+		}
+		if !strings.Contains(string(index), "]("+e.Name()+")") {
+			problems = append(problems, fmt.Sprintf("%s: the decision needs a row in %s/README.md", where, decisionDir))
+		}
+	}
+	return problems
+}
+
+// checkSessionFiles reports a file of everySession longer than
+// maxSessionLines. A missing file is no problem: the link check finds a stale
+// pointer to it.
+func checkSessionFiles(root string) []string {
+	var problems []string
+	for _, name := range everySession {
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(name)))
+		if err != nil {
+			continue
+		}
+		if n := len(strings.Split(strings.TrimRight(string(data), "\n"), "\n")); n > maxSessionLines {
+			problems = append(problems, fmt.Sprintf("%s: %d lines, more than the %d of a file read every session", name, n, maxSessionLines))
+		}
+	}
+	return problems
 }
 
 // links returns the Markdown links of text outside code: fenced blocks,
