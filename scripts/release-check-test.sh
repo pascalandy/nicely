@@ -16,6 +16,8 @@ fct_main() {
 	local script test_root scratch
 	script="$(cd "${BASH_SOURCE[0]%/*}" && pwd -P)/release-check.sh"
 	test_root="$(mktemp -d "${TMPDIR:-/tmp}/ncly-release-test.XXXXXXXX")"
+	# macOS links /var to /private/var, and git prints the resolved path, so compare against the resolved root.
+	test_root="$(cd "${test_root}" && pwd -P)"
 	readonly NCLY_RELEASE_TEST_ROOT="${test_root}"
 	trap 'rm -rf "${NCLY_RELEASE_TEST_ROOT}"' EXIT
 	mkdir -p "${test_root}/repo" "${test_root}/bin"
