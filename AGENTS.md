@@ -71,7 +71,7 @@ A milestone file holds `Status`, `Version`, and the sections **Demo**, an option
 - Prefer end-to-end testscript scenarios. Write a unit test only for logic that a scenario cannot reach.
 - Write code, comments, docs, and commit messages in English.
 - Stay inside your card. Write any other idea as one line in [M99](docs/milestones/M99-parking-lot.md), then continue.
-- To change a principle or the agent contract, add or fix a decision in [decisions/](docs/north-star/decisions/README.md). Ask Pascal before merging, unless Pascal asked for the change.
+- To change a principle or the contract, add or fix a decision in [decisions/](docs/north-star/decisions/README.md). Ask Pascal before merging, unless Pascal asked for the change.
 - Use placeholders such as `/Users/me`, `host-a`, and `example.com` in code, tests, and docs. The pre-commit hook runs gitleaks with generic rules for home paths and private IP ranges. Rules that name Pascal's hosts live in `lefthook-local.yml`, which git ignores.
 
 ## Code

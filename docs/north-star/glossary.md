@@ -13,7 +13,8 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 ### Relations
 
 - Core hosts extensions; an extension adds a domain and never changes core
-- An extension reaches core only through the contract: its manifest, its environment, its answer, its exit code, and its run records
+- An extension reaches core only through the wire contract: its manifest, its environment, its answer, its exit code, and its run records
+- The agent contract and the wire contract are two overlapping scopes of one contract: both hold the answer and the exit code
 - An extension reaches another extension only through the CLI, as an agent does
 - Platform → contract → services → core → extensions: each layer uses only the layers below it
 - A tap carries skills and extensions to a machine
@@ -77,7 +78,12 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 ### Definitions
 
 - Agent contract
-  - Def.: everything a script or an agent parses, defined in [contract.md](contract.md) and the extension specs
+  - Def.: the scope of the contract that a caller of the CLI relies on: command names, flags, answers, error codes, and exit codes
+  - Project note: [contract.md](contract.md) and the extension specs define it. Translation never changes it
+  - Distinct from: the wire contract, which it overlaps on the answer and the exit code
+- Wire contract
+  - Def.: the scope of the contract that core and an extension exchange: the manifest, the environment, the answer, the exit code, and the run records, as [D040](decisions/D040-wire-contract.md) decides
+  - Distinct from: an RPC protocol through which core serves extensions, which D040 rejects
 - Domain
   - Def.: a top-level noun that groups actions, such as `video`
 - Resource
@@ -233,7 +239,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Distinct from: a construct, a piece of syntax such as `if`, and a built-in, which ships with a system without being primitive
 - Interface
   - Def.: what a part promises, apart from how it works
-  - Project note: the contract, for extensions, and the CLI, for humans, agents, and extensions
+  - Project note: the wire contract, for extensions, and the agent contract, for every caller of the CLI
 - Implementation
   - Def.: how a part keeps the promise of its interface
   - Project note: the SDK implements the contract in Go
@@ -283,10 +289,4 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Core means the host at layer 3, never everything that Nicely provides
 - A tap is a repository of skills and extensions; the Homebrew tap keeps its full name
 - Card, not task, names one pull request of a milestone, as [D042](decisions/D042-milestones-and-cards.md) decides
-
-## 0o0o Unresolved terminology
-
-- 0o0o Contract, agent contract, wire contract
-  - Ambiguity: contract.md holds both what scripts and agents parse, the agent contract, and what core and an extension exchange, the wire contract of [D040](decisions/D040-wire-contract.md). The docs say "contract" for either
-  - Recommendation: "contract" for all of contract.md, "agent contract" only for what a caller parses, and "wire contract" only for what core and an extension exchange
-  - Impact: principle 3, contract.md, vision.md, D007, and D040
+- Contract names all of contract.md. Agent contract and wire contract name its two overlapping scopes, never separate protocols

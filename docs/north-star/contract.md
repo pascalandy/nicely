@@ -4,17 +4,17 @@ This file is the contract that every command follows, core's and each extension'
 
 ## Primitives
 
-Every command and every extension composes these primitives. Two interfaces carry them: the CLI, which humans, agents, and extensions call, and the wire between core and an extension, as [D040](decisions/D040-wire-contract.md) decides. Each primitive is defined once, in the section that the table links.
+Every command and every extension composes these primitives. Each belongs to one or both scopes of the contract: the agent contract, what a caller of the CLI types and parses, and the wire contract, what core and an extension exchange, as [D040](decisions/D040-wire-contract.md) decides. Each primitive is defined once, in the section that the table links.
 
-| Primitive | Interface | Defined in |
+| Primitive | Scope | Defined in |
 |---|---|---|
-| Domain, resource, and verb | CLI | [Usage](#usage) |
-| Flag | CLI | [Global flags](#global-flags) |
-| Manifest | Wire | [Extensions](#extensions) and [Command descriptions](#command-descriptions) |
-| Environment | Wire | [Programs that ncly runs](#programs-that-ncly-runs) |
+| Domain, resource, and verb | Agent contract | [Usage](#usage) |
+| Flag | Agent contract | [Global flags](#global-flags) |
+| Manifest | Wire contract | [Extensions](#extensions) and [Command descriptions](#command-descriptions) |
+| Environment | Wire contract | [Programs that ncly runs](#programs-that-ncly-runs) |
 | Answer | Both | [Output](#output) |
 | Exit code | Both | [Exit codes](#exit-codes) |
-| Run record | Wire | [Record format](#record-format) |
+| Run record | Wire contract | [Record format](#record-format) |
 
 ## Usage
 

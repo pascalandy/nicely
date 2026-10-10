@@ -1,6 +1,6 @@
 # transcript extension spec
 
-`transcript` is a first-party external extension, built as `ncly-transcript` from this folder. It transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through the [agent extension](../agent/spec.md), which it calls through the CLI. It embeds a Python program while that program moves to Go. It follows the agent contract of [contract.md](../../docs/north-star/contract.md). [M13](../../docs/milestones/M13-transcript.md) builds transcription, [M14](../../docs/milestones/M14-transcript-summary.md) the summary, [M15](../../docs/milestones/M15-resume.md) resume, and [M16](../../docs/milestones/M16-transcript-finish.md) the rest.
+`transcript` is a first-party external extension, built as `ncly-transcript` from this folder. It transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through the [agent extension](../agent/spec.md), which it calls through the CLI. It embeds a Python program while that program moves to Go. It follows the [contract](../../docs/north-star/contract.md). [M13](../../docs/milestones/M13-transcript.md) builds transcription, [M14](../../docs/milestones/M14-transcript-summary.md) the summary, [M15](../../docs/milestones/M15-resume.md) resume, and [M16](../../docs/milestones/M16-transcript-finish.md) the rest.
 
 ## ncly transcript
 
