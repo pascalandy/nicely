@@ -1,0 +1,99 @@
+# The program runner ends what a signal does not: SIGKILL once cleanup ends, which
+# the test binary shortens to 4 seconds. The drain limit keeps its 2 seconds and
+# counts from the extension's exit, so it never cuts cleanup short.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+
+# An extension that answers 3 seconds after Ctrl-C keeps its key under INTERRUPTED
+exec exitcode exit.txt ncly hello late --json &
+waitfile fixture.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"output_dir":"/Users/me/out"'
+gone fixture.pid
+
+# An extension that keeps running after Ctrl-C got the signal, and SIGKILL ends it once
+# cleanup ends. A second Ctrl-C during cleanup changes nothing: it never reaches the
+# extension, and core still answers INTERRUPTED
+rm fixture.pid
+exec exitcode exit.txt ncly hello stubborn --json &
+waitfile fixture.pid
+kill -INT
+waitfile signals.txt
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+grep -count=1 '^INT$' signals.txt
+gone fixture.pid
+
+# An extension that answers at once keeps its key, although its child, which ignores the
+# signal, writes on its stdout 3 seconds later: the drain limit counts from the
+# extension's exit, so cleanup never lets a descendant write into the answer
+rm fixture.pid
+exec exitcode exit.txt ncly hello leaky --json &
+waitfile fixture.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+stderr '"output_dir":"/Users/me/out"'
+gone fixture.pid
+
+-- bin/ncly-hello --
+#!/bin/sh
+case "$1" in
+late)
+  trap 'sleep 3; echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\"}"; exit 0' INT TERM
+  ;;
+stubborn)
+  trap 'echo INT >> "$WORK/signals.txt"' INT
+  trap 'echo TERM >> "$WORK/signals.txt"' TERM
+  ;;
+leaky)
+  trap 'echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\"}"; exit 0' INT TERM
+  (trap '' INT TERM; sleep 3; echo late) &
+  ;;
+esac
+echo $$ > "$WORK/fixture.tmp"
+mv "$WORK/fixture.tmp" "$WORK/fixture.pid"
+while :; do sleep 0.1; done
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello late"
+summary = "hello.late.summary"
+
+[[commands]]
+path = "hello stubborn"
+summary = "hello.stubborn.summary"
+
+[[commands]]
+path = "hello leaky"
+summary = "hello.leaky.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.late.summary"]
+description = "Summary of hello late."
+other = "Answer 3 seconds after a signal"
+
+["hello.stubborn.summary"]
+description = "Summary of hello stubborn."
+other = "Keep running after a signal"
+
+["hello.leaky.summary"]
+description = "Summary of hello leaky."
+other = "Answer at once, and leave a child that writes later"

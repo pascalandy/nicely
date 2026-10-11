@@ -1,0 +1,51 @@
+# A grandchild that inherits the extension's stdout and outlives it never keeps ncly
+# waiting: core reads the streams for 2 seconds after the extension exits, then
+# passes its valid answer on. A signal during those 2 seconds arrives after the
+# extension exited, so it changes nothing. The pause outlasts the 25 ms in which
+# core counts a signal as simultaneous with the exit.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+exec exitcode exit.txt ncly hello hold --json &
+waitfile fixture.pid
+gone fixture.pid
+exec sleep 0.1
+kill -INT
+wait
+grep '^0$' exit.txt
+cmp stdout success.json
+! stderr .
+
+# ncly exited while the grandchild still ran, so it never waited for it
+exec sh -c 'kill -0 "$(cat grandchild.pid)"'
+exec sh -c 'kill "$(cat grandchild.pid)"'
+gone grandchild.pid
+
+-- bin/ncly-hello --
+#!/bin/sh
+sleep 60 &
+echo $! > "$WORK/grandchild.pid"
+cat "$WORK/success.json"
+echo $$ > "$WORK/fixture.tmp"
+mv "$WORK/fixture.tmp" "$WORK/fixture.pid"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello hold"
+summary = "hello.hold.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.hold.summary"]
+description = "Summary of hello hold."
+other = "Leave a grandchild that holds stdout"
+-- success.json --
+{"ok":true,"contract_version":1,"greeting":"Hello Ada"}

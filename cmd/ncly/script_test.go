@@ -5,12 +5,22 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/pascalandy/nicely/internal/runner"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
 func TestMain(m *testing.M) {
-	testscript.Main(m, map[string]func(){"ncly": main, "closedpipe": closedPipe, "exitcode": exitCode})
+	testscript.Main(m, map[string]func(){"ncly": testNcly, "closedpipe": closedPipe, "exitcode": exitCode})
+}
+
+// testNcly runs ncly with 4 seconds of cleanup instead of 15, so that a
+// scenario reaches the SIGKILL of cleanup quickly. The drain limit keeps its
+// 2 seconds, so the scenarios still tell the two clocks apart.
+func testNcly() {
+	runner.Cleanup = 4 * time.Second
+	main()
 }
 
 func TestScripts(t *testing.T) {
