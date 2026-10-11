@@ -16,6 +16,7 @@ Version: v0.10.0
 Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) and [Record format](../north-star/contract.md#record-format), then delete this section.
 
 - The item key of an agent run, which `ncly run list --key` filters on, and the `inputs` that it records, such as a fingerprint of the material
+- How a caller links a child run to its own step before the child can bill, so the link survives a lost answer: a `--run-id` that the caller chooses and records in its intent, which also lets an agent find a run after lost output and refuses a second run with the same ID, or a parent reference that the child records from its environment, which needs a scan of the records to find a child
 
 ## Cards
 
