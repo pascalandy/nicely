@@ -29,9 +29,8 @@ test *args:
     # A hook or a caller can export GIT_DIR. Fixture commits must see a normal repository.
     while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
     go test ./... {{ args }}
-    (cd tools && go test ./cmd/... {{ args }})
-    # Go caches the tools tests and never sees the docs they read, which sit outside their module, so check the plan and every link again here.
-    go -C tools run ./cmd/plan check "{{ justfile_directory() }}"
+    # Go's test cache never rechecks a file outside the tools module, such as the docs or the release workflow, so these tests run uncached.
+    (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
     bash scripts/test-hook-env.sh
 
