@@ -41,7 +41,7 @@ flowchart TB
   style core fill:transparent,stroke:#81c8be
 ```
 
-- A layer depends only on the layers below it.
+- A layer depends only on the layers below it, by importing their packages or relying on their formats. Core still starts extensions, through the contract.
 - Layers 0 to 2 that extensions need form the public SDK in `sdk/`, which core uses too. The keychain stays in core, and keys reach an extension only through grants.
 - An extension reaches core through its environment and the CLI, and another extension only through the CLI, the same interface that agents use.
 - Adding a domain never edits core.

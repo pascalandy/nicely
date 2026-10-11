@@ -18,6 +18,7 @@ Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Ex
 - How an extension adds checks beyond its manifest's `requires`, such as the Python version or the browser cookies of transcript: a declared doctor command that core runs, or checks that the manifest declares
 - How doctor tells an unknown config key from a key in an extension's table, so `CONFIG_UNKNOWN_KEY` never fires on a key that an installed extension owns
 - Where the install command of each prerequisite lives for each system, such as in the manifest's `requires`
+- Whether the install offer makes doctor a command that writes, which accepts `--dry-run` and then never starts an installer. If it does, auth in [M06](M06-auth.md) is no longer the first writing command
 
 ## Cards
 

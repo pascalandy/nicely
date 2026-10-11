@@ -235,9 +235,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: a program that finds, loads, and runs extensions
   - Project note: core
 - Primitive
-  - Def.: the smallest piece that a layer exposes, which nobody decomposes at that level
+  - Def.: a piece that a layer exposes as fundamental, which nobody decomposes at that level
   - Project note: [Primitives](contract.md#primitives) lists Nicely's
-  - Distinct from: a construct, a piece of syntax such as `if`, and a built-in, which ships with a system without being primitive
+  - Distinct from: a construct, a piece of syntax such as `if`, and a built-in, which ships with a system whether or not it is primitive
 - Interface
   - Def.: what a part promises, apart from how it works
   - Project note: the wire contract, for extensions, and the agent contract, for every caller of the CLI
