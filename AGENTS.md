@@ -96,9 +96,9 @@ Write each commit message as `<emoji> <type>: <scope>: <summary>`, such as `📚
 
 ## Merge
 
-"Merge" means ship: commit, push, sign off, merge the pull request into origin/main, and sync local main. Merge only after Pascal has reviewed the pull request and says "merge", as [dev-preferences.md](docs/north-star/dev-preferences.md#wait-for-pascals-review-before-a-merge) asks. Until then, stop at an open pull request. Once Pascal says "merge", don't ask for confirmation at any step, except the one that the contract rule in [Rules](#rules) requires. Stop only on a real blocker, and report it.
+"Merge" means ship: commit, push, sign off, and merge the pull request into origin/main. Merge only after Pascal has reviewed the pull request and says "merge", as [dev-preferences.md](docs/north-star/dev-preferences.md#wait-for-pascals-review-before-a-merge) asks. Until then, stop at an open pull request. Once Pascal says "merge", don't ask for confirmation at any step, except the one that the contract rule in [Rules](#rules) requires. Stop only on a real blocker, and report it.
 
-Keep the history linear. Rebase the branch onto origin/main, sign off its head, then push that head to `main` with `git push origin <branch>:main`. GitHub marks the pull request merged, and `main` keeps the commit that was checked. Then fast-forward the local `main` checkout.
+Keep the history linear. Rebase the branch onto origin/main, sign off its head, then push that head to `main` with `git push origin <branch>:main`. GitHub marks the pull request merged, and `main` keeps the commit that was checked.
 
 ## Release
 
