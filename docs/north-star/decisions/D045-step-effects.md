@@ -1,0 +1,7 @@
+# D045 Derive retry safety from declared step effects
+
+Decided 2026-10-10. Each step of a run record declares the strongest effect that it can make: `none`, `repeatable`, `non_repeatable`, or `paid`. The SDK's record support persists every step transition and derives [Retry safety](../contract.md#retry-safety) from the declared effects of the steps that have left `pending`, so a Go extension never states retry safety a second time. [contract.md](../contract.md#operations) holds the rules, and [M10](../../milestones/M10-agent-run.md) builds them.
+
+**Why.** Without this rule, an extension would record each step's status and, separately, report its strongest effect to the verdict. Two statements of one fact drift. In a batch whose first item was transcribed and billed and whose second failed temporarily, an extension that forgot the paid effect would exit 75, and an agent would bill the first item again. [Asupersync](https://github.com/Dicklesworthstone/asupersync), a Rust async runtime, makes the same choice: a reserved effect is tracked from its reservation, and the outcome follows from that state.
+
+**Rejected.** Letting each domain compute retry safety by hand. A core check of every extension's record against its exit 75, for now: every first-party extension uses the Go SDK, so [M99](../../milestones/M99-parking-lot.md) parks the check until an extension in another language appears.

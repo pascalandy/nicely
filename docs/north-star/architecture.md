@@ -58,7 +58,7 @@ Each part has one owner: one package and one spec section.
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap | `internal/cli/` | [core-spec.md](core-spec.md) |
 | 2 | Program runner | Child environment, timeouts, signals, and process cleanup | From M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
-| 2 | Record support | Run IDs, durable records, execution locks, and result publication | `sdk/`, from M10 | [Operations](contract.md#operations) |
+| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/`, from M10 | [Operations](contract.md#operations) |
 | 2 | Config | Shared and local config files, environment, flags, and XDG paths | `internal/config/` | [Configuration](contract.md#configuration) |
 | 2 | i18n | Catalogs in `locales/`, lookup, plurals, and number, size, and date formats | `internal/i18n/` | [Configuration](contract.md#configuration) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `internal/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |

@@ -132,6 +132,8 @@ Exit 75 is a promise that the same invocation is safe to repeat. It requires all
 
 Apply this rule to the whole invocation, including successful batch items and writes that happened before a lock failed. A free operation is not necessarily safe to repeat. Unknown effects, non-repeatable writes, and any started paid request exclude 75. Such runtime failures exit 1 and retain evidence for inspection or an explicit resume. Signals retain 130 and 143.
 
+In a recorded operation, the record settles conditions 2 and 3: exit 75 requires every step that has left `pending` to declare the `none` or `repeatable` effect, as [Record format](#record-format) defines. A `failed` step counts too, because it may have made part of its effect, such as a reserved result folder before a refused upload.
+
 An idempotence claim includes destinations, configuration, external actions, and the result of a second invocation. Merely obtaining the same final file contents does not prove that no duplicate action occurred. Each writing command states what a repeated invocation does.
 
 ## Exit codes
@@ -243,13 +245,13 @@ The domain prepares an operation from resolved inputs and configuration, perform
 
 Commands that incur a bill or can leave reusable partial work record an execution before the first such effect. The first are `ncly agent run` and transcript. Read-only discovery and dry runs create no run record. Each domain declares its recording and resume support before code is written.
 
-The SDK's record support owns run IDs, durable records, and result publication, for core and every Go extension. The domain owns its steps and the evidence that makes them resumable. The program runner owns child processes, their environment, timeouts, and signals. It does not decide whether a business action is safe to repeat.
+The SDK's record support owns run IDs, durable records, step transitions, and result publication, for core and every Go extension. It persists each step's intent, which turns the step `unknown`, and its final status, in the order that [Records and evidence](#records-and-evidence) requires, and derives [Retry safety](#retry-safety) from the effects that the steps declare, so a domain never states retry safety a second time. The domain names its steps, declares the effect of each, verifies their results, and owns the evidence that makes them resumable. The program runner owns child processes, their environment, timeouts, and signals. It does not decide whether a business action is safe to repeat.
 
 ### Records and evidence
 
 A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps the non-secret input fingerprints, resolved profile and relevant tool versions needed to check a resume. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
 
-Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
+Every effect of a recorded operation happens inside a step. Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
 
 Records distinguish `running`, `completed`, `failed`, `interrupted`, and `unknown`. A step distinguishes `pending`, `completed`, `failed`, and `unknown`. Pending means its effect has not started; preparation may have failed. A completed step names the evidence needed to reuse it, such as an artifact path and content fingerprint. The domain may leave an in-flight effect as unknown until it has a verified result.
 
@@ -285,6 +287,7 @@ Each item has `key`, a string that names the item, such as its URL, `output_dir`
 | Key | Type | Meaning |
 |---|---|---|
 | `id` | string | The step name that the domain defines, such as `transcribe` |
+| `effect` | string | The strongest effect that the step can make, which the domain declares in the initial record and never changes: `none`; `repeatable`, harmless to repeat or covered by a demonstrated idempotent operation; `non_repeatable`, which a repeat would duplicate or conflict with; or `paid`, a request that may bill |
 | `status` | string | `pending`, `completed`, `failed`, or `unknown` |
 | `started_at`, `finished_at` | string or null | UTC times, `null` until the step starts or ends |
 | `artifacts` | array | One object per verified output, with `path`, `size_bytes`, and `sha256` |

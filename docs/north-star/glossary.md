@@ -118,6 +118,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 - A command performs an operation; an operation that bills or leaves reusable work writes a run record
 - A run record references its artifacts and the evidence of each step
+- Record support persists a step's intent before an effect that cannot safely be repeated, and derives retry safety from the effects that the steps declare
 - Resume continues a run record after checking its evidence, and never repeats an unknown effect
 - Dry run and execution share one preparation
 
@@ -129,6 +130,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: a simulation that uses the same preparation as execution and changes nothing outside Nicely's cache
 - Run record
   - Def.: the durable evidence of one operation, identified by `run_id`, including its step outcomes and artifact references
+- Effect
+  - Def.: what an operation does outside Nicely's cache and state and the run's temporary files, such as a user write, network access, or a paid request
+  - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract.md#record-format) lists
 - Artifact
   - Def.: a result produced by an operation, referenced by its path and the evidence needed to verify it
 - Resume

@@ -50,3 +50,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D042](D042-milestones-and-cards.md) | Plan work as milestones of small cards |
 | [D043](D043-milestone-versions.md) | Number milestones by the release that ships them, and release separately |
 | [D044](D044-additive-extensions.md) | Let extensions add commands, never change core |
+| [D045](D045-step-effects.md) | Derive retry safety from declared step effects |

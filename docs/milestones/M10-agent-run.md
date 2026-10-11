@@ -16,7 +16,6 @@ Version: v0.10.0
 Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) and [Record format](../north-star/contract.md#record-format), then delete this section.
 
 - The item key of an agent run, which `ncly run list --key` filters on, and the `inputs` that it records, such as a fingerprint of the material
-- Where the SDK's record helpers stop and the extension's own evidence starts
 
 ## Cards
 
@@ -30,10 +29,12 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 
 ### M10-T1 Records and agent run
 
-- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format)
-- **Proves:** `testdata/script/agent_run.txtar`, `testdata/script/agent_run_record.txtar`
+- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Operations](../north-star/contract.md#operations), [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Retry safety](../north-star/contract.md#retry-safety)
+- **Proves:** `testdata/script/agent_run.txtar`, `testdata/script/agent_run_record.txtar`, `testdata/script/record_retry_safety.txtar`
 
 `ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
+
+The step declares the `paid` effect. The SDK writes every step transition and derives retry safety from the declared effects, so `ncly-agent` never reports an effect level of its own. A fixture extension with a `repeatable` step, then a `paid` one, proves the derivation: a temporary failure exits 75 while the paid step is `pending`, and 1 once that step has left `pending`, even as `failed`.
 
 ### M10-T2 Run list
 
