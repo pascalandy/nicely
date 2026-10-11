@@ -16,6 +16,7 @@ Core finds executables named `ncly-<domain>`, reads their manifests without runn
 - An extension receives the environment that [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) defines. No key reaches it until grants arrive in [M08](M08-grants.md)
 - With `--json`, core checks the answer: one JSON line, `ok`, a compatible `contract_version`, codes from core's registry or prefixed with the domain, and an exit code that agrees with them. Anything else is a protocol failure, never a success
 - Ctrl-C and SIGTERM stop the extension's whole process tree. This brings the program runner, which doctor's probes, the SDK, and every extension reuse later
+- A program that ignores the signal, a second Ctrl-C, or a descendant that holds an output stream never keeps `ncly` waiting
 - `ncly --help` lists extensions in their own section, and the help and completion of an extension come from its manifest
 
 The manifest so far, which the open questions complete:
@@ -41,7 +42,7 @@ Settle each one in [Extensions](../north-star/contract.md#extensions), then dele
 - Whether core captures the extension's stdout in JSON mode to check it, or passes the streams through and checks a copy
 - The variable that gives an extension the path of the running `ncly`, so that it calls another domain through the same host
 - How completion reaches values that only the extension knows, such as profile names
-- The test commands that the cancellation scenarios need, such as `waitfile <path>`, which waits until a file exists, and `gone <path>`, which checks that the process whose ID the file holds no longer runs
+- The test commands that the cancellation scenarios need, such as `waitfile <path>`, which waits until a file exists, and `gone <path>`, which checks that the process whose ID the file holds no longer runs, and how the test binary shortens the 15 seconds of cleanup
 
 ## Cards
 
@@ -51,6 +52,7 @@ Settle each one in [Extensions](../north-star/contract.md#extensions), then dele
 | M01-T2 | Answer check | agent | M01-T1 | todo |
 | M01-T3 | Cancellation | agent | M01-T1 | todo |
 | M01-T4 | Help and completion | agent | M01-T1 | todo |
+| M01-T5 | Stubborn programs | agent | M01-T3 | todo |
 
 ### M01-T1 Manifest and dispatch
 
@@ -79,3 +81,10 @@ The program runner's first version: Ctrl-C and SIGTERM reach the extension and e
 - **Proves:** `testdata/script/extension_help.txtar`
 
 `ncly --help` shows extensions in their own section, in the existing help style, with the description from their manifest. `ncly hello --help` and `ncly help hello` show the extension's help without starting it, and completion offers its commands and flags. Run the scenario once under the pseudo-locale, as the open questions settle for extension text.
+
+### M01-T5 Stubborn programs
+
+- **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
+- **Proves:** `testdata/script/extension_cancel_stubborn.txtar`, `testdata/script/extension_stream_holder.txtar`
+
+In the first scenario, the fixture traps Ctrl-C and SIGTERM, writes the signal it receives to a file, and keeps running. After `kill -INT`, the file holds `INT`, which proves that the signal came before SIGKILL, and the fixture is gone once the shortened cleanup ends. A second `kill -INT` during cleanup changes nothing: core still stops the fixture and answers `INTERRUPTED`. Check the answer and that the fixture is gone, because a core that died on the second signal would leave both wrong. In the second scenario, the fixture starts a grandchild that inherits stdout and outlives it. With `--json`, core answers while the grandchild still runs, then the scenario stops the grandchild.
