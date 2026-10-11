@@ -52,10 +52,12 @@ The step declares the `paid` effect. The SDK writes every step transition and de
 
 ### M10-T4 Cancellation and failures
 
-- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Retry safety](../north-star/contract.md#retry-safety)
-- **Proves:** `testdata/script/agent_run_cancel.txtar`, `testdata/script/agent_run_failures.txtar`
+- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Retry safety](../north-star/contract.md#retry-safety), [Records and evidence](../north-star/contract.md#records-and-evidence)
+- **Proves:** `testdata/script/agent_run_cancel.txtar`, `testdata/script/agent_run_failures.txtar`, `testdata/script/agent_run_boundaries.txtar`
 
 Ctrl-C, SIGTERM, and the timeout stop the harness's process tree and leave the step `unknown`, with exit 130, 143, or 1. A harness that never started fails the step. A nonzero exit or a missing answer after the start leaves it `unknown` with exit 1, and nothing launches the task again.
+
+Build the boundary hook, which lives only in the test binary and kills the process at a chosen step boundary, as SIGKILL would. The boundary scenario kills `ncly-agent` at each of its step's four boundaries. After each kill, core answers exit 1 with `RUNTIME`, and `ncly run view` reports `active` as `false`, with the step `pending` before its intent persists, `unknown` from then until its final status persists, and `completed` after. The counted stub harness ran zero times at the first two boundaries and once at the last two.
 
 ### M10-T5 Real harness check
 
