@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -15,8 +16,10 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/pascalandy/nicely/internal/contract"
+	"github.com/pascalandy/nicely/internal/platform"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -212,18 +215,20 @@ func closedPipe() {
 	cmd := exec.Command(os.Args[1], os.Args[2:]...)
 	cmd.Stdout, cmd.Stderr = writer, os.Stderr
 	var exitErr *exec.ExitError
-	switch err := cmd.Run(); {
-	case err == nil:
-		os.Exit(0)
-	case errors.As(err, &exitErr):
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() {
-			os.Exit(128 + int(status.Signal()))
-		}
-		os.Exit(exitErr.ExitCode())
-	default:
+	if err := cmd.Run(); err != nil && !errors.As(err, &exitErr) {
 		fmt.Fprintln(os.Stderr, "closedpipe:", err)
 		os.Exit(127)
 	}
+	os.Exit(shellStatus(cmd.ProcessState))
+}
+
+// shellStatus is the exit code of a finished command as a shell reports
+// it: 128 plus the number of the signal that ended it, if any.
+func shellStatus(state *os.ProcessState) int {
+	if status, ok := state.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+		return 128 + int(status.Signal())
+	}
+	return state.ExitCode()
 }
 
 var (
@@ -271,4 +276,90 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 func isCode(word string) bool {
 	_, isError := contract.Code(word).Exit()
 	return isError || contract.Code(word).IsWarning()
+}
+
+// cmdWaitfile waits until a file exists, such as the process ID that a
+// fixture writes once it is ready for a signal: waitfile <path>
+func cmdWaitfile(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 1 {
+		ts.Fatalf("usage: waitfile <path>")
+	}
+	if !poll(func() bool { _, err := os.Stat(ts.MkAbs(args[0])); return err == nil }) {
+		ts.Fatalf("waitfile: %s never appeared", args[0])
+	}
+}
+
+// cmdGone checks that the process whose ID a file holds no longer runs,
+// waiting a moment for a signal to take effect: gone <path>
+func cmdGone(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 1 {
+		ts.Fatalf("usage: gone <path>")
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(ts.ReadFile(args[0])))
+	if err != nil {
+		ts.Fatalf("gone: %s holds no process ID", args[0])
+	}
+	if !poll(func() bool { return !platform.Running(pid) }) {
+		ts.Fatalf("gone: process %d still runs", pid)
+	}
+}
+
+// cmdTerm sends SIGTERM to the background commands, which the built-in
+// kill cannot send: term
+func cmdTerm(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 0 {
+		ts.Fatalf("usage: term")
+	}
+	for _, cmd := range ts.BackgroundCmds() {
+		ts.Check(cmd.Process.Signal(syscall.SIGTERM))
+	}
+}
+
+// poll reports whether done holds within 10 seconds.
+func poll(done func() bool) bool {
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		if done() {
+			return true
+		}
+	}
+	return done()
+}
+
+// exitCode is the exitcode program of the scenarios: it runs a command,
+// passes on the Ctrl-C and SIGTERM that it receives, and writes the
+// command's exit code to a file: exitcode [-group] <file> <command>
+// [args...]. It gives the exact exit code of a background command, which
+// the built-in wait only tells as a failure. With -group, the command runs
+// in a process group of its own, which gets each signal as the foreground
+// group of a terminal gets Ctrl-C: the command and every child that stays
+// in its group, at once.
+func exitCode() {
+	args := os.Args[1:]
+	group := args[0] == "-group"
+	if group {
+		args = args[1:]
+	}
+	cmd := exec.Command(args[1], args[2:]...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: group}
+	signals := make(chan os.Signal, 2)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintln(os.Stderr, "exitcode:", err)
+		os.Exit(127)
+	}
+	go func() {
+		for sig := range signals {
+			if group {
+				_ = syscall.Kill(-cmd.Process.Pid, sig.(syscall.Signal))
+			} else {
+				_ = cmd.Process.Signal(sig)
+			}
+		}
+	}()
+	_ = cmd.Wait()
+	if err := os.WriteFile(args[0], []byte(strconv.Itoa(shellStatus(cmd.ProcessState))+"\n"), 0o644); err != nil {
+		fmt.Fprintln(os.Stderr, "exitcode:", err)
+		os.Exit(127)
+	}
 }

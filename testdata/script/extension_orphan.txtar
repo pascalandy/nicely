@@ -1,0 +1,46 @@
+[!linux] skip 'only Linux has a child subreaper'
+[!exec:setsid] skip 'needs setsid'
+
+# The extension's child starts a grandchild in its own session, then exits, so the
+# grandchild has no parent before the signal. As a child subreaper, ncly adopts it
+# and still stops it. The shell starts the grandchild in the background, where it
+# ignores Ctrl-C, so the scenario sends SIGTERM.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+exec exitcode exit.txt ncly hello orphan --json &
+waitfile orphan.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+gone orphan.pid
+
+-- bin/ncly-hello --
+#!/bin/sh
+case "$1" in
+orphan)
+  sh -c 'setsid sleep 60 >/dev/null 2>&1 & echo $! > "$WORK/orphan.tmp"'
+  mv "$WORK/orphan.tmp" "$WORK/orphan.pid"
+  exec sleep 60
+  ;;
+esac
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello orphan"
+summary = "hello.orphan.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.orphan.summary"]
+description = "Summary of hello orphan."
+other = "Leave an orphan behind"

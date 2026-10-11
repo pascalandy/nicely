@@ -10,7 +10,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testscript.Main(m, map[string]func(){"ncly": main, "closedpipe": closedPipe})
+	testscript.Main(m, map[string]func(){"ncly": main, "closedpipe": closedPipe, "exitcode": exitCode})
 }
 
 func TestScripts(t *testing.T) {
@@ -26,6 +26,9 @@ func TestScripts(t *testing.T) {
 			"snapshot":  cmdSnapshot,
 			"unchanged": cmdUnchanged,
 			"pseudo":    cmdPseudo,
+			"waitfile":  cmdWaitfile,
+			"gone":      cmdGone,
+			"term":      cmdTerm,
 		},
 	})
 }

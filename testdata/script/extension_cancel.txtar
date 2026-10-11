@@ -1,0 +1,179 @@
+# Ctrl-C and SIGTERM reach the extension and every descendant that core can reach,
+# and the first signal decides the verdict. hello wait writes finished.txt, starts a
+# grandchild in its own process group, writes the grandchild's ID once it is ready,
+# and waits. exitcode passes the signal on to ncly and writes its exit code.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+
+# Ctrl-C: INTERRUPTED with exit 130, the grandchild is gone, and the finished file stays
+exec exitcode exit.txt ncly hello wait --json &
+waitfile grandchild.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+gone grandchild.pid
+exists finished.txt
+
+# SIGTERM: TERMINATED with exit 143
+rm grandchild.pid finished.txt
+exec exitcode exit.txt ncly hello wait --json &
+waitfile grandchild.pid
+term
+wait
+grep '^143$' exit.txt
+! stdout .
+answer stderr TERMINATED
+gone grandchild.pid
+exists finished.txt
+
+# An extension that traps the signal and answers keeps its keys under the signal's verdict
+rm grandchild.pid
+exec exitcode exit.txt ncly hello wait --trap --json &
+waitfile grandchild.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+stderr '"output_dir":"/Users/me/out"'
+gone grandchild.pid
+
+# An extension that answers the signal's code itself keeps that error first, with its key
+rm grandchild.pid
+exec exitcode exit.txt ncly hello wait --stopped --json &
+waitfile grandchild.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"output_dir":"/Users/me/out"'
+stderr '"message":"Stopped by the fixture\."'
+gone grandchild.pid
+
+# A Ctrl-C at the terminal reaches core and the extension together, so the extension may
+# exit before core sees its own Ctrl-C, whether it ends at once or answers first. Core
+# still answers INTERRUPTED, keeps the answer's key, and on Linux, where the orphan
+# becomes its child, stops the grandchild. Each run may win the race or lose it
+exec sh group.sh --instant
+grep -count=30 '^130$' exit.txt
+exec sh group.sh --trap
+grep -count=30 '^130$' exit.txt
+
+# Without --json, core adds its error block only when the extension's exit code differs from the signal's
+rm grandchild.pid
+exec exitcode exit.txt ncly hello wait &
+waitfile grandchild.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stderr .
+rm grandchild.pid
+exec exitcode exit.txt ncly hello wait --trap &
+waitfile grandchild.pid
+term
+wait
+grep '^143$' exit.txt
+stdout '"output_dir"'
+stderr '^error\[TERMINATED\]: Stopped by SIGTERM'
+gone grandchild.pid
+
+-- group.sh --
+# group.sh <flag> sends Ctrl-C to the process group of ncly and the extension 30 times,
+# runs hello wait with the flag each time, and appends each exit code of ncly to
+# exit.txt. Each answer must be INTERRUPTED, and with --trap it keeps output_dir.
+rm -f exit.txt
+run=0
+while [ $run -lt 30 ]; do
+  run=$((run + 1))
+  rm -f grandchild.pid run.txt
+  exitcode -group run.txt ncly hello wait "$1" --json 2> answer.txt &
+  relay=$!
+  while [ ! -f grandchild.pid ]; do sleep 0.01; done
+  kill -INT $relay
+  wait $relay
+  cat run.txt >> exit.txt
+  grep -q '"code":"INTERRUPTED"' answer.txt || { cat answer.txt >&2; exit 1; }
+  if [ "$1" = --trap ]; then
+    grep -q '"output_dir"' answer.txt || { cat answer.txt >&2; exit 1; }
+  fi
+  grandchild=$(cat grandchild.pid)
+  if [ "$(uname)" = Linux ]; then
+    for wait in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$grandchild" 2>/dev/null || break; sleep 0.1; done
+    if kill -0 "$grandchild" 2>/dev/null; then echo "grandchild $grandchild still runs" >&2; exit 1; fi
+  else
+    kill "$grandchild" 2>/dev/null
+  fi
+done
+-- bin/ncly-hello --
+#!/bin/sh
+case "$1" in
+wait)
+  echo done > "$WORK/finished.txt"
+  # The fixture ends by Ctrl-C itself, with exit 130, whichever shell sh is: bash,
+  # the sh of macOS, exits 129 when Ctrl-C interrupts wait.
+  trap 'trap - INT; kill -INT $$' INT
+  if [ "$2" = "--trap=true" ]; then
+    trap 'echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\"}"; exit 0' INT TERM
+  fi
+  if [ "$2" = "--stopped=true" ]; then
+    trap 'echo "{\"ok\":false,\"contract_version\":1,\"output_dir\":\"/Users/me/out\",\"errors\":[{\"code\":\"INTERRUPTED\",\"message\":\"Stopped by the fixture.\",\"hint\":\"ncly hello wait\"}]}" >&2; exit 130' INT
+  fi
+  # set -m starts the grandchild in its own process group, where Ctrl-C is not ignored.
+  set -m
+  sleep 60 >/dev/null 2>&1 &
+  grandchild=$!
+  set +m
+  echo "$grandchild" > "$WORK/grandchild.tmp"
+  mv "$WORK/grandchild.tmp" "$WORK/grandchild.pid"
+  if [ "$2" = "--instant=true" ]; then
+    exec sleep 60
+  fi
+  wait "$grandchild"
+  ;;
+esac
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello wait"
+summary = "hello.wait.summary"
+
+[[commands.flags]]
+name = "trap"
+summary = "hello.wait.trap"
+
+[[commands.flags]]
+name = "stopped"
+summary = "hello.wait.stopped"
+
+[[commands.flags]]
+name = "instant"
+summary = "hello.wait.instant"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.wait.summary"]
+description = "Summary of hello wait."
+other = "Wait until a signal arrives"
+
+["hello.wait.trap"]
+description = "The --trap flag of hello wait."
+other = "Answer when a signal arrives"
+
+["hello.wait.stopped"]
+description = "The --stopped flag of hello wait."
+other = "Answer INTERRUPTED when Ctrl-C arrives"
+
+["hello.wait.instant"]
+description = "The --instant flag of hello wait."
+other = "End at once when Ctrl-C arrives"

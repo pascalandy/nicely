@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -41,8 +42,11 @@ func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string
 // run starts the extension with the environment of Programs that ncly runs
 // in contract.md, and returns the exit code of ncly. Without --json, and
 // for a text result, the extension writes to the streams of ncly, and core
-// checks only its exit code. Otherwise core checks its answer first.
+// checks only its exit code. Otherwise core checks its answer first. When
+// Ctrl-C or SIGTERM arrives before the extension exits, the first signal
+// decides the verdict.
 func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
+	ctx := runner.OnSignal()
 	program := runner.Program{
 		Path:     c.extension.path,
 		Args:     c.args,
@@ -53,33 +57,41 @@ func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
 		Terminal: true,
 	}
 	if g.json && c.kind != contract.ResultText {
-		return c.runChecked(p, g, program, stdout, stderr)
+		return c.runChecked(ctx, p, g, program, stdout, stderr)
 	}
-	exit, err := runner.Run(program)
-	data := map[string]any{"Domain": c.extension.domain, "Exit": exit}
+	result, err := runner.Run(ctx, program)
+	data := map[string]any{"Domain": c.extension.domain, "Exit": result.Exit}
 	switch {
 	case err != nil:
 		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
-	case !contract.ExitCode(exit).Known():
+	case result.Signal != nil:
+		// The extension's own text already told the human, unless its exit
+		// code says otherwise.
+		stopped := contract.Outcome{Signal: stopSignal(result.Signal)}
+		if verdict := contract.Decide(stopped); result.Exit == int(verdict.Exit) {
+			return int(verdict.Exit)
+		}
+		return report(p, g, stopped, stdout, stderr)
+	case !contract.ExitCode(result.Exit).Known():
 		return report(p, g, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
 	}
-	return exit
+	return result.Exit
 }
 
 // runChecked holds the extension's stdout and the last line of its stderr
 // until it exits, then passes its answer on only when Answer check in
 // contract.md accepts it. Otherwise it drops what it holds and answers
-// RUNTIME.
-func (c *call) runChecked(p *i18n.Printer, g globals, program runner.Program, stdout, stderr *os.File) int {
+// RUNTIME, or the signal's code when a signal stopped the extension.
+func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g globals, program runner.Program, stdout, stderr *os.File) int {
 	var held bytes.Buffer
 	lines := &heldLines{dest: stderr}
 	program.Stdout, program.Stderr = &held, lines
-	exit, err := runner.Run(program)
+	result, err := runner.Run(ctx, program)
 	if err != nil {
 		data := map[string]any{"Domain": c.extension.domain}
 		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
 	}
-	reply := contract.Reply{Exit: exit, Stdout: held.Bytes(), Last: lines.finish()}
+	reply := contract.Reply{Exit: result.Exit, Stdout: held.Bytes(), Last: lines.finish()}
 	answer, err := contract.CheckAnswer(c.extension.manifest, c.kind, reply)
 	answerOut := io.Writer(stderr)
 	if reply.OnStdout(c.kind) {
@@ -94,7 +106,14 @@ func (c *call) runChecked(p *i18n.Printer, g globals, program runner.Program, st
 		answerOut = stdout
 	}
 	var rule *contract.RuleError
-	if errors.As(err, &rule) {
+	switch {
+	case result.Signal != nil && err == nil:
+		// The first signal decides the verdict, and a valid answer keeps its
+		// keys, as Answer check in contract.md asks.
+		return reportKept(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, answer, stdout, stderr)
+	case result.Signal != nil:
+		return report(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, stdout, stderr)
+	case errors.As(err, &rule):
 		return report(p, g, protocolFailure(p, rule.Rule, rule.Data), stdout, stderr)
 	}
 	if _, err := answerOut.Write(answer.Line); err != nil {
@@ -103,7 +122,15 @@ func (c *call) runChecked(p *i18n.Printer, g globals, program runner.Program, st
 		}
 		return int(contract.ExitRuntime)
 	}
-	return exit
+	return result.Exit
+}
+
+// stopSignal names the signal that stopped an extension in the contract.
+func stopSignal(sig os.Signal) contract.Signal {
+	if sig == os.Interrupt {
+		return contract.Interrupt
+	}
+	return contract.Terminate
 }
 
 // reportKept answers the failure that o decides with the other keys of an
