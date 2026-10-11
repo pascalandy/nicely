@@ -134,7 +134,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: what an operation does outside Nicely's cache and state and the run's temporary files, such as a user write, network access, or a paid request
   - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract.md#record-format) lists
 - Step boundary
-  - Def.: the moment just before or just after record support persists a step's intent or its final status
+  - Def.: the moment just before or just after record support persists a change to a step: its intent, the evidence of one artifact, or its final status
   - Project note: the boundary scenario of a recorded operation kills it at every step boundary, as [Work on a card](../../AGENTS.md#work-on-a-card) asks
 - Artifact
   - Def.: a result produced by an operation, referenced by its path and the evidence needed to verify it
