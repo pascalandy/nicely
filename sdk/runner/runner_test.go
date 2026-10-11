@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/runner"
 )
 
@@ -154,5 +155,24 @@ func TestRunKillsWhatHoldsAStreamWhenCleanupEnds(t *testing.T) {
 	}
 	if took := time.Since(start); took > 1500*time.Millisecond {
 		t.Fatalf("Run took %v, so SIGKILL waited for the drain limit", took)
+	}
+}
+
+// TestAProgramWritesToTheFileThatAnOutputWraps proves that a program started
+// with the stdout of an SDK handler writes to the file itself, never to a
+// pipe, so it sees a terminal when the file is one.
+func TestAProgramWritesToTheFileThatAnOutputWraps(t *testing.T) {
+	f, err := os.Create(filepath.Join(t.TempDir(), "out"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = f.Close() }()
+	result, err := runner.Run(context.Background(), runner.Program{
+		Path:   "/bin/sh",
+		Args:   []string{"-c", "test ! -p /dev/stdout"},
+		Stdout: command.NewOutput(f),
+	})
+	if err != nil || result.Exit != 0 {
+		t.Errorf("the program wrote to a pipe: exit %d, error %v", result.Exit, err)
 	}
 }

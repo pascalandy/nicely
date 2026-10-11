@@ -1,0 +1,64 @@
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+examples = ["ncly hello run Ada", "ncly hello check --json"]
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+examples = ["ncly hello run Ada", "ncly hello run --greeting Hi Ada --json"]
+
+[[commands.args]]
+name = "name"
+summary = "hello.run.name"
+
+[[commands.flags]]
+name = "greeting"
+shorthand = "g"
+value = "text"
+summary = "hello.run.greeting"
+
+[[commands.flags]]
+name = "grumpy"
+summary = "hello.run.grumpy"
+
+[[commands]]
+path = "hello check"
+summary = "hello.check.summary"
+examples = ["ncly hello check", "ncly hello check --json"]
+result = { kind = "report" }
+
+[[commands.flags]]
+name = "fail"
+summary = "hello.check.fail"
+
+[[commands]]
+path = "hello say"
+summary = "hello.say.summary"
+examples = ["ncly hello say Ada", "ncly hello say Ada --json"]
+result = { kind = "text" }
+
+[[commands.args]]
+name = "name"
+summary = "hello.say.name"
+
+[[commands]]
+path = "hello wait"
+summary = "hello.wait.summary"
+examples = ["ncly hello wait", "ncly hello wait --json"]
+
+[[commands.flags]]
+name = "stubborn"
+summary = "hello.wait.stubborn"
+
+[[commands.flags]]
+name = "stubborn-child"
+summary = "hello.wait.stubborn_child"
+
+[[errors]]
+code = "HELLO_GRUMPY"
+exit = 1

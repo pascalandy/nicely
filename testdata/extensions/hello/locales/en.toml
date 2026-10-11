@@ -1,0 +1,89 @@
+# English catalog of the hello fixture. Each entry needs a description of where the text appears.
+
+["hello.summary"]
+description = "Help page: summary of the hello fixture, which greets people."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Help page: summary of hello run."
+other = "Greet someone by name"
+
+["hello.run.name"]
+description = "Help page: the name argument of hello run."
+other = "Name of the person to greet"
+
+["hello.run.greeting"]
+description = "Help page: the --greeting flag of hello run."
+other = "Word to greet with"
+
+["hello.run.grumpy"]
+description = "Help page: the --grumpy flag of hello run, which makes it refuse."
+other = "Refuse to greet"
+
+["hello.check.summary"]
+description = "Help page: summary of hello check, a report."
+other = "Check that greetings work"
+
+["hello.check.fail"]
+description = "Help page: the --fail flag of hello check, which makes the report itself fail."
+other = "Fail before checking anything"
+
+["hello.say.summary"]
+description = "Help page: summary of hello say, which prints plain text."
+other = "Say hello as plain text"
+
+["hello.say.name"]
+description = "Help page: the name argument of hello say."
+other = "Name of the person to greet"
+
+["hello.wait.summary"]
+description = "Help page: summary of hello wait, which runs a program until a signal arrives."
+other = "Wait for a signal"
+
+["hello.wait.stubborn"]
+description = "Help page: the --stubborn flag of hello wait, which makes it ignore the signal."
+other = "Keep waiting after a signal"
+
+["hello.wait.stubborn_child"]
+description = "Help page: the --stubborn-child flag of hello wait, whose program then ignores SIGTERM."
+other = "Start a program that ignores SIGTERM"
+
+["hello.greeting"]
+description = "Text of hello run and hello say. {{.Greeting}} is a word such as Hello, and {{.Name}} a name."
+other = "{{.Greeting}}, {{.Name}}!"
+
+["hello.default_greeting"]
+description = "The word that hello run greets with when --greeting is absent."
+other = "Hello"
+
+["hello.world"]
+description = "The name that hello run greets when no name is given."
+other = "world"
+
+["hello.verbose"]
+description = "Diagnostic line of hello run under --verbose. {{.Greeting}} is the greeting that it prints, such as Hello, Ada!"
+other = "Greeting: {{.Greeting}}"
+
+["hello.unnamed"]
+description = "Warning when hello run or hello say gets no name and greets the world instead."
+other = "No name was given, so hello greets the world."
+
+["hello.empty_greeting"]
+description = "Error when the --greeting flag of hello run is empty."
+other = "The greeting cannot be empty."
+
+["hello.grumpy"]
+description = "Error when hello run refuses to greet, under --grumpy."
+other = "Not today."
+
+["hello.mood"]
+description = "Text of hello check: its only check failed."
+other = "The mood check failed."
+
+["hello.config"]
+description = "Error when hello check fails before checking anything, under --fail."
+other = "The configuration of hello cannot be read."
+
+["hello.program"]
+description = "Error when hello wait could not start its program."
+other = "The program of hello wait could not start."

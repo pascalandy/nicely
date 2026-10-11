@@ -1,0 +1,137 @@
+# The Go fixture, built only on sdk/, answers through ncly as a core command does:
+# the same envelope, exit codes, and error block. The setup installs it in the data
+# folder $DATA as the script ncly-hello.
+
+# A success prints its text in human mode and its answer under --json
+exec ncly hello run Ada
+stdout '^Hello, Ada!$'
+! stderr .
+exec ncly hello run Ada --json
+cmp stdout run.json
+! stderr .
+
+# A success with the fixture's own warning keeps exit 0
+exec ncly hello run --json
+answer stdout ok
+stdout '"code":"HELLO_UNNAMED"'
+exec ncly hello run
+stdout '^Hello, world!$'
+stderr '^warning\[HELLO_UNNAMED\]: No name was given, so hello greets the world\.$'
+
+# A usage error that the handler finds
+exits 2 ncly hello run --greeting= Ada --json
+! stdout .
+answer stderr USAGE_INVALID
+exits 2 ncly hello run --greeting= Ada
+stderr '^error\[USAGE_INVALID\]: The greeting cannot be empty\.$'
+
+# The fixture's own code, with the exit code of its manifest
+exits 1 ncly hello run --grumpy --json
+! stdout .
+answer stderr HELLO_GRUMPY
+exits 1 ncly hello run --grumpy
+! stdout .
+cmp stderr grumpy.txt
+
+# A failed report answers on stdout with exit 78, and a report that fails itself on stderr
+exits 78 ncly hello check --json
+cmp stdout check.json
+! stderr .
+exits 78 ncly hello check --fail --json
+! stdout .
+answer stderr CONFIG_INVALID
+exits 78 ncly hello check
+stdout '^The mood check failed\.$'
+! stderr .
+
+# A text result ignores --json, and keeps its warnings as text on stderr
+exec ncly hello say Ada --json
+stdout '\AHello, Ada!\n\z'
+! stderr .
+exec ncly hello say
+stdout '^Hello, world!$'
+stderr '^warning\[HELLO_UNNAMED\]: No name was given, so hello greets the world\.$'
+
+# The handler sees the resolved global flags as the variables that ncly sets, run
+# through ncly or directly
+exec ncly -v hello run Ada
+stderr '^Greeting: Hello, Ada!$'
+exec $DATA/ncly-hello run Ada --verbose
+stderr '^Greeting: Hello, Ada!$'
+
+# Under the pseudo-locale, every word of the SDK's text and of the fixture's comes from a catalog
+exec ncly --lang en-XA hello run Ada
+pseudo stdout Ada
+exits 1 ncly --lang en-XA hello run --grumpy
+pseudo stderr hello run Ada
+exec ncly --lang en-XA hello run
+pseudo stderr hello run Ada
+exec ncly --lang en-XA hello --help
+pseudo stdout hello run check say wait
+
+# Run directly from the data folder, the fixture gives the same answer as through ncly
+exec $DATA/ncly-hello run --json -- Ada
+cmp stdout run.json
+exits 1 $DATA/ncly-hello run --grumpy
+cmp stderr grumpy.txt
+
+# Help wins over --version, as in core
+exec $DATA/ncly-hello run --help --version
+stdout '^USAGE$'
+! stdout 'ncly-hello v'
+
+# An answer that stdout refuses becomes RUNTIME on stderr, with the keys that still apply
+[linux] exits 1 sh full.sh
+[linux] answer stderr RUNTIME
+[linux] stderr '"greeting":"Hello, Ada!"'
+
+# Run directly, SIGTERM reaches the extension alone. Its SDK ends the handler's context and
+# stops the program and its grandchild, the handler answers with its key, and the finished
+# file stays
+exec exitcode exit.txt $DATA/ncly-hello wait --json &
+waitfile program.pid
+term
+wait
+grep '^143$' exit.txt
+! stdout .
+answer stderr TERMINATED
+stderr '"output_dir":"'
+exists finished.txt
+gone program.pid
+gone grandchild.pid
+
+# A program that ignores SIGTERM ends with the SIGKILL of cleanup, and the answer keeps its key
+rm program.pid grandchild.pid
+exec exitcode exit.txt $DATA/ncly-hello wait --stubborn-child --json &
+waitfile program.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"output_dir":"'
+gone program.pid
+gone grandchild.pid
+
+# A handler that ignores its context gets no time after cleanup: the SDK answers alone,
+# and a second SIGTERM during cleanup changes nothing
+rm program.pid grandchild.pid
+exec exitcode exit.txt $DATA/ncly-hello wait --stubborn --json &
+waitfile program.pid
+term
+gone program.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+! stderr 'output_dir'
+
+-- full.sh --
+"$DATA/ncly-hello" run Ada --json >/dev/full
+-- run.json --
+{"ok":true,"contract_version":1,"greeting":"Hello, Ada!"}
+-- check.json --
+{"ok":false,"contract_version":1,"checks":[{"id":"hello.mood","status":"fail"}]}
+-- grumpy.txt --
+error[HELLO_GRUMPY]: Not today.
+
+  hint: ncly hello run Ada

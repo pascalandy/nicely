@@ -3,7 +3,10 @@
 // declarations. docs/north-star/contract.md is the source of truth.
 package contract
 
-import "slices"
+import (
+	"slices"
+	"strings"
+)
 
 // ExitCode is the process exit status of an invocation.
 type ExitCode int
@@ -61,10 +64,56 @@ func (e ExitCode) Known() bool {
 	return e == ExitOK || slices.ContainsFunc(errorCodes, func(c codeExit) bool { return c.exit == e })
 }
 
-// Exit returns the exit code that an error code maps to, and false for a
-// code that is not a registered error.
-func (c Code) Exit() (ExitCode, bool) {
-	for _, e := range errorCodes {
+// Exit returns the exit code that one of core's error codes maps to, and
+// false for any other code.
+func (c Code) Exit() (ExitCode, bool) { return Core.exit(c) }
+
+// IsWarning reports whether c is one of core's warning codes.
+func (c Code) IsWarning() bool { return Core.isWarning(c) }
+
+// Registry holds the codes that an answer may use, as Error codes in
+// contract.md defines: core's, and those of the extension that answers.
+// Its error codes compete to lead in its order.
+type Registry struct {
+	errors   []codeExit
+	warnings []Code
+	// prefix admits every warning of an extension, such as HELLO_.
+	prefix string
+}
+
+// Core is the registry of core's own commands.
+var Core = Registry{errors: errorCodes, warnings: warningCodes}
+
+// Registry returns the registry of the extension that the manifest
+// declares, ordered as Output in contract.md defines: each own code comes
+// after core's codes of its exit, except for exit 1, where the own codes
+// come before RUNTIME. Every warning that starts with the domain and an
+// underscore belongs to the extension too.
+func (m Manifest) Registry() Registry {
+	own := func(exit ExitCode) []codeExit {
+		var codes []codeExit
+		for _, e := range m.Errors {
+			if e.Exit == exit {
+				codes = append(codes, codeExit{e.Code, e.Exit})
+			}
+		}
+		return codes
+	}
+	r := Registry{warnings: warningCodes, prefix: m.codePrefix()}
+	for i, e := range errorCodes {
+		if e.code == Runtime {
+			r.errors = append(r.errors, own(ExitRuntime)...)
+		}
+		r.errors = append(r.errors, e)
+		if last := i+1 == len(errorCodes) || errorCodes[i+1].exit != e.exit; last && e.exit != ExitRuntime {
+			r.errors = append(r.errors, own(e.exit)...)
+		}
+	}
+	return r
+}
+
+func (r Registry) exit(c Code) (ExitCode, bool) {
+	for _, e := range r.errors {
 		if e.code == c {
 			return e.exit, true
 		}
@@ -72,22 +121,16 @@ func (c Code) Exit() (ExitCode, bool) {
 	return 0, false
 }
 
-// IsWarning reports whether c is a registered warning code.
-func (c Code) IsWarning() bool {
-	for _, w := range warningCodes {
-		if w == c {
-			return true
-		}
-	}
-	return false
+func (r Registry) isWarning(c Code) bool {
+	return slices.Contains(r.warnings, c) || r.prefix != "" && strings.HasPrefix(string(c), r.prefix)
 }
 
 // rank orders error codes for the lead; a lower rank is more cautious.
-func (c Code) rank() int {
-	for i, e := range errorCodes {
+func (r Registry) rank(c Code) int {
+	for i, e := range r.errors {
 		if e.code == c {
 			return i
 		}
 	}
-	return len(errorCodes)
+	return len(r.errors)
 }

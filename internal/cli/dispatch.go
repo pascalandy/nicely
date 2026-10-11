@@ -64,17 +64,17 @@ func (c *call) run(p *i18n.Printer, g command.Globals, stdout, stderr *os.File) 
 	data := map[string]any{"Domain": c.extension.domain, "Exit": result.Exit}
 	switch {
 	case err != nil:
-		return command.Report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+		return command.Report(p, g, contract.Core, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
 	case result.Signal != nil:
 		// The extension's own text already told the human, unless its exit
 		// code says otherwise.
-		stopped := contract.Outcome{Signal: stopSignal(result.Signal)}
-		if verdict := contract.Decide(stopped); result.Exit == int(verdict.Exit) {
+		stopped := contract.Outcome{Signal: contract.StopSignal(result.Signal)}
+		if verdict := contract.Core.Decide(stopped); result.Exit == int(verdict.Exit) {
 			return int(verdict.Exit)
 		}
-		return command.Report(p, g, stopped, stdout, stderr)
+		return command.Report(p, g, contract.Core, stopped, stdout, stderr)
 	case !contract.ExitCode(result.Exit).Known():
-		return command.Report(p, g, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
+		return command.Report(p, g, contract.Core, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
 	}
 	return result.Exit
 }
@@ -90,7 +90,7 @@ func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g command.Global
 	result, err := runner.Run(ctx, program)
 	if err != nil {
 		data := map[string]any{"Domain": c.extension.domain}
-		return command.Report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+		return command.Report(p, g, contract.Core, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
 	}
 	reply := contract.Reply{Exit: result.Exit, Stdout: held.Bytes(), Last: lines.finish()}
 	answer, err := contract.CheckAnswer(c.extension.manifest, c.kind, reply)
@@ -111,11 +111,11 @@ func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g command.Global
 	case result.Signal != nil && err == nil:
 		// The first signal decides the verdict, and a valid answer keeps its
 		// keys, as Answer check in contract.md asks.
-		return reportKept(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, answer, stdout, stderr)
+		return reportKept(p, g, contract.Outcome{Signal: contract.StopSignal(result.Signal)}, answer, stdout, stderr)
 	case result.Signal != nil:
-		return command.Report(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, stdout, stderr)
+		return command.Report(p, g, contract.Core, contract.Outcome{Signal: contract.StopSignal(result.Signal)}, stdout, stderr)
 	case errors.As(err, &rule):
-		return command.Report(p, g, protocolFailure(p, rule.Rule, rule.Data), stdout, stderr)
+		return command.Report(p, g, contract.Core, protocolFailure(p, rule.Rule, rule.Data), stdout, stderr)
 	}
 	if _, err := answerOut.Write(answer.Line); err != nil {
 		if answerOut == stdout {
@@ -126,23 +126,15 @@ func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g command.Global
 	return result.Exit
 }
 
-// stopSignal names the signal that stopped an extension in the contract.
-func stopSignal(sig os.Signal) contract.Signal {
-	if sig == os.Interrupt {
-		return contract.Interrupt
-	}
-	return contract.Terminate
-}
-
 // reportKept answers the failure that o decides with the other keys of an
 // accepted answer, because the work that the answer describes happened, as
 // Output in contract.md asks. It returns the exit code of o, or 1 when
 // stderr refuses the answer too.
 func reportKept(p *i18n.Printer, g command.Globals, o contract.Outcome, answer contract.ExtensionAnswer, stdout, stderr io.Writer) int {
-	a := contract.Finish(o, command.Summarizer(p))
+	a := contract.Core.Finish(o, command.Summarizer(p))
 	line, err := answer.Failed(a.Errors()[0])
 	if err != nil {
-		return command.Report(p, g, o, stdout, stderr)
+		return command.Report(p, g, contract.Core, o, stdout, stderr)
 	}
 	if _, err := stderr.Write(append(line, '\n')); err != nil {
 		return int(contract.ExitRuntime)
@@ -196,21 +188,10 @@ func (h *heldLines) finish() []byte {
 // extensionVars carries the resolved global flags and the identity of ncly
 // to an extension. An empty value removes the variable.
 func extensionVars(g command.Globals) map[string]string {
-	on := func(set bool) string {
-		if set {
-			return "1"
-		}
-		return ""
-	}
 	self, _ := os.Executable()
-	return map[string]string{
-		"NCLY_JSON":             on(g.JSON),
-		"NCLY_NO_INPUT":         on(g.NoInput),
-		"NCLY_VERBOSE":          on(g.Verbose),
-		"NO_COLOR":              on(g.NoColor),
-		"NCLY_LANG":             i18n.Requested(g.Lang),
-		"NCLY_VERSION":          releaseVersion(),
-		"NCLY_CONTRACT_VERSION": strconv.Itoa(contract.Version),
-		"NCLY_BIN":              self,
-	}
+	vars := g.Vars()
+	vars["NCLY_VERSION"] = releaseVersion()
+	vars["NCLY_CONTRACT_VERSION"] = strconv.Itoa(contract.Version)
+	vars["NCLY_BIN"] = self
+	return vars
 }

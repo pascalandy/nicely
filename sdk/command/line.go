@@ -3,10 +3,12 @@ package command
 import (
 	"cmp"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/config"
+	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -123,6 +125,15 @@ func (line Line) Version() bool {
 	return on
 }
 
+// ModuleVersion returns the version that Go stamped from the module or the
+// VCS of the build, or a development marker.
+func ModuleVersion() string {
+	if info, ok := debug.ReadBuildInfo(); ok && strings.HasPrefix(info.Main.Version, "v") {
+		return info.Main.Version
+	}
+	return "v0.0.0-dev"
+}
+
 // Globals holds the resolved global flags. A flag wins over its variable.
 type Globals struct {
 	JSON    bool
@@ -131,6 +142,25 @@ type Globals struct {
 	Verbose bool
 	// Lang is the language setting before matching, such as fr_CA.UTF-8.
 	Lang string
+}
+
+// Vars returns the variables that carry the resolved global flags to a
+// program, as Global flags in contract.md names them. An empty value means
+// that the variable is unset.
+func (g Globals) Vars() map[string]string {
+	on := func(set bool) string {
+		if set {
+			return "1"
+		}
+		return ""
+	}
+	return map[string]string{
+		"NCLY_JSON":     on(g.JSON),
+		"NCLY_NO_INPUT": on(g.NoInput),
+		"NCLY_VERBOSE":  on(g.Verbose),
+		"NO_COLOR":      on(g.NoColor),
+		"NCLY_LANG":     i18n.Requested(g.Lang),
+	}
 }
 
 // Resolve applies the precedence of contract.md. It reads the config

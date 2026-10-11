@@ -28,7 +28,8 @@ test *args:
     set -Eeuo pipefail
     # A hook or a caller can export GIT_DIR. Fixture commits must see a normal repository.
     while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
-    go test ./... {{ args }}
+    # ./... skips testdata/, so the Go fixture extensions are named.
+    go test ./... ./testdata/extensions/... {{ args }}
     # Go's test cache never rechecks a file outside the tools module, such as the docs or the release workflow, so these tests run uncached.
     (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
@@ -37,13 +38,13 @@ test *args:
 # Lint the Go code
 [group('checks')]
 lint:
-    {{ golangci }} run ./...
+    {{ golangci }} run ./... ./testdata/extensions/...
     cd tools && go tool golangci-lint run ./cmd/...
 
 # Fail when a Go file needs formatting
 [group('checks')]
 fmt-check:
-    {{ golangci }} fmt --diff
+    {{ golangci }} fmt --diff ./... ./testdata/extensions/...
     cd tools && go tool golangci-lint fmt --diff
 
 # Check the release scripts and the dormant manual workflow

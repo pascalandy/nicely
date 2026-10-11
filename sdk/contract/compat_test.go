@@ -15,7 +15,7 @@ func summary(code Code) Problem { return Problem{Code: code, Message: "summary",
 
 func render(t *testing.T, o Outcome) (Answer, string) {
 	t.Helper()
-	a := Finish(o, summary)
+	a := Core.Finish(o, summary)
 	line, err := json.Marshal(a)
 	if err != nil {
 		t.Fatal(err)
@@ -124,7 +124,7 @@ func TestAnOlderConsumerIgnoresNewOptionalKeys(t *testing.T) {
 
 func TestDataCannotTakeAnEnvelopeKey(t *testing.T) {
 	for _, key := range []string{"ok", "contract_version", "results", "errors", "warnings"} {
-		a := Finish(Outcome{Data: map[string]int{key: 1}}, summary)
+		a := Core.Finish(Outcome{Data: map[string]int{key: 1}}, summary)
 		if _, err := json.Marshal(a); err == nil {
 			t.Errorf("data with the key %q rendered", key)
 		}
@@ -143,7 +143,7 @@ func TestWriteJSONPicksTheStream(t *testing.T) {
 	for _, c := range cases {
 		var stdout, stderr bytes.Buffer
 		stderr.WriteString("diagnostic line\n")
-		if err := Finish(c.in, summary).WriteJSON(&stdout, &stderr); err != nil {
+		if err := Core.Finish(c.in, summary).WriteJSON(&stdout, &stderr); err != nil {
 			t.Fatal(err)
 		}
 		if stdout.String() != c.out || stderr.String() != "diagnostic line\n"+c.error {

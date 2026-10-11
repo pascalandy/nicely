@@ -2,11 +2,11 @@
 package cli
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime/debug"
 	"slices"
 	"strings"
 	"syscall"
@@ -95,17 +95,7 @@ func Main(args []string, stdout, stderr *os.File) int {
 	if errors.As(err, &extensionCall) {
 		return extensionCall.run(p, g, stdout, stderr)
 	}
-	if out.Err() != nil {
-		err = &command.Failure{Outcome: command.WriteFailure(p)}
-	}
-	if err == nil {
-		return 0
-	}
-	var failed *command.Failure
-	if !errors.As(err, &failed) {
-		failed = command.Fail(contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid"), Hint: "ncly --help"})
-	}
-	return command.Report(p, g, failed.Outcome, stdout, stderr)
+	return command.Finish(p, g, contract.Core, out, err, "ncly --help", stdout, stderr)
 }
 
 // newRoot builds the command tree, with the commands of each valid
@@ -183,12 +173,4 @@ func brokenTarget(extensions []*extension, words []string) *extension {
 
 // releaseVersion prefers the linked version, then the version that Go stamps
 // from the module or the VCS, and finally a development marker.
-func releaseVersion() string {
-	if version != "" {
-		return version
-	}
-	if info, ok := debug.ReadBuildInfo(); ok && strings.HasPrefix(info.Main.Version, "v") {
-		return info.Main.Version
-	}
-	return "v0.0.0-dev"
-}
+func releaseVersion() string { return cmp.Or(version, command.ModuleVersion()) }

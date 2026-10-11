@@ -75,7 +75,7 @@ The other folders:
 - `cmd/ncly/`: the entry point, which passes core the bundled extensions in an explicit list, and runs one of them when started under its name
 - `internal/specdoc/`: reads the tables of the north-star docs for the tests that compare code and spec
 - `testdata/script/`: core's testscript scenarios. An extension keeps its own in `extensions/<name>/testdata/script/`, and the test binary of `cmd/ncly` runs both
-- `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` names it
+- `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` and `just test` name it
 - `tools/`: a separate module that pins the dev tools and holds the plan checker behind `just next` and `just test`
 
 ## Domains and commands

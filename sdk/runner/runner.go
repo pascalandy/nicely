@@ -53,17 +53,17 @@ type Result struct {
 // shortens it.
 var Cleanup = 15 * time.Second
 
-// drainLimit bounds how long the runner reads a program's streams after the
+// DrainLimit bounds how long the runner reads a program's streams after the
 // program exits, because a descendant may hold them open. It runs on its
 // own clock, apart from Cleanup.
-const drainLimit = 2 * time.Second
+const DrainLimit = 2 * time.Second
 
 // Run starts the program and waits for it to exit. When ctx ends first, Run
 // sends the signal that ended it, or SIGTERM for any other end, to every
 // descendant of ncly that it can reach, the program included, and sends
 // SIGKILL to what still runs once Cleanup has passed. A later end of ctx
 // changes nothing. Run reads a stream that is not a file for at most
-// drainLimit after the program exits.
+// DrainLimit after the program exits.
 func Run(ctx context.Context, p Program) (Result, error) {
 	cmd := exec.Command(p.Path, p.Args...)
 	cmd.Env = p.Env
@@ -133,7 +133,7 @@ func Run(ctx context.Context, p Program) (Result, error) {
 	// The drain limit counts from the exit, never from the end of cleanup,
 	// so a descendant that outlives the program cannot write into its
 	// answer once the limit has passed.
-	drain(streams, exitedAt.Add(drainLimit))
+	drain(streams, exitedAt.Add(DrainLimit))
 	stopping.Wait()
 	result.Exit = exitCode(cmd.ProcessState)
 	return result, nil
@@ -190,9 +190,13 @@ type stream struct {
 
 // attach returns what the program writes to: a file as it is, so that the
 // program sees a terminal when it is one, and otherwise the write end of a
-// pipe whose copy to w the runner controls. Two streams to the same writer
-// share one pipe, as exec.Cmd does, so their writes never overlap.
+// pipe whose copy to w the runner controls. A writer that wraps a file, such
+// as the stdout of an SDK handler, passes its file. Two streams to the same
+// writer share one pipe, as exec.Cmd does, so their writes never overlap.
 func attach(w io.Writer, streams *[]*stream) (io.Writer, error) {
+	if wrapper, wraps := w.(interface{ File() *os.File }); wraps {
+		w = wrapper.File()
+	}
 	if _, isFile := w.(*os.File); isFile || w == nil {
 		return w, nil
 	}

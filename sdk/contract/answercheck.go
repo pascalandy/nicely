@@ -136,13 +136,7 @@ func CheckAnswer(m Manifest, kind ResultKind, r Reply) (ExtensionAnswer, error) 
 			return fail("extension.answer_item_failed")
 		}
 	}
-	own := func(c Code) (ExitCode, bool) {
-		i := slices.IndexFunc(m.Errors, func(o OwnCode) bool { return o.Code == c })
-		if i < 0 {
-			return c.Exit()
-		}
-		return m.Errors[i].Exit, true
-	}
+	own := m.Registry().exit
 	for _, p := range a.allErrors() {
 		if _, known := own(p.Code); !known && strings.HasPrefix(string(p.Code), m.codePrefix()) {
 			return fail("extension.answer_undeclared", map[string]any{"Code": string(p.Code)})

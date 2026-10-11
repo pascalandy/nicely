@@ -232,7 +232,9 @@ func shellStatus(state *os.ProcessState) int {
 }
 
 var (
-	marked  = regexp.MustCompile(`(?s)⟦.*?⟧`)
+	// marked matches an innermost marked text, since a translated text can
+	// hold another, such as a greeting inside a sentence.
+	marked  = regexp.MustCompile(`⟦[^⟦⟧]*⟧`)
 	example = regexp.MustCompile(`(?m)^\s*\$ .*$`)
 	letter  = regexp.MustCompile(`\p{L}`)
 	version = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)*$`)
@@ -251,8 +253,12 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 	if !marked.MatchString(text) {
 		ts.Fatalf("pseudo: no marked text on %s", args[0])
 	}
+	text = example.ReplaceAllString(text, "")
+	for marked.MatchString(text) {
+		text = marked.ReplaceAllString(text, " ")
+	}
 	var stray []string
-	for _, word := range strings.Fields(marked.ReplaceAllString(example.ReplaceAllString(text, ""), " ")) {
+	for _, word := range strings.Fields(text) {
 		word = strings.Trim(word, `.,:;!?()"'`)
 		switch {
 		case !letter.MatchString(word),
@@ -271,11 +277,15 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
-// isCode reports whether a word is a registered error or warning code, the
-// only uppercase words that stay untranslated.
+// codeForm is the form of an extension's code, such as HELLO_GRUMPY.
+var codeForm = regexp.MustCompile(`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$`)
+
+// isCode reports whether a word is a code, the only uppercase words that
+// stay untranslated: one of core's, or one of the form of an extension's,
+// whose set is open.
 func isCode(word string) bool {
 	_, isError := contract.Code(word).Exit()
-	return isError || contract.Code(word).IsWarning()
+	return isError || contract.Code(word).IsWarning() || codeForm.MatchString(word)
 }
 
 // cmdWaitfile waits until a file exists, such as the process ID that a

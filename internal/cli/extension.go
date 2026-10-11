@@ -162,27 +162,11 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions
 		if e.broken != nil {
 			continue
 		}
-		text := e.catalogs.Printer(lang)
-		commands := map[string]*cobra.Command{}
-		// A parent comes before its children once the paths are sorted by length.
-		declarations := slices.Clone(e.manifest.Commands)
-		slices.SortStableFunc(declarations, func(a, b contract.Command) int { return len(a.Path) - len(b.Path) })
-		for _, d := range declarations {
-			var run func(*cobra.Command, []string) error
-			if e.manifest.Runs(d) {
-				run = func(c *cobra.Command, args []string) error {
-					return &call{extension: e, kind: d.Result.Kind, args: canonicalArgs(d, c, args)}
-				}
+		domain := command.AddManifest(root, p, e.catalogs.Printer(lang), e.manifest, func(d contract.Command) func(*cobra.Command, []string) error {
+			return func(c *cobra.Command, args []string) error {
+				return &call{extension: e, kind: d.Result.Kind, args: canonicalArgs(d, c, args)}
 			}
-			c := command.Build(p, text, d, run)
-			path := strings.Join(d.Path, " ")
-			commands[path] = c
-			if len(d.Path) == 1 {
-				c.GroupID = extensionGroup
-				root.AddCommand(c)
-				continue
-			}
-			commands[strings.Join(d.Path[:len(d.Path)-1], " ")].AddCommand(c)
-		}
+		})
+		domain.GroupID = extensionGroup
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"os"
 	"slices"
 )
 
@@ -52,6 +53,15 @@ const (
 	Terminate
 )
 
+// StopSignal names the signal that stopped an invocation: Interrupt for
+// Ctrl-C, and Terminate for any other, such as SIGTERM.
+func StopSignal(sig os.Signal) Signal {
+	if sig == os.Interrupt {
+		return Interrupt
+	}
+	return Terminate
+}
+
 // Item is the result of one input of a batch.
 type Item struct {
 	// Data holds the keys of the item, such as url. It marshals to an object.
@@ -71,6 +81,10 @@ type Outcome struct {
 	Warnings []Problem
 	Effect   Effect
 	Signal   Signal
+	// HumanNeeded marks a report whose findings need a human, such as a
+	// failed check of doctor. The report answers ok false and exit 78 on
+	// stdout, without errors.
+	HumanNeeded bool
 }
 
 // Verdict is the exit code of an outcome and the code of its leading error.
@@ -81,7 +95,7 @@ type Verdict struct {
 
 // Decide computes the verdict of an outcome. The order in which failures
 // arrived never changes it.
-func Decide(o Outcome) Verdict {
+func (r Registry) Decide(o Outcome) Verdict {
 	switch o.Signal {
 	case Interrupt:
 		return Verdict{ExitInterrupted, Interrupted}
@@ -96,19 +110,25 @@ func Decide(o Outcome) Verdict {
 		}
 	}
 	if len(o.Errors) == 0 && !itemFailed {
+		if o.HumanNeeded {
+			return Verdict{ExitHuman, ""}
+		}
 		return Verdict{ExitOK, ""}
 	}
 	lead := Temporary
 	for _, p := range o.Errors {
-		if p.Code.rank() < lead.rank() {
+		if r.rank(p.Code) < r.rank(lead) {
 			lead = p.Code
 		}
 	}
-	if lead != Temporary {
-		exit, _ := lead.Exit()
+	// A failed item makes the verdict the batch's, as Output defines, and
+	// the command's own errors follow its lead, except a signal's, which
+	// takes precedence there too.
+	if lead != Temporary && (!itemFailed || lead == Interrupted || lead == Terminated) {
+		exit, _ := r.exit(lead)
 		return Verdict{exit, lead}
 	}
-	if allTemporary && o.Effect.safeToRepeat() {
+	if lead == Temporary && allTemporary && o.Effect.safeToRepeat() {
 		return Verdict{ExitTemporary, Temporary}
 	}
 	return Verdict{ExitRuntime, Runtime}
@@ -133,9 +153,9 @@ func (a Answer) Warnings() []Problem { return a.warnings }
 // Finish decides an outcome and puts an error with the verdict's code first.
 // When no error carries that code, as for an incomplete batch or a signal,
 // summarize supplies one in the active language.
-func Finish(o Outcome, summarize func(Code) Problem) Answer {
-	mustRegister(o)
-	v := Decide(o)
+func (r Registry) Finish(o Outcome, summarize func(Code) Problem) Answer {
+	r.mustRegister(o)
+	v := r.Decide(o)
 	errs := slices.Clone(o.Errors)
 	if v.Lead != "" {
 		if i := slices.IndexFunc(errs, func(p Problem) bool { return p.Code == v.Lead }); i >= 0 {
@@ -149,11 +169,12 @@ func Finish(o Outcome, summarize func(Code) Problem) Answer {
 }
 
 // mustRegister panics on a code missing from the registry, because core uses
-// only the codes that contract.md lists.
-func mustRegister(o Outcome) {
+// only the codes that contract.md lists, and an extension adds only those
+// that its manifest declares.
+func (r Registry) mustRegister(o Outcome) {
 	check := func(p Problem, warning bool) {
-		_, isError := p.Code.Exit()
-		if (warning && !p.Code.IsWarning()) || (!warning && !isError) {
+		_, isError := r.exit(p.Code)
+		if (warning && !r.isWarning(p.Code)) || (!warning && !isError) {
 			panic(fmt.Sprintf("contract: unregistered code %q", p.Code))
 		}
 	}
@@ -170,15 +191,16 @@ func mustRegister(o Outcome) {
 	}
 }
 
-// WriteJSON prints the answer as one line: on stdout for a success, and at
-// the end of stderr for a failure, after any diagnostics.
+// WriteJSON prints the answer as one line: on stdout for a success or a
+// report, and at the end of stderr for an answer with errors, after any
+// diagnostics.
 func (a Answer) WriteJSON(stdout, stderr io.Writer) error {
 	line, err := json.Marshal(a)
 	if err != nil {
 		return err
 	}
 	w := stdout
-	if !a.OK() {
+	if len(a.errors) > 0 {
 		w = stderr
 	}
 	_, err = w.Write(append(line, '\n'))

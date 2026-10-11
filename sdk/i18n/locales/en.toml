@@ -140,3 +140,11 @@ other = "warning[{{.Code}}]:"
 ["error.hint"]
 description = "Error block: label before the command or action that fixes an error or a warning, as in `hint: ncly --help`."
 other = "hint:"
+
+["outcome.extension_broken"]
+description = "Error when a Go extension does not match its own manifest, such as a command without a handler. Only its developer can fix it."
+other = "This extension does not match its own manifest."
+
+["outcome.extension_broken_hint"]
+description = "Hint under outcome.extension_broken: what the user does next. --verbose is a flag and stays as is."
+other = "Report it to the extension's author, with the details that --verbose shows."

@@ -6,6 +6,7 @@ package command
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -59,6 +60,31 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 		addFlag(c.Flags(), text, f)
 	}
 	return c
+}
+
+// AddManifest adds the commands that a manifest declares under root, each
+// parent before its children, and returns the command of its domain. text
+// renders the manifest's catalog IDs. run returns what each command that
+// runs does with its call, and a command for which it returns nil prints
+// its help.
+func AddManifest(root *cobra.Command, p, text *i18n.Printer, m contract.Manifest, run func(contract.Command) func(*cobra.Command, []string) error) *cobra.Command {
+	commands := map[string]*cobra.Command{}
+	declarations := slices.Clone(m.Commands)
+	slices.SortStableFunc(declarations, func(a, b contract.Command) int { return len(a.Path) - len(b.Path) })
+	for _, d := range declarations {
+		var r func(*cobra.Command, []string) error
+		if m.Runs(d) {
+			r = run(d)
+		}
+		c := Build(p, text, d, r)
+		commands[strings.Join(d.Path, " ")] = c
+		if parent, found := commands[strings.Join(d.Path[:len(d.Path)-1], " ")]; found {
+			parent.AddCommand(c)
+		} else {
+			root.AddCommand(c)
+		}
+	}
+	return commands[m.Domain]
 }
 
 // AddGlobalFlags gives a root command the global flags of the contract, and
