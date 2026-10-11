@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: go run -C tools ./cmd/release-artifacts assets "${TAG}" "${GITHUB_WORKSPACE}"
 
-      - name: Publish archives and AUR package
+      - name: Publish archives
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}

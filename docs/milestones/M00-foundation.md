@@ -9,7 +9,7 @@ An installable `ncly` answers `--help`, `--version`, and `completion`. It fixes 
 
 ## Prerequisites
 
-All three were in place before M00-T6. The AUR account and its key `nicely-release-aur` moved to [M99](M99-parking-lot.md), with the AUR publication.
+All three were in place before M00-T6. The AUR account moved to [M99](M99-parking-lot.md) with the AUR publication, so `AUR_SSH_KEY` stays unused until then.
 
 - The empty repository `pascalandy/homebrew-tap` exists
 - The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
@@ -68,7 +68,7 @@ The English catalog, with a description per entry, and the parity test against `
 - **Read:** [Local release preparation](#local-release-preparation)
 - **Proves:** `scripts/release-check.sh`, `scripts/release-check-test.sh`, `tools/cmd/release-artifacts/main_test.go`
 
-GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. The AUR package `ncly-bin` installs the binary and its completions. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`. The AUR publication moved to M99.
+GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. GoReleaser builds the AUR package `ncly-bin`, which installs the binary and its completions, and skips its upload. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`. The AUR publication moved to M99.
 
 ## Local release preparation
 

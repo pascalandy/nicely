@@ -106,9 +106,9 @@ Release only when Pascal asks. A release is never a card, so it never blocks a m
 
 1. Run `just release-check vX.Y.Z` and fix anything it reports.
 2. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
-3. Start the release: `gh workflow run release.yml -f tag=vX.Y.Z`. The workflow publishes the archives and the AUR package, then updates the formula in the Homebrew tap.
+3. Start the release: `gh workflow run release.yml -f tag=vX.Y.Z`. The workflow publishes the archives, then updates the formula in the Homebrew tap.
 
-GitHub Actions runs only when started this way. Before the first release, turn off the AUR upload, as the AUR row of [M99](docs/milestones/M99-parking-lot.md) says. After it, Pascal checks on his Mac that `brew install pascalandy/tap/ncly` builds `ncly`, and that `ncly <Tab>` completes in zsh.
+GitHub Actions runs only when started this way. After the first release, Pascal checks on his Mac that `brew install pascalandy/tap/ncly` builds `ncly`, and that `ncly <Tab>` completes in zsh.
 
 ## Review an external pull request
 
