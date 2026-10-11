@@ -60,7 +60,7 @@ The second scenario covers the text. `ncly --help` lists extensions in their own
 ### M01-T3 Answer check
 
 - **Read:** [Answer check](../north-star/contract.md#answer-check), [Output](../north-star/contract.md#output), [Error codes](../north-star/contract.md#error-codes), [Modes](../north-star/contract.md#modes)
-- **Proves:** `testdata/script/extension_protocol.txtar`, `internal/contract/compat_test.go`
+- **Proves:** `testdata/script/extension_protocol.txtar`, `sdk/contract/compat_test.go`
 
 With `--json`, core holds the fixture's stdout and checks the answer against the rules of the spec. Fixtures answer with malformed JSON, two lines on stdout, an answer on stdout with exit 1, `contract_version` 2, a problem without `hint`, a lowercase code, an own code that the manifest does not declare, `USAGE_INVALID` with exit 1, a declared own code with the wrong exit, `USAGE_INVALID` leading `RUNTIME` with exit 2, the same with a code that `ncly` does not know added, exit 0 with a failed item, a failed item with exit 78 led by `AUTH_MISSING`, and exit 75 with a `RUNTIME` item error. Each one answers `RUNTIME` with exit 1, stdout empty, and the fixture's held output absent. Valid answers pass unchanged: a success, a declared own code, a code that this `ncly` does not know with exit 1, a warning with the fixture's prefix, a report answering `ok: false` on stdout with exit 78, the same report failing itself with `CONFIG_INVALID` on stderr and exit 78, and a command of kind `text`, whose output passes through under `--json`. Diagnostic lines that the fixture writes to stderr reach the caller in order, before its failure answer, and after its success.
 

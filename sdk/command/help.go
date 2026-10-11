@@ -1,0 +1,72 @@
+package command
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/pascalandy/nicely/sdk/tui"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
+
+// HelpFunc prints the help page of a command from its declaration, in the
+// active language. The commands of a group, such as the extensions under
+// core's root, get a section of their own, titled by the group.
+func HelpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
+	return func(c *cobra.Command, _ []string) {
+		// Reading the flags first merges the global flags into c.Flags(),
+		// which UseLine needs to add [flags]. Cobra skips that merge when it
+		// reaches c without parsing, as in ncly help completion zsh.
+		local, inherited := c.LocalFlags(), c.InheritedFlags()
+		page := tui.HelpPage{
+			Summary:       c.Short,
+			UsageTitle:    p.T("help.usage"),
+			Usage:         c.UseLine(),
+			ExamplesTitle: p.T("help.examples"),
+		}
+		if c.Example != "" {
+			page.Examples = strings.Split(c.Example, "\n")
+		}
+		sections := []tui.Section{{Title: p.T("help.commands"), Colon: true}}
+		groups := map[string]int{"": 0}
+		for _, g := range c.Groups() {
+			groups[g.ID] = len(sections)
+			sections = append(sections, tui.Section{Title: g.Title, Colon: true})
+		}
+		for _, sub := range c.Commands() {
+			if sub.IsAvailableCommand() {
+				s := &sections[groups[sub.GroupID]]
+				s.Entries = append(s.Entries, tui.Entry{Name: sub.Name(), Summary: sub.Short})
+			}
+		}
+		for _, s := range sections {
+			if len(s.Entries) > 0 {
+				page.Usage = c.CommandPath() + " <command> [flags]"
+				page.Sections = append(page.Sections, s)
+			}
+		}
+		if flags := flagEntries(local); len(flags) > 0 {
+			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.flags"), Entries: flags})
+		}
+		if flags := flagEntries(inherited); len(flags) > 0 {
+			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.global_flags"), Entries: flags})
+		}
+		_, _ = fmt.Fprint(tui.Output(c.OutOrStdout(), noColor), tui.Help(page))
+	}
+}
+
+func flagEntries(set *pflag.FlagSet) []tui.Entry {
+	var entries []tui.Entry
+	set.VisitAll(func(f *pflag.Flag) {
+		name := "    --" + f.Name
+		if f.Shorthand != "" {
+			name = "-" + f.Shorthand + ", --" + f.Name
+		}
+		if value := f.Annotations[valueAnnotation]; len(value) > 0 {
+			name += " <" + value[0] + ">"
+		}
+		entries = append(entries, tui.Entry{Name: name, Summary: f.Usage})
+	})
+	return entries
+}

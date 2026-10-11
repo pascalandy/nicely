@@ -9,9 +9,10 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
-	"github.com/pascalandy/nicely/internal/runner"
+	"github.com/pascalandy/nicely/sdk/command"
+	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/pascalandy/nicely/sdk/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -45,7 +46,7 @@ func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string
 // checks only its exit code. Otherwise core checks its answer first. When
 // Ctrl-C or SIGTERM arrives before the extension exits, the first signal
 // decides the verdict.
-func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
+func (c *call) run(p *i18n.Printer, g command.Globals, stdout, stderr *os.File) int {
 	ctx := runner.OnSignal()
 	program := runner.Program{
 		Path:     c.extension.path,
@@ -56,14 +57,14 @@ func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
 		Stderr:   stderr,
 		Terminal: true,
 	}
-	if g.json && c.kind != contract.ResultText {
+	if g.JSON && c.kind != contract.ResultText {
 		return c.runChecked(ctx, p, g, program, stdout, stderr)
 	}
 	result, err := runner.Run(ctx, program)
 	data := map[string]any{"Domain": c.extension.domain, "Exit": result.Exit}
 	switch {
 	case err != nil:
-		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+		return command.Report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
 	case result.Signal != nil:
 		// The extension's own text already told the human, unless its exit
 		// code says otherwise.
@@ -71,9 +72,9 @@ func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
 		if verdict := contract.Decide(stopped); result.Exit == int(verdict.Exit) {
 			return int(verdict.Exit)
 		}
-		return report(p, g, stopped, stdout, stderr)
+		return command.Report(p, g, stopped, stdout, stderr)
 	case !contract.ExitCode(result.Exit).Known():
-		return report(p, g, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
+		return command.Report(p, g, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
 	}
 	return result.Exit
 }
@@ -82,14 +83,14 @@ func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
 // until it exits, then passes its answer on only when Answer check in
 // contract.md accepts it. Otherwise it drops what it holds and answers
 // RUNTIME, or the signal's code when a signal stopped the extension.
-func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g globals, program runner.Program, stdout, stderr *os.File) int {
+func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g command.Globals, program runner.Program, stdout, stderr *os.File) int {
 	var held bytes.Buffer
 	lines := &heldLines{dest: stderr}
 	program.Stdout, program.Stderr = &held, lines
 	result, err := runner.Run(ctx, program)
 	if err != nil {
 		data := map[string]any{"Domain": c.extension.domain}
-		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+		return command.Report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
 	}
 	reply := contract.Reply{Exit: result.Exit, Stdout: held.Bytes(), Last: lines.finish()}
 	answer, err := contract.CheckAnswer(c.extension.manifest, c.kind, reply)
@@ -112,13 +113,13 @@ func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g globals, progr
 		// keys, as Answer check in contract.md asks.
 		return reportKept(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, answer, stdout, stderr)
 	case result.Signal != nil:
-		return report(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, stdout, stderr)
+		return command.Report(p, g, contract.Outcome{Signal: stopSignal(result.Signal)}, stdout, stderr)
 	case errors.As(err, &rule):
-		return report(p, g, protocolFailure(p, rule.Rule, rule.Data), stdout, stderr)
+		return command.Report(p, g, protocolFailure(p, rule.Rule, rule.Data), stdout, stderr)
 	}
 	if _, err := answerOut.Write(answer.Line); err != nil {
 		if answerOut == stdout {
-			return reportKept(p, g, writeFailure(p), answer, stdout, stderr)
+			return reportKept(p, g, command.WriteFailure(p), answer, stdout, stderr)
 		}
 		return int(contract.ExitRuntime)
 	}
@@ -137,11 +138,11 @@ func stopSignal(sig os.Signal) contract.Signal {
 // accepted answer, because the work that the answer describes happened, as
 // Output in contract.md asks. It returns the exit code of o, or 1 when
 // stderr refuses the answer too.
-func reportKept(p *i18n.Printer, g globals, o contract.Outcome, answer contract.ExtensionAnswer, stdout, stderr io.Writer) int {
-	a := contract.Finish(o, summarizer(p))
+func reportKept(p *i18n.Printer, g command.Globals, o contract.Outcome, answer contract.ExtensionAnswer, stdout, stderr io.Writer) int {
+	a := contract.Finish(o, command.Summarizer(p))
 	line, err := answer.Failed(a.Errors()[0])
 	if err != nil {
-		return report(p, g, o, stdout, stderr)
+		return command.Report(p, g, o, stdout, stderr)
 	}
 	if _, err := stderr.Write(append(line, '\n')); err != nil {
 		return int(contract.ExitRuntime)
@@ -194,7 +195,7 @@ func (h *heldLines) finish() []byte {
 
 // extensionVars carries the resolved global flags and the identity of ncly
 // to an extension. An empty value removes the variable.
-func extensionVars(g globals) map[string]string {
+func extensionVars(g command.Globals) map[string]string {
 	on := func(set bool) string {
 		if set {
 			return "1"
@@ -203,11 +204,11 @@ func extensionVars(g globals) map[string]string {
 	}
 	self, _ := os.Executable()
 	return map[string]string{
-		"NCLY_JSON":             on(g.json),
-		"NCLY_NO_INPUT":         on(g.noInput),
-		"NCLY_VERBOSE":          on(g.verbose),
-		"NO_COLOR":              on(g.noColor),
-		"NCLY_LANG":             i18n.Requested(g.lang),
+		"NCLY_JSON":             on(g.JSON),
+		"NCLY_NO_INPUT":         on(g.NoInput),
+		"NCLY_VERBOSE":          on(g.Verbose),
+		"NO_COLOR":              on(g.NoColor),
+		"NCLY_LANG":             i18n.Requested(g.Lang),
 		"NCLY_VERSION":          releaseVersion(),
 		"NCLY_CONTRACT_VERSION": strconv.Itoa(contract.Version),
 		"NCLY_BIN":              self,

@@ -3,8 +3,9 @@ package cli
 import (
 	"io"
 
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
+	"github.com/pascalandy/nicely/sdk/command"
+	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
 )
 
@@ -52,9 +53,9 @@ var shells = []struct {
 }
 
 func addCompletion(p *i18n.Printer, root *cobra.Command) {
-	group := build(p, p, completionCommand, nil)
+	group := command.Build(p, p, completionCommand, nil)
 	for _, s := range shells {
-		group.AddCommand(build(p, p, s.command, func(c *cobra.Command, _ []string) error {
+		group.AddCommand(command.Build(p, p, s.command, func(c *cobra.Command, _ []string) error {
 			return s.write(root, c.OutOrStdout())
 		}))
 	}

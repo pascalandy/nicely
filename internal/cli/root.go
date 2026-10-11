@@ -4,7 +4,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -12,12 +11,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pascalandy/nicely/internal/config"
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
-	"github.com/pascalandy/nicely/internal/tui"
+	"github.com/pascalandy/nicely/sdk/command"
+	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
-	"golang.org/x/text/language"
 )
 
 // version is set at link time by release builds:
@@ -54,43 +51,43 @@ func Main(args []string, stdout, stderr *os.File) int {
 	// the line needs, whose flags the second reading knows. The help text
 	// comes from the catalogs, so the tree is built again once the language
 	// is known.
-	en := i18n.New(language.English)
+	en := catalogs.Printer("en")
 	core := newRoot(en, "", nil)
 	cmd, _, _ := core.Find(args)
-	extensions := neededExtensions(searchPath(), core, scan(cmd, args).words)
+	extensions := neededExtensions(searchPath(), core, command.Scan(cmd, args).Words)
 	cmd, _, _ = newRoot(en, "", extensions).Find(args)
-	line := scan(cmd, args)
-	g := resolveGlobals(line)
-	p := i18n.New(i18n.Match(g.lang))
-	root := newRoot(p, g.lang, extensions)
-	out := &output{file: stdout}
+	line := command.Scan(cmd, args)
+	g := command.Resolve(line)
+	p := catalogs.Printer(g.Lang)
+	root := newRoot(p, g.Lang, extensions)
+	out := command.NewOutput(stdout)
 	root.SetArgs(args)
 	root.SetOut(out)
 	root.SetErr(stderr)
-	root.SetHelpFunc(helpFunc(p, g.noColor))
+	root.SetHelpFunc(command.HelpFunc(p, g.NoColor))
 	// A completion request from the shell scripts answers in Cobra's protocol:
 	// the words it completes never ask for help or name a command to check.
 	// Global flags may come first, as an alias such as ncly='ncly --no-input'
 	// puts them there, so the request is the first word after the flags.
-	completing := len(line.words) > 0 && isCompletionRequest(line.words[0])
-	broken := brokenTarget(extensions, line.words)
+	completing := len(line.Words) > 0 && isCompletionRequest(line.Words[0])
+	broken := brokenTarget(extensions, line.Words)
 	var err error
 	switch {
 	case completing:
 		err = root.Execute()
-	case line.version() && !line.help():
+	case line.Version() && !line.Help():
 		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
 	case broken != nil:
 		// An extension that cannot run has no help either.
-		err = fail(broken.invalid(p))
-	case line.help():
+		err = command.Fail(broken.invalid(p))
+	case line.Help():
 		target, _, _ := root.Find(args)
 		err = target.Help()
-	case len(line.words) == 0 && len(line.operands) > 0:
+	case len(line.Words) == 0 && len(line.Operands) > 0:
 		// Operands after -- reach the root, which takes none.
-		err = fail(unknownCommand(p, root, line.operands[0]))
-	case len(line.words) > 0 && !isCommand(root, line.words[0]):
-		err = fail(unknownCommand(p, root, line.words[0]))
+		err = command.Fail(command.UnknownCommand(p, root, line.Operands[0]))
+	case len(line.Words) > 0 && !isCommand(root, line.Words[0]):
+		err = command.Fail(command.UnknownCommand(p, root, line.Words[0]))
 	default:
 		err = root.Execute()
 	}
@@ -98,36 +95,18 @@ func Main(args []string, stdout, stderr *os.File) int {
 	if errors.As(err, &extensionCall) {
 		return extensionCall.run(p, g, stdout, stderr)
 	}
-	if out.err != nil {
-		err = &failure{writeFailure(p)}
+	if out.Err() != nil {
+		err = &command.Failure{Outcome: command.WriteFailure(p)}
 	}
 	if err == nil {
 		return 0
 	}
-	var failed *failure
+	var failed *command.Failure
 	if !errors.As(err, &failed) {
-		failed = fail(contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid"), Hint: "ncly --help"})
+		failed = command.Fail(contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid"), Hint: "ncly --help"})
 	}
-	return report(p, g, failed.outcome, stdout, stderr)
+	return command.Report(p, g, failed.Outcome, stdout, stderr)
 }
-
-// output records the first failed write, so lost output never reports
-// success. Beyond Write, it keeps only Fd, for terminal detection, so that no
-// other method of the file can write around Write.
-type output struct {
-	file *os.File
-	err  error
-}
-
-func (o *output) Write(b []byte) (int, error) {
-	n, err := o.file.Write(b)
-	if err != nil && o.err == nil {
-		o.err = err
-	}
-	return n, err
-}
-
-func (o *output) Fd() uintptr { return o.file.Fd() }
 
 // newRoot builds the command tree, with the commands of each valid
 // extension in the language that lang requests.
@@ -140,29 +119,13 @@ func newRoot(p *i18n.Printer, lang string, extensions []*extension) *cobra.Comma
 		SilenceUsage:  true,
 	}
 	root.CompletionOptions.DisableDefaultCmd = true
-	for _, f := range contract.GlobalFlags {
-		addFlag(root.PersistentFlags(), p, f)
-	}
-	// Cobra offers file names for a flag value, and a language tag is never one.
-	_ = root.RegisterFlagCompletionFunc("lang", cobra.NoFileCompletions)
-	root.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
-		return fail(flagProblem(p, c, err))
-	})
+	command.AddGlobalFlags(root, p)
 	help := helpCommand(p)
 	root.SetHelpCommand(help)
 	root.AddCommand(help)
 	addCompletion(p, root)
 	addExtensions(root, p, lang, extensions)
 	return root
-}
-
-// failure carries the outcome of a command that failed.
-type failure struct{ outcome contract.Outcome }
-
-func (f *failure) Error() string { return string(f.outcome.Errors[0].Code) }
-
-func fail(problems ...contract.Problem) *failure {
-	return &failure{contract.Outcome{Errors: problems}}
 }
 
 // isCommand reports whether the root has a command of that name: one of
@@ -216,61 +179,6 @@ func brokenTarget(extensions []*extension, words []string) *extension {
 		}
 	}
 	return nil
-}
-
-// report prints an outcome and returns its exit code. An answer that
-// cannot be written is a runtime failure, whatever the verdict: when stderr
-// itself refuses it, the exit code is all that remains to tell.
-func report(p *i18n.Printer, g globals, o contract.Outcome, stdout, stderr io.Writer) int {
-	a := contract.Finish(o, summarizer(p))
-	var err error
-	if g.json {
-		err = a.WriteJSON(stdout, stderr)
-	} else {
-		label := func(code contract.Code, warning bool) string {
-			if warning {
-				return p.T("warning.label", map[string]any{"Code": code})
-			}
-			return p.T("error.label", map[string]any{"Code": code})
-		}
-		_, err = fmt.Fprint(tui.Output(stderr, g.noColor), tui.Problems(a.Errors(), a.Warnings(), label, p.T("error.hint")))
-	}
-	if err != nil {
-		return int(contract.ExitRuntime)
-	}
-	return int(a.Exit)
-}
-
-// writeFailure is the outcome of an answer that ncly could not write.
-func writeFailure(p *i18n.Printer) contract.Outcome {
-	return contract.Outcome{Errors: []contract.Problem{{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")}}}
-}
-
-// summaries hold the catalog IDs of the leading error of an outcome that no
-// single failure explains, such as an interrupted run or an incomplete batch.
-var summaries = map[contract.Code]struct{ message, hint string }{
-	contract.Interrupted: {"outcome.interrupted", "outcome.check_hint"},
-	contract.Terminated:  {"outcome.terminated", "outcome.check_hint"},
-	contract.Temporary:   {"outcome.temporary", "outcome.temporary_hint"},
-	contract.Runtime:     {"outcome.runtime", "outcome.check_hint"},
-}
-
-func summarizer(p *i18n.Printer) func(contract.Code) contract.Problem {
-	return func(code contract.Code) contract.Problem {
-		s := summaries[code]
-		return contract.Problem{Code: code, Message: p.T(s.message), Hint: p.T(s.hint)}
-	}
-}
-
-// configLang reads lang from the config files. A load error gives no language,
-// so the help still works with the defaults.
-func configLang() string {
-	home, _ := os.UserHomeDir()
-	cfg, _, err := config.Load(config.Locate(home, os.LookupEnv))
-	if err != nil {
-		return ""
-	}
-	return cfg.Lang
 }
 
 // releaseVersion prefers the linked version, then the version that Go stamps

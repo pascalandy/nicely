@@ -10,7 +10,7 @@ import (
 
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/pascalandy/nicely/internal/contract"
+	"github.com/pascalandy/nicely/sdk/contract"
 	"golang.org/x/term"
 )
 

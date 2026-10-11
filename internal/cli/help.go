@@ -1,14 +1,12 @@
 package cli
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
-	"github.com/pascalandy/nicely/internal/tui"
+	"github.com/pascalandy/nicely/sdk/command"
+	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var helpDeclaration = contract.Command{
@@ -27,9 +25,9 @@ func helpCommand(p *i18n.Printer) *cobra.Command {
 			target, rest, err := c.Root().Find(args)
 			switch {
 			case err != nil:
-				return fail(unknownCommand(p, c.Root(), args[0]))
+				return command.Fail(command.UnknownCommand(p, c.Root(), args[0]))
 			case len(rest) > 0:
-				return fail(unknownCommand(p, target, rest[0]))
+				return command.Fail(command.UnknownCommand(p, target, rest[0]))
 			}
 			return target.Help()
 		},
@@ -45,68 +43,4 @@ func helpCommand(p *i18n.Printer) *cobra.Command {
 			return names, cobra.ShellCompDirectiveNoFileComp
 		},
 	}
-}
-
-// valueAnnotation keeps the declared name of a flag's value, such as tag.
-const valueAnnotation = "ncly-value"
-
-// helpFunc prints the help page of a command from its declaration, in the
-// active language.
-func helpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
-	return func(c *cobra.Command, _ []string) {
-		// Reading the flags first merges the global flags into c.Flags(),
-		// which UseLine needs to add [flags]. Cobra skips that merge when it
-		// reaches c without parsing, as in ncly help completion zsh.
-		local, inherited := c.LocalFlags(), c.InheritedFlags()
-		page := tui.HelpPage{
-			Summary:       c.Short,
-			UsageTitle:    p.T("help.usage"),
-			Usage:         c.UseLine(),
-			ExamplesTitle: p.T("help.examples"),
-		}
-		if c.Example != "" {
-			page.Examples = strings.Split(c.Example, "\n")
-		}
-		var commands, extensions []tui.Entry
-		for _, sub := range c.Commands() {
-			switch {
-			case !sub.IsAvailableCommand():
-			case sub.GroupID == extensionGroup:
-				extensions = append(extensions, tui.Entry{Name: sub.Name(), Summary: sub.Short})
-			default:
-				commands = append(commands, tui.Entry{Name: sub.Name(), Summary: sub.Short})
-			}
-		}
-		if len(commands)+len(extensions) > 0 {
-			page.Usage = c.CommandPath() + " <command> [flags]"
-		}
-		if len(commands) > 0 {
-			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.commands"), Entries: commands, Colon: true})
-		}
-		if len(extensions) > 0 {
-			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.extensions"), Entries: extensions, Colon: true})
-		}
-		if flags := flagEntries(local); len(flags) > 0 {
-			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.flags"), Entries: flags})
-		}
-		if flags := flagEntries(inherited); len(flags) > 0 {
-			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.global_flags"), Entries: flags})
-		}
-		_, _ = fmt.Fprint(tui.Output(c.OutOrStdout(), noColor), tui.Help(page))
-	}
-}
-
-func flagEntries(set *pflag.FlagSet) []tui.Entry {
-	var entries []tui.Entry
-	set.VisitAll(func(f *pflag.Flag) {
-		name := "    --" + f.Name
-		if f.Shorthand != "" {
-			name = "-" + f.Shorthand + ", --" + f.Name
-		}
-		if value := f.Annotations[valueAnnotation]; len(value) > 0 {
-			name += " <" + value[0] + ">"
-		}
-		entries = append(entries, tui.Entry{Name: name, Summary: f.Usage})
-	})
-	return entries
 }

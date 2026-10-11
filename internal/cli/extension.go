@@ -9,9 +9,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pascalandy/nicely/internal/config"
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
+	"github.com/pascalandy/nicely/sdk/command"
+	"github.com/pascalandy/nicely/sdk/config"
+	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 )
@@ -173,7 +174,7 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions
 					return &call{extension: e, kind: d.Result.Kind, args: canonicalArgs(d, c, args)}
 				}
 			}
-			c := build(p, text, d, run)
+			c := command.Build(p, text, d, run)
 			path := strings.Join(d.Path, " ")
 			commands[path] = c
 			if len(d.Path) == 1 {

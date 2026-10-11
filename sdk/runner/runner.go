@@ -18,7 +18,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pascalandy/nicely/internal/platform"
+	"github.com/pascalandy/nicely/sdk/platform"
 )
 
 // Program is one program to run.

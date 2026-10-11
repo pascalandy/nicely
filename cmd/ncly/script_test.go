@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pascalandy/nicely/internal/runner"
+	"github.com/pascalandy/nicely/sdk/runner"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 

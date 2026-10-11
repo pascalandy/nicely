@@ -1,6 +1,6 @@
 # M02 SDK
 
-Status: ready
+Status: active
 Version: v0.2.0
 
 ## Demo
@@ -22,7 +22,7 @@ The SDK is the Go implementation of the contract between core and its extensions
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M02-T1 | Shared packages in sdk | agent | — | todo |
+| M02-T1 | Shared packages in sdk | agent | — | done |
 | M02-T2 | Import boundary | agent | M02-T1 | todo |
 | M02-T3 | Extension entry point | agent | M02-T1 | todo |
 | M02-T4 | Bundled transport | agent | M02-T3 | todo |

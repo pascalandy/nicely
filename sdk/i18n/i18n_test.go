@@ -1,17 +1,29 @@
 package i18n
 
 import (
+	"fmt"
+	"io/fs"
 	"maps"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 )
+
+func sdkCatalogs(t *testing.T) *Catalogs {
+	t.Helper()
+	c, err := Load(Locales())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
 
 func TestMatch(t *testing.T) {
 	cases := map[string]string{
@@ -29,14 +41,14 @@ func TestMatch(t *testing.T) {
 		"":            "en",
 	}
 	for setting, want := range cases {
-		if got := Match(setting).String(); got != want {
+		if got := sdkCatalogs(t).Match(setting).String(); got != want {
 			t.Errorf("Match(%q) = %s, want %s", setting, got, want)
 		}
 	}
 }
 
 func TestPseudoMarksTextAndKeepsTemplateActions(t *testing.T) {
-	got := New(Pseudo).T("usage.unknown_command", map[string]any{"Name": "nope"})
+	got := sdkCatalogs(t).Printer("en-XA").T("usage.unknown_command", map[string]any{"Name": "nope"})
 	// The English text holds 28 characters, so a third more is 10 dots.
 	want := `⟦Ûñķñöŵñ çöɱɱáñð "nope".··········⟧`
 	if got != want {
@@ -80,7 +92,8 @@ func TestPluralForms(t *testing.T) {
 }
 
 func TestFormats(t *testing.T) {
-	en, fr := New(language.English), newPrinter(core.bundle, language.MustParse("fr-CA"))
+	sdk := sdkCatalogs(t)
+	en, fr := sdk.Printer("en"), newPrinter(sdk.bundle, language.MustParse("fr-CA"))
 	day := time.Date(2026, 10, 6, 14, 30, 0, 0, time.UTC)
 	cases := []struct{ got, want string }{
 		{en.Number(1234.5, 1), "1,234.5"},
@@ -99,31 +112,62 @@ func TestFormats(t *testing.T) {
 	}
 }
 
-type catalog map[string]map[string]string
-
-func load(t *testing.T, path string) catalog {
-	t.Helper()
-	var c catalog
-	if _, err := toml.DecodeFile(path, &c); err != nil {
+// TestEveryCatalogFollowsTheRules walks every catalog folder of the
+// repository, core's, the SDK's, and each extension's, as SDK in
+// contract.md asks, and checks that core and the SDK share no ID.
+func TestEveryCatalogFollowsTheRules(t *testing.T) {
+	root := filepath.Join("..", "..")
+	owners := map[string][]string{}
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		switch {
+		case err != nil:
+			return err
+		case d.IsDir() && (d.Name() == ".git" || d.Name() == "node_modules"):
+			return filepath.SkipDir
+		case !d.IsDir() || d.Name() != "locales":
+			return nil
+		}
+		rel, _ := filepath.Rel(root, path)
+		domain := ""
+		if parent := filepath.Dir(filepath.Dir(rel)); filepath.Base(parent) == "extensions" {
+			domain = filepath.Base(filepath.Dir(rel))
+		}
+		if err := CheckCatalogs(os.DirFS(path), domain); err != nil {
+			t.Errorf("%s: %v", rel, err)
+		}
+		en, err := readCatalog(os.DirFS(path), "en.toml")
+		owners[filepath.ToSlash(rel)] = slices.Sorted(maps.Keys(en))
+		return err
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
-	return c
-}
-
-func TestEveryEntryHasADescription(t *testing.T) {
-	for id, entry := range load(t, "locales/en.toml") {
-		if strings.TrimSpace(entry["description"]) == "" {
-			t.Errorf("%s has no description", id)
+	core, sdk := owners["internal/cli/locales"], owners["sdk/i18n/locales"]
+	if len(core) == 0 || len(sdk) == 0 {
+		t.Fatalf("found the catalog folders %v, want core's and the SDK's among them", slices.Sorted(maps.Keys(owners)))
+	}
+	for _, id := range core {
+		if slices.Contains(sdk, id) {
+			t.Errorf("core's catalog and the SDK's both hold %s", id)
 		}
 	}
 }
 
-func TestEveryCatalogMatchesEnglish(t *testing.T) {
-	en := slices.Sorted(maps.Keys(load(t, "locales/en.toml")))
-	paths, _ := filepath.Glob("locales/*.toml")
-	for _, path := range paths {
-		if got := slices.Sorted(maps.Keys(load(t, path))); !slices.Equal(got, en) {
-			t.Errorf("%s holds the entries %v, en holds %v", path, got, en)
+// TestCheckCatalogsHoldsEachTranslationToTheIDsOfEnglish rejects a
+// translation that lacks an ID of en, and one that adds an ID, such as one
+// of the SDK's, whose text it would replace.
+func TestCheckCatalogsHoldsEachTranslationToTheIDsOfEnglish(t *testing.T) {
+	entry := func(id string) string { return fmt.Sprintf("[%q]\ndescription = \"d\"\nother = \"x\"\n", id) }
+	for name, translation := range map[string]string{
+		"lacks an ID": "",
+		"adds an ID":  entry("root.summary") + entry("usage.invalid"),
+	} {
+		fsys := fstest.MapFS{
+			"en.toml":    {Data: []byte(entry("root.summary"))},
+			"fr-CA.toml": {Data: []byte(translation)},
+		}
+		if err := CheckCatalogs(fsys, ""); err == nil {
+			t.Errorf("%s: CheckCatalogs accepted it", name)
 		}
 	}
 }

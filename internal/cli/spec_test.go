@@ -5,11 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/i18n"
 	"github.com/pascalandy/nicely/internal/specdoc"
+	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/spf13/cobra"
-	"golang.org/x/text/language"
 )
 
 func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
@@ -124,6 +122,6 @@ func tree() []*cobra.Command {
 			walk(sub)
 		}
 	}
-	walk(newRoot(i18n.New(language.English), "", nil))
+	walk(newRoot(catalogs.Printer("en"), "", nil))
 	return all
 }

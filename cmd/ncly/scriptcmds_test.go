@@ -18,8 +18,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pascalandy/nicely/internal/contract"
-	"github.com/pascalandy/nicely/internal/platform"
+	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/platform"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 

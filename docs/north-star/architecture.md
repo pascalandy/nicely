@@ -68,7 +68,7 @@ Each part has one owner: one package and one spec section.
 | 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/`, from M01 | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 | 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants | `internal/keychain/`, from M06 | [Keys](contract.md#keys) |
 
-Until [M02](../milestones/M02-sdk.md) moves them, the packages under `sdk/` live under `internal/` with the same names, and `sdk/command/` is part of `internal/cli/`. A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
+A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
 
 The other folders:
 

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pascalandy/nicely/internal/runner"
+	"github.com/pascalandy/nicely/sdk/runner"
 )
 
 // TestRunNeverStartsAProgramOnceCtxEnded proves that a signal that came

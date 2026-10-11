@@ -1,5 +1,5 @@
-// Package i18n looks up the text that ncly shows a human in the message
-// catalogs under locales/, and formats numbers, sizes, and dates for the
+// Package i18n looks up the text that ncly and its extensions show a human
+// in their message catalogs, and formats numbers, sizes, and dates for the
 // active language. Every catalog entry carries a description that tells a
 // translator where the text appears.
 package i18n
@@ -26,31 +26,24 @@ import (
 //go:embed locales/*.toml
 var locales embed.FS
 
+// Locales returns the SDK's own catalogs: the text that the SDK renders,
+// such as help pages, usage errors, and outcome summaries.
+func Locales() fs.FS {
+	sub, err := fs.Sub(locales, "locales")
+	if err != nil {
+		panic(err)
+	}
+	return sub
+}
+
 // Pseudo is the pseudo-locale: every catalog string, marked between ⟦ and ⟧,
 // so a scenario finds the text that bypasses the catalog.
 var Pseudo = language.MustParse("en-XA")
 
-var core = func() *Catalogs {
-	sub, err := fs.Sub(locales, "locales")
-	if err == nil {
-		var c *Catalogs
-		if c, err = Load(sub); err == nil {
-			return c
-		}
-	}
-	panic(err)
-}()
-
-// Match picks core's catalog for a language setting, such as fr-CA, fr, or
-// the POSIX form fr_CA.UTF-8, as Catalogs.Match does.
-func Match(setting string) language.Tag { return core.Match(setting) }
-
-// New returns a printer of core's catalogs for a tag that Match picked.
-func New(tag language.Tag) *Printer { return newPrinter(core.bundle, tag) }
-
-// Catalogs holds the catalogs of one owner, such as core or an extension:
-// one file per language, named after its tag, such as en.toml or
-// fr-CA.toml. The en catalog is required, and the pseudo-locale marks it.
+// Catalogs holds the catalogs of one or more owners, such as the SDK and
+// core, or the SDK and an extension: for each owner, one file per language,
+// named after its tag, such as en.toml or fr-CA.toml. Each owner's en
+// catalog is required, and the pseudo-locale marks it.
 type Catalogs struct {
 	bundle  *goi18n.Bundle
 	tags    []language.Tag // the languages with a catalog, en first
@@ -70,50 +63,53 @@ func (e *CatalogError) Error() string { return fmt.Sprintf("%s: %v", e.File, e.E
 
 func (e *CatalogError) Unwrap() error { return e.Err }
 
-// Load reads the catalogs at the top of fsys. Only the en catalog must be
-// valid: a translation that cannot be read is skipped, so its entries fall
-// back to en.
-func Load(fsys fs.FS) (*Catalogs, error) {
+// Load reads the catalogs at the top of each folder. Only each en catalog
+// must be valid: a translation that cannot be read is skipped, so its
+// entries fall back to en. The owners' IDs never overlap, as the catalog
+// rules require, so the order of the folders does not matter.
+func Load(folders ...fs.FS) (*Catalogs, error) {
 	b := goi18n.NewBundle(language.English)
 	b.RegisterUnmarshalFunc("toml", toml.Unmarshal)
-	en, err := b.LoadMessageFileFS(fsys, "en.toml")
-	if err != nil {
-		e := &CatalogError{File: "en.toml", Err: err}
-		var parse toml.ParseError
-		if errors.As(err, &parse) {
-			e.Line = parse.Position.Line
-		}
-		return nil, e
-	}
 	c := &Catalogs{bundle: b, tags: []language.Tag{language.English}, en: map[string]bool{}}
-	for _, m := range en.Messages {
-		if err := checkMessage(m); err != nil {
-			return nil, &CatalogError{File: "en.toml", Err: err}
-		}
-		c.en[m.ID] = true
-		if err := b.AddMessages(Pseudo, pseudoMessage(m)); err != nil {
-			return nil, &CatalogError{File: "en.toml", Err: err}
-		}
-	}
-	files, _ := fs.Glob(fsys, "*.toml")
-	for _, file := range files {
-		if file == "en.toml" {
-			continue
-		}
-		// A translation that cannot be read is skipped, and so is the
-		// pseudo-locale, which ncly writes itself. An entry that
-		// checkMessage refuses is left out, so it falls back to en.
-		data, err := fs.ReadFile(fsys, file)
+	for _, fsys := range folders {
+		en, err := b.LoadMessageFileFS(fsys, "en.toml")
 		if err != nil {
-			continue
+			e := &CatalogError{File: "en.toml", Err: err}
+			var parse toml.ParseError
+			if errors.As(err, &parse) {
+				e.Line = parse.Position.Line
+			}
+			return nil, e
 		}
-		f, err := goi18n.ParseMessageFileBytes(data, file, map[string]goi18n.UnmarshalFunc{"toml": toml.Unmarshal})
-		if err != nil || f.Tag == Pseudo {
-			continue
+		for _, m := range en.Messages {
+			if err := checkMessage(m); err != nil {
+				return nil, &CatalogError{File: "en.toml", Err: err}
+			}
+			c.en[m.ID] = true
+			if err := b.AddMessages(Pseudo, pseudoMessage(m)); err != nil {
+				return nil, &CatalogError{File: "en.toml", Err: err}
+			}
 		}
-		valid := slices.DeleteFunc(f.Messages, func(m *goi18n.Message) bool { return checkMessage(m) != nil })
-		if b.AddMessages(f.Tag, valid...) == nil {
-			c.tags = append(c.tags, f.Tag)
+		files, _ := fs.Glob(fsys, "*.toml")
+		for _, file := range files {
+			if file == "en.toml" {
+				continue
+			}
+			// A translation that cannot be read is skipped, and so is the
+			// pseudo-locale, which ncly writes itself. An entry that
+			// checkMessage refuses is left out, so it falls back to en.
+			data, err := fs.ReadFile(fsys, file)
+			if err != nil {
+				continue
+			}
+			f, err := goi18n.ParseMessageFileBytes(data, file, map[string]goi18n.UnmarshalFunc{"toml": toml.Unmarshal})
+			if err != nil || f.Tag == Pseudo {
+				continue
+			}
+			valid := slices.DeleteFunc(f.Messages, func(m *goi18n.Message) bool { return checkMessage(m) != nil })
+			if b.AddMessages(f.Tag, valid...) == nil && !slices.Contains(c.tags, f.Tag) {
+				c.tags = append(c.tags, f.Tag)
+			}
 		}
 	}
 	c.matcher = language.NewMatcher(c.tags)
