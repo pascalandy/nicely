@@ -12,6 +12,7 @@ Version: v0.1.0
 Core finds executables named `ncly-<domain>`, reads their manifests without running them, starts them, and checks what they answer. This milestone uses fixture extensions only. The first bundled extension, `skill`, arrives in [M03](M03-skill.md), and the first real external one, `agent`, in [M09](M09-agent-profiles.md).
 
 - Discovery looks in `~/.local/share/nicely/extensions/` first, then in `PATH` order. Dispatch requires a manifest with a compatible protocol. A missing or incompatible manifest is reported without starting the executable
+- Core validates an extension's arguments from its manifest, as it does for its own commands, so a bad call fails with `USAGE_INVALID` before the extension starts
 - Core commands and bundled extensions always win over an external extension with the same name. The explicit `reservedNames` of `internal/cli/root.go` stays, because it also reserves names whose command arrives later, and a test keeps it equal to the [domain table](../north-star/architecture.md#domains-and-commands)
 - An extension receives the environment that [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) defines. No key reaches it until grants arrive in [M08](M08-grants.md)
 - With `--json`, core checks the answer: one JSON line, `ok`, a compatible `contract_version`, codes from core's registry or prefixed with the domain, and an exit code that agrees with them. Anything else is a protocol failure, never a success
@@ -34,15 +35,17 @@ keys = []
 
 ## Open questions
 
-Settle each one in [Extensions](../north-star/contract.md#extensions), then delete this section.
+Settle each one in [Extensions](../north-star/contract.md#extensions), or in the section that it names, then delete this section.
 
-- The complete manifest schema: command declarations, effects, modes, results, requirements, and the `version` of the extension. It must describe the bundled `skill` of M03 and the commands in [agent's spec](../../extensions/agent/spec.md) too, without duplicating help or completion definitions
-- Whether the manifest carries the translations of its help text, or core asks the extension for its help in `NCLY_LANG`
-- The error codes and exit codes for a missing manifest, an incompatible manifest, and a protocol failure
-- Whether core captures the extension's stdout in JSON mode to check it, or passes the streams through and checks a copy
+- The complete manifest schema: command declarations, effects, modes, results, requirements, the extension's own error codes with their exit codes, which the answer check needs, and the `version` of the extension. It must describe the bundled `skill` of M03 and the commands in [agent's spec](../../extensions/agent/spec.md) too, without duplicating help or completion definitions
+- Which arguments reach the extension once core has validated them from its manifest, such as whether the global flags reach it only as their variables
+- Whether the manifest carries the translations of its help text, or core asks the extension for its help in `NCLY_LANG`, whether `NCLY_LANG` holds the requested language or the catalog that core matched, and what an extension does without that language, as [#8](https://github.com/pascalandy/nicely/issues/8) asks
+- The error codes and exit codes for a missing manifest, an incompatible manifest, and a protocol failure. Settle in [Error codes](../north-star/contract.md#error-codes) how a caller treats a code that it does not know, such as an extension's own, because [Compatibility](../north-star/contract.md#compatibility) closes every enum that does not say otherwise
+- Whether core captures the extension's stdout and stderr in JSON mode to check the answer, or passes the streams through and checks a copy, and which answer core returns after Ctrl-C, both when the extension answers with its data keys and when it dies without answering
+- Whether dispatch fails with `CONFIG_INVALID` on a broken config file, as [Configuration](../north-star/contract.md#configuration) reads today, or starts the extension, which alone knows whether it reads the config, and how an extension reads its own table, such as `[agent]`
 - The variable that gives an extension the path of the running `ncly`, so that it calls another domain through the same host
 - How completion reaches values that only the extension knows, such as profile names
-- The test commands that the cancellation scenarios need, such as `waitfile <path>`, which waits until a file exists, and `gone <path>`, which checks that the process whose ID the file holds no longer runs, and how the test binary shortens the 15 seconds of cleanup
+- The test commands that the cancellation scenarios need, such as `waitfile <path>`, which waits until a file exists, and `gone <path>`, which checks that the process whose ID the file holds no longer runs, and how the test binary shortens the 15 seconds of cleanup. Every scenario except the subreaper one runs on macOS too, which has no `setsid`
 
 ## Cards
 
@@ -59,7 +62,7 @@ Settle each one in [Extensions](../north-star/contract.md#extensions), then dele
 - **Read:** [Extensions](../north-star/contract.md#extensions), [Compatibility](../north-star/contract.md#compatibility), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `testdata/script/extension_dispatch.txtar`, `testdata/script/extension_manifest.txtar`
 
-`ncly hello` finds the fixture `ncly-hello` and reads its `ncly-hello.toml`, then runs it with its arguments and the `NCLY_*` variables and returns its exit code. The fixture and its manifest live in the scenario archive. A missing, malformed, or incompatible manifest is reported without starting the executable, which a fixture that writes a file when it runs proves. The data folder wins over `PATH`, an earlier `PATH` folder wins over a later one, and a reserved name never reaches an extension. Every `*_API_KEY` variable is removed from the extension's environment.
+`ncly hello` finds the fixture `ncly-hello` and reads its `ncly-hello.toml`, then runs it with its arguments and the `NCLY_*` variables and returns its exit code. The fixture and its manifest live in the scenario archive. A missing, malformed, or incompatible manifest is reported without starting the executable, which a fixture that writes a file when it runs proves. An unknown flag fails with `USAGE_INVALID` the same way. The data folder wins over `PATH`, an earlier `PATH` folder wins over a later one, and a reserved name never reaches an extension. Every `*_API_KEY` variable is removed from the extension's environment.
 
 ### M01-T2 Answer check
 
