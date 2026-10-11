@@ -3,10 +3,25 @@ version: "2"
 linters:
   default: standard
   enable:
+    - depguard
     - errorlint
     - misspell
     - unconvert
     - usestdlibvars
+  settings:
+    depguard:
+      rules:
+        # A bundled extension must be able to leave the binary without a
+        # rewrite, so the SDK and every extension stay away from core. Tests
+        # may read the docs through internal/specdoc.
+        public:
+          files:
+            - "**/sdk/**/*.go"
+            - "**/extensions/**/*.go"
+            - "!$test"
+          deny:
+            - pkg: github.com/pascalandy/nicely/internal
+              desc: the SDK and the extensions reach core only through the CLI and the environment, as AGENTS.md says
 
 formatters:
   enable:

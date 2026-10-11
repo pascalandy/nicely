@@ -23,7 +23,7 @@ The SDK is the Go implementation of the contract between core and its extensions
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M02-T1 | Shared packages in sdk | agent | — | done |
-| M02-T2 | Import boundary | agent | M02-T1 | todo |
+| M02-T2 | Import boundary | agent | M02-T1 | done |
 | M02-T3 | Extension entry point | agent | M02-T1 | todo |
 | M02-T4 | Bundled transport | agent | M02-T3 | todo |
 
@@ -37,7 +37,7 @@ Move the shared packages to `sdk/` without changing behavior, and move the code 
 ### M02-T2 Import boundary
 
 - **Read:** [SDK](../north-star/contract.md#sdk), [AGENTS.md](../../AGENTS.md#code)
-- **Proves:** `.golangci.yml`, and a temporary import of `internal/` from `sdk/` that fails `just lint`, shown in the pull request
+- **Proves:** `.golangci.yml`, and a temporary import of `internal/` from `sdk/` that fails the lint, shown in the pull request
 
 Add a `depguard` rule that keeps the code of `sdk/`, `extensions/`, and `testdata/extensions/` away from `internal/`. The rule skips test files, with `!$test`, so the tests that compare code and spec keep reading the docs through `internal/specdoc` after M02-T1 moves them with their packages.
 
