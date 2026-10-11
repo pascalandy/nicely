@@ -67,28 +67,28 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 ### M21-T1 Scan and list
 
 - **Read:** [Scope](#scope)
-- **Proves:** `testdata/script/docs_scan.txtar`
+- **Proves:** `extensions/docs/testdata/script/docs_scan.txtar`
 
 `scan` adds projects as `private` and names the config file it changed. `list` shows each project's path and visibility.
 
 ### M21-T2 Sync
 
 - **Read:** [Scope](#scope), [D035](../north-star/decisions/D035-sync-ownership.md)
-- **Proves:** `testdata/script/docs_sync.txtar`
+- **Proves:** `extensions/docs/testdata/script/docs_sync.txtar`
 
 `sync` never copies an excluded project, preserves user edits and source files, and resumes an interrupted publication whose navigation references only published copies.
 
 ### M21-T3 Serve
 
 - **Read:** [Scope](#scope)
-- **Proves:** `testdata/script/docs_serve.txtar`
+- **Proves:** `extensions/docs/testdata/script/docs_serve.txtar`
 
 `serve` previews the hub locally with the chosen engine.
 
 ### M21-T4 Check
 
 - **Read:** [Scope](#scope)
-- **Proves:** `testdata/script/docs_check.txtar`
+- **Proves:** `extensions/docs/testdata/script/docs_check.txtar`
 
 `check` reports a planted fake key on stdout and exits 78 with `DOCS_LEAK_FOUND`.
 

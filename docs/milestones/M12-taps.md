@@ -78,7 +78,7 @@ A tap's extensions become domains and its skills join `ncly skill list`, with de
 ### M12-T4 Skill link
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
-- **Proves:** `testdata/script/skill_link.txtar`
+- **Proves:** `extensions/skill/testdata/script/skill_link.txtar`
 
 `ncly skill link` with managed links, conflicts, and the checks that tap removal makes first.
 

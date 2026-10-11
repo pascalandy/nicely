@@ -31,28 +31,28 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 ### M16-T1 Zoom
 
 - **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
-- **Proves:** `testdata/script/transcript_zoom.txtar`
+- **Proves:** `extensions/transcript/testdata/script/transcript_zoom.txtar`
 
 `ncly transcript run zoom` with `--latest` or `--path`. Python selects the audio once and Go records its fingerprint. A meeting folder without audio is `NOT_FOUND`, and the folder's name becomes the title.
 
 ### M16-T2 Prompts and open
 
 - **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
-- **Proves:** `testdata/script/transcript_prompt.txtar`, `testdata/script/transcript_open.txtar`
+- **Proves:** `extensions/transcript/testdata/script/transcript_prompt.txtar`, `extensions/transcript/testdata/script/transcript_open.txtar`
 
 `ncly transcript prompt list` with the precedence of `prompt_paths` over the bundled prompts. `--open` opens each result folder as it appears, never during a dry run. Completion suggests profiles and prompts.
 
 ### M16-T3 Doctor and cookies
 
 - **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor)
-- **Proves:** `testdata/script/transcript_doctor.txtar`, `testdata/script/transcript_cookies.txtar`
+- **Proves:** `extensions/transcript/testdata/script/transcript_doctor.txtar`, `extensions/transcript/testdata/script/transcript_cookies.txtar`
 
 `ncly doctor transcript` takes over the checks of the transcript CLI's `doctor --source`: `uv`, Python 3.12 or later with its install command, and the browser cookies. `--live` checks the key against a free Deepgram endpoint. Unreadable cookies fall back to anonymous access with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`, once in a batch's top-level `warnings`.
 
 ### M16-T4 Spinner and transcript skill
 
 - **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output](../north-star/contract.md#output)
-- **Proves:** `testdata/script/transcript_spinner.txtar`, `extensions/transcript/SKILL.md`
+- **Proves:** `extensions/transcript/testdata/script/transcript_spinner.txtar`, `extensions/transcript/SKILL.md`
 
 A run shows one spinner on a terminal, in the picked look, and none in JSON or non-interactive mode. Write the transcript skill.
 

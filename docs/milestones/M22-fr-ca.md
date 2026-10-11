@@ -9,7 +9,7 @@ Version: v0.22.0
 
 ## Scope
 
-Translate core's catalog and the catalog of each first-party extension as they stand when this milestone starts. Later milestones add their own `fr-CA` entries as they go. Each command's scenarios have run once under the pseudo-locale since M00, so most missing strings surfaced in the milestone that added them. A string that no scenario reaches shows up as English during Pascal's review.
+Translate core's catalog, the SDK's catalog, and the catalog of each first-party extension as they stand when this milestone starts. Later milestones add their own `fr-CA` entries as they go. Each command's scenarios have run once under the pseudo-locale since M00, so most missing strings surfaced in the milestone that added them. A string that no scenario reaches shows up as English during Pascal's review.
 
 Repeat until the parity test passes: an agent lists the keys missing from `fr-CA`, then translates each one, using the description of the entry for context.
 
@@ -45,7 +45,7 @@ stderr '"hint":"ncly auth login deepgram"'
 - **Read:** [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `testdata/script/language_fr.txtar`
 
-A complete `fr-CA` catalog for core that passes the parity test against `en`. The system language selects it.
+A complete `fr-CA` catalog for core and for the SDK, which renders the help pages, the global flags, and the error labels of every command, each passing the parity test against `en`. The system language selects them.
 
 ### M22-T2 Translate the first-party extensions
 

@@ -31,7 +31,7 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 ### M10-T1 Records and agent run
 
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Operations](../north-star/contract.md#operations), [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Retry safety](../north-star/contract.md#retry-safety)
-- **Proves:** `testdata/script/agent_run.txtar`, `testdata/script/agent_run_record.txtar`, `testdata/script/record_retry_safety.txtar`
+- **Proves:** `extensions/agent/testdata/script/agent_run.txtar`, `extensions/agent/testdata/script/agent_run_record.txtar`, `testdata/script/record_retry_safety.txtar`
 
 `ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
 
@@ -54,7 +54,7 @@ The step declares the `paid` effect. The SDK writes every step transition and de
 ### M10-T4 Cancellation and failures
 
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Retry safety](../north-star/contract.md#retry-safety), [Records and evidence](../north-star/contract.md#records-and-evidence)
-- **Proves:** `testdata/script/agent_run_cancel.txtar`, `testdata/script/agent_run_failures.txtar`, `testdata/script/agent_run_boundaries.txtar`
+- **Proves:** `extensions/agent/testdata/script/agent_run_cancel.txtar`, `extensions/agent/testdata/script/agent_run_failures.txtar`, `extensions/agent/testdata/script/agent_run_boundaries.txtar`
 
 Ctrl-C, SIGTERM, and the timeout stop the harness's process tree and leave the step `unknown`, with exit 130, 143, or 1. The record then reads `interrupted` after a signal and `unknown` after the timeout, which proves that cleanup wrote it after cancellation, because the step was already `unknown` before the harness started. A harness that never started fails the step. A nonzero exit or a missing answer after the start leaves it `unknown` with exit 1, and nothing launches the task again.
 

@@ -36,28 +36,28 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 ### M11-T1 Codex adapter
 
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
-- **Proves:** `testdata/script/agent_codex.txtar`
+- **Proves:** `extensions/agent/testdata/script/agent_codex.txtar`
 
 The `codex` adapter, with its verified tools-off mode.
 
 ### M11-T2 Grok adapter
 
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
-- **Proves:** `testdata/script/agent_grok.txtar`
+- **Proves:** `extensions/agent/testdata/script/agent_grok.txtar`
 
 The `grok` adapter, with its verified tools-off mode.
 
 ### M11-T3 OpenCode adapter
 
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
-- **Proves:** `testdata/script/agent_opencode.txtar`
+- **Proves:** `extensions/agent/testdata/script/agent_opencode.txtar`
 
 The `opencode` adapter, with its provider and its verified tools-off mode.
 
 ### M11-T4 Check unchanged
 
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent)
-- **Proves:** `testdata/script/agent_check_unchanged.txtar`
+- **Proves:** `extensions/agent/testdata/script/agent_check_unchanged.txtar`
 
 `--check-unchanged` exits 1 with `AGENT_FILES_CHANGED` when a covered file changed during the run, and reports nothing about ignored files.
 

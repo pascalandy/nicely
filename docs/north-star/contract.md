@@ -240,7 +240,7 @@ An extension receives the environment that [Programs that ncly runs](#programs-t
 
 An extension uses another one through the CLI, as an agent would: transcript summarizes with `"$NCLY_BIN" agent run --json`. It writes its run records in the shared format of [Record format](#record-format), through the SDK for a Go extension, so `ncly run` inspects every recorded operation alike. A Go extension imports only the public `sdk/` packages, so a bundled extension could leave the binary without a rewrite.
 
-Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a `SKILL.md` that teaches an agent to use it. [M02](../milestones/M02-sdk.md) settles the SDK here.
+Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a `SKILL.md` that teaches an agent to use it.
 
 ### Discovery
 
@@ -344,6 +344,53 @@ Core accepts the answer only when every rule below holds:
 Core passes a valid answer on unchanged. Anything else is a protocol failure: core drops the output that it holds and answers `RUNTIME` with exit 1, because the extension may already have produced effects, and the message names the rule that broke. Without `--json`, an exit code outside the list is a protocol failure too, and core prints its error block after the extension's text.
 
 When `ncly` receives Ctrl-C or SIGTERM before the extension exits, the first signal decides the verdict: core answers 130 with `INTERRUPTED` or 143 with `TERMINATED`, whatever the extension's exit code. A valid answer keeps its data keys, its `results`, and its other errors after the leading one. Without a valid answer, core answers alone, with no data key. Without `--json`, core prints its own error block only when the extension's exit code differs from the signal's. A signal that arrives after the extension exited changes nothing: core keeps its handler registered and publishes the answer that it has decided.
+
+### SDK
+
+The SDK is the Go implementation of this contract, in the public packages of `sdk/` that the [code map](architecture.md#code-map) lists, as [D040](decisions/D040-wire-contract.md) decides. Core uses it too, so each shared layer has one implementation. A Go extension imports `sdk/` only, never core's `internal/`, which `just lint` enforces.
+
+A Go extension is one package that exports one `extension.Extension` value, built from `manifest.toml` and `locales/` in its folder with `go:embed`. The API of `sdk/extension` comes down to this:
+
+```go
+type Extension struct {
+	Manifest []byte             // manifest.toml
+	Locales  fs.FS              // holds locales/<lang>.toml
+	Handlers map[string]Handler // one per command that runs, keyed by path, such as "hello run"
+}
+
+// Handler runs one validated call. ctx ends on the first Ctrl-C or SIGTERM.
+type Handler func(ctx context.Context, call Call) contract.Outcome
+
+type Call struct {
+	Path    string            // such as "hello run"
+	Args    []string          // the positional arguments
+	Flags   map[string]string // each flag that the caller set, by long name; a switch holds "true" or "false"
+	JSON    bool
+	Mode    contract.Mode
+	Printer *i18n.Printer // in the language of NCLY_LANG
+	Stdin   io.Reader
+	Stdout  io.Writer // human text only; the SDK prints the answer
+	Stderr  io.Writer
+}
+
+func Main(e Extension) // runs the extension as this process, then exits with its code
+func Check(e Extension) error
+```
+
+`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. It prints the result by its kind, from the command's `result`:
+
+- `object` and `batch`: in human mode, the handler writes its text to `Stdout`. With `--json`, it writes nothing there, and the SDK prints the answer from the outcome
+- `report`: the handler returns its findings in the outcome's data, and marks the outcome when a finding needs a human. The SDK answers on stdout with `ok` and exit 0, or `false` and exit 78, without `errors`, as [Output](#output) says. Core's doctor uses the same outcome from M05
+- `text`: the handler writes its text to `Stdout`, whatever `--json` says
+
+A failure of the command itself prints as an ordinary failure for every kind: the error block, or the answer on stderr with `--json`. On Ctrl-C or SIGTERM, the SDK ends `ctx`, stops the extension's programs as [Programs that ncly runs](#programs-that-ncly-runs) defines, and sets the outcome's signal, so a handler returns what it has. A handler that has not returned when the 15 seconds of cleanup end gets no more time: the SDK answers `INTERRUPTED` or `TERMINATED` alone and exits. Under `ncly`, core's own 15 seconds govern, and either path gives the same answer, because both carry the signal's code and no data key. Run directly, `ncly-<domain>` also parses the global flags and the ordinary syntax that core accepts, because canonical arguments are a subset of it. `Check` reports a manifest that breaks the rules of [Manifest](#manifest), a command that runs without a handler, a handler for no such command, and a catalog that breaks the catalog rules below. Every Go extension has a test that calls it. `Main` checks the manifest and the handlers when it starts and answers `RUNTIME` for those faults, while a missing translation falls back to `en` at run time, as [Text of an extension](#text-of-an-extension) says.
+
+The same value serves both transports, so they cannot drift, as [D051](decisions/D051-bundled-child-process.md) decides:
+
+- **External:** the extension's `main` calls `extension.Main`. Installing it writes the embedded manifest and catalogs beside the executable, as `ncly-<domain>.toml` and `ncly-<domain>.locales/`
+- **Bundled:** `cmd/ncly` passes the value to core in an explicit list, never through an `init` side effect. Core reads its embedded manifest and catalogs, validates its call, then starts the `ncly` binary itself as the extension's program, with `ncly-<domain>` as its first argument, `argv[0]`, through the program runner. Started under the name of a bundled extension, `ncly` runs that extension's `Main` instead of core, as busybox picks its applet from its name. A bundled extension therefore gets the canonical arguments, the environment, the process group, the cancellation, and the answer check of an external one
+
+The SDK accepts the error codes that the manifest declares, and every warning code that starts with the domain and an underscore, beside core's codes, so the verdict and the answer follow [Output](#output). The SDK's catalog holds the text that the SDK renders: help pages, global flags, usage errors, error labels, outcome summaries, and size units. An extension's printer takes an ID that starts with its domain and a dot from the extension's catalogs, and any other ID from the SDK's, so an extension never overrides the SDK's text. Core's printer takes an ID from core's catalog when that catalog holds it, and from the SDK's otherwise. The catalog rules are these: every entry has a description, every language holds the IDs of `en`, an extension's IDs start with its domain and a dot, and core's IDs differ from the SDK's. `Check` applies them to an extension, and one parity test applies them to every catalog folder of the repository, core's, the SDK's, and each extension's.
 
 ## Operations
 

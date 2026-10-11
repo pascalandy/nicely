@@ -46,7 +46,7 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 ### M03-T1 Skill list
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract.md#configuration)
-- **Proves:** `testdata/script/skill_list.txtar`, `testdata/script/skill_shadowed.txtar`, `testdata/script/skill_invalid.txtar`, `testdata/script/skill_links.txtar`
+- **Proves:** `extensions/skill/testdata/script/skill_list.txtar`, `extensions/skill/testdata/script/skill_shadowed.txtar`, `extensions/skill/testdata/script/skill_invalid.txtar`, `extensions/skill/testdata/script/skill_links.txtar`
 
 `ncly skill list` over `[skill] paths`, as the first bundled extension, with `SKILL_SHADOWED`, `SKILL_NO_SOURCE`, `SKILL_INVALID`, and `SKILL_SOURCE_MISSING`. As the first command that reads the config, it maps an unreadable, malformed, or wrongly typed config to `CONFIG_INVALID`. The scenarios cover these edge cases:
 
@@ -58,21 +58,21 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 ### M03-T2 Skill view
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
-- **Proves:** `testdata/script/skill_view.txtar`
+- **Proves:** `extensions/skill/testdata/script/skill_view.txtar`
 
 `ncly skill view <name>`, with or without `--json`, and the `ncly skill <name>` shortcut. The first line names the skill's folder. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2.
 
 ### M03-T3 The nicely skill
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Agents in both directions](../north-star/vision.md#agents-in-both-directions)
-- **Proves:** `testdata/script/skill_nicely.txtar`
+- **Proves:** `extensions/skill/testdata/script/skill_nicely.txtar`
 
 The skill extension embeds the `nicely` skill, which `list` shows with its bundled source. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`.
 
 ### M03-T4 Skills from extensions
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract.md#extensions)
-- **Proves:** `testdata/script/skill_extension.txtar`
+- **Proves:** `extensions/skill/testdata/script/skill_extension.txtar`
 
 The `SKILL.md` of an installed extension appears in `list` with its source, and `view` reads it, so every extension can teach agents how to use it.
 

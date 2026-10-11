@@ -56,3 +56,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D048](D048-static-manifest-and-catalogs.md) | Describe an extension in a manifest and catalogs beside it |
 | [D049](D049-canonical-arguments.md) | Pass an extension its validated call in one canonical form |
 | [D050](D050-answer-check.md) | Check an extension's answer before the caller sees it |
+| [D051](D051-bundled-child-process.md) | Run a bundled extension as a child of the same ncly binary |

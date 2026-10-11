@@ -38,21 +38,21 @@ Settle each one in [ncly run](../north-star/core-spec.md#ncly-run) and [Extensio
 ### M15-T2 Reuse saved work
 
 - **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume)
-- **Proves:** `testdata/script/transcript_resume.txtar`
+- **Proves:** `extensions/transcript/testdata/script/transcript_resume.txtar`
 
 Resume a saved transcript whose summary never started: counted calls prove that transcription is not repeated, and a summary-only resume needs no `uv` and no Deepgram key. Change the config's profile, and the remaining steps still use the recorded one. A completed run returns its verified result without another paid call. A lost completion message is reconciled only when every recorded artifact verifies.
 
 ### M15-T3 Refuse unsafe work
 
 - **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
-- **Proves:** `testdata/script/transcript_resume_unsafe.txtar`
+- **Proves:** `extensions/transcript/testdata/script/transcript_resume_unsafe.txtar`
 
 A changed input or artifact, missing or mismatched evidence, an unknown summary, and an unknown transcription without its complete artifact set each return `RESUME_UNSAFE`, with the available artifacts, and `--force` overrides none of them. The run that ended with a 504 after upload is refused with no replay. A failed attempt whose paid step stays pending keeps its code, message, and hint.
 
 ### M15-T4 Resume a summary run
 
 - **Read:** [ncly transcript summary run](../../extensions/transcript/spec.md#ncly-transcript-summary-run)
-- **Proves:** `testdata/script/transcript_summary_resume.txtar`
+- **Proves:** `extensions/transcript/testdata/script/transcript_summary_resume.txtar`
 
 `ncly run resume` on a summary run verifies the copied transcript evidence and continues its eligible pending or failed summaries without transcribing. A rejected item keeps its saved error.
 

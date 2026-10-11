@@ -56,22 +56,26 @@ Each part has one owner: one package and one spec section.
 |---|---|---|---|---|
 | 4 | Each extension | Its domain's preparation, business steps, result verification, resume evidence, catalog, and skill | `extensions/<name>/` | Its `spec.md` |
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
-| 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap | `internal/cli/` | [core-spec.md](core-spec.md) |
-| 2 | Program runner | Child environment, process groups, timeouts, signals, and process cleanup | `internal/runner/`, from M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
+| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/`, from M02 | [SDK](contract.md#sdk) |
+| 2 | Command line | Declarations turned into commands, global flags, help pages, and answers printed | `sdk/command/` | [Command descriptions](contract.md#command-descriptions), [Output](contract.md#output) |
+| 2 | Program runner | Child environment, process groups, timeouts, signals, and process cleanup | `sdk/runner/`, from M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 | 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/`, from M10 | [Operations](contract.md#operations) |
-| 2 | Config | Shared and local config files, environment, flags, and XDG paths | `internal/config/` | [Configuration](contract.md#configuration) |
-| 2 | i18n | Catalogs in `locales/`, lookup, plurals, and number, size, and date formats | `internal/i18n/` | [Configuration](contract.md#configuration) |
-| 2 | Interactive parts | The shared styles, forms, and screens | `internal/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
-| 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `internal/contract/` | [contract.md](contract.md) |
-| 0 | Platform | Durable writes, locks, keychain, trash, and process tree | `internal/platform/`, from M01; the keychain stays in core | [Record format](contract.md#record-format), [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract.md#configuration) |
+| 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract.md#configuration) |
+| 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
+| 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `sdk/contract/` | [contract.md](contract.md) |
+| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/`, from M01 | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants | `internal/keychain/`, from M06 | [Keys](contract.md#keys) |
 
-[M02](../milestones/M02-sdk.md) moves the shared packages that exist by then, the contract, i18n, config, tui, the platform helpers, and the program runner, from `internal/` to `sdk/`. A later shared service starts in `sdk/`, such as run records in M10. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
+Until [M02](../milestones/M02-sdk.md) moves them, the packages under `sdk/` live under `internal/` with the same names, and `sdk/command/` is part of `internal/cli/`. A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
 
 The other folders:
 
-- `cmd/ncly/`: the entry point, which wires core and the bundled extensions
+- `cmd/ncly/`: the entry point, which passes core the bundled extensions in an explicit list, and runs one of them when started under its name
 - `internal/specdoc/`: reads the tables of the north-star docs for the tests that compare code and spec
-- `testdata/script/`: testscript scenarios
+- `testdata/script/`: core's testscript scenarios. An extension keeps its own in `extensions/<name>/testdata/script/`, and the test binary of `cmd/ncly` runs both
+- `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` names it
 - `tools/`: a separate module that pins the dev tools and holds the plan checker behind `just next` and `just test`
 
 ## Domains and commands
