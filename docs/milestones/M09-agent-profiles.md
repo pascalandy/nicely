@@ -19,6 +19,8 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 
 - Whether `ncly agent run` reads stdin without `-` when stdin is a pipe, given that some harnesses leave stdin open
 - The answer keys of `ncly agent run` that transcript records: `run_id`, `answer`, `profile`, `harness`, the harness version, `model`, and `duration_ms`
+- How completion reaches values that only an extension knows, such as profile names. Settle it in [Extensions](../north-star/contract.md#extensions)
+
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
