@@ -16,7 +16,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - An extension reaches core only through the wire contract: its manifest, its environment, its answer, its exit code, and its run records
 - The agent contract and the wire contract are two overlapping scopes of one contract: both hold the answer and the exit code
 - An extension reaches another extension only through the CLI, as an agent does
-- Platform → contract → services → core → extensions: each layer uses only the layers below it
+- Platform → contract → services → core → extensions: each layer depends only on the layers below it
 - A tap carries skills and extensions to a machine
 - A principle links the decisions behind it; a decision explains a rule that a spec holds
 
@@ -57,6 +57,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Services
   - Def.: layer 2: what core and extensions share while work runs
   - Project note: the [code map](architecture.md#code-map) lists them
+  - Distinct from: a network service such as Deepgram, whose key `ncly auth` manages
 - SDK
   - Def.: the public Go packages in `sdk/` that implement the contract and the shared services, for core and for every Go extension
   - Distinct from: services, the one layer of the SDK that runs work
@@ -217,7 +218,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: something simpler that hides complexity behind it
   - Project note: each layer is an abstraction over the layers below it
 - Layer
-  - Def.: a level of abstraction that uses only the levels below it
+  - Def.: a level of abstraction that depends only on the levels below it
   - Project note: platform, contract, services, core, and extensions, drawn in [architecture.md](architecture.md#layers)
 - Foundation
   - Def.: the lowest layer, which hides the outside world behind one interface

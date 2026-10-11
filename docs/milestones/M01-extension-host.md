@@ -35,7 +35,7 @@ keys = []
 
 Settle each one in [Extensions](../north-star/contract.md#extensions), then delete this section.
 
-- The complete manifest schema: command declarations, effects, modes, results, requirements, and the `version` of the extension. It must describe the bundled `skill` of M03 too, without duplicating help or completion definitions
+- The complete manifest schema: command declarations, effects, modes, results, requirements, and the `version` of the extension. It must describe the bundled `skill` of M03 and the commands in [agent's spec](../../extensions/agent/spec.md) too, without duplicating help or completion definitions
 - Whether the manifest carries the translations of its help text, or core asks the extension for its help in `NCLY_LANG`
 - The error codes and exit codes for a missing manifest, an incompatible manifest, and a protocol failure
 - Whether core captures the extension's stdout in JSON mode to check it, or passes the streams through and checks a copy
