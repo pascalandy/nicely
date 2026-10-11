@@ -40,14 +40,14 @@ The first release, v0.0.1, waits for Pascal, as [Release](../../AGENTS.md#releas
 - **Read:** [Output](../north-star/contract.md#output), [Exit codes](../north-star/contract.md#exit-codes), [Command descriptions](../north-star/contract.md#command-descriptions)
 - **Proves:** `testdata/script/usage_errors.txtar`, `testdata/script/output_errors.txtar`, `testdata/script/closed_pipe.txtar`, `testdata/script/dry_run_conformance.txtar`, `internal/contract/spec_test.go`
 
-`internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, Modes, and global flags from [contract.md](../north-star/contract.md). One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. The M00 boundaries in [Contract coverage](#contract-coverage) are complete, including independent expected results. Tests check agreement with the spec on errors, exit codes, flags, and command declarations. The Operations responsibilities are fixed, while run records and resume wait for their first consumer.
+`internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, and Modes from [contract.md](../north-star/contract.md), and `internal/cli` declares the global flags. One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. The M00 boundaries in [Contract coverage](#contract-coverage) are complete, including independent expected results. Tests check agreement with the spec on errors, exit codes, flags, and command declarations. The Operations responsibilities are fixed, while run records and resume wait for their first consumer.
 
 ### M00-T3 Config
 
 - **Read:** [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `internal/config/config_test.go`, `testdata/script/language.txtar`
 
-The shared and local config files, their precedence, and the XDG paths, including state. `CONFIG_INVALID` for a broken file. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports.
+The shared and local config files, their precedence, and the XDG paths, including state. A broken file fails to load with its name and line, ready for `CONFIG_INVALID`. No M00 command reports that code, because help, the version, and completion use the defaults. Unknown keys are collected for the `CONFIG_UNKNOWN_KEY` warning that doctor reports.
 
 ### M00-T4 Text
 
@@ -114,7 +114,7 @@ The contract suite exercises behavior, not the spelling of source code. Each gua
 | Dry run | Define the shared preparation/result contract and its conformance cases, including the bounded cache exception | Auth in M06 and transcript in M13 compare user files, config, keychain, run records, and external calls before and after dry run |
 | Cancellation and resume | Define the signal verdicts and required partial-result representation | M01 checks process cleanup on an extension. M10, M13, and M15 check persisted evidence, lost stdout, and explicit resume |
 
-No M00 key carries a unit, so the first key with one, such as `duration_ms`, adds its own consumer case. The scenario commands `snapshot` and `unchanged` are the dry-run conformance check: they compare every file under `$HOME` except Nicely's cache.
+No M00 key carries a unit, so the first key with one, such as `duration_ms`, adds its own consumer case. The only M00 enum is `code`, which every milestone and extension extends, so its consumer case waits for the reader rule that [M01](M01-extension-host.md) settles in [Error codes](../north-star/contract.md#error-codes). The scenario commands `snapshot` and `unchanged` are the dry-run conformance check: they compare every file under `$HOME` except Nicely's cache.
 
 Direct component tests are justified where M00 exposes no real command that reaches the behavior. Test support stays in tests and calls production components. It does not implement an alternate CLI. Effects and resume are not marked verified until the first real command exercises them, from M10 to M15.
 
