@@ -16,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
@@ -78,14 +77,8 @@ type loaded struct {
 // Main does when it starts.
 func load(e Extension) (loaded, error) {
 	l := loaded{Extension: e}
-	var head struct {
-		Domain string `toml:"domain"`
-	}
-	if _, err := toml.Decode(string(e.Manifest), &head); err != nil {
-		return l, fmt.Errorf("manifest: %w", err)
-	}
 	var err error
-	if l.manifest, err = contract.ParseManifest(e.Manifest, head.Domain); err != nil {
+	if l.manifest, err = contract.ParseManifest(e.Manifest, ""); err != nil {
 		return l, fmt.Errorf("manifest: %w", err)
 	}
 	locales, err := fs.Sub(e.Locales, "locales")

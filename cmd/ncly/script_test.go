@@ -20,7 +20,17 @@ func TestMain(m *testing.M) {
 		"closedpipe":     closedPipe,
 		"exitcode":       exitCode,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
+		// ncly-bundled is ncly with the hello fixture bundled. It starts the
+		// fixture as itself under the name ncly-hello, which reaches the
+		// fixture through the routing of run, as in a release.
+		"ncly-bundled": testBundled,
+		"ncly-hello":   testBundled,
 	})
+}
+
+func testBundled() {
+	shortCleanup()
+	os.Exit(run([]extension.Extension{hello.Extension}))
 }
 
 // fixtures holds the Go fixture extensions of testdata/extensions/, by
@@ -53,7 +63,7 @@ func TestScripts(t *testing.T) {
 					return err
 				}
 				if e, isFixture := fixtures[domain]; isFixture {
-					return install(env, domain, e)
+					return install(env.WorkDir, env.Setenv, domain, e)
 				}
 				return nil
 			})
@@ -77,16 +87,31 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 			"waitfile":  cmdWaitfile,
 			"gone":      cmdGone,
 			"term":      cmdTerm,
+			"install":   cmdInstall,
 		},
 	})
 }
 
+// cmdInstall installs a Go fixture in the data folder, as the setup of the
+// fixture's own scenarios does: install <domain>
+func cmdInstall(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 1 {
+		ts.Fatalf("usage: install <domain>")
+	}
+	e, isFixture := fixtures[args[0]]
+	if !isFixture {
+		ts.Fatalf("install: no fixture %q", args[0])
+	}
+	ts.Check(install(ts.Getenv("WORK"), ts.Setenv, args[0], e))
+}
+
 // install puts a Go fixture in the data folder as an external extension:
 // the script ncly-<domain> that runs it, with its manifest and catalogs
-// beside it. The script runs the test binary under a name other than
-// ncly-<domain>, so the fixture never runs as a bundled extension here.
-func install(env *testscript.Env, domain string, e extension.Extension) error {
-	dir := filepath.Join(env.WorkDir, ".local", "share", "nicely", "extensions")
+// beside it. The script appends its domain to $WORK/external.log, then runs
+// the test binary under the name <domain>-external, so the fixture runs as
+// an external extension. DATA names the folder.
+func install(work string, setenv func(name, value string), domain string, e extension.Extension) error {
+	dir := filepath.Join(work, ".local", "share", "nicely", "extensions")
 	executable := filepath.Join(dir, "ncly-"+domain)
 	locales, err := fs.Sub(e.Locales, "locales")
 	if err == nil {
@@ -96,9 +121,10 @@ func install(env *testscript.Env, domain string, e extension.Extension) error {
 		err = os.WriteFile(executable+".toml", e.Manifest, 0o644)
 	}
 	if err == nil {
-		err = os.WriteFile(executable, []byte("#!/bin/sh\nexec "+domain+"-external \"$@\"\n"), 0o755)
+		script := "#!/bin/sh\necho " + domain + " >> \"$WORK/external.log\"\nexec " + domain + "-external \"$@\"\n"
+		err = os.WriteFile(executable, []byte(script), 0o755)
 	}
-	env.Setenv("DATA", dir)
+	setenv("DATA", dir)
 	return err
 }
 

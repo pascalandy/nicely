@@ -122,8 +122,10 @@ type manifestFile struct {
 
 // ParseManifest reads the manifest of the extension of a domain and checks
 // every rule of the Manifest section of contract.md, except the catalog IDs,
-// which need the catalog. The versions come first, so a manifest of another
-// format is rejected before its other keys are read.
+// which need the catalog. An empty domain takes the one that the manifest
+// declares, as for an extension whose manifest is embedded. The versions
+// come first, so a manifest of another format is rejected before its other
+// keys are read.
 func ParseManifest(data []byte, domain string) (Manifest, error) {
 	var versions struct {
 		FormatVersion   int `toml:"format_version"`
@@ -142,7 +144,10 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 	if _, err := toml.Decode(string(data), &file); err != nil {
 		return Manifest{}, syntaxError(err)
 	}
-	if file.Domain != domain {
+	if domain == "" {
+		domain = file.Domain
+	}
+	if file.Domain != domain || !IsDomain(domain) {
 		return Manifest{}, broken("extension.domain", map[string]any{"Value": file.Domain, "Want": domain})
 	}
 	m := Manifest{Domain: domain}

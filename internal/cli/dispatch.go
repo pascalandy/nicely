@@ -57,6 +57,11 @@ func (c *call) run(p *i18n.Printer, g command.Globals, stdout, stderr *os.File) 
 		Stderr:   stderr,
 		Terminal: true,
 	}
+	if c.extension.bundled {
+		// Started under the extension's name, the binary of ncly runs the
+		// extension instead of core.
+		program.Name = executablePrefix + c.extension.domain
+	}
 	if g.JSON && c.kind != contract.ResultText {
 		return c.runChecked(ctx, p, g, program, stdout, stderr)
 	}

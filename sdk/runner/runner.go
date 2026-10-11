@@ -24,6 +24,9 @@ import (
 // Program is one program to run.
 type Program struct {
 	Path string
+	// Name, when set, is the program's argv[0] instead of Path, as ncly
+	// starts itself under the name of a bundled extension.
+	Name string
 	Args []string
 	Env  []string
 	// Stdin, Stdout, and Stderr reach the program. An *os.File passes as it
@@ -66,6 +69,9 @@ const DrainLimit = 2 * time.Second
 // DrainLimit after the program exits.
 func Run(ctx context.Context, p Program) (Result, error) {
 	cmd := exec.Command(p.Path, p.Args...)
+	if p.Name != "" {
+		cmd.Args[0] = p.Name
+	}
 	cmd.Env = p.Env
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: !p.Terminal}
 	if ctx.Err() != nil {

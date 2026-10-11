@@ -13,6 +13,7 @@ import (
 
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/contract"
+	sdkextension "github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
 )
@@ -38,8 +39,9 @@ var reservedNames = []string{
 	"help", "version", "config",
 }
 
-// Main runs ncly with args, without the program name, and returns its exit code.
-func Main(args []string, stdout, stderr *os.File) int {
+// Main runs ncly with args, without the program name, and returns its exit
+// code. bundled lists the extensions compiled into ncly.
+func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.File) int {
 	// Go ends the process with SIGPIPE when the reader of stdout is gone,
 	// before ncly can report the lost output. Asking for the signal turns
 	// that write into an EPIPE error instead. signal.Ignore would do the
@@ -54,7 +56,7 @@ func Main(args []string, stdout, stderr *os.File) int {
 	en := catalogs.Printer("en")
 	core := newRoot(en, "", nil)
 	cmd, _, _ := core.Find(args)
-	extensions := neededExtensions(searchPath(), core, command.Scan(cmd, args).Words)
+	extensions := neededExtensions(newHost(bundled), core, command.Scan(cmd, args).Words)
 	cmd, _, _ = newRoot(en, "", extensions).Find(args)
 	line := command.Scan(cmd, args)
 	g := command.Resolve(line)
@@ -146,17 +148,17 @@ func target(words []string) string {
 // for a command of core, the one whose domain it targets, and every one
 // otherwise, for the root's help, for completion, and for a word that names
 // no command, whose help is the root's.
-func neededExtensions(dirs []string, core *cobra.Command, words []string) []*extension {
+func neededExtensions(h host, core *cobra.Command, words []string) []*extension {
 	name := target(words)
 	if name != "" && !isCompletionRequest(name) {
 		if isCommand(core, name) {
 			return nil
 		}
-		if e := findExtension(dirs, name); e != nil {
+		if e := h.find(name); e != nil {
 			return []*extension{e}
 		}
 	}
-	return findExtensions(dirs)
+	return h.all()
 }
 
 // brokenTarget returns the extension that cannot run whose domain the

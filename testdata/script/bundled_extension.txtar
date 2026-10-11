@@ -1,0 +1,64 @@
+# A bundled extension runs as a child of the ncly binary itself, started under its
+# name, so it answers exactly as the same extension installed apart. ncly runs the Go
+# fixture hello as an external extension from the data folder, and ncly-bundled is
+# ncly with the same fixture bundled.
+install hello
+
+# The calls of the fixture's own scenario give the same stdout, stderr, and exit code
+exec sh same.sh hello run Ada
+exec sh same.sh hello run Ada --json
+exec sh same.sh hello run --json
+exec sh same.sh hello run
+exec sh same.sh hello run --greeting= Ada --json
+exec sh same.sh hello run --grumpy
+exec sh same.sh hello run --grumpy --json
+exec sh same.sh hello check --json
+exec sh same.sh hello check --fail --json
+exec sh same.sh hello say Ada --json
+exec sh same.sh --lang en-XA hello run --grumpy
+exec sh same.sh hello nope --json
+exec sh same.sh hello --help
+
+# The bundled fixture wins over the installed one, which never runs, and the help lists it once
+rm external.log
+exec ncly-bundled hello run Ada
+stdout '^Hello, Ada!$'
+exec ncly-bundled --help
+stdout -count=1 '^  hello: '
+! exists external.log
+
+# SIGTERM to either build stops the extension, its program, and the program's grandchild,
+# and both answer TERMINATED with the key of hello wait
+exec exitcode exit.txt ncly hello wait --json &
+waitfile program.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"output_dir":"'
+gone program.pid
+gone grandchild.pid
+
+rm program.pid grandchild.pid
+exec exitcode exit.txt ncly-bundled hello wait --json &
+waitfile program.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"output_dir":"'
+gone program.pid
+gone grandchild.pid
+
+-- same.sh --
+# same.sh <args...> runs one call through ncly and through ncly-bundled, and fails
+# unless both give the same stdout, stderr, and exit code.
+ncly "$@" > external.out 2> external.err
+external=$?
+ncly-bundled "$@" > bundled.out 2> bundled.err
+bundled=$?
+if [ "$external" != "$bundled" ]; then
+  echo "exit $external through ncly, $bundled through ncly-bundled: $*" >&2
+  exit 1
+fi
+cmp external.out bundled.out && cmp external.err bundled.err
