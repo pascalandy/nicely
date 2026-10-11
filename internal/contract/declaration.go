@@ -1,5 +1,16 @@
 package contract
 
+// GlobalFlags declares the flags that every command accepts.
+var GlobalFlags = []Flag{
+	{Name: "help", Shorthand: "h", Summary: "flag.help"},
+	{Name: "json", Summary: "flag.json", Env: "NCLY_JSON"},
+	{Name: "no-input", Summary: "flag.no_input", Env: "NCLY_NO_INPUT"},
+	{Name: "no-color", Summary: "flag.no_color", Env: "NO_COLOR"},
+	{Name: "lang", Summary: "flag.lang", Value: "tag", Env: "NCLY_LANG"},
+	{Name: "verbose", Shorthand: "v", Summary: "flag.verbose", Env: "NCLY_VERBOSE"},
+	{Name: "version", Summary: "flag.version"},
+}
+
 // Command declares one command once, for help, completion, validation, and
 // discovery. Text fields hold catalog IDs, never text. The declaration does
 // not describe steps: the domain owns its behavior.
@@ -13,7 +24,24 @@ type Command struct {
 	Examples []string
 	Effects  Effects
 	Modes    Modes
+	Result   Result
 }
+
+// Result describes what a command answers.
+type Result struct {
+	Kind ResultKind
+}
+
+// ResultKind tells how a command answers, and so how core checks the answer
+// of an extension's command. A manifest that names no kind gets ResultObject.
+type ResultKind string
+
+const (
+	ResultObject ResultKind = "object"
+	ResultBatch  ResultKind = "batch"
+	ResultReport ResultKind = "report"
+	ResultText   ResultKind = "text"
+)
 
 // Arg is one positional argument.
 type Arg struct {

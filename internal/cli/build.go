@@ -8,13 +8,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// build makes the command that a declaration describes, with catalog text. A
-// nil run makes a command that groups others: alone it prints its help, and
-// an unknown word after it is a usage error.
-func build(p *i18n.Printer, d contract.Command, run func(*cobra.Command, []string) error) *cobra.Command {
+// build makes the command that a declaration describes. text renders the
+// catalog IDs of the declaration, from the catalogs of its owner, and p
+// renders core's own text, such as usage errors. A nil run makes a command
+// that groups others: alone it prints its help, and an unknown word after it
+// is a usage error.
+func build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, []string) error) *cobra.Command {
+	use := []string{d.Path[len(d.Path)-1]}
+	for _, a := range d.Args {
+		use = append(use, "["+a.Name+"]")
+	}
 	c := &cobra.Command{
-		Use:     d.Path[len(d.Path)-1],
-		Short:   p.T(d.Summary),
+		Use:     strings.Join(use, " "),
+		Short:   text.T(d.Summary),
 		Example: strings.Join(d.Examples, "\n"),
 		Args: func(c *cobra.Command, args []string) error {
 			if len(args) <= len(d.Args) {
@@ -44,7 +50,7 @@ func build(p *i18n.Printer, d contract.Command, run func(*cobra.Command, []strin
 		c.RunE = func(c *cobra.Command, _ []string) error { return c.Help() }
 	}
 	for _, f := range d.Flags {
-		addFlag(c.Flags(), p, f)
+		addFlag(c.Flags(), text, f)
 	}
 	return c
 }

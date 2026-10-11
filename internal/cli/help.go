@@ -67,15 +67,24 @@ func helpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
 		if c.Example != "" {
 			page.Examples = strings.Split(c.Example, "\n")
 		}
-		var commands []tui.Entry
+		var commands, extensions []tui.Entry
 		for _, sub := range c.Commands() {
-			if sub.IsAvailableCommand() {
+			switch {
+			case !sub.IsAvailableCommand():
+			case sub.GroupID == extensionGroup:
+				extensions = append(extensions, tui.Entry{Name: sub.Name(), Summary: sub.Short})
+			default:
 				commands = append(commands, tui.Entry{Name: sub.Name(), Summary: sub.Short})
 			}
 		}
-		if len(commands) > 0 {
+		if len(commands)+len(extensions) > 0 {
 			page.Usage = c.CommandPath() + " <command> [flags]"
+		}
+		if len(commands) > 0 {
 			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.commands"), Entries: commands, Colon: true})
+		}
+		if len(extensions) > 0 {
+			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.extensions"), Entries: extensions, Colon: true})
 		}
 		if flags := flagEntries(local); len(flags) > 0 {
 			page.Sections = append(page.Sections, tui.Section{Title: p.T("help.flags"), Entries: flags})

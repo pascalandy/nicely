@@ -163,3 +163,99 @@ other = "Print the completion script for bash"
 ["completion.fish_summary"]
 description = "Help page: summary of `ncly completion fish`. fish is the name of a shell and stays as is."
 other = "Print the completion script for fish"
+
+["help.extensions"]
+description = "Help page: heading above the list of installed extensions, each a domain such as transcript."
+other = "Extensions"
+
+["extension.invalid"]
+description = "Error when an installed extension cannot run. {{.Domain}} is its domain, such as hello, and stays as is. {{.Reason}} is one of the extension.* sentences, already translated."
+other = "The extension {{.Domain}} cannot run: {{.Reason}}"
+
+["extension.invalid_hint"]
+description = "Hint under extension.invalid: what the user does next. {{.Path}} is the path of the extension's executable."
+other = "Fix or reinstall the extension at {{.Path}}."
+
+["extension.file_missing"]
+description = "Reason inside extension.invalid. {{.File}} is the name of a file of the extension, such as ncly-hello.toml."
+other = "{{.File}} is missing."
+
+["extension.file_unreadable"]
+description = "Reason inside extension.invalid, when ncly lacks the permission to read a file. {{.File}} is the name of the file, such as ncly-hello.toml."
+other = "{{.File}} cannot be read."
+
+["extension.file_syntax"]
+description = "Reason inside extension.invalid. {{.File}} is the name of the file, such as ncly-hello.toml, and {{.Line}} a line number. TOML is the name of a file format and stays as is."
+other = "{{.File}} has a TOML syntax error on line {{.Line}}."
+
+["extension.file_invalid"]
+description = "Reason inside extension.invalid, when a file is not valid TOML or not a catalog. {{.File}} is the name of the file, such as ncly-hello.locales/en.toml."
+other = "{{.File}} is not in the expected format."
+
+["extension.format_version"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, format_version a key that stays as is, {{.Value}} the number it holds, and {{.Want}} the only number this ncly reads."
+other = "{{.File}} has format_version {{.Value}}, and this ncly reads only {{.Want}}."
+
+["extension.contract_version"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, contract_version a key that stays as is, {{.Value}} the number it holds, and {{.Want}} the only number this ncly speaks."
+other = "{{.File}} has contract_version {{.Value}}, and this ncly speaks only {{.Want}}."
+
+["extension.domain"]
+description = "Reason inside extension.invalid, when the manifest names a domain other than its executable's. {{.File}} is the manifest's name, {{.Value}} the domain it declares, and {{.Want}} the domain of the executable."
+other = "{{.File}} declares the domain \"{{.Value}}\" instead of {{.Want}}."
+
+["extension.domain_command"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} the domain, such as hello, which needs a command of its own."
+other = "{{.File}} declares no command for the domain {{.Path}}."
+
+["extension.path"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run."
+other = "{{.File}} declares the command \"{{.Path}}\", whose words must be lowercase letters, digits, and hyphens."
+
+["extension.path_domain"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Domain}} the extension's domain, which must be its first word."
+other = "{{.File}} declares the command \"{{.Path}}\", which does not start with {{.Domain}}."
+
+["extension.path_twice"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run."
+other = "{{.File}} declares the command \"{{.Path}}\" twice."
+
+["extension.parent"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path such as hello profile list, and {{.Parent}} the path above it, such as hello profile."
+other = "{{.File}} declares the command \"{{.Path}}\" without \"{{.Parent}}\" above it."
+
+["extension.result"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Value}} the kind of result it declares, which ncly does not know."
+other = "{{.File}} gives the command \"{{.Path}}\" the unknown result kind \"{{.Value}}\"."
+
+["extension.name"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of one of its flags, arguments, or values."
+other = "{{.File}} gives the command \"{{.Path}}\" the name \"{{.Name}}\", which must be lowercase letters, digits, and hyphens."
+
+["extension.shorthand"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the shorthand of one of its flags, such as g in -g."
+other = "{{.File}} gives the command \"{{.Path}}\" the shorthand \"{{.Name}}\", which must be one ASCII letter."
+
+["extension.flag_taken"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a flag such as --json or -v."
+other = "{{.File}} gives the command \"{{.Path}}\" the flag {{.Name}}, which a global flag or another of its flags already uses."
+
+["extension.code_prefix"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Prefix}} the start that the extension's codes need, such as HELLO_."
+other = "{{.File}} declares the error code {{.Code}}, which does not start with {{.Prefix}}."
+
+["extension.code_core"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Code}} an error code that belongs to ncly itself."
+other = "{{.File}} declares the error code {{.Code}}, which belongs to ncly."
+
+["extension.code_twice"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Code}} an error code."
+other = "{{.File}} declares the error code {{.Code}} twice."
+
+["extension.code_exit"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Value}} the exit code it maps to. 1, 2, and 78 are exit codes and stay as is."
+other = "{{.File}} maps the error code {{.Code}} to exit {{.Value}}, and an extension's code maps to 1, 2, or 78."
+
+["extension.catalog_id"]
+description = "Reason inside extension.invalid. {{.File}} is the name of the extension's English catalog, such as ncly-hello.locales/en.toml, and {{.Value}} a catalog ID that the manifest names."
+other = "{{.File}} lacks the ID \"{{.Value}}\" that the manifest names."

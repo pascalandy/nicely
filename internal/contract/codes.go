@@ -23,6 +23,7 @@ const (
 	UsageInvalid         Code = "USAGE_INVALID"
 	ConfirmationRequired Code = "CONFIRMATION_REQUIRED"
 	ConfigInvalid        Code = "CONFIG_INVALID"
+	ExtensionInvalid     Code = "EXTENSION_INVALID"
 	TerminalRequired     Code = "TERMINAL_REQUIRED"
 	Runtime              Code = "RUNTIME"
 	Temporary            Code = "TEMPORARY"
@@ -42,6 +43,7 @@ var errorCodes = []struct {
 	{Terminated, ExitTerminated},
 	{Runtime, ExitRuntime},
 	{ConfigInvalid, ExitHuman},
+	{ExtensionInvalid, ExitHuman},
 	{TerminalRequired, ExitHuman},
 	{UsageInvalid, ExitUsage},
 	{ConfirmationRequired, ExitUsage},

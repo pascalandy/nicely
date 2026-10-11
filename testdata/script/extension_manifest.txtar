@@ -1,0 +1,281 @@
+# Discovery reads the extensions folder of the data folder, then PATH in order.
+# Every fixture appends its domain to $WORK/ran when it runs, and none may run.
+env DATA=$WORK/.local/share/nicely/extensions
+exec sh mkext.sh $DATA hello 'Greet from the data folder'
+exec sh mkext.sh bin1 hello 'Greet from the first PATH folder'
+exec sh mkext.sh bin2 hello 'Greet from the second PATH folder'
+exec sh mkext.sh bin2 later 'Run later'
+exec sh mkext.sh rel relative 'Run from a relative folder'
+exec sh mkext.sh $WORK here 'Run from the current folder'
+env PATH=rel:$WORK/bin1::$WORK/bin2:$PATH
+
+# The data folder wins over PATH, and a relative or empty PATH entry is skipped
+exec ncly --help
+stdout '^EXTENSIONS$'
+stdout '^  hello: +Greet from the data folder$'
+stdout '^  later: +Run later$'
+! stdout 'relative'
+! stdout 'current folder'
+
+# An earlier PATH folder wins over a later one
+rm $DATA/ncly-hello
+exec ncly --help
+stdout '^  hello: +Greet from the first PATH folder$'
+rm bin1/ncly-hello
+exec ncly --help
+stdout '^  hello: +Greet from the second PATH folder$'
+
+# A link counts, and its manifest and catalog sit beside the link, never its target
+mkdir target
+cp stub.sh target/program
+chmod 755 target/program
+exec sh mkext.sh bin2 linked 'Run through a link'
+rm bin2/ncly-linked
+symlink bin2/ncly-linked -> ../target/program
+exec ncly --help
+stdout '^  linked: +Run through a link$'
+
+# A file that the user may not execute, a reserved name, and a name that is no domain are skipped
+exec sh mkext.sh bin2 plain 'Run without the right to'
+chmod 644 bin2/ncly-plain
+exec sh mkext.sh bin2 completion 'Replace the completion command'
+exec sh mkext.sh bin2 tap 'Replace the tap command'
+chmod 755 bin2/ncly-later.toml
+exec ncly --help
+! stdout 'without the right'
+! stdout 'Replace'
+! stdout 'later.toml'
+exec ncly completion zsh
+stdout '^#compdef ncly'
+exits 2 ncly tap --json
+answer stderr USAGE_INVALID
+
+# Each broken extension answers EXTENSION_INVALID for its domain, and never runs
+exec sh mkext.sh bin2 nomanifest 'Never shown'
+rm bin2/ncly-nomanifest.toml
+exits 78 ncly nomanifest --json
+answer stderr EXTENSION_INVALID
+stderr 'The extension nomanifest cannot run: ncly-nomanifest.toml is missing.'
+stderr '"hint":"Fix or reinstall the extension at '
+
+exec sh mkext.sh bin2 nocatalog 'Never shown'
+rm bin2/ncly-nocatalog.locales/en.toml
+exits 78 ncly nocatalog --json
+answer stderr EXTENSION_INVALID
+stderr 'ncly-nocatalog.locales/en.toml is missing'
+
+exec sh mkext.sh bin2 template 'Never {{ shown'
+exits 78 ncly template --json
+answer stderr EXTENSION_INVALID
+stderr 'ncly-template.locales/en.toml is not in the expected format'
+
+exec sh mkext.sh bin2 empty ''
+exits 78 ncly empty --json
+answer stderr EXTENSION_INVALID
+stderr 'ncly-empty.locales/en.toml is not in the expected format'
+
+exec sh broken.sh syntax format contract domain parent jsonflag shorthand flagname prefix temporary catalog
+exits 78 ncly syntax --json
+answer stderr EXTENSION_INVALID
+stderr 'ncly-syntax.toml has a TOML syntax error on line [0-9]+'
+exits 78 ncly format --json
+answer stderr EXTENSION_INVALID
+stderr 'ncly-format.toml has format_version 2, and this ncly reads only 1'
+exits 78 ncly contract --json
+answer stderr EXTENSION_INVALID
+stderr 'contract_version 2'
+exits 78 ncly domain --json
+answer stderr EXTENSION_INVALID
+stderr 'declares the domain \\"other\\" instead of domain'
+exits 78 ncly parent --json
+answer stderr EXTENSION_INVALID
+stderr 'without \\"parent profile\\" above it'
+exits 78 ncly jsonflag --json
+answer stderr EXTENSION_INVALID
+stderr 'the flag --json'
+exits 78 ncly shorthand --json
+answer stderr EXTENSION_INVALID
+stderr 'the shorthand \\"é\\"'
+exits 78 ncly flagname --json
+answer stderr EXTENSION_INVALID
+stderr 'the name \\"a=b\\"'
+exits 78 ncly prefix --json
+answer stderr EXTENSION_INVALID
+stderr 'the error code GRUMPY, which does not start with PREFIX_'
+exits 78 ncly temporary --json
+answer stderr EXTENSION_INVALID
+stderr 'maps the error code TEMPORARY_LATER to exit 75'
+exits 78 ncly catalog --json
+answer stderr EXTENSION_INVALID
+stderr 'lacks the ID \\"catalog.run.summary\\"'
+
+# The text of the error comes from the catalog, and the help of a broken extension is the same error
+exits 78 ncly --lang en-XA format
+pseudo stderr format
+exits 78 ncly format --help
+stderr '^error\[EXTENSION_INVALID\]: The extension format cannot run'
+exits 78 ncly help format
+stderr '^error\[EXTENSION_INVALID\]'
+
+# A broken extension stays its domain's extension and hides a valid one found later
+exec sh mkext.sh $DATA later 'Run later from the data folder'
+rm $DATA/ncly-later.toml
+exits 78 ncly later --json
+answer stderr EXTENSION_INVALID
+
+# A domain without a verb prints its help, even when it declares no other command
+exec ncly linked
+stdout '^Run through a link$'
+
+# The help lists the valid extensions beside the broken ones, which it leaves out
+exec ncly --help
+stdout '^  hello: '
+stdout '^  linked: '
+! stdout 'Never shown'
+! stdout 'format'
+! stdout '^  later:'
+! exists ran
+
+-- stub.sh --
+#!/bin/sh
+echo "${0##*/}" >> "$WORK/ran"
+-- mkext.sh --
+# mkext.sh <folder> <domain> <summary> writes a valid fixture extension.
+dir=$1 domain=$2
+mkdir -p "$dir/ncly-$domain.locales"
+cp stub.sh "$dir/ncly-$domain"
+chmod 755 "$dir/ncly-$domain"
+cat > "$dir/ncly-$domain.toml" <<EOF
+format_version = 1
+contract_version = 1
+domain = "$domain"
+
+[[commands]]
+path = "$domain"
+summary = "$domain.summary"
+EOF
+cat > "$dir/ncly-$domain.locales/en.toml" <<EOF
+["$domain.summary"]
+description = "Summary of the fixture."
+other = "$3"
+EOF
+-- broken.sh --
+# broken.sh <domain>... writes fixtures whose manifest is broken/<domain>.toml.
+for domain in "$@"; do
+  sh mkext.sh bin2 "$domain" 'Never shown'
+  cp "broken/$domain.toml" "bin2/ncly-$domain.toml"
+done
+-- broken/syntax.toml --
+format_version = 1
+contract_version = 1
+domain = "syntax"
+[[commands]
+-- broken/format.toml --
+format_version = 2
+contract_version = 1
+domain = "format"
+
+[[commands]]
+path = "format"
+summary = "format.summary"
+-- broken/contract.toml --
+format_version = 1
+contract_version = 2
+domain = "contract"
+
+[[commands]]
+path = "contract"
+summary = "contract.summary"
+-- broken/domain.toml --
+format_version = 1
+contract_version = 1
+domain = "other"
+
+[[commands]]
+path = "other"
+summary = "domain.summary"
+-- broken/parent.toml --
+format_version = 1
+contract_version = 1
+domain = "parent"
+
+[[commands]]
+path = "parent"
+summary = "parent.summary"
+
+[[commands]]
+path = "parent profile list"
+summary = "parent.summary"
+-- broken/jsonflag.toml --
+format_version = 1
+contract_version = 1
+domain = "jsonflag"
+
+[[commands]]
+path = "jsonflag"
+summary = "jsonflag.summary"
+
+[[commands.flags]]
+name = "json"
+summary = "jsonflag.summary"
+-- broken/shorthand.toml --
+format_version = 1
+contract_version = 1
+domain = "shorthand"
+
+[[commands]]
+path = "shorthand"
+summary = "shorthand.summary"
+
+[[commands.flags]]
+name = "accent"
+shorthand = "é"
+summary = "shorthand.summary"
+-- broken/flagname.toml --
+format_version = 1
+contract_version = 1
+domain = "flagname"
+
+[[commands]]
+path = "flagname"
+summary = "flagname.summary"
+
+[[commands.flags]]
+name = "a=b"
+summary = "flagname.summary"
+-- broken/prefix.toml --
+format_version = 1
+contract_version = 1
+domain = "prefix"
+
+[[commands]]
+path = "prefix"
+summary = "prefix.summary"
+
+[[errors]]
+code = "GRUMPY"
+exit = 1
+-- broken/temporary.toml --
+format_version = 1
+contract_version = 1
+domain = "temporary"
+
+[[commands]]
+path = "temporary"
+summary = "temporary.summary"
+
+[[errors]]
+code = "TEMPORARY_LATER"
+exit = 75
+-- broken/catalog.toml --
+format_version = 1
+contract_version = 1
+domain = "catalog"
+
+[[commands]]
+path = "catalog"
+summary = "catalog.summary"
+
+[[commands]]
+path = "catalog run"
+summary = "catalog.run.summary"

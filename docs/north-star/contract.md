@@ -246,7 +246,7 @@ Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a `SKILL
 
 A domain is lowercase letters and digits that start with a letter, such as `transcript`, as a service name is. Core looks for a file named `ncly-<domain>` that the user may execute, or a link to one: first in the `extensions` folder of the data folder, such as `~/.local/share/nicely/extensions/`, then in each folder of `PATH`, in order. It skips an empty or relative `PATH` entry, a reserved name of [core-spec.md](core-spec.md#command-tree), and every name whose domain breaks the rule above, such as `ncly-hello.toml`. The first file found for a domain is its extension and hides any later one. Core never resolves the link: the manifest and the catalogs sit beside the path that it found.
 
-To dispatch `ncly <domain>`, core reads that domain's manifest and catalogs only. `ncly --help` and completion read every one. Core never starts an extension to learn its commands. An extension whose manifest or `en` catalog is missing, unreadable, or invalid stays its domain's extension: `ncly <domain>` answers `EXTENSION_INVALID` with exit 78 without starting it, and `ncly --help` and completion leave it out. A broken extension never affects another domain.
+To dispatch `ncly <domain>`, core reads that domain's manifest and catalogs only. `ncly --help` and completion read every one, and `ncly --help` lists the extensions in their own section, apart from core's commands. Core never starts an extension to learn its commands. An extension whose manifest or `en` catalog is missing, unreadable, or invalid stays its domain's extension: `ncly <domain>`, its help included, answers `EXTENSION_INVALID` with exit 78 without starting it, and `ncly --help` and completion leave it out. A broken extension never affects another domain.
 
 ### Manifest
 
@@ -303,7 +303,8 @@ exit = 1
 A manifest is invalid unless every rule below holds. Core rejects it before work, as [Compatibility](#compatibility) asks of a format version that it does not support:
 
 - `format_version` and `contract_version` are both `1`, and `domain` matches the executable's name
-- Each word of a path is lowercase letters, digits, and hyphens, starting with a letter, and no path appears twice. The parent of each path is declared too, such as `agent profile` for `agent profile list`, so that help lists it with its summary. A path with children and no arguments groups them: alone, it prints its help, as [Usage](#usage) says
+- Each word of a path is lowercase letters, digits, and hyphens, starting with a letter, and no path appears twice. The parent of each path is declared too, such as `agent profile` for `agent profile list`, down to the command whose path is the domain alone, so that help lists each one with its summary. A path with children and no arguments groups them: alone, it prints its help, as [Usage](#usage) says
+- A command's `result.kind` is one of the four kinds of the table
 - A flag's name, an argument's name, and a value's name follow the rule of a path word. A shorthand is one ASCII letter. No flag takes the name or the shorthand of a global flag, and no name or shorthand appears twice in one command. Core checks every declaration before it builds a command from it, so a broken one never reaches the parser
 - Each own code starts with the domain in uppercase and an underscore, such as `HELLO_GRUMPY`, differs from every core code, appears once, and maps to `1`, `2`, or `78`. Exit 75 belongs to `TEMPORARY` alone, because [Retry safety](#retry-safety) judges the whole invocation, and 130 and 143 belong to the signals
 - The `en` catalog holds every catalog ID that the manifest names
@@ -312,7 +313,7 @@ Core reads only the keys of this table and ignores any other, as [Compatibility]
 
 ### Text of an extension
 
-An extension keeps its text in catalogs, in the format of core's: one TOML file per language, named after its language tag, such as `en.toml` or `fr-CA.toml`, whose entries each have a description for the translator. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest, and a first-party extension keeps them in `extensions/<name>/locales/`. The `en` catalog is required. The files list the languages that the extension speaks, so the manifest declares none.
+An extension keeps its text in catalogs, in the format of core's: one TOML file per language, named after its language tag, such as `en.toml` or `fr-CA.toml`, whose entries each have a description for the translator. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest, and a first-party extension keeps them in `extensions/<name>/locales/`. The `en` catalog is required. The files list the languages that the extension speaks, so the manifest declares none, and a translation that cannot be read is skipped, so its entries fall back to `en`.
 
 Core renders an extension's help and completion descriptions from its manifest and catalogs, so help never starts it. `NCLY_LANG` carries the requested language as a language tag, such as `fr-CA` for `LANG=fr_CA.UTF-8`, and `en` when no source names a language or names `C` or `POSIX`. Core and each extension then pick their own closest catalog with the rule of [Configuration](#configuration), falling back to `en` independently: a French request shows core in French and an extension that speaks only English in English. An entry that a catalog lacks falls back to its `en` entry. Under the pseudo-locale `en-XA`, core marks the text of an extension's `en` catalog as it marks its own.
 

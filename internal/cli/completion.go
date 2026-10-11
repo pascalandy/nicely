@@ -52,9 +52,9 @@ var shells = []struct {
 }
 
 func addCompletion(p *i18n.Printer, root *cobra.Command) {
-	group := build(p, completionCommand, nil)
+	group := build(p, p, completionCommand, nil)
 	for _, s := range shells {
-		group.AddCommand(build(p, s.command, func(c *cobra.Command, _ []string) error {
+		group.AddCommand(build(p, p, s.command, func(c *cobra.Command, _ []string) error {
 			return s.write(root, c.OutOrStdout())
 		}))
 	}

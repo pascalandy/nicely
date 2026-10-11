@@ -24,17 +24,6 @@ import (
 // -ldflags "-X github.com/pascalandy/nicely/internal/cli.version=vX.Y.Z".
 var version string
 
-// globalFlags declares the flags that every command accepts.
-var globalFlags = []contract.Flag{
-	{Name: "help", Shorthand: "h", Summary: "flag.help"},
-	{Name: "json", Summary: "flag.json", Env: "NCLY_JSON"},
-	{Name: "no-input", Summary: "flag.no_input", Env: "NCLY_NO_INPUT"},
-	{Name: "no-color", Summary: "flag.no_color", Env: "NO_COLOR"},
-	{Name: "lang", Summary: "flag.lang", Value: "tag", Env: "NCLY_LANG"},
-	{Name: "verbose", Shorthand: "v", Summary: "flag.verbose", Env: "NCLY_VERBOSE"},
-	{Name: "version", Summary: "flag.version"},
-}
-
 var rootCommand = contract.Command{
 	Summary: "root.summary",
 	Examples: []string{
@@ -52,10 +41,6 @@ var reservedNames = []string{
 	"help", "version", "config",
 }
 
-// extensionNames lists the domains that installed extensions add. Discovery
-// arrives in M01, so it stays empty.
-var extensionNames []string
-
 // Main runs ncly with args, without the program name, and returns its exit code.
 func Main(args []string, stdout, stderr *os.File) int {
 	// Go ends the process with SIGPIPE when the reader of stdout is gone,
@@ -65,13 +50,19 @@ func Main(args []string, stdout, stderr *os.File) int {
 	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
 	// The parser stops at its first error, so read the command line first:
 	// the language, help, and machine mode must hold even when parsing fails.
-	// The help text comes from the catalog, so the tree is built again once
-	// the language is known.
-	cmd, _, _ := newRoot(i18n.New(language.English)).Find(args)
+	// The first reading, with core's commands only, finds the extensions that
+	// the line needs, whose flags the second reading knows. The help text
+	// comes from the catalogs, so the tree is built again once the language
+	// is known.
+	en := i18n.New(language.English)
+	core := newRoot(en, "", nil)
+	cmd, _, _ := core.Find(args)
+	extensions := neededExtensions(searchPath(), core, scan(cmd, args).words)
+	cmd, _, _ = newRoot(en, "", extensions).Find(args)
 	line := scan(cmd, args)
 	g := resolveGlobals(line)
 	p := i18n.New(i18n.Match(g.lang))
-	root := newRoot(p)
+	root := newRoot(p, g.lang, extensions)
 	out := &output{file: stdout}
 	root.SetArgs(args)
 	root.SetOut(out)
@@ -81,20 +72,24 @@ func Main(args []string, stdout, stderr *os.File) int {
 	// the words it completes never ask for help or name a command to check.
 	// Global flags may come first, as an alias such as ncly='ncly --no-input'
 	// puts them there, so the request is the first word after the flags.
-	completing := len(line.words) > 0 && (line.words[0] == cobra.ShellCompRequestCmd || line.words[0] == cobra.ShellCompNoDescRequestCmd)
+	completing := len(line.words) > 0 && isCompletionRequest(line.words[0])
+	broken := brokenTarget(extensions, line.words)
 	var err error
 	switch {
 	case completing:
 		err = root.Execute()
+	case line.version() && !line.help():
+		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
+	case broken != nil:
+		// An extension that cannot run has no help either.
+		err = fail(broken.invalid(p))
 	case line.help():
 		target, _, _ := root.Find(args)
 		err = target.Help()
-	case line.version():
-		_, err = fmt.Fprintf(out, "ncly %s\n", releaseVersion())
 	case len(line.words) == 0 && len(line.operands) > 0:
 		// Operands after -- reach the root, which takes none.
 		err = fail(unknownCommand(p, root, line.operands[0]))
-	case len(line.words) > 0 && !isBuiltIn(root, line.words[0]) && !isExtension(line.words[0]):
+	case len(line.words) > 0 && !isCommand(root, line.words[0]):
 		err = fail(unknownCommand(p, root, line.words[0]))
 	default:
 		err = root.Execute()
@@ -130,7 +125,9 @@ func (o *output) Write(b []byte) (int, error) {
 
 func (o *output) Fd() uintptr { return o.file.Fd() }
 
-func newRoot(p *i18n.Printer) *cobra.Command {
+// newRoot builds the command tree, with the commands of each valid
+// extension in the language that lang requests.
+func newRoot(p *i18n.Printer, lang string, extensions []*extension) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "ncly",
 		Short:         p.T(rootCommand.Summary),
@@ -139,7 +136,7 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 		SilenceUsage:  true,
 	}
 	root.CompletionOptions.DisableDefaultCmd = true
-	for _, f := range globalFlags {
+	for _, f := range contract.GlobalFlags {
 		addFlag(root.PersistentFlags(), p, f)
 	}
 	// Cobra offers file names for a flag value, and a language tag is never one.
@@ -151,6 +148,7 @@ func newRoot(p *i18n.Printer) *cobra.Command {
 	root.SetHelpCommand(help)
 	root.AddCommand(help)
 	addCompletion(p, root)
+	addExtensions(root, p, lang, extensions)
 	return root
 }
 
@@ -163,14 +161,57 @@ func fail(problems ...contract.Problem) *failure {
 	return &failure{contract.Outcome{Errors: problems}}
 }
 
-func isBuiltIn(root *cobra.Command, name string) bool {
+// isCommand reports whether the root has a command of that name: one of
+// core's, or the domain of a valid extension.
+func isCommand(root *cobra.Command, name string) bool {
 	return slices.ContainsFunc(root.Commands(), func(c *cobra.Command) bool { return c.Name() == name })
 }
 
-// isExtension reports whether an installed extension adds the domain name.
-// A reserved name never resolves to an extension.
-func isExtension(name string) bool {
-	return !slices.Contains(reservedNames, name) && slices.Contains(extensionNames, name)
+// isCompletionRequest reports whether a word asks for completions in Cobra's
+// protocol, as the shell scripts do.
+func isCompletionRequest(word string) bool {
+	return word == cobra.ShellCompRequestCmd || word == cobra.ShellCompNoDescRequestCmd
+}
+
+// target returns the first word of a command line, or the word after help,
+// which names the command that the line runs or asks help about.
+func target(words []string) string {
+	if len(words) > 0 && words[0] == "help" {
+		words = words[1:]
+	}
+	if len(words) == 0 {
+		return ""
+	}
+	return words[0]
+}
+
+// neededExtensions finds the extensions that a command line needs: none
+// for a command of core, the one whose domain it targets, and every one
+// otherwise, for the root's help, for completion, and for a word that names
+// no command, whose help is the root's.
+func neededExtensions(dirs []string, core *cobra.Command, words []string) []*extension {
+	name := target(words)
+	if name != "" && !isCompletionRequest(name) {
+		if isCommand(core, name) {
+			return nil
+		}
+		if e := findExtension(dirs, name); e != nil {
+			return []*extension{e}
+		}
+	}
+	return findExtensions(dirs)
+}
+
+// brokenTarget returns the extension that cannot run whose domain the
+// command line targets.
+func brokenTarget(extensions []*extension, words []string) *extension {
+	name := target(words)
+	for _, e := range extensions {
+		if e.domain == name && e.broken != nil {
+			return e
+		}
+	}
+	return nil
 }
 
 // report prints an outcome and returns its exit code. An answer that

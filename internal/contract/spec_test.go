@@ -11,6 +11,9 @@ import (
 
 const contractDoc = "../../docs/north-star/contract.md"
 
+// shipped lists the milestones whose codes the registry holds.
+var shipped = []string{"M00", "M01"}
+
 func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 	tables, err := specdoc.Tables(contractDoc, "Error codes")
 	if err != nil {
@@ -18,7 +21,7 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 	}
 	spec := map[Code]ExitCode{}
 	for _, row := range tables[0] {
-		if row[3] == "M00" {
+		if slices.Contains(shipped, row[3]) {
 			exit, _ := strconv.Atoi(row[1])
 			spec[Code(specdoc.Backticked(row[0])[0])] = ExitCode(exit)
 		}
@@ -28,17 +31,17 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 		code[e.code] = e.exit
 	}
 	if !maps.Equal(spec, code) {
-		t.Errorf("contract.md lists the M00 error codes %v, the registry holds %v", spec, code)
+		t.Errorf("contract.md lists the error codes %v up to %s, the registry holds %v", spec, shipped[len(shipped)-1], code)
 	}
 
 	var warnings []Code
 	for _, row := range tables[1] {
-		if row[2] == "M00" {
+		if slices.Contains(shipped, row[2]) {
 			warnings = append(warnings, Code(specdoc.Backticked(row[0])[0]))
 		}
 	}
 	if !slices.Equal(warnings, warningCodes) {
-		t.Errorf("contract.md lists the M00 warning codes %v, the registry holds %v", warnings, warningCodes)
+		t.Errorf("contract.md lists the warning codes %v up to %s, the registry holds %v", warnings, shipped[len(shipped)-1], warningCodes)
 	}
 }
 

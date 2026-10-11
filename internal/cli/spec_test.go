@@ -35,7 +35,7 @@ func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
 	}
 
 	key := func(f contract.Flag) string { return f.Name + " " + f.Shorthand + " " + f.Value + " " + f.Env }
-	got, want := sortedKeys(globalFlags, key), sortedKeys(spec, key)
+	got, want := sortedKeys(contract.GlobalFlags, key), sortedKeys(spec, key)
 	if !slices.Equal(got, want) {
 		t.Errorf("contract.md lists the global flags\n%q\nncly declares\n%q", want, got)
 	}
@@ -124,6 +124,6 @@ func tree() []*cobra.Command {
 			walk(sub)
 		}
 	}
-	walk(newRoot(i18n.New(language.English)))
+	walk(newRoot(i18n.New(language.English), "", nil))
 	return all
 }

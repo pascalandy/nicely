@@ -80,7 +80,7 @@ func TestPluralForms(t *testing.T) {
 }
 
 func TestFormats(t *testing.T) {
-	en, fr := New(language.English), newPrinter(bundle, language.MustParse("fr-CA"))
+	en, fr := New(language.English), newPrinter(core.bundle, language.MustParse("fr-CA"))
 	day := time.Date(2026, 10, 6, 14, 30, 0, 0, time.UTC)
 	cases := []struct{ got, want string }{
 		{en.Number(1234.5, 1), "1,234.5"},

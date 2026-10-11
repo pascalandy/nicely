@@ -1,0 +1,238 @@
+# Core builds an extension's help and completion from its manifest and catalogs,
+# and never starts it: every fixture appends its domain to $WORK/ran when it runs.
+chmod 755 bin/ncly-hello
+chmod 755 bin/ncly-bonjour
+env PATH=$WORK/bin:$PATH
+
+# ncly --help lists the extensions in their own section, with the summary of each domain
+exec ncly --help
+stdout '^COMMANDS$'
+stdout '^EXTENSIONS$'
+stdout '^  bonjour: +Say hello in French$'
+stdout '^  hello: +Greet people$'
+
+# ncly hello alone, ncly hello --help, and ncly help hello print the same help, commands in alphabetical order
+exec ncly hello
+! stderr .
+cp stdout hello-help.txt
+exec ncly hello --help
+cmp stdout hello-help.txt
+exec ncly help hello
+cmp stdout hello-help.txt
+cmp stdout want-hello.txt
+
+# A command's help shows its arguments, its own flags apart from the global ones, and its examples
+exec ncly hello run --help
+cmp stdout want-run.txt
+exec ncly help hello run
+cmp stdout want-run.txt
+
+# Completion offers the extension's commands and flags with their descriptions
+exec ncly __complete ''
+stdout '^hello\tGreet people$'
+stdout '^bonjour\tSay hello in French$'
+exec ncly __complete hello ''
+stdout '^check\tCheck that greetings work$'
+stdout '^run\tGreet someone by name$'
+exec ncly __complete hello run --
+stdout '^--greeting\tWord to greet with$'
+stdout '^--loud\tGreet in capitals$'
+exec ncly __complete help ''
+stdout '^hello\t'
+
+# Under the pseudo-locale, every word of the fixture's text comes from its catalog
+exec ncly --lang en-XA --help
+pseudo stdout completion help hello bonjour
+exec ncly --lang en-XA hello --help
+pseudo stdout hello run check
+exec ncly --lang en-XA hello run --help
+pseudo stdout hello run
+exec ncly --lang en-XA __complete hello ''
+stdout '^run\t⟦'
+
+# The help of a word that names no command is the root's, with the extensions
+exec ncly missing --help
+stdout '^EXTENSIONS$'
+stdout '^  hello: +Greet people$'
+
+# A partial fr-CA catalog shows its French text and the English text of the entries that
+# it lacks or whose template breaks, never an ID. A pseudo-locale file on disk changes nothing
+exec ncly --lang fr-CA --help
+stdout '^  bonjour: +Dire bonjour en français$'
+stdout '^  hello: +Greet people$'
+stdout 'Print shell completion scripts'
+exec ncly --lang fr_CA.UTF-8 bonjour --help
+stdout '^Dire bonjour en français$'
+stdout '^  dire: +Say it out loud$'
+stdout '^  chanter: +Sing it$'
+! stdout 'bonjour\.'
+exec ncly --lang fr-CA __complete bonjour ''
+stdout '^dire\tSay it out loud$'
+exec ncly --lang fr-CA __complete ''
+stdout '^bonjour\tDire bonjour en français$'
+
+# A usage error under an extension's command speaks core's text, and the fixture never starts
+exits 2 ncly hello nope --json
+answer stderr USAGE_INVALID
+stderr 'Unknown command \\"nope\\"'
+exits 2 ncly hello run Ada extra --json
+stderr 'Unexpected argument \\"extra\\"'
+
+! exists ran
+
+-- bin/ncly-hello --
+#!/bin/sh
+echo hello >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+examples = ["ncly hello run Ada", "ncly hello check --json"]
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+examples = ["ncly hello run Ada", "ncly hello run --greeting Hi Ada --json"]
+
+[[commands.args]]
+name = "name"
+summary = "hello.run.name"
+
+[[commands.flags]]
+name = "greeting"
+shorthand = "g"
+value = "text"
+summary = "hello.run.greeting"
+
+[[commands.flags]]
+name = "loud"
+summary = "hello.run.loud"
+
+[[commands]]
+path = "hello check"
+summary = "hello.check.summary"
+examples = ["ncly hello check", "ncly hello check --json"]
+result = { kind = "report" }
+
+[[errors]]
+code = "HELLO_GRUMPY"
+exit = 1
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Help page: summary of the hello fixture."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Help page: summary of hello run."
+other = "Greet someone by name"
+
+["hello.run.name"]
+description = "Help page: the name argument of hello run."
+other = "Name of the person to greet"
+
+["hello.run.greeting"]
+description = "Help page: the --greeting flag of hello run."
+other = "Word to greet with"
+
+["hello.run.loud"]
+description = "Help page: the --loud flag of hello run."
+other = "Greet in capitals"
+
+["hello.check.summary"]
+description = "Help page: summary of hello check."
+other = "Check that greetings work"
+-- bin/ncly-bonjour --
+#!/bin/sh
+echo bonjour >> "$WORK/ran"
+-- bin/ncly-bonjour.toml --
+format_version = 1
+contract_version = 1
+domain = "bonjour"
+
+[[commands]]
+path = "bonjour"
+summary = "bonjour.summary"
+
+[[commands]]
+path = "bonjour dire"
+summary = "bonjour.dire.summary"
+
+[[commands]]
+path = "bonjour chanter"
+summary = "bonjour.chanter.summary"
+-- bin/ncly-bonjour.locales/en.toml --
+["bonjour.summary"]
+description = "Help page: summary of the bonjour fixture."
+other = "Say hello in French"
+
+["bonjour.dire.summary"]
+description = "Help page: summary of bonjour dire."
+other = "Say it out loud"
+
+["bonjour.chanter.summary"]
+description = "Help page: summary of bonjour chanter."
+other = "Sing it"
+-- bin/ncly-bonjour.locales/fr-CA.toml --
+["bonjour.summary"]
+description = "Help page: summary of the bonjour fixture."
+other = "Dire bonjour en français"
+
+["bonjour.dire.summary"]
+description = "Help page: summary of bonjour dire."
+other = "Le dire {{ à voix haute"
+
+["bonjour.chanter.summary"]
+description = "Help page: summary of bonjour chanter."
+one = "Le chanter"
+-- bin/ncly-bonjour.locales/en-XA.toml --
+["bonjour.summary"]
+description = "Help page: summary of the bonjour fixture."
+other = "Never shown"
+-- want-hello.txt --
+Greet people
+
+USAGE
+  ncly hello <command> [flags]
+
+COMMANDS
+  check:  Check that greetings work
+  run:    Greet someone by name
+
+GLOBAL FLAGS
+  -h, --help        Show help for a command
+      --json        Answer with one line of JSON
+      --lang <tag>  Language of human text, such as fr-CA
+      --no-color    Print plain text
+      --no-input    Never prompt, even in a terminal
+  -v, --verbose     Add step details on stderr
+      --version     Print the version
+
+EXAMPLES
+  $ ncly hello run Ada
+  $ ncly hello check --json
+-- want-run.txt --
+Greet someone by name
+
+USAGE
+  ncly hello run [name] [flags]
+
+FLAGS
+  -g, --greeting <text>  Word to greet with
+      --loud             Greet in capitals
+
+GLOBAL FLAGS
+  -h, --help        Show help for a command
+      --json        Answer with one line of JSON
+      --lang <tag>  Language of human text, such as fr-CA
+      --no-color    Print plain text
+      --no-input    Never prompt, even in a terminal
+  -v, --verbose     Add step details on stderr
+      --version     Print the version
+
+EXAMPLES
+  $ ncly hello run Ada
+  $ ncly hello run --greeting Hi Ada --json

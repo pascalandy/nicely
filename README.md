@@ -12,7 +12,7 @@ ncly completion bash
 
 Nicely is in early development and has no release yet. [The vision](docs/north-star/vision.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
 
-The current build implements help, the version, and shell completion. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
+The current build implements help, the version, and shell completion. It finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`, and shows their help and completion from their manifests. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
 
 ## Planned commands
 
