@@ -24,7 +24,7 @@ Core finds executables named `ncly-<domain>`, reads their manifests and catalogs
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M01-T1 | Manifest, help, and completion | agent | — | done |
-| M01-T2 | Dispatch | agent | M01-T1 | todo |
+| M01-T2 | Dispatch | agent | M01-T1 | done |
 | M01-T3 | Answer check | agent | M01-T2 | todo |
 | M01-T4 | Cancellation | agent | M01-T3 | todo |
 | M01-T5 | Stubborn programs | agent | M01-T4 | todo |

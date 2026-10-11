@@ -126,7 +126,9 @@ func (line commandLine) version() bool {
 // globals holds the resolved global flags. A flag wins over its variable.
 type globals struct {
 	json    bool
+	noInput bool
 	noColor bool
+	verbose bool
 	// lang is the language setting before matching, such as fr_CA.UTF-8.
 	lang string
 }
@@ -143,7 +145,9 @@ func resolveGlobals(line commandLine) globals {
 	}
 	g := globals{
 		json:    switchOr("json", env("NCLY_JSON") == "1"),
+		noInput: switchOr("no-input", env("NCLY_NO_INPUT") == "1"),
 		noColor: switchOr("no-color", env("NO_COLOR") != "" || env("TERM") == "dumb"),
+		verbose: switchOr("verbose", env("NCLY_VERBOSE") == "1"),
 		lang:    cmp.Or(line.values["lang"], env("NCLY_LANG")),
 	}
 	if g.lang == "" {

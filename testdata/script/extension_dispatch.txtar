@@ -1,0 +1,223 @@
+# Core validates a call from the manifest, then starts the extension with the
+# canonical arguments. The fixture writes its arguments to args.txt and its
+# environment to env.txt.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+
+# Global flags reach the extension as variables, and its own flags as one word each
+exec ncly -v hello run -g Hi Ada --json
+cmp args.txt want-greeting.txt
+grep '^NCLY_VERBOSE=1$' env.txt
+grep '^NCLY_JSON=1$' env.txt
+! grep 'NCLY_NO_INPUT' env.txt
+! grep 'NO_COLOR' env.txt
+
+# A variable set to 1 reaches the extension unless its flag turns it off
+env NCLY_JSON=1 NCLY_NO_INPUT=1
+exec ncly hello run --json=false Ada
+! grep 'NCLY_JSON' env.txt
+grep '^NCLY_NO_INPUT=1$' env.txt
+env NCLY_JSON= NCLY_NO_INPUT=
+exec ncly --no-color hello run Ada
+grep '^NO_COLOR=1$' env.txt
+env TERM=dumb
+exec ncly hello run Ada
+grep '^NO_COLOR=1$' env.txt
+env TERM=
+
+# An operand after -- that starts with a dash stays an operand, a repeated flag passes once with
+# its last value, and the flags pass in the order of the manifest
+exec ncly hello run -- -x
+cmp args.txt want-operand.txt
+exec ncly hello run --loud -g Hi --greeting Hey Ada
+cmp args.txt want-repeated.txt
+exec ncly hello run --loud=false Ada
+cmp args.txt want-switch.txt
+
+# A call that the manifest refuses fails before the extension starts
+rm args.txt
+exits 2 ncly hello run --nope --json
+answer stderr USAGE_INVALID
+exits 2 ncly hello run --json --greeting
+answer stderr USAGE_INVALID
+exits 2 ncly hello run Ada Grace --json
+answer stderr USAGE_INVALID
+stderr 'Unexpected argument \\"Grace\\"'
+! exists args.txt
+
+# NCLY_LANG holds the requested language, NCLY_BIN runs this ncly, and no key reaches the extension
+env LANG=fr_CA.UTF-8 DEEPGRAM_API_KEY=key-for-the-test
+exec ncly hello run Ada
+grep '^NCLY_LANG=fr-CA$' env.txt
+grep '^NCLY_CONTRACT_VERSION=1$' env.txt
+grep '^NCLY_VERSION=v' env.txt
+grep '^bin: ncly v' env.txt
+! grep 'API_KEY' env.txt
+env LANG=C
+exec ncly hello run Ada
+grep '^NCLY_LANG=en$' env.txt
+env LANG= DEEPGRAM_API_KEY=
+
+# A broken config never stops core from starting the extension, which reports it itself
+env NCLY_CONFIG=$WORK/broken.toml
+rm args.txt
+exec ncly hello run Ada
+exists args.txt
+env NCLY_CONFIG=
+
+# Without --json, the extension's text reaches the caller unchanged, with its exit code
+exits 78 ncly hello exit 78
+stdout '^out: exit 78$'
+stderr '\Aerr: exit 78\n\z'
+exits 1 ncly hello exit 3
+stdout '^out: exit 3$'
+stderr '\Aerr: exit 3\nerror\[RUNTIME\]: The extension hello exited with 3, which is not an exit code of the contract\.'
+
+# An extension that cannot start is a protocol failure
+chmod 755 bin/ncly-missing
+exits 1 ncly missing run --json
+answer stderr RUNTIME
+stderr 'The extension missing could not start'
+
+# The extension shares the terminal's foreground process group, so it can read the terminal
+[!exec:ps] stop 'needs ps'
+ttyin -stdin tty.txt
+exec ncly hello tty
+grep '^foreground$' tty.log
+grep '^read: Ada$' tty.log
+
+-- bin/ncly-hello --
+#!/bin/sh
+printf '%s\n' "$@" > "$WORK/args.txt"
+env | grep -E '^(NCLY_|NO_COLOR=|[A-Z_]*_API_KEY=)' | sort > "$WORK/env.txt"
+echo "bin: $("$NCLY_BIN" --version)" >> "$WORK/env.txt"
+case "$1" in
+exit)
+  echo "out: exit $3"
+  echo "err: exit $3" >&2
+  exit "$3"
+  ;;
+tty)
+  if [ "$(ps -o pgid= -p $$ | tr -d ' ')" = "$(ps -o tpgid= -p $$ | tr -d ' ')" ]; then
+    echo foreground > "$WORK/tty.log"
+  else
+    # A read would stop the fixture with SIGTTIN, so it exits instead.
+    echo background > "$WORK/tty.log"
+    exit 1
+  fi
+  read -r line
+  echo "read: $line" >> "$WORK/tty.log"
+  ;;
+esac
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+
+[[commands.args]]
+name = "name"
+summary = "hello.run.name"
+
+[[commands.flags]]
+name = "greeting"
+shorthand = "g"
+value = "text"
+summary = "hello.run.greeting"
+
+[[commands.flags]]
+name = "loud"
+summary = "hello.run.loud"
+
+[[commands]]
+path = "hello exit"
+summary = "hello.exit.summary"
+
+[[commands.args]]
+name = "code"
+summary = "hello.exit.code"
+
+[[commands]]
+path = "hello tty"
+summary = "hello.tty.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Summary of hello run."
+other = "Greet someone by name"
+
+["hello.run.name"]
+description = "The name argument of hello run."
+other = "Name of the person to greet"
+
+["hello.run.greeting"]
+description = "The --greeting flag of hello run."
+other = "Word to greet with"
+
+["hello.run.loud"]
+description = "The --loud flag of hello run."
+other = "Greet in capitals"
+
+["hello.exit.summary"]
+description = "Summary of hello exit."
+other = "Exit with a code"
+
+["hello.exit.code"]
+description = "The code argument of hello exit."
+other = "Exit code"
+
+["hello.tty.summary"]
+description = "Summary of hello tty."
+other = "Read a line from the terminal"
+-- bin/ncly-missing --
+#!/no/such/interpreter
+-- bin/ncly-missing.toml --
+format_version = 1
+contract_version = 1
+domain = "missing"
+
+[[commands]]
+path = "missing"
+summary = "missing.summary"
+
+[[commands]]
+path = "missing run"
+summary = "missing.summary"
+-- bin/ncly-missing.locales/en.toml --
+["missing.summary"]
+description = "Summary of the fixture."
+other = "Never starts"
+-- broken.toml --
+lang =
+-- tty.txt --
+Ada
+-- want-greeting.txt --
+run
+--greeting=Hi
+--
+Ada
+-- want-operand.txt --
+run
+--
+-x
+-- want-repeated.txt --
+run
+--greeting=Hey
+--loud=true
+--
+Ada
+-- want-switch.txt --
+run
+--loud=false
+--
+Ada

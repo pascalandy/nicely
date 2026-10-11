@@ -94,6 +94,10 @@ func Main(args []string, stdout, stderr *os.File) int {
 	default:
 		err = root.Execute()
 	}
+	var extensionCall *call
+	if errors.As(err, &extensionCall) {
+		return extensionCall.run(p, g, stdout, stderr)
+	}
 	if out.err != nil {
 		err = fail(contract.Problem{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")})
 	}

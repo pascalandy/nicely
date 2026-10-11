@@ -259,3 +259,11 @@ other = "{{.File}} maps the error code {{.Code}} to exit {{.Value}}, and an exte
 ["extension.catalog_id"]
 description = "Reason inside extension.invalid. {{.File}} is the name of the extension's English catalog, such as ncly-hello.locales/en.toml, and {{.Value}} a catalog ID that the manifest names."
 other = "{{.File}} lacks the ID \"{{.Value}}\" that the manifest names."
+
+["extension.start_failed"]
+description = "Error when ncly could not start an extension that it found. {{.Domain}} is its domain, such as hello, and stays as is."
+other = "The extension {{.Domain}} could not start."
+
+["extension.answer_exit"]
+description = "Error when an extension exited with a code that the contract does not allow. {{.Domain}} is its domain, and {{.Exit}} the exit code, a number."
+other = "The extension {{.Domain}} exited with {{.Exit}}, which is not an exit code of the contract."

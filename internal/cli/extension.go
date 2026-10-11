@@ -7,11 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/internal/config"
 	"github.com/pascalandy/nicely/internal/contract"
 	"github.com/pascalandy/nicely/internal/i18n"
+	"github.com/pascalandy/nicely/internal/runner"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 )
@@ -169,7 +171,9 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions
 		for _, d := range declarations {
 			var run func(*cobra.Command, []string) error
 			if e.manifest.Runs(d) {
-				run = func(*cobra.Command, []string) error { return e.dispatch(p) }
+				run = func(c *cobra.Command, args []string) error {
+					return &call{extension: e, args: canonicalArgs(d, c, args)}
+				}
 			}
 			c := build(p, text, d, run)
 			path := strings.Join(d.Path, " ")
@@ -184,8 +188,74 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions
 	}
 }
 
-// dispatch starts the extension with a validated call. Starting it arrives
-// with M01-T2, so until then the call fails.
-func (e *extension) dispatch(p *i18n.Printer) error {
-	return fail(contract.Problem{Code: contract.Runtime, Message: p.T("outcome.runtime"), Hint: p.T("outcome.check_hint")})
+// call is a call to an extension that the parser accepted. The command
+// returns it as its error, so that Main starts the extension with what it
+// resolved.
+type call struct {
+	extension *extension
+	args      []string
+}
+
+func (c *call) Error() string { return "call to " + c.extension.domain }
+
+// canonicalArgs passes a validated call as Dispatch in contract.md defines:
+// the path after the domain, each flag that the caller set as one word in
+// the order of the manifest, then -- and the positional arguments.
+func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string {
+	canonical := slices.Clone(d.Path[1:])
+	for _, f := range d.Flags {
+		if flag := c.Flags().Lookup(f.Name); flag.Changed {
+			canonical = append(canonical, "--"+f.Name+"="+flag.Value.String())
+		}
+	}
+	return append(append(canonical, "--"), args...)
+}
+
+// run starts the extension with the streams of ncly and the environment
+// of Programs that ncly runs in contract.md, and returns its exit code. An
+// exit code outside the contract is a protocol failure.
+func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
+	exit, err := runner.Run(runner.Program{
+		Path:     c.extension.path,
+		Args:     c.args,
+		Env:      runner.Environ(os.Environ(), extensionVars(g)),
+		Stdin:    os.Stdin,
+		Stdout:   stdout,
+		Stderr:   stderr,
+		Terminal: true,
+	})
+	data := map[string]any{"Domain": c.extension.domain, "Exit": exit}
+	switch {
+	case err != nil:
+		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+	case !contract.ExitCode(exit).Known():
+		return report(p, g, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
+	}
+	return exit
+}
+
+func protocolFailure(p *i18n.Printer, rule string, data map[string]any) contract.Outcome {
+	return contract.Outcome{Errors: []contract.Problem{{Code: contract.Runtime, Message: p.T(rule, data), Hint: p.T("outcome.check_hint")}}}
+}
+
+// extensionVars carries the resolved global flags and the identity of ncly
+// to an extension. An empty value removes the variable.
+func extensionVars(g globals) map[string]string {
+	on := func(set bool) string {
+		if set {
+			return "1"
+		}
+		return ""
+	}
+	self, _ := os.Executable()
+	return map[string]string{
+		"NCLY_JSON":             on(g.json),
+		"NCLY_NO_INPUT":         on(g.noInput),
+		"NCLY_VERBOSE":          on(g.verbose),
+		"NO_COLOR":              on(g.noColor),
+		"NCLY_LANG":             i18n.Requested(g.lang),
+		"NCLY_VERSION":          releaseVersion(),
+		"NCLY_CONTRACT_VERSION": strconv.Itoa(contract.Version),
+		"NCLY_BIN":              self,
+	}
 }

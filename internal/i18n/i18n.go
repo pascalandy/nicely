@@ -145,6 +145,17 @@ func (c *Catalogs) Match(setting string) language.Tag {
 // Printer returns a printer of these catalogs for a language setting.
 func (c *Catalogs) Printer(setting string) *Printer { return newPrinter(c.bundle, c.Match(setting)) }
 
+// Requested returns the language that a setting requests, as a tag, such as
+// fr-CA for fr_CA.UTF-8, whether or not a catalog speaks it. A setting that
+// names no known language, including C and POSIX, requests en.
+func Requested(setting string) string {
+	tag, err := parseSetting(setting)
+	if err != nil || tag == language.Und {
+		return language.English.String()
+	}
+	return tag.String()
+}
+
 // parseSetting reads a language setting as a tag, without the encoding and
 // the modifier of the POSIX form.
 func parseSetting(setting string) (language.Tag, error) {

@@ -3,6 +3,8 @@
 // declarations. docs/north-star/contract.md is the source of truth.
 package contract
 
+import "slices"
+
 // ExitCode is the process exit status of an invocation.
 type ExitCode int
 
@@ -33,12 +35,14 @@ const (
 	ConfigUnknownKey Code = "CONFIG_UNKNOWN_KEY"
 )
 
-// errorCodes lists the error codes from the most cautious to the least, which
-// is the order in which they compete to lead an answer. Each maps to one exit.
-var errorCodes = []struct {
+type codeExit struct {
 	code Code
 	exit ExitCode
-}{
+}
+
+// errorCodes lists the error codes from the most cautious to the least, which
+// is the order in which they compete to lead an answer. Each maps to one exit.
+var errorCodes = []codeExit{
 	{Interrupted, ExitInterrupted},
 	{Terminated, ExitTerminated},
 	{Runtime, ExitRuntime},
@@ -51,6 +55,11 @@ var errorCodes = []struct {
 }
 
 var warningCodes = []Code{ConfigUnknownKey}
+
+// Known reports whether e is one of the exit codes of the contract.
+func (e ExitCode) Known() bool {
+	return e == ExitOK || slices.ContainsFunc(errorCodes, func(c codeExit) bool { return c.exit == e })
+}
 
 // Exit returns the exit code that an error code maps to, and false for a
 // code that is not a registered error.
