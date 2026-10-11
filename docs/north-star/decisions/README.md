@@ -51,3 +51,8 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D043](D043-milestone-versions.md) | Number milestones by the release that ships them, and release separately |
 | [D044](D044-additive-extensions.md) | Let extensions add commands, never change core |
 | [D045](D045-step-effects.md) | Derive retry safety from declared step effects |
+| [D046](D046-machine-output-never-asks.md) | Never ask a human for machine output |
+| [D047](D047-terminal-process-group.md) | Keep a program that may read the terminal in the process group of ncly |
+| [D048](D048-static-manifest-and-catalogs.md) | Describe an extension in a manifest and catalogs beside it |
+| [D049](D049-canonical-arguments.md) | Pass an extension its validated call in one canonical form |
+| [D050](D050-answer-check.md) | Check an extension's answer before the caller sees it |

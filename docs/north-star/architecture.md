@@ -57,13 +57,13 @@ Each part has one owner: one package and one spec section.
 | 4 | Each extension | Its domain's preparation, business steps, result verification, resume evidence, catalog, and skill | `extensions/<name>/` | Its `spec.md` |
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap | `internal/cli/` | [core-spec.md](core-spec.md) |
-| 2 | Program runner | Child environment, timeouts, signals, and process cleanup | From M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 2 | Program runner | Child environment, process groups, timeouts, signals, and process cleanup | `internal/runner/`, from M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 | 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/`, from M10 | [Operations](contract.md#operations) |
 | 2 | Config | Shared and local config files, environment, flags, and XDG paths | `internal/config/` | [Configuration](contract.md#configuration) |
 | 2 | i18n | Catalogs in `locales/`, lookup, plurals, and number, size, and date formats | `internal/i18n/` | [Configuration](contract.md#configuration) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `internal/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
-| 1 | Contract | Answer, error registry, exit codes, modes, declarations, and streams | `internal/contract/` | [contract.md](contract.md) |
-| 0 | Platform | Durable writes, locks, keychain, trash, and process tree | From M01; the keychain stays in core | [Record format](contract.md#record-format), [Keys](contract.md#keys) |
+| 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `internal/contract/` | [contract.md](contract.md) |
+| 0 | Platform | Durable writes, locks, keychain, trash, and process tree | `internal/platform/`, from M01; the keychain stays in core | [Record format](contract.md#record-format), [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 
 [M02](../milestones/M02-sdk.md) moves the shared packages that exist by then, the contract, i18n, config, tui, the platform helpers, and the program runner, from `internal/` to `sdk/`. A later shared service starts in `sdk/`, such as run records in M10. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
 

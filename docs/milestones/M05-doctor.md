@@ -60,7 +60,7 @@ The `skill` component warns with `SKILL_SOURCE_MISSING`, `SKILL_NAME_MISMATCH`, 
 
 ### M05-T5 Install offers
 
-- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Modes](../north-star/contract.md#modes)
+- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Modes](../north-star/contract.md#modes), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `testdata/script/doctor_install.txtar`
 
 In interactive mode, doctor shows a missing tool's install command and runs it only after a yes. In non-interactive mode, it never installs anything, and the hint of the failed check holds the command.

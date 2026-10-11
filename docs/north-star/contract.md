@@ -10,7 +10,7 @@ Every command and every extension composes these primitives. Each belongs to one
 |---|---|---|
 | Domain, resource, and verb | Agent contract | [Usage](#usage) |
 | Flag | Agent contract | [Global flags](#global-flags) |
-| Manifest | Wire contract | [Extensions](#extensions) and [Command descriptions](#command-descriptions) |
+| Manifest | Wire contract | [Manifest](#manifest) and [Command descriptions](#command-descriptions) |
 | Environment | Wire contract | [Programs that ncly runs](#programs-that-ncly-runs) |
 | Answer | Both | [Output](#output) |
 | Exit code | Both | [Exit codes](#exit-codes) |
@@ -69,7 +69,7 @@ Commands that call the network or run for minutes also accept `--timeout <durati
 
 ## Modes
 
-Interactive mode applies when stdin and stdout are terminals, `--no-input` is absent, `NCLY_NO_INPUT` is not `1`, and `CI` is not set. Every other case is non-interactive mode. Some agent tools run commands in a pseudo-terminal, so an agent sets `NCLY_NO_INPUT=1` in its environment.
+Interactive mode applies when stdin and stdout are terminals, `--no-input` and `--json` both resolve off, as [Global flags](#global-flags) resolves a flag and its variable, and `CI` is not set. Every other case is non-interactive mode, so machine output never waits for a human, as [D046](decisions/D046-machine-output-never-asks.md) decides. Some agent tools run commands in a pseudo-terminal, so an agent sets `NCLY_NO_INPUT=1` in its environment.
 
 | Situation | Interactive mode | Non-interactive mode |
 |---|---|---|
@@ -96,7 +96,7 @@ Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON`
 {"ok":false,"contract_version":1,"errors":[{"code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram"}]}
 ```
 
-`errors` describes the command's failure. The command computes its overall verdict first, then puts an error with the matching exit code first. When the failures of the command itself map to different exit codes, the most cautious one leads: `130` or `143`, then `1`, `78`, `2`, and `75` only when every failure is temporary. When several failures share that exit code, the first one in this order leads. For exit 1, `RESUME_UNSAFE`, then the answering extension's own codes in the order of its spec, then `RUNTIME`. For exit 78, `CONFIG_INVALID`, `TERMINAL_REQUIRED`, `PREREQ_MISSING`, `CAPABILITY_UNSUPPORTED`, `KEYRING_UNAVAILABLE`, `AUTH_MISSING`, `KEY_NOT_GRANTED`, `AUTH_REJECTED`, then the extension's own codes, so the first fix that a human needs leads. For exit 2, `USAGE_INVALID`, `CONFIRMATION_REQUIRED`, `NOT_FOUND`, then the extension's own codes. Input order or the order in which failures arrive never determines retry safety. Item errors remain inside `results`. `warnings` holds objects of the same shape, may appear in any answer, and never changes the exit code.
+`errors` describes the command's failure. The command computes its overall verdict first, then puts an error with the matching exit code first. When the failures of the command itself map to different exit codes, the most cautious one leads: `130` or `143`, then `1`, `78`, `2`, and `75` only when every failure is temporary. When several failures share that exit code, the first one in this order leads. For exit 1, `RESUME_UNSAFE`, then the answering extension's own codes in the order of its manifest, then `RUNTIME`. For exit 78, `CONFIG_INVALID`, `EXTENSION_INVALID`, `TERMINAL_REQUIRED`, `PREREQ_MISSING`, `CAPABILITY_UNSUPPORTED`, `KEYRING_UNAVAILABLE`, `AUTH_MISSING`, `KEY_NOT_GRANTED`, `AUTH_REJECTED`, then the extension's own codes, so the first fix that a human needs leads. For exit 2, `USAGE_INVALID`, `CONFIRMATION_REQUIRED`, `NOT_FOUND`, then the extension's own codes. Input order or the order in which failures arrive never determines retry safety. Item errors remain inside `results`. `warnings` holds objects of the same shape, may appear in any answer, and never changes the exit code.
 
 | Key | Meaning |
 |---|---|
@@ -154,13 +154,16 @@ Only the overall process exit 75 permits an automatic repeat of the same invocat
 
 ## Error codes
 
-Each code maps to exactly one exit code. This table holds core's codes, and a milestone adds core's new codes here. Every extension may answer with these codes too. An extension's own codes start with its domain, such as `TRANSCRIPT_DOWNLOAD_FAILED` or `FLEET_HOST_DOWN`, live in its spec, and map to one exit code each, with the meaning that this file defines.
+Each code maps to exactly one exit code. This table holds core's codes, and a milestone adds core's new codes here. Every extension may answer with these codes too. An extension's own codes start with its domain, such as `TRANSCRIPT_DOWNLOAD_FAILED` or `FLEET_HOST_DOWN`, live in its spec and its [manifest](#manifest), and map to one exit code each, with the meaning that this file defines.
+
+The set of codes is open: later milestones add core codes, and every extension adds its own. A caller that meets an error code it does not know acts on the exit code, whose meaning never changes, and relays the hint. An unknown warning code is still a warning.
 
 | Code | Exit | When | Since |
 |---|---|---|---|
 | `USAGE_INVALID` | 2 | Unknown command, bad flag, or a missing value in non-interactive mode | M00 |
 | `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent | M00 |
 | `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type, or cannot be read | M00 |
+| `EXTENSION_INVALID` | 78 | The extension of the named domain cannot run: its manifest or its `en` catalog is missing, unreadable, or invalid, or speaks another format or contract version | M01 |
 | `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing or granting a key | M00 |
 | `RUNTIME` | 1 | Any other failure during work | M00 |
 | `TEMPORARY` | 75 | A temporary failure for which the whole invocation meets Retry safety | M00 |
@@ -205,7 +208,7 @@ Each path honors `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, or `XDG_C
 - An unknown key is a `CONFIG_UNKNOWN_KEY` warning in `ncly doctor`, never an error, so an older `ncly` reads a config written for a newer one.
 - `ncly` writes a config file only when the job of a command is to change the setup, such as adding a tap. It edits the file in place, keeps comments and formatting, and names the file it changed. Under `--dry-run`, it shows the change instead. Each such command states which file it writes.
 
-The language comes from the first source that is set: `--lang`, `NCLY_LANG`, `lang` in the config, `LC_ALL`, `LC_MESSAGES`, `LANG`, and finally `en`. `ncly` picks the closest catalog, so `fr_CA.UTF-8` and `fr` both select `fr-CA` once that catalog exists. A language with no close catalog, including `C` and `POSIX`, falls back to `en` without an error. The pseudo-locale `en-XA` exists for tests: it marks every catalog string between `⟦` and `⟧`, and only an exact request selects it, so `en-GB` gets English.
+The language comes from the first source that is set: `--lang`, `NCLY_LANG`, `lang` in the config, `LC_ALL`, `LC_MESSAGES`, `LANG`, and finally `en`. `ncly` picks the closest catalog, so `fr_CA.UTF-8` and `fr` both select `fr-CA` once that catalog exists. A language with no close catalog, including `C` and `POSIX`, falls back to `en` without an error. The pseudo-locale `en-XA` exists for tests: it marks every catalog string between `⟦` and `⟧`, and only an exact request selects it, so `en-GB` gets English. An extension picks among its own catalogs with the same rule, as [Text of an extension](#text-of-an-extension) defines.
 
 Numbers follow the language, such as `1,234.5` in English and `1 234,5` in Canadian French. Sizes count 1000 bytes per kilobyte, as macOS does, and name their unit in the language, such as `1.5 MB` or `1,5 Mo`. Dates use ISO 8601, such as `2026-10-06`, in every language: English readers parse it, and it is the Canadian French standard.
 
@@ -228,16 +231,119 @@ Effects distinguish user writes, network access, and paid requests. Modes distin
 
 Core is a small host. Every domain that does work for the user is an extension, as [D004](decisions/D004-minimal-core.md) decides. An extension comes in one of two transports, with one manifest format and one contract:
 
-- A **bundled** extension is a Go package compiled into `ncly`, with its manifest embedded. Only what an agent needs to operate Nicely is bundled: `skill`, in M03
-- An **external** extension is an executable named `ncly-<domain>`, with its manifest `ncly-<domain>.toml` beside it, found in `~/.local/share/nicely/extensions/` first, then in `PATH` order, and later brought by taps. The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
+- A **bundled** extension is a Go package compiled into `ncly`, with its manifest and catalogs embedded. Only what an agent needs to operate Nicely is bundled: `skill`, in M03
+- An **external** extension is an executable named `ncly-<domain>`, with its manifest `ncly-<domain>.toml` and its catalogs in the folder `ncly-<domain>.locales/` beside it, as [D048](decisions/D048-static-manifest-and-catalogs.md) decides. Core finds it as [Discovery](#discovery) defines, and taps bring more from M12. The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
 
-Core commands and bundled extensions always win over an external extension with the same name. Discovery reports the source it selected and every extension that another one hides. Dispatch requires a manifest with a compatible protocol, and core reads it without starting the extension.
+Core commands and bundled extensions always win over an external extension with the same name. Discovery, from [ncly describe](core-spec.md#ncly-describe) in M04 and [ncly doctor](core-spec.md#ncly-doctor) in M05, reports the source it selected and every extension that another one hides.
 
-An extension receives the global flags as the variables of [Global flags](#global-flags), plus the environment that [Programs that ncly runs](#programs-that-ncly-runs) defines. It answers with the envelope of [Output](#output) and the exit codes of [Exit codes](#exit-codes). It may use core's [error codes](#error-codes), and its own codes start with its domain. It translates its own text into the language of `NCLY_LANG`. It may be written in any language: a Python extension can be one file with the shebang `#!/usr/bin/env -S uv run --script` and its dependencies inline. Under `--json`, an answer that is not valid JSON, has another `contract_version`, or disagrees with its exit code is a protocol failure, never a success.
+An extension receives the environment that [Programs that ncly runs](#programs-that-ncly-runs) defines, which carries the global flags as variables. It answers with the envelope of [Output](#output) and the exit codes of [Exit codes](#exit-codes). It may use core's [error codes](#error-codes), and its manifest declares its own. It translates its own text into the language of `NCLY_LANG`. It may be written in any language: a Python extension can be one file with the shebang `#!/usr/bin/env -S uv run --script` and its dependencies inline.
 
-An extension uses another one through the CLI, as an agent would: transcript summarizes with `ncly agent run --json`. It writes its run records in the shared format of [Record format](#record-format), through the SDK for a Go extension, so `ncly run` inspects every recorded operation alike. A Go extension imports only the public `sdk/` packages, so a bundled extension could leave the binary without a rewrite.
+An extension uses another one through the CLI, as an agent would: transcript summarizes with `"$NCLY_BIN" agent run --json`. It writes its run records in the shared format of [Record format](#record-format), through the SDK for a Go extension, so `ncly run` inspects every recorded operation alike. A Go extension imports only the public `sdk/` packages, so a bundled extension could leave the binary without a rewrite.
 
-Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a `SKILL.md` that teaches an agent to use it. [M01](../milestones/M01-extension-host.md) settles the manifest schema and the dispatch protocol here, and [M02](../milestones/M02-sdk.md) the SDK.
+Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a `SKILL.md` that teaches an agent to use it. [M02](../milestones/M02-sdk.md) settles the SDK here.
+
+### Discovery
+
+A domain is lowercase letters and digits that start with a letter, such as `transcript`, as a service name is. Core looks for a file named `ncly-<domain>` that the user may execute, or a link to one: first in the `extensions` folder of the data folder, such as `~/.local/share/nicely/extensions/`, then in each folder of `PATH`, in order. It skips an empty or relative `PATH` entry, a reserved name of [core-spec.md](core-spec.md#command-tree), and every name whose domain breaks the rule above, such as `ncly-hello.toml`. The first file found for a domain is its extension and hides any later one. Core never resolves the link: the manifest and the catalogs sit beside the path that it found.
+
+To dispatch `ncly <domain>`, core reads that domain's manifest and catalogs only. `ncly --help` and completion read every one. Core never starts an extension to learn its commands. An extension whose manifest or `en` catalog is missing, unreadable, or invalid stays its domain's extension: `ncly <domain>` answers `EXTENSION_INVALID` with exit 78 without starting it, and `ncly --help` and completion leave it out. A broken extension never affects another domain.
+
+### Manifest
+
+The manifest is a TOML file that declares the extension's commands, in the same declarations as core's commands, as [Command descriptions](#command-descriptions) defines, and its own error codes. Its text fields hold catalog IDs, never text.
+
+```toml
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+examples = ["ncly hello run Ada", "ncly hello run --greeting Hi Ada --json"]
+
+[[commands.args]]
+name = "name"
+summary = "hello.run.name"
+
+[[commands.flags]]
+name = "greeting"
+shorthand = "g"
+value = "text"
+summary = "hello.run.greeting"
+
+[[commands]]
+path = "hello check"
+summary = "hello.check.summary"
+result = { kind = "report" }
+
+[[errors]]
+code = "HELLO_GRUMPY"
+exit = 1
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `format_version` | integer | The manifest format, `1` |
+| `contract_version` | integer | The contract version that the extension speaks, `1`, as `NCLY_CONTRACT_VERSION` carries it |
+| `domain` | string | The domain, equal to the name of the executable after `ncly-` |
+| `commands` | array | One declaration per command. Help lists them in alphabetical order, as it lists core's |
+| `commands[].path` | string | The words after `ncly`, separated by one space, such as `hello run`. The first word is the domain, and the command whose path is the domain alone gives the domain's line in `ncly --help` |
+| `commands[].summary` | string | The catalog ID of its one-line summary |
+| `commands[].examples` | array | Full command lines, as strings that are never translated |
+| `commands[].args` | array | The positional arguments in order, each with `name` and `summary`, a catalog ID |
+| `commands[].flags` | array | The command's own flags, each with `name`, the long name without `--`, `summary`, a catalog ID, and the optional `shorthand`, one ASCII letter, and `value`, the name of the value, such as `text`. A flag without `value` is a switch |
+| `commands[].result` | table | The command's result, the same object as `result` in [ncly describe](core-spec.md#ncly-describe), whose fields join with their first consumer. M01 reads `kind`: `object`, the default, `batch`, `report`, or `text`, which tells core how to check the answer |
+| `errors` | array | The extension's own error codes, each with `code` and `exit`, in the order that decides which one leads an answer, as [Output](#output) defines |
+
+A manifest is invalid unless every rule below holds. Core rejects it before work, as [Compatibility](#compatibility) asks of a format version that it does not support:
+
+- `format_version` and `contract_version` are both `1`, and `domain` matches the executable's name
+- Each word of a path is lowercase letters, digits, and hyphens, starting with a letter, and no path appears twice. The parent of each path is declared too, such as `agent profile` for `agent profile list`, so that help lists it with its summary. A path with children and no arguments groups them: alone, it prints its help, as [Usage](#usage) says
+- A flag's name, an argument's name, and a value's name follow the rule of a path word. A shorthand is one ASCII letter. No flag takes the name or the shorthand of a global flag, and no name or shorthand appears twice in one command. Core checks every declaration before it builds a command from it, so a broken one never reaches the parser
+- Each own code starts with the domain in uppercase and an underscore, such as `HELLO_GRUMPY`, differs from every core code, appears once, and maps to `1`, `2`, or `78`. Exit 75 belongs to `TEMPORARY` alone, because [Retry safety](#retry-safety) judges the whole invocation, and 130 and 143 belong to the signals
+- The `en` catalog holds every catalog ID that the manifest names
+
+Core reads only the keys of this table and ignores any other, as [Compatibility](#compatibility) asks of readers, so a later milestone adds a field with its first consumer, such as the requirements that [M05](../milestones/M05-doctor.md) checks. A field that an older core must not ignore needs a new `format_version`, which that core rejects instead of misreading.
+
+### Text of an extension
+
+An extension keeps its text in catalogs, in the format of core's: one TOML file per language, named after its language tag, such as `en.toml` or `fr-CA.toml`, whose entries each have a description for the translator. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest, and a first-party extension keeps them in `extensions/<name>/locales/`. The `en` catalog is required. The files list the languages that the extension speaks, so the manifest declares none.
+
+Core renders an extension's help and completion descriptions from its manifest and catalogs, so help never starts it. `NCLY_LANG` carries the requested language as a language tag, such as `fr-CA` for `LANG=fr_CA.UTF-8`, and `en` when no source names a language or names `C` or `POSIX`. Core and each extension then pick their own closest catalog with the rule of [Configuration](#configuration), falling back to `en` independently: a French request shows core in French and an extension that speaks only English in English. An entry that a catalog lacks falls back to its `en` entry. Under the pseudo-locale `en-XA`, core marks the text of an extension's `en` catalog as it marks its own.
+
+### Dispatch
+
+Core validates a call to an extension from its manifest, as it validates its own commands: an unknown command or flag, a flag without its value, or an extra argument fails with `USAGE_INVALID` before the extension starts. `--help`, `--version`, `ncly help <domain>`, and a group without a verb never start it.
+
+Core then starts the executable with the canonical arguments, as [D049](decisions/D049-canonical-arguments.md) decides: the words of the command path after the domain, then each flag that the caller set, in the order of the manifest, as one `--<name>=<value>` word, then `--`, then the positional arguments, including the operands that followed the caller's `--`. A switch passes as `--<name>=true` or `--<name>=false`, and a repeated flag passes once, with its last value. Global flags never reach the extension as arguments: their resolved values reach it as variables. For example, `ncly -v hello run -g Hi Ada --json` starts `ncly-hello run --greeting=Hi -- Ada`, with `NCLY_VERBOSE=1` and `NCLY_JSON=1`.
+
+The extension inherits stdin and the working directory of `ncly`, and receives the environment of [Programs that ncly runs](#programs-that-ncly-runs). Core reports no config error before it starts an extension: it resolves `lang` as help does, skipping a config file that it cannot read. The extension reports `CONFIG_INVALID` when it reads a broken file, including a wrong core key such as `lang`, as [Configuration](#configuration) requires of every command that reads the config.
+
+### Answer check
+
+Core checks what an extension answers, as [D050](decisions/D050-answer-check.md) decides. Without `--json`, the extension writes to the stdout and stderr of `ncly` directly, so a human sees its text, styles, and forms unchanged, and core checks only its exit code. A command whose result kind is `text` ignores `--json`, as [Output](#output) allows, so core treats it the same way under `--json`.
+
+With `--json`, core holds the extension's stdout until the extension exits, so a broken answer never reaches the caller. It reads stderr line by line and holds the latest line: when a new line arrives, it forwards the held one. When the answer belongs on stdout, core forwards the held line too. Otherwise the held line is the answer, which core checks. A last line without a newline counts as a line. An extension follows [Output](#output), so it writes nothing else to stderr without `--verbose` or `NCLY_DEBUG`, but core forwards what it writes anyway, so a human still sees it.
+
+Core accepts the answer only when every rule below holds:
+
+1. The exit code is one of [Exit codes](#exit-codes): 0, 1, 2, 75, 78, 130, or 143
+2. The answer is one line that holds one JSON object, with `ok`, a boolean that is `true` exactly when the exit code is 0, and `contract_version`, the integer `1`, in exactly one place. A success puts it on stdout. A failure puts it on the last line of stderr, with stdout empty. A report puts its findings on stdout with exit 0 or 78, as [Output](#output) says, and a report command that fails itself answers as any failure, on stderr
+3. An answer on stderr has a non-empty `errors`, and an answer on stdout has none
+4. `errors` and `warnings`, when present, are arrays of objects that each hold the strings `code`, `message`, and `hint`. Each code is uppercase letters, digits, and underscores
+5. `results`, when present, is an array of objects that each hold the boolean `ok`, which is `false` exactly when the item has a non-empty `errors`. A success has no failed item
+6. An error code that starts with the extension's domain and an underscore is declared in its manifest. A warning code is checked for its form only
+7. When core knows the leading error code, as its own or as a declared one, it maps to the exit code. No top-level error code that core knows maps to a more cautious exit code, in the order of [Output](#output), whatever the codes that core does not know
+8. When an item failed, the exit code is 1 led by `RUNTIME`, 75 led by `TEMPORARY`, 130 led by `INTERRUPTED`, or 143 led by `TERMINATED`, as [Output](#output) defines for a batch. Exit 75 holds only when every error, at the top and in every item, is `TEMPORARY`
+
+Core passes a valid answer on unchanged. Anything else is a protocol failure: core drops the output that it holds and answers `RUNTIME` with exit 1, because the extension may already have produced effects, and the message names the rule that broke. Without `--json`, an exit code outside the list is a protocol failure too, and core prints its error block after the extension's text.
+
+When `ncly` receives Ctrl-C or SIGTERM before the extension exits, the first signal decides the verdict: core answers 130 with `INTERRUPTED` or 143 with `TERMINATED`, whatever the extension's exit code. A valid answer keeps its data keys, its `results`, and its other errors after the leading one. Without a valid answer, core answers alone, with no data key. Without `--json`, core prints its own error block only when the extension's exit code differs from the signal's. A signal that arrives after the extension exited changes nothing: core keeps its handler registered and publishes the answer that it has decided.
 
 ## Operations
 
@@ -352,17 +458,20 @@ Core runs extensions and doctor's version probes. An extension runs its own prog
 **Environment.** A program receives the environment of its parent with these changes:
 
 - Each variable named `<NAME>_API_KEY` is the key of a service. An extension receives it only when a human granted that key to it, and core then sets it from the environment or the keychain. An extension passes a key on only to the program that its spec names, such as `DEEPGRAM_API_KEY` to transcript's Python program
-- The variables of the global flags carry their resolved values. `NCLY_VERSION` and `NCLY_CONTRACT_VERSION` identify the release and public protocol.
+- The variables of the global flags carry their resolved values: `NCLY_JSON`, `NCLY_NO_INPUT`, and `NCLY_VERBOSE` equal `1` when their flag resolves on and are removed otherwise, `NO_COLOR` equals `1` when color resolves off and is removed otherwise, and `NCLY_LANG` holds the requested language tag, as [Text of an extension](#text-of-an-extension) defines. `NCLY_DEBUG` passes unchanged. `NCLY_VERSION` and `NCLY_CONTRACT_VERSION` identify the release and public protocol.
+- `NCLY_BIN` holds the absolute path of the running `ncly`, so that a program calls another domain through the same host, as cargo passes `CARGO` to its subcommands
 - A harness receives `NCLY_AGENT_DEPTH` plus one, as the [agent extension](../../extensions/agent/spec.md#depth-limit) defines
 
 A key may be optional, such as a harness key: the extension receives it when it is granted and present, and otherwise the harness uses its own login. An unavailable keychain for an optional key does not block that fallback.
 
+**Process groups.** The program runner starts each program in its own process group, so a Ctrl-C at the terminal reaches `ncly` alone, and the runner signals the program. A program that may read the terminal stays in the process group of `ncly` instead: an extension, which asks through its forms, and an install command that doctor runs after a yes, which may ask for a password. A process outside the terminal's foreground group stops when it reads the terminal, as [D047](decisions/D047-terminal-process-group.md) explains. A program can therefore receive the same signal more than once, from the terminal, from `ncly`, and from the extension that started it, and it treats a repeat during its cleanup as no new event.
+
 **Cancellation.** On Ctrl-C or SIGTERM, `ncly` sends the signal to every program it started and to every descendant that it can still reach. It sends SIGKILL to what still runs 15 seconds later, which leaves a Python program its own 10 seconds to stop its children. Before each signal, `ncly` finds descendants through their parent process, so a descendant that left the process group of its parent, as the children of transcript's Python program do, still receives the signal. On Linux, `ncly` registers as a child subreaper, so it also reaches a descendant whose parent already exited. macOS has no subreaper, so a descendant whose parent exited before the signal is the one exception there, and it keeps running. `ncly` keeps every finished output and removes only its own temporary files. It exits 130 with `INTERRUPTED` or 143 with `TERMINATED`, and under `--json` the answer keeps the data keys that apply, such as `output_dir` or the `results` of finished items. A second signal during this cleanup is ignored. A SIGKILL sent to `ncly` itself leaves no time to clean up.
 
-**Output streams.** A descendant that inherits a program's stdout or stderr can hold it open after the program exits, as an orphan on macOS can. `ncly` stops reading a program's streams 2 seconds after that program exits, or when it sends SIGKILL during cleanup, whichever comes first. A descendant therefore never keeps `ncly` waiting, and output written after that point is lost.
+**Output streams.** A descendant that inherits a program's stdout or stderr can hold it open after the program exits, as an orphan on macOS can. `ncly` stops reading the streams that it reads from a program 2 seconds after that program exits, or when it sends SIGKILL during cleanup, whichever comes first. A descendant therefore never keeps `ncly` waiting, and output written after that point is lost. This drain limit is its own clock, apart from the 15 seconds of cleanup. A stream that `ncly` passes on without reading, such as an extension's stdout without `--json`, stays with the descendant, which may still write to the terminal after `ncly` exits.
 
 **Normal end.** An extension answers only after every program that it started has ended, except a viewer that it starts detached for the user, such as the folder that transcript's `--open` shows. The SDK's program runner waits for each program that it started. When a program ends normally while a descendant still runs, `ncly` neither waits for that descendant nor stops it, because it cannot tell a forgotten program from a window that the user keeps open. The output stream rule keeps such a descendant from blocking `ncly`.
 
 **Timeout.** The timeout covers the command's work and starts before child execution. On expiry, use the same process-tree cleanup as cancellation. A temporary failure before any paid request exits 75 only when Retry safety holds. Otherwise it exits 1. A caller's SIGTERM remains exit 143. Record finished work and unknown effects before returning when the process can still do so.
 
-**Protocol failures.** An extension, and a Python program that an extension embeds, returns versioned machine messages only, which Go maps into this public contract. Missing, malformed, or incompatible messages never count as success. A launched program may already have produced effects, so preserve available evidence and use a runtime failure unless safety can be established. Harness adapters declare the modes they can actually enforce. An unsupported tools-off mode fails with `CAPABILITY_UNSUPPORTED` before launching a task with outside material.
+**Protocol failures.** An extension answers core as any command answers its caller, and core checks it as [Answer check](#answer-check) defines. A Python program that an extension embeds returns versioned machine messages only, which the extension's Go code maps into this public contract. Missing, malformed, or incompatible messages never count as success. A launched program may already have produced effects, so preserve available evidence and use a runtime failure unless safety can be established. Harness adapters declare the modes they can actually enforce. An unsupported tools-off mode fails with `CAPABILITY_UNSUPPORTED` before launching a task with outside material.

@@ -1,93 +1,87 @@
 # M01 Extension host
 
-Status: planned
+Status: ready
 Version: v0.1.0
 
 ## Demo
 
-`ncly hello` runs a test extension written in shell from its manifest, and `ncly` checks the answer.
+`ncly hello run --json` runs a test extension written in shell from its manifest, and `ncly` checks its answer.
 
 ## Scope
 
-Core finds executables named `ncly-<domain>`, reads their manifests without running them, starts them, and checks what they answer. This milestone uses fixture extensions only. The first bundled extension, `skill`, arrives in [M03](M03-skill.md), and the first real external one, `agent`, in [M09](M09-agent-profiles.md).
+Core finds executables named `ncly-<domain>`, reads their manifests and catalogs without running them, starts them with a validated call, and checks what they answer, as [Extensions](../north-star/contract.md#extensions) defines. This milestone uses fixture extensions only. The first bundled extension, `skill`, arrives in [M03](M03-skill.md), and the first real external one, `agent`, in [M09](M09-agent-profiles.md).
 
-- Discovery looks in `~/.local/share/nicely/extensions/` first, then in `PATH` order. Dispatch requires a manifest with a compatible protocol. A missing or incompatible manifest is reported without starting the executable
-- Core validates an extension's arguments from its manifest, as it does for its own commands, so a bad call fails with `USAGE_INVALID` before the extension starts
-- Core commands and bundled extensions always win over an external extension with the same name. The explicit `reservedNames` of `internal/cli/root.go` stays, because it also reserves names whose command arrives later, and a test keeps it equal to the core and bundled rows of the [domain table](../north-star/architecture.md#domains-and-commands), plus `help`, `version`, and `config`
+- The fixtures are shell scripts that live in the scenario archives, beside their manifests and their `en` catalogs. A fixture that writes a file when it runs proves that core did not start it
+- Core validates an extension's call from its manifest, as it does for its own commands, then passes the canonical arguments of [Dispatch](../north-star/contract.md#dispatch)
+- The explicit `reservedNames` of `internal/cli/root.go` stays, because it also reserves names whose command arrives later, and a test keeps it equal to the core and bundled rows of the [domain table](../north-star/architecture.md#domains-and-commands), plus `help`, `version`, and `config`
 - An extension receives the environment that [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) defines. No key reaches it until grants arrive in [M08](M08-grants.md)
-- With `--json`, core checks the answer: one JSON line, `ok`, a compatible `contract_version`, codes from core's registry or prefixed with the domain, and an exit code that agrees with them. Anything else is a protocol failure, never a success
-- Ctrl-C and SIGTERM stop the extension's whole process tree. This brings the program runner, which doctor's probes, the SDK, and every extension reuse later
-- A program that ignores the signal, a second Ctrl-C, or a descendant that holds an output stream never keeps `ncly` waiting
+- `--json` selects non-interactive mode, as [D046](../north-star/decisions/D046-machine-output-never-asks.md) decides, so core holds an extension's stdout without changing its mode
+- The program runner arrives in `internal/runner/` and the process tree helpers in `internal/platform/`, which [M02](M02-sdk.md) moves to `sdk/`. An extension stays in the process group of `ncly`, as [D047](../north-star/decisions/D047-terminal-process-group.md) decides
 - The cancellation scenarios run on macOS and Linux, so their fixtures use no `setsid`, which macOS lacks. Only the subreaper scenario is Linux only, and the test binary shortens the 15 seconds of cleanup
-- `ncly --help` lists extensions in their own section, and the help and completion of an extension come from its manifest
-
-The manifest so far, which the open questions complete:
-
-```toml
-format_version = 1
-contract_version = 1
-domain = "hello"
-description = "Says hello"
-
-[requires]
-bins = []
-keys = []
-```
-
-## Open questions
-
-Settle each one in [Extensions](../north-star/contract.md#extensions), or in the section that it names, then delete this section.
-
-- The manifest fields that M01 needs for dispatch, validation, help, completion, and the answer check, including the extension's own error codes with their exit codes. The format must be able to grow to the bundled `skill` of M03 and the commands in [agent's spec](../../extensions/agent/spec.md), without duplicating help or completion definitions. Later milestones add fields with their first consumer
-- The arguments that reach the extension after core validates them from its manifest: the words of the command path, the operands after `--`, and whether core removes the global flags, whose values reach it as variables
-- How the manifest carries translated help, since help never starts the extension, whether `NCLY_LANG` holds the requested language or the catalog that core matched, and what an extension does without that language, as [#8](https://github.com/pascalandy/nicely/issues/8) asks
-- The error codes and exit codes for a missing manifest, an incompatible manifest, and a protocol failure. Settle in [Error codes](../north-star/contract.md#error-codes) how a caller treats a code that it does not know, such as an extension's own, because [Compatibility](../north-star/contract.md#compatibility) closes every enum that does not say otherwise
-- Whether core captures the extension's stdout and stderr to check the answer, or passes them through and checks a copy, how it keeps the data keys of a valid answer after a signal, and how it answers `INTERRUPTED` or `TERMINATED` itself when no valid answer arrives
-- How the human output that M01-T2 passes through fits [Protocol failures](../north-star/contract.md#programs-that-ncly-runs), which says that an extension returns machine messages only
-- Which config errors core reports before it starts an extension and which the extension reports, under the rules of [Configuration](../north-star/contract.md#configuration). Core reads `lang` for `NCLY_LANG`, while [M03](M03-skill.md) makes `skill` the first command to report `CONFIG_INVALID`
-- The variable that gives an extension the path of the running `ncly`, so that it calls another domain through the same host
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M01-T1 | Manifest and dispatch | agent | — | todo |
-| M01-T2 | Answer check | agent | M01-T1 | todo |
-| M01-T3 | Cancellation | agent | M01-T1 | todo |
-| M01-T4 | Help and completion | agent | M01-T1 | todo |
-| M01-T5 | Stubborn programs | agent | M01-T3 | todo |
+| M01-T1 | Manifest, help, and completion | agent | — | todo |
+| M01-T2 | Dispatch | agent | M01-T1 | todo |
+| M01-T3 | Answer check | agent | M01-T2 | todo |
+| M01-T4 | Cancellation | agent | M01-T3 | todo |
+| M01-T5 | Stubborn programs | agent | M01-T4 | todo |
 
-### M01-T1 Manifest and dispatch
+### M01-T1 Manifest, help, and completion
 
-- **Read:** [Extensions](../north-star/contract.md#extensions), [Command descriptions](../north-star/contract.md#command-descriptions), [Compatibility](../north-star/contract.md#compatibility), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
-- **Proves:** `testdata/script/extension_dispatch.txtar`, `testdata/script/extension_manifest.txtar`
+- **Read:** [Discovery](../north-star/contract.md#discovery), [Manifest](../north-star/contract.md#manifest), [Text of an extension](../north-star/contract.md#text-of-an-extension), [Command descriptions](../north-star/contract.md#command-descriptions), [Usage](../north-star/contract.md#usage), [ncly completion](../north-star/core-spec.md#ncly-completion)
+- **Proves:** `testdata/script/extension_manifest.txtar`, `testdata/script/extension_help.txtar`
 
-`ncly hello` finds the fixture `ncly-hello` and reads its `ncly-hello.toml`, then runs it with its arguments and the `NCLY_*` variables and returns its exit code. The fixture and its manifest live in the scenario archive. A missing, malformed, or incompatible manifest is reported without starting the executable, which a fixture that writes a file when it runs proves. An unknown flag or an extra argument fails with `USAGE_INVALID` the same way. The data folder wins over `PATH`, an earlier `PATH` folder wins over a later one, and a reserved name never reaches an extension. Every `*_API_KEY` variable is removed from the extension's environment.
+Everything core does with an extension without starting it. Core finds the fixture `ncly-hello` in the data folder and in `PATH`, reads `ncly-hello.toml` and `ncly-hello.locales/en.toml`, and builds its commands with the same code as its own. The manifest's types and its validation live in `internal/contract`, because [M02](M02-sdk.md) shares them with every Go extension.
 
-### M01-T2 Answer check
+The first scenario covers discovery and validation. The data folder wins over `PATH`, an earlier `PATH` folder wins over a later one, a relative `PATH` entry is skipped, and a fixture named after a reserved name is never listed. Each broken manifest answers `EXTENSION_INVALID` with exit 78 for its domain, and its fixture never runs: a missing manifest, a TOML syntax error, `format_version = 2`, `contract_version = 2`, a domain that differs from the file name, an undeclared parent path, a flag named `json`, a shorthand `é`, a flag named `a=b`, an own code without the domain prefix, an own code that maps to 75, and a summary ID that the `en` catalog lacks. Another fixture whose manifest is valid still shows in `ncly --help` beside the broken ones, so no broken declaration reaches the parser.
 
-- **Read:** [Extensions](../north-star/contract.md#extensions), [Output](../north-star/contract.md#output), [Error codes](../north-star/contract.md#error-codes)
-- **Proves:** `testdata/script/extension_protocol.txtar`
+The second scenario covers the text. `ncly --help` lists extensions in their own section, in the existing help style, with the summary of each domain. `ncly hello --help`, `ncly help hello`, and `ncly hello` alone show the extension's help, and completion offers its commands and flags. The scenario runs once under the pseudo-locale, so the fixture's text is marked. A second fixture ships a partial `fr-CA` catalog: with `--lang fr-CA`, its help and completion show its French summary and the English text of the entry that the catalog lacks, never the ID, while the first fixture falls back to its `en` catalog. None of these calls starts a fixture.
 
-With `--json`, core checks the extension's answer. Fixtures answer with malformed JSON, two answers, another `contract_version`, an unknown code without the domain prefix, and an exit code that disagrees with `ok` or with the leading code. Each one fails as a protocol failure, and none counts as a success. Without `--json`, human output passes through unchanged.
+### M01-T2 Dispatch
 
-### M01-T3 Cancellation
+- **Read:** [Dispatch](../north-star/contract.md#dispatch), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Global flags](../north-star/contract.md#global-flags), [Configuration](../north-star/contract.md#configuration)
+- **Proves:** `testdata/script/extension_dispatch.txtar`, `internal/cli/spec_test.go`
 
-- **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
+`ncly hello run` starts the fixture through the first version of the program runner, which builds its environment and returns its exit code. The fixture writes its arguments and its `NCLY_*` variables to a file, so the scenario checks exactly what it received:
+
+- `ncly -v hello run -g Hi Ada --json` passes `run --greeting=Hi -- Ada`, with `NCLY_VERBOSE=1` and `NCLY_JSON=1`, and `--json=false` with `NCLY_JSON=1` in the environment removes `NCLY_JSON`
+- An operand after `--` that starts with a dash reaches the fixture after its own `--`, and a repeated flag passes once with its last value
+- An unknown flag, a flag without its value, and an extra argument fail with `USAGE_INVALID` before the fixture runs
+- `NCLY_LANG` holds `fr-CA` for `LANG=fr_CA.UTF-8`, and `en` for `LANG=C`. `NCLY_BIN` holds the path of the running `ncly`, `NCLY_VERSION` and `NCLY_CONTRACT_VERSION` are set, and every `*_API_KEY` variable is gone
+- A config file with a syntax error does not stop the fixture
+- Without `--json`, the fixture's text reaches the caller unchanged with its exit code, and an exit code outside [Exit codes](../north-star/contract.md#exit-codes) becomes `RUNTIME` with exit 1
+- Under the pseudo-terminal of `ttyin -stdin`, the fixture compares `ps -o pgid=` with `ps -o tpgid=` for its own process, finds that it belongs to the terminal's foreground group, and reads a line from the terminal, as [D047](../north-star/decisions/D047-terminal-process-group.md) requires
+
+`internal/cli/spec_test.go` keeps `reservedNames` equal to the domain table.
+
+### M01-T3 Answer check
+
+- **Read:** [Answer check](../north-star/contract.md#answer-check), [Output](../north-star/contract.md#output), [Error codes](../north-star/contract.md#error-codes), [Modes](../north-star/contract.md#modes)
+- **Proves:** `testdata/script/extension_protocol.txtar`, `internal/contract/compat_test.go`
+
+With `--json`, core holds the fixture's stdout and checks the answer against the rules of the spec. Fixtures answer with malformed JSON, two lines on stdout, an answer on stdout with exit 1, `contract_version` 2, a problem without `hint`, a lowercase code, an own code that the manifest does not declare, `USAGE_INVALID` with exit 1, a declared own code with the wrong exit, `USAGE_INVALID` leading `RUNTIME` with exit 2, the same with a code that `ncly` does not know added, exit 0 with a failed item, a failed item with exit 78 led by `AUTH_MISSING`, and exit 75 with a `RUNTIME` item error. Each one answers `RUNTIME` with exit 1, stdout empty, and the fixture's held output absent. Valid answers pass unchanged: a success, a declared own code, a code that this `ncly` does not know with exit 1, a warning with the fixture's prefix, a report answering `ok: false` on stdout with exit 78, the same report failing itself with `CONFIG_INVALID` on stderr and exit 78, and a command of kind `text`, whose output passes through under `--json`. Diagnostic lines that the fixture writes to stderr reach the caller in order, before its failure answer, and after its success.
+
+A direct test of `contract.DetectMode` proves that `--json` selects non-interactive mode, and that `--json=false` with `NCLY_JSON=1` does not, because no command asks a question yet. A consumer case in `compat_test.go` reads an answer whose code it does not know and acts on its exit code, as the M00 [contract coverage](M00-foundation.md#contract-coverage) left for this milestone.
+
+### M01-T4 Cancellation
+
+- **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Answer check](../north-star/contract.md#answer-check)
 - **Proves:** `testdata/script/extension_cancel.txtar`, `testdata/script/extension_orphan.txtar`
 
-The program runner's first version: Ctrl-C and SIGTERM reach the extension and every descendant that core can still reach, and SIGKILL follows 15 seconds later. Add the test commands that the scenarios need, such as `waitfile <path>`, which waits until a file exists, and `gone <path>`, which checks that the process whose ID the file holds no longer runs. In the first scenario, the fixture starts a grandchild in its own process group and writes its process ID. After `kill -INT`, the answer is `INTERRUPTED` with exit 130, and after `kill -TERM`, `TERMINATED` with exit 143. Either way, the grandchild is gone. The second scenario, with the `[linux]` condition, proves the subreaper: the fixture's child starts a grandchild in its own session and exits before the signal, and core still stops the orphan.
+The program runner forwards a signal: Ctrl-C and SIGTERM reach the extension and every descendant that core can still reach, and core answers with the verdict of the first signal. The escalation to SIGKILL waits for M01-T5. Add the test commands that the scenarios need: `waitfile <path>`, which waits until a file exists, `gone <path>`, which checks that the process whose ID the file holds no longer runs, and `term`, which sends SIGTERM to the background commands, because the built-in `kill` of testscript sends only INT and KILL.
 
-### M01-T4 Help and completion
-
-- **Read:** [Extensions](../north-star/contract.md#extensions), [Usage](../north-star/contract.md#usage), [ncly completion](../north-star/core-spec.md#ncly-completion)
-- **Proves:** `testdata/script/extension_help.txtar`
-
-`ncly --help` shows extensions in their own section, in the existing help style, with the description from their manifest. `ncly hello --help` and `ncly help hello` show the extension's help without starting it, and completion offers its commands and flags. Run the scenario once under the pseudo-locale, as the open questions settle for extension text.
+In the first scenario, the fixture writes a finished file, starts a grandchild in its own process group with `set -m`, and writes its process ID. After `kill -INT`, the answer is `INTERRUPTED` with exit 130, and after `term`, `TERMINATED` with exit 143. Either way, the grandchild is gone and the finished file is still there, which closes [#5](https://github.com/pascalandy/nicely/issues/5). When the fixture traps the signal and answers with an `output_dir` key, the answer keeps that key after `INTERRUPTED`. When it exits without an answer, core answers alone. The second scenario, with the `[linux]` condition, proves the subreaper: the fixture's child starts a grandchild in its own session and exits before the signal, and core still stops the orphan.
 
 ### M01-T5 Stubborn programs
 
 - **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `testdata/script/extension_cancel_stubborn.txtar`, `testdata/script/extension_stream_holder.txtar`
 
-In the first scenario, the fixture traps Ctrl-C and SIGTERM, writes the signal it receives to a file, and keeps running. After `kill -INT`, the file holds `INT`, which proves that the signal came before SIGKILL, and the fixture is gone once the shortened cleanup ends. A second `kill -INT` during cleanup changes nothing: core still stops the fixture and answers `INTERRUPTED`. Check the answer and that the fixture is gone, because a core that died on the second signal would leave both wrong. In the second scenario, the fixture starts a grandchild that inherits stdout and outlives it. With `--json`, core answers while the grandchild still runs, then the scenario stops the grandchild.
+The program runner ends what a signal does not: SIGKILL after the 15 seconds of cleanup, and the 2 seconds of the drain limit, on their own clocks, as [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) and [AGENTS.md](../../AGENTS.md#code) define. The test binary shortens cleanup to 4 seconds and keeps the real 2-second drain limit, so the scenarios tell the two clocks apart.
+
+The first scenario has two fixtures. One traps the signal and answers with its `output_dir` key 3 seconds later, and the answer keeps that key, which fails when the drain limit cuts cleanup short. The other traps Ctrl-C and SIGTERM, writes the signal it receives to a file, and keeps running. After `kill -INT`, the file holds `INT`, which proves that the signal came before SIGKILL, and the fixture is gone once the shortened cleanup ends. A second `kill -INT` during cleanup changes nothing: core still stops the fixture and answers `INTERRUPTED`. Check the answer and that the fixture is gone, because a core that died on the second signal would leave both wrong.
+
+In the second scenario, the fixture starts a grandchild that inherits stdout and outlives it. With `--json`, core passes the fixture's valid answer on 2 seconds after the fixture exits, while the grandchild still runs. During those 2 seconds, once `gone` shows that the fixture has exited, the scenario sends `kill -INT` to core, and the answer stays the fixture's success with exit 0, because a signal after the extension exits changes nothing. Then the scenario stops the grandchild.

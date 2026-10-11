@@ -48,7 +48,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: an extension compiled into `ncly`, with the same manifest and contract as an external one
   - Project note: only `skill` is bundled
 - External extension
-  - Def.: an executable named `ncly-<domain>` with a compatible manifest beside it
+  - Def.: an executable named `ncly-<domain>` with a compatible manifest and its catalogs beside it
 - First-party extension
   - Def.: an extension in `extensions/` of this repository, such as `agent` or `transcript`
 - Platform
@@ -72,6 +72,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 - A command reads domain → resource → verb
 - A manifest holds one command declaration per command
+- Core starts an extension with canonical arguments, and checks its answer; an answer that breaks the contract is a protocol failure
 - An answer and its exit code always agree; exit 75 alone permits an automatic retry
 - A grant lets one key reach one extension
 - A report command keeps its report on stdout, even when a check fails
@@ -96,6 +97,14 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: the one description of a command that supplies its help, completion, validation, and discovery
 - Manifest
   - Def.: the file that declares an extension's commands, effects, modes, and requirements, read without starting the extension
+  - Project note: `ncly-<domain>.toml`, whose schema [Manifest](contract.md#manifest) defines
+- Canonical arguments
+  - Def.: the one form in which core passes a validated call to an extension: the command path after the domain, each flag as `--<name>=<value>`, then `--` and the positional arguments
+  - Project note: [Dispatch](contract.md#dispatch) defines it. Global flags reach the extension as variables instead
+- Protocol failure
+  - Def.: an answer or an exit code from an extension or an embedded program that breaks the contract
+  - Project note: core answers `RUNTIME` in its place, as [Answer check](contract.md#answer-check) defines
+  - Distinct from: a failure that the extension reports through a valid answer
 - Environment
   - Def.: the variables that an extension receives: the resolved global flags, the versions, and the keys granted to it
 - Answer
@@ -173,6 +182,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: `config.toml`, the setup the user wants, which can travel between machines
 - Local config
   - Def.: `config.local.toml`, which holds what belongs to one machine and overrides the shared config
+- Catalog
+  - Def.: one TOML file of translated text for one language, whose entries each have an ID, a description for the translator, and plural forms
+  - Project note: core and each extension keep their own. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest
 - Pseudo-locale
   - Def.: a generated test language that marks every catalog string
 
