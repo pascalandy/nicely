@@ -99,7 +99,7 @@ func Main(args []string, stdout, stderr *os.File) int {
 		return extensionCall.run(p, g, stdout, stderr)
 	}
 	if out.err != nil {
-		err = fail(contract.Problem{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")})
+		err = &failure{writeFailure(p)}
 	}
 	if err == nil {
 		return 0
@@ -239,6 +239,11 @@ func report(p *i18n.Printer, g globals, o contract.Outcome, stdout, stderr io.Wr
 		return int(contract.ExitRuntime)
 	}
 	return int(a.Exit)
+}
+
+// writeFailure is the outcome of an answer that ncly could not write.
+func writeFailure(p *i18n.Printer) contract.Outcome {
+	return contract.Outcome{Errors: []contract.Problem{{Code: contract.Runtime, Message: p.T("output.write_failed"), Hint: p.T("output.write_failed_hint")}}}
 }
 
 // summaries hold the catalog IDs of the leading error of an outcome that no

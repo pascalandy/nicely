@@ -267,3 +267,71 @@ other = "The extension {{.Domain}} could not start."
 ["extension.answer_exit"]
 description = "Error when an extension exited with a code that the contract does not allow. {{.Domain}} is its domain, and {{.Exit}} the exit code, a number."
 other = "The extension {{.Domain}} exited with {{.Exit}}, which is not an exit code of the contract."
+
+["extension.answer_two_places"]
+description = "Error when an extension failed but also wrote on stdout, which stays empty on failure. {{.Domain}} is its domain, and {{.Exit}} its exit code. stdout is the name of a stream and stays as is."
+other = "The extension {{.Domain}} failed with exit {{.Exit}} but wrote on stdout."
+
+["extension.answer_missing"]
+description = "Error when an extension exited without its JSON answer. {{.Domain}} is its domain, {{.Exit}} its exit code, and {{.Stream}} the stream that should hold the answer, stdout or stderr, which stays as is."
+other = "The extension {{.Domain}} exited with {{.Exit}} without an answer on {{.Stream}}."
+
+["extension.answer_lines"]
+description = "Error when an extension's answer spans several lines. {{.Domain}} is its domain, and {{.Stream}} the stream, stdout or stderr, which stays as is."
+other = "The answer of the extension {{.Domain}} on {{.Stream}} is not one line."
+
+["extension.answer_json"]
+description = "Error when an extension's answer is not one JSON object. {{.Domain}} is its domain. JSON is the name of a format and stays as is."
+other = "The answer of the extension {{.Domain}} is not one JSON object."
+
+["extension.answer_ok"]
+description = "Error when the ok key of an extension's answer is not a boolean that agrees with its exit code, true exactly for exit 0. {{.Domain}} is its domain, and {{.Exit}} its exit code. ok is a key and stays as is."
+other = "The answer of the extension {{.Domain}} has no ok that agrees with exit {{.Exit}}."
+
+["extension.answer_version"]
+description = "Error when an extension's answer lacks contract_version 1. {{.Domain}} is its domain. contract_version is a key and stays as is."
+other = "The answer of the extension {{.Domain}} does not have contract_version 1."
+
+["extension.answer_errors_stdout"]
+description = "Error when an extension's answer on stdout holds errors, which belong to a failure on stderr. {{.Domain}} is its domain. errors and stdout stay as is."
+other = "The answer of the extension {{.Domain}} on stdout holds errors."
+
+["extension.answer_errors_missing"]
+description = "Error when an extension failed with an answer that holds no errors. {{.Domain}} is its domain, and {{.Exit}} its exit code. errors stays as is."
+other = "The extension {{.Domain}} failed with exit {{.Exit}}, and its answer holds no errors."
+
+["extension.answer_problem"]
+description = "Error when an entry of errors or warnings in an extension's answer lacks the strings code, message, and hint. {{.Domain}} is its domain. errors, warnings, code, message, and hint are keys and stay as is."
+other = "The answer of the extension {{.Domain}} has an error or a warning without the strings code, message, and hint."
+
+["extension.answer_code"]
+description = "Error when a code in an extension's answer is not uppercase letters, digits, and underscores. {{.Domain}} is its domain, and {{.Code}} the code."
+other = "The answer of the extension {{.Domain}} has the code {{.Code}}, which is not uppercase letters, digits, and underscores."
+
+["extension.answer_results"]
+description = "Error when results in an extension's answer is not a list of objects that each have a boolean ok. {{.Domain}} is its domain. results and ok are keys and stay as is."
+other = "The answer of the extension {{.Domain}} has results that are not objects with a boolean ok."
+
+["extension.answer_item_ok"]
+description = "Error when an item of results has ok true with errors, or ok false without errors. {{.Domain}} is the extension's domain."
+other = "The answer of the extension {{.Domain}} has an item whose ok disagrees with its errors."
+
+["extension.answer_item_failed"]
+description = "Error when an extension succeeded, with exit 0, while an item of its batch failed. {{.Domain}} is its domain."
+other = "The extension {{.Domain}} succeeded although one of its items failed."
+
+["extension.answer_undeclared"]
+description = "Error when an extension answered a code that starts with its domain but that its manifest does not declare. {{.Domain}} is its domain, and {{.Code}} the code."
+other = "The extension {{.Domain}} answered the code {{.Code}}, which its manifest does not declare."
+
+["extension.answer_code_exit"]
+description = "Error when an extension's exit code disagrees with a code of its answer. {{.Domain}} is its domain, {{.Exit}} its exit code, {{.Code}} the code, and {{.Want}} the exit code that this code maps to."
+other = "The extension {{.Domain}} exited with {{.Exit}}, but its answer holds {{.Code}}, which maps to exit {{.Want}}."
+
+["extension.answer_batch"]
+description = "Error when an item of a batch failed and the exit code or the leading code is not one that a batch allows. {{.Domain}} is the extension's domain, {{.Exit}} its exit code, and {{.Code}} the leading code. RUNTIME, TEMPORARY, INTERRUPTED, and TERMINATED are codes and stay as is."
+other = "The extension {{.Domain}} exited with {{.Exit}} led by {{.Code}} after an item failed, and a batch exits 1 led by RUNTIME, 75 led by TEMPORARY, 130 led by INTERRUPTED, or 143 led by TERMINATED."
+
+["extension.answer_temporary"]
+description = "Error when an extension exited with 75 while an error of its answer is not TEMPORARY. {{.Domain}} is its domain, and {{.Code}} the other code. TEMPORARY is a code and stays as is."
+other = "The extension {{.Domain}} exited with 75, but its answer holds {{.Code}}, and exit 75 needs every error to be TEMPORARY."

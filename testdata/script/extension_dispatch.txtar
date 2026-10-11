@@ -92,6 +92,10 @@ printf '%s\n' "$@" > "$WORK/args.txt"
 env | grep -E '^(NCLY_|NO_COLOR=|[A-Z_]*_API_KEY=)' | sort > "$WORK/env.txt"
 echo "bin: $("$NCLY_BIN" --version)" >> "$WORK/env.txt"
 case "$1" in
+run)
+  # Under --json, core checks the answer, so the fixture gives one.
+  if [ "$NCLY_JSON" = 1 ]; then echo '{"ok":true,"contract_version":1}'; fi
+  ;;
 exit)
   echo "out: exit $3"
   echo "err: exit $3" >&2

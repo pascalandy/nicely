@@ -1,0 +1,231 @@
+# With --json, core holds the extension's answer and checks it before the caller sees it.
+# hello case <name>, hello check <name>, and hello say each answer as answers.sh says.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+
+# A broken answer is a protocol failure: RUNTIME with exit 1, stdout empty, and nothing held reaches the caller
+exits 1 ncly hello case malformed --json
+! stdout .
+answer stderr RUNTIME
+stderr 'is not one JSON object'
+exits 1 ncly hello case twolines --json
+! stdout .
+answer stderr RUNTIME
+stderr 'on stdout is not one line'
+exits 1 ncly hello case stdoutfail --json
+! stdout .
+answer stderr RUNTIME
+stderr 'failed with exit 1 but wrote on stdout'
+exits 1 ncly hello case version2 --json
+answer stderr RUNTIME
+stderr 'does not have contract_version 1'
+exits 1 ncly hello case nohint --json
+answer stderr RUNTIME
+stderr 'without the strings code, message, and hint'
+exits 1 ncly hello case lowercase --json
+answer stderr RUNTIME
+stderr 'has the code runtime, which is not uppercase'
+exits 1 ncly hello case undeclared --json
+answer stderr RUNTIME
+stderr 'the code HELLO_UNKNOWN, which its manifest does not declare'
+exits 1 ncly hello case usage1 --json
+answer stderr RUNTIME
+stderr 'exited with 1, but its answer holds USAGE_INVALID, which maps to exit 2'
+exits 1 ncly hello case grumpy2 --json
+answer stderr RUNTIME
+stderr 'exited with 2, but its answer holds HELLO_GRUMPY, which maps to exit 1'
+exits 1 ncly hello case usageruntime --json
+answer stderr RUNTIME
+stderr 'exited with 2, but its answer holds RUNTIME, which maps to exit 1'
+exits 1 ncly hello case usagefutureruntime --json
+answer stderr RUNTIME
+stderr 'exited with 2, but its answer holds RUNTIME, which maps to exit 1'
+exits 1 ncly hello case itemsuccess --json
+answer stderr RUNTIME
+stderr 'succeeded although one of its items failed'
+exits 1 ncly hello case item78 --json
+answer stderr RUNTIME
+stderr 'exited with 78 led by AUTH_MISSING after an item failed'
+exits 1 ncly hello case temporary75 --json
+answer stderr RUNTIME
+stderr 'exited with 75, but its answer holds RUNTIME, and exit 75 needs every error to be TEMPORARY'
+exits 1 ncly hello case exit3 --json
+answer stderr RUNTIME
+stderr 'exited with 3, which is not an exit code of the contract'
+exits 1 ncly hello case itemnull --json
+answer stderr RUNTIME
+stderr 'has results that are not objects with a boolean ok'
+exits 1 ncly hello case nullhint --json
+answer stderr RUNTIME
+stderr 'without the strings code, message, and hint'
+
+# A valid answer passes unchanged
+exec ncly hello case success --json
+cmp stdout success.json
+! stderr .
+exits 1 ncly hello case grumpy --json
+! stdout .
+answer stderr HELLO_GRUMPY
+exits 1 ncly hello case future --json
+answer stderr FUTURE_CODE
+exec ncly hello case warning --json
+answer stdout ok
+stdout '"code":"HELLO_UNNAMED"'
+! stderr .
+exec ncly hello case emptyhint --json
+stdout '^\{"ok":true,"contract_version":1,"warnings":\[\{"code":"HELLO_UNNAMED","message":"m","hint":""\}\]\}$'
+exits 143 ncly hello case twosignals --json
+answer stderr TERMINATED
+stderr '"code":"INTERRUPTED"'
+
+# A report answers on stdout even when a finding fails, and on stderr when the report itself fails
+exits 78 ncly hello check failing --json
+stdout '^\{"ok":false,"contract_version":1,"checks":\[\{"id":"hello.mood","status":"fail"\}\]\}$'
+! stderr .
+exits 78 ncly hello check broken --json
+! stdout .
+answer stderr CONFIG_INVALID
+
+# When stdout refuses a valid answer, the answer ends stderr with RUNTIME and exit 1, and keeps the keys of the work that happened
+exits 1 closedpipe ncly hello case artifact --json
+answer stderr RUNTIME
+cmp stderr want-lost.txt
+exists artifact.txt
+exits 1 closedpipe ncly hello check failing --json
+answer stderr RUNTIME
+stderr '^\{"ok":false,"contract_version":1,"checks":\[\{"id":"hello.mood","status":"fail"\}\],"errors":\[\{"code":"RUNTIME",'
+
+# When stderr refuses it too, the exit code alone tells. Only Linux has /dev/full, which refuses every write
+[linux] exits 1 sh -c 'ncly hello case artifact --json >/dev/full 2>/dev/full'
+
+# A text result ignores --json, so its text passes through
+exec ncly hello say --json
+stdout '^Hello, Ada$'
+! stderr .
+
+# Diagnostic lines reach the caller in order, before a failure's answer and beside a success
+exits 1 ncly hello case diagnostics --json
+! stdout .
+cmp stderr want-diagnostics.txt
+exec ncly hello case diagnosedsuccess --json
+cmp stdout success.json
+cmp stderr want-diagnosed.txt
+exits 1 ncly hello case diagnosedmalformed --json
+! stdout .
+stderr '\Aa diagnostic\n\{"ok":false,"contract_version":1,"errors":\[\{"code":"RUNTIME",'
+exits 1 ncly hello case unterminated --json
+! stdout .
+stderr '\Aa diagnostic\n\{"ok":false,"contract_version":1,"errors":\[\{"code":"RUNTIME",'
+
+# A last line without a newline counts as a line
+exits 1 ncly hello case nonewline --json
+! stdout .
+stderr '\A\{"ok":false,"contract_version":1,"errors":\[\{"code":"HELLO_GRUMPY","message":"Not today\.","hint":"ncly hello case success"\}\]\}\z'
+
+# Without --json, core passes the extension's text on and checks only its exit code
+exec ncly hello case malformed
+stdout '^\{"ok":true,$'
+
+-- bin/ncly-hello --
+#!/bin/sh
+grumpy='{"ok":false,"contract_version":1,"errors":[{"code":"HELLO_GRUMPY","message":"Not today.","hint":"ncly hello case success"}]}'
+problem() { printf '{"code":"%s","message":"m","hint":"h"}' "$1"; }
+case "$1:$3" in
+case:malformed) echo '{"ok":true,' ;;
+case:twolines) echo '{"ok":true,"contract_version":1}'; echo '{"ok":true,"contract_version":1}' ;;
+case:stdoutfail) echo "$grumpy"; exit 1 ;;
+case:version2) echo '{"ok":true,"contract_version":2}' ;;
+case:nohint) echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m"}]}' >&2; exit 1 ;;
+case:lowercase) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem runtime)]}" >&2; exit 1 ;;
+case:undeclared) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem HELLO_UNKNOWN)]}" >&2; exit 1 ;;
+case:usage1) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem USAGE_INVALID)]}" >&2; exit 1 ;;
+case:grumpy2) echo "$grumpy" >&2; exit 2 ;;
+case:usageruntime) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem USAGE_INVALID),$(problem RUNTIME)]}" >&2; exit 2 ;;
+case:usagefutureruntime) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem USAGE_INVALID),$(problem FUTURE_CODE),$(problem RUNTIME)]}" >&2; exit 2 ;;
+case:itemsuccess) echo "{\"ok\":true,\"contract_version\":1,\"results\":[{\"ok\":true},{\"ok\":false,\"errors\":[$(problem TEMPORARY)]}]}" ;;
+case:item78) echo "{\"ok\":false,\"contract_version\":1,\"results\":[{\"ok\":false,\"errors\":[$(problem AUTH_MISSING)]}],\"errors\":[$(problem AUTH_MISSING)]}" >&2; exit 78 ;;
+case:temporary75) echo "{\"ok\":false,\"contract_version\":1,\"results\":[{\"ok\":false,\"errors\":[$(problem RUNTIME)]}],\"errors\":[$(problem TEMPORARY)]}" >&2; exit 75 ;;
+case:exit3) echo "$grumpy" >&2; exit 3 ;;
+case:itemnull) echo "{\"ok\":false,\"contract_version\":1,\"results\":[{\"ok\":null,\"errors\":[$(problem TEMPORARY)]}],\"errors\":[$(problem TEMPORARY)]}" >&2; exit 75 ;;
+case:nullhint) echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m","hint":null}]}' >&2; exit 1 ;;
+case:success) cat "$WORK/success.json" ;;
+case:artifact) echo done > "$WORK/artifact.txt"; echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\",\"results\":[{\"ok\":true,\"path\":\"/Users/me/out/a.txt\"}],\"warnings\":[$(problem HELLO_UNNAMED)]}" ;;
+case:grumpy) echo "$grumpy" >&2; exit 1 ;;
+case:future) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem FUTURE_CODE)]}" >&2; exit 1 ;;
+case:warning) echo "{\"ok\":true,\"contract_version\":1,\"warnings\":[$(problem HELLO_UNNAMED)]}" ;;
+case:emptyhint) echo '{"ok":true,"contract_version":1,"warnings":[{"code":"HELLO_UNNAMED","message":"m","hint":""}]}' ;;
+case:twosignals) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem TERMINATED),$(problem INTERRUPTED)]}" >&2; exit 143 ;;
+case:diagnostics) echo 'first diagnostic' >&2; echo 'second diagnostic' >&2; echo "$grumpy" >&2; exit 1 ;;
+case:diagnosedsuccess) echo 'first diagnostic' >&2; echo 'last diagnostic' >&2; cat "$WORK/success.json" ;;
+case:diagnosedmalformed) echo 'a diagnostic' >&2; echo '{"ok":true,' ;;
+case:unterminated) printf 'a diagnostic' >&2; echo '{"ok":true,' ;;
+case:nonewline) printf '%s' "$grumpy" >&2; exit 1 ;;
+check:failing) echo '{"ok":false,"contract_version":1,"checks":[{"id":"hello.mood","status":"fail"}]}'; exit 78 ;;
+check:broken) echo "{\"ok\":false,\"contract_version\":1,\"errors\":[$(problem CONFIG_INVALID)]}" >&2; exit 78 ;;
+say:*) echo 'Hello, Ada' ;;
+esac
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello case"
+summary = "hello.case.summary"
+
+[[commands.args]]
+name = "name"
+summary = "hello.case.name"
+
+[[commands]]
+path = "hello check"
+summary = "hello.check.summary"
+result = { kind = "report" }
+
+[[commands.args]]
+name = "name"
+summary = "hello.case.name"
+
+[[commands]]
+path = "hello say"
+summary = "hello.say.summary"
+result = { kind = "text" }
+
+[[errors]]
+code = "HELLO_GRUMPY"
+exit = 1
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.case.summary"]
+description = "Summary of hello case."
+other = "Answer as a test case asks"
+
+["hello.case.name"]
+description = "The name argument of hello case and hello check."
+other = "Name of the test case"
+
+["hello.check.summary"]
+description = "Summary of hello check."
+other = "Report on greetings"
+
+["hello.say.summary"]
+description = "Summary of hello say."
+other = "Say hello as text"
+-- success.json --
+{"ok":true,"contract_version":1,"greeting":"Hello Ada"}
+-- want-diagnostics.txt --
+first diagnostic
+second diagnostic
+{"ok":false,"contract_version":1,"errors":[{"code":"HELLO_GRUMPY","message":"Not today.","hint":"ncly hello case success"}]}
+-- want-diagnosed.txt --
+first diagnostic
+last diagnostic
+-- want-lost.txt --
+{"ok":false,"contract_version":1,"output_dir":"/Users/me/out","results":[{"ok":true,"path":"/Users/me/out/a.txt"}],"errors":[{"code":"RUNTIME","message":"Could not write the output.","hint":"Check the file or pipe that receives the output, such as its free space."}],"warnings":[{"code":"HELLO_UNNAMED","message":"m","hint":"h"}]}

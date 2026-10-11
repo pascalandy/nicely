@@ -77,20 +77,23 @@ func TestFinishPanicsOnAnUnregisteredCode(t *testing.T) {
 func TestDetectMode(t *testing.T) {
 	noEnv := func(string) (string, bool) { return "", false }
 	emptyCI := func(name string) (string, bool) { return "", name == "CI" }
+	jsonVariable := func(name string) (string, bool) { return "1", name == "NCLY_JSON" }
 	cases := []struct {
-		name                   string
-		stdin, stdout, noInput bool
-		env                    func(string) (string, bool)
-		want                   Mode
+		name                         string
+		stdin, stdout, noInput, json bool
+		env                          func(string) (string, bool)
+		want                         Mode
 	}{
-		{"both streams are terminals", true, true, false, noEnv, Interactive},
-		{"stdin is a pipe", false, true, false, noEnv, NonInteractive},
-		{"stdout is a pipe", true, false, false, noEnv, NonInteractive},
-		{"--no-input", true, true, true, noEnv, NonInteractive},
-		{"CI is set, even empty", true, true, false, emptyCI, NonInteractive},
+		{"both streams are terminals", true, true, false, false, noEnv, Interactive},
+		{"stdin is a pipe", false, true, false, false, noEnv, NonInteractive},
+		{"stdout is a pipe", true, false, false, false, noEnv, NonInteractive},
+		{"--no-input", true, true, true, false, noEnv, NonInteractive},
+		{"--json never asks", true, true, false, true, noEnv, NonInteractive},
+		{"--json=false wins over NCLY_JSON=1", true, true, false, false, jsonVariable, Interactive},
+		{"CI is set, even empty", true, true, false, false, emptyCI, NonInteractive},
 	}
 	for _, c := range cases {
-		if got := DetectMode(c.stdin, c.stdout, c.noInput, c.env); got != c.want {
+		if got := DetectMode(c.stdin, c.stdout, c.noInput, c.json, c.env); got != c.want {
 			t.Errorf("%s: DetectMode = %v, want %v", c.name, got, c.want)
 		}
 	}

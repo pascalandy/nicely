@@ -67,24 +67,25 @@ func (m Manifest) ids() []string {
 	return ids
 }
 
-// ManifestError names the first rule that a manifest breaks. Rule is the
-// catalog ID of the message that explains it, and Data fills that message.
-type ManifestError struct {
+// RuleError names the first rule that a manifest or an answer breaks. Rule
+// is the catalog ID of the message that explains it, and Data fills that
+// message.
+type RuleError struct {
 	Rule string
 	Data map[string]any
 }
 
-func (e *ManifestError) Error() string { return fmt.Sprintf("%s %v", e.Rule, e.Data) }
+func (e *RuleError) Error() string { return fmt.Sprintf("%s %v", e.Rule, e.Data) }
 
-func broken(rule string, data map[string]any) *ManifestError {
-	return &ManifestError{Rule: rule, Data: data}
+func broken(rule string, data map[string]any) *RuleError {
+	return &RuleError{Rule: rule, Data: data}
 }
 
 var (
 	domainName = regexp.MustCompile(`^[a-z][a-z0-9]*$`)
 	pathWord   = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 	shorthand  = regexp.MustCompile(`^[A-Za-z]$`)
-	ownCode    = regexp.MustCompile(`^[A-Z0-9_]+$`)
+	codeForm   = regexp.MustCompile(`^[A-Z0-9_]+$`)
 )
 
 // IsDomain reports whether name can be a domain: lowercase letters and
@@ -172,7 +173,7 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 	return m, nil
 }
 
-func syntaxError(err error) *ManifestError {
+func syntaxError(err error) *RuleError {
 	var parse toml.ParseError
 	if errors.As(err, &parse) {
 		return broken("extension.file_syntax", map[string]any{"Line": parse.Position.Line})
@@ -250,13 +251,16 @@ func checkNames(path string, c Command) error {
 	return nil
 }
 
+// codePrefix starts every code that the extension owns, such as HELLO_.
+func (m Manifest) codePrefix() string { return strings.ToUpper(m.Domain) + "_" }
+
 func (m Manifest) checkCodes() error {
-	prefix := strings.ToUpper(m.Domain) + "_"
+	prefix := m.codePrefix()
 	seen := map[Code]bool{}
 	for _, e := range m.Errors {
 		_, core := e.Code.Exit()
 		switch {
-		case !strings.HasPrefix(string(e.Code), prefix) || !ownCode.MatchString(string(e.Code)):
+		case !strings.HasPrefix(string(e.Code), prefix) || !codeForm.MatchString(string(e.Code)):
 			return broken("extension.code_prefix", map[string]any{"Code": string(e.Code), "Prefix": prefix})
 		case core || e.Code.IsWarning():
 			return broken("extension.code_core", map[string]any{"Code": string(e.Code)})

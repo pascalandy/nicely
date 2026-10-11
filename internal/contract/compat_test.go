@@ -151,3 +151,50 @@ func TestWriteJSONPicksTheStream(t *testing.T) {
 		}
 	}
 }
+
+// TestAConsumerActsOnTheExitCodeOfACodeItDoesNotKnow passes answers through
+// core's answer check unchanged, then reads them as a consumer of contract
+// version 1 that knows no code beyond USAGE_INVALID, as Error codes in
+// contract.md asks: the set of codes is open, and the exit code says what to
+// do.
+func TestAConsumerActsOnTheExitCodeOfACodeItDoesNotKnow(t *testing.T) {
+	act := func(exit int, line string) string {
+		var answer struct {
+			Errors []struct{ Code, Hint string } `json:"errors"`
+		}
+		if err := json.Unmarshal([]byte(line), &answer); err != nil {
+			t.Fatal(err)
+		}
+		lead := answer.Errors[0]
+		switch {
+		case lead.Code == "USAGE_INVALID", exit == 2:
+			return "fix the call"
+		case exit == 75:
+			return "repeat"
+		case exit == 78:
+			return "relay " + lead.Hint
+		}
+		return "inspect, never repeat"
+	}
+	cases := []struct {
+		exit       int
+		line, want string
+	}{
+		{1, `{"ok":false,"contract_version":1,"errors":[{"code":"TRANSCRIPT_DOWNLOAD_FAILED","message":"m","hint":"ncly run view r1"}]}`, "inspect, never repeat"},
+		{78, `{"ok":false,"contract_version":1,"errors":[{"code":"AUTH_MISSING","message":"m","hint":"ncly auth login deepgram"}]}`, "relay ncly auth login deepgram"},
+		{2, `{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"ncly skill list"}]}`, "fix the call"},
+		{75, `{"ok":false,"contract_version":1,"errors":[{"code":"TEMPORARY","message":"m","hint":"h"}]}`, "repeat"},
+	}
+	for _, c := range cases {
+		a, err := CheckAnswer(Manifest{Domain: "hello"}, ResultObject, Reply{Exit: c.exit, Last: []byte(c.line)})
+		if err != nil {
+			t.Fatalf("exit %d: core rejected the answer: %v", c.exit, err)
+		}
+		if string(a.Line) != c.line {
+			t.Errorf("exit %d: core changed the answer to %s", c.exit, a.Line)
+		}
+		if got := act(c.exit, string(a.Line)); got != c.want {
+			t.Errorf("exit %d: the consumer would %q, want %q", c.exit, got, c.want)
+		}
+	}
+}

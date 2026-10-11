@@ -1,0 +1,188 @@
+package cli
+
+import (
+	"bytes"
+	"errors"
+	"io"
+	"os"
+	"slices"
+	"strconv"
+
+	"github.com/pascalandy/nicely/internal/contract"
+	"github.com/pascalandy/nicely/internal/i18n"
+	"github.com/pascalandy/nicely/internal/runner"
+	"github.com/spf13/cobra"
+)
+
+// call is a call to an extension that the parser accepted. The command
+// returns it as its error, so that Main starts the extension with what it
+// resolved.
+type call struct {
+	extension *extension
+	kind      contract.ResultKind
+	args      []string
+}
+
+func (c *call) Error() string { return "call to " + c.extension.domain }
+
+// canonicalArgs passes a validated call as Dispatch in contract.md defines:
+// the path after the domain, each flag that the caller set as one word in
+// the order of the manifest, then -- and the positional arguments.
+func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string {
+	canonical := slices.Clone(d.Path[1:])
+	for _, f := range d.Flags {
+		if flag := c.Flags().Lookup(f.Name); flag.Changed {
+			canonical = append(canonical, "--"+f.Name+"="+flag.Value.String())
+		}
+	}
+	return append(append(canonical, "--"), args...)
+}
+
+// run starts the extension with the environment of Programs that ncly runs
+// in contract.md, and returns the exit code of ncly. Without --json, and
+// for a text result, the extension writes to the streams of ncly, and core
+// checks only its exit code. Otherwise core checks its answer first.
+func (c *call) run(p *i18n.Printer, g globals, stdout, stderr *os.File) int {
+	program := runner.Program{
+		Path:     c.extension.path,
+		Args:     c.args,
+		Env:      runner.Environ(os.Environ(), extensionVars(g)),
+		Stdin:    os.Stdin,
+		Stdout:   stdout,
+		Stderr:   stderr,
+		Terminal: true,
+	}
+	if g.json && c.kind != contract.ResultText {
+		return c.runChecked(p, g, program, stdout, stderr)
+	}
+	exit, err := runner.Run(program)
+	data := map[string]any{"Domain": c.extension.domain, "Exit": exit}
+	switch {
+	case err != nil:
+		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+	case !contract.ExitCode(exit).Known():
+		return report(p, g, protocolFailure(p, "extension.answer_exit", data), stdout, stderr)
+	}
+	return exit
+}
+
+// runChecked holds the extension's stdout and the last line of its stderr
+// until it exits, then passes its answer on only when Answer check in
+// contract.md accepts it. Otherwise it drops what it holds and answers
+// RUNTIME.
+func (c *call) runChecked(p *i18n.Printer, g globals, program runner.Program, stdout, stderr *os.File) int {
+	var held bytes.Buffer
+	lines := &heldLines{dest: stderr}
+	program.Stdout, program.Stderr = &held, lines
+	exit, err := runner.Run(program)
+	if err != nil {
+		data := map[string]any{"Domain": c.extension.domain}
+		return report(p, g, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
+	}
+	reply := contract.Reply{Exit: exit, Stdout: held.Bytes(), Last: lines.finish()}
+	answer, err := contract.CheckAnswer(c.extension.manifest, c.kind, reply)
+	answerOut := io.Writer(stderr)
+	if reply.OnStdout(c.kind) {
+		// The answer belongs on stdout, so the last line of stderr is a
+		// diagnostic like the others. It ends with a newline, so that what
+		// core writes next starts a line of its own.
+		last := reply.Last
+		if len(last) > 0 && !bytes.HasSuffix(last, []byte("\n")) {
+			last = append(slices.Clip(last), '\n')
+		}
+		_, _ = stderr.Write(last)
+		answerOut = stdout
+	}
+	var rule *contract.RuleError
+	if errors.As(err, &rule) {
+		return report(p, g, protocolFailure(p, rule.Rule, rule.Data), stdout, stderr)
+	}
+	if _, err := answerOut.Write(answer.Line); err != nil {
+		if answerOut == stdout {
+			return reportKept(p, g, writeFailure(p), answer, stdout, stderr)
+		}
+		return int(contract.ExitRuntime)
+	}
+	return exit
+}
+
+// reportKept answers the failure that o decides with the other keys of an
+// accepted answer, because the work that the answer describes happened, as
+// Output in contract.md asks. It returns the exit code of o, or 1 when
+// stderr refuses the answer too.
+func reportKept(p *i18n.Printer, g globals, o contract.Outcome, answer contract.ExtensionAnswer, stdout, stderr io.Writer) int {
+	a := contract.Finish(o, summarizer(p))
+	line, err := answer.Failed(a.Errors()[0])
+	if err != nil {
+		return report(p, g, o, stdout, stderr)
+	}
+	if _, err := stderr.Write(append(line, '\n')); err != nil {
+		return int(contract.ExitRuntime)
+	}
+	return int(a.Exit)
+}
+
+func protocolFailure(p *i18n.Printer, rule string, data map[string]any) contract.Outcome {
+	return contract.Outcome{Errors: []contract.Problem{{Code: contract.Runtime, Message: p.T(rule, data), Hint: p.T("outcome.check_hint")}}}
+}
+
+// heldLines forwards each line of stderr to dest, except the latest one,
+// which it holds until the next line arrives, because it may be the answer.
+type heldLines struct {
+	dest    io.Writer
+	held    []byte
+	partial []byte
+}
+
+func (h *heldLines) Write(b []byte) (int, error) {
+	h.partial = append(h.partial, b...)
+	for {
+		end := bytes.IndexByte(h.partial, '\n')
+		if end < 0 {
+			return len(b), nil
+		}
+		h.hold(h.partial[:end+1])
+		h.partial = h.partial[end+1:]
+	}
+}
+
+// hold forwards the line held so far and holds line instead. A failed
+// forward loses that line only, as a direct write to stderr would.
+func (h *heldLines) hold(line []byte) {
+	if h.held != nil {
+		_, _ = h.dest.Write(h.held)
+	}
+	h.held = slices.Clone(line)
+}
+
+// finish returns the held line once the extension has exited. A last line
+// without a newline counts as a line.
+func (h *heldLines) finish() []byte {
+	if len(h.partial) > 0 {
+		h.hold(h.partial)
+		h.partial = nil
+	}
+	return h.held
+}
+
+// extensionVars carries the resolved global flags and the identity of ncly
+// to an extension. An empty value removes the variable.
+func extensionVars(g globals) map[string]string {
+	on := func(set bool) string {
+		if set {
+			return "1"
+		}
+		return ""
+	}
+	self, _ := os.Executable()
+	return map[string]string{
+		"NCLY_JSON":             on(g.json),
+		"NCLY_NO_INPUT":         on(g.noInput),
+		"NCLY_VERBOSE":          on(g.verbose),
+		"NO_COLOR":              on(g.noColor),
+		"NCLY_LANG":             i18n.Requested(g.lang),
+		"NCLY_VERSION":          releaseVersion(),
+		"NCLY_CONTRACT_VERSION": strconv.Itoa(contract.Version),
+		"NCLY_BIN":              self,
+	}
+}
