@@ -26,6 +26,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | Progress events | Long commands expose live JSON Lines events and a step list. Run records already keep effect boundaries and support inspection after interruption | Live progress adds value beyond the saved run record |
 | Transcript in Go | Ports the Python program of the transcript extension to Go | Python blocks a release or a translation |
 | Transcript on Omarchy | The paid end-to-end check of `ncly transcript` passes on Omarchy, with YouTube cookies from a Linux browser. [#23](https://github.com/pascalandy/nicely/issues/23) tracks it | Pascal needs transcripts on Omarchy |
+| Nested deadlines and cleanup | The program runner passes `NCLY_DEADLINE`, an absolute UTC time, to every program, and each `ncly` ends its work before that time minus its 15 seconds of cleanup. A nested `ncly` also gets a shorter cleanup than its parent. It then times out, or records `interrupted`, before the parent's SIGKILL | M14 makes transcript call `ncly agent run` |
 | More languages | Spanish, Japanese, and others, through the M22 workflow | A user asks, or `fr-CA` proves the workflow |
 | Terminal demos | VHS recordings of key commands for the README and the docs | The everyday domains ship |
 | First-run experience | What a new visitor sees first, and the marketing around it | The everyday domains ship |
