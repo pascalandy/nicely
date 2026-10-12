@@ -34,7 +34,7 @@ Each entry has `path`, such as `transcript run youtube`, `summary`, `since`, the
 | Key | Type | Meaning |
 |---|---|---|
 | `args` | array | Positional arguments in order, each with `name`, `summary`, `type`, `required`, `variadic`, and `values`. `type` is `string`, `boolean`, `integer`, or `number`. `values` lists accepted typed values, or is empty. Only the last argument may be variadic |
-| `flags` | array | Own flags plus applicable write, output, and timeout flags. Each has `name`, `shorthand`, `value`, `type`, `required`, `variadic`, `values`, `default`, and `summary`. Names omit `--`. Empty `shorthand` means none, empty `value` means a switch. `default` is the typed default or `null` when none applies. Variadic means several values |
+| `flags` | array | Own flags plus applicable write, output, timeout, and run ID flags. Each has `name`, `shorthand`, `value`, `type`, `required`, `variadic`, `values`, `default`, and `summary`. Names omit `--`. Empty `shorthand` means none, empty `value` means a switch. `default` is the typed default or `null` when none applies. Variadic means several values |
 | `flag_groups` | array | Each group has `flags`, an array of long flag names, and integer `min` and `max`, the permitted number supplied. Zoom's `latest` and `path` have `min: 1` and `max: 1` |
 | `result` | object | `kind`: `object`, `report`, `batch`, or `text`; `keys`: top-level successful data keys; `schema`: JSON Schema for normal JSON answers, including item fields, errors, types, nullability, and closed enums. `dry_run_schema` is present when supported. A text result ignores `--json`, has empty `keys`, and omits schemas |
 | `effects` | object | Conservative possible effects: `user_writes`, `network`, and `paid`. Dry run describes the selected invocation's effects |
@@ -62,7 +62,7 @@ ncly run resume <run-id> [--dry-run] [--force] [--timeout <duration>] [--json]
 - An unknown run uses `NOT_FOUND`. An unsafe or unsupported resume uses `RESUME_UNSAFE`. For a command that supports resume, a completed run returns its verified saved result without running its steps again
 - When another process holds the run, `resume` exits 75 with `TEMPORARY` before any effect, with a hint naming `ncly run view <run-id>`. `active` is true while a process holds the run lock; inspecting a busy run does not permit a retry loop
 
-To find a run whose stdout was lost, filter by the original path and an item key, such as `ncly run list --path 'transcript run youtube' --key <url> --json`. Add `--since` when the retained invocation start time is known; a fresh session may omit it. Check `more`, then confirm candidates with `run view`, including their recorded inputs and complete item list. Report ambiguous matches instead of choosing the newest one. A call that failed during preparation before its first record write has no record. Absence from one limited list proves neither absence of a run nor absence of billing.
+A caller that passed `--run-id` recovers a run whose stdout was lost by that ID, as [Run IDs](contract.md#run-ids) defines: `ncly run view <run-id>`, or the same call again. Without the ID, filter by the original path and an item key, such as `ncly run list --path 'transcript run youtube' --key <url> --json`. Add `--since` when the retained invocation start time is known; a fresh session may omit it. Check `more`, then confirm candidates with `run view`, including their recorded inputs and complete item list. Report ambiguous matches instead of choosing the newest one. A call that failed during preparation before its first record write has no record. Absence from one limited list proves neither absence of a run nor absence of billing.
 
 ## ncly completion
 
@@ -92,7 +92,7 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 - The `extensions` component lists every extension that core finds and its source, every extension that another one hides, every incompatible manifest, the programs that each manifest requires, and every grant that no extension declares anymore. It starts no extension.
 - An extension's own checks, such as those of the [skill component](../../extensions/skill/spec.md#doctor-checks), appear under its domain.
 - In interactive mode, when a tool is missing and its install command for this system is known, doctor shows the command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and runs it only after a yes.
-- In non-interactive mode, doctor never installs anything. The hint of each failed check holds the command.
+- In non-interactive mode, doctor never installs anything. The hint of each failed check holds the command, and its `next` holds the same command as words when it runs as is.
 - Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it exits 1 with `errors`.
 
 ```json
@@ -137,9 +137,12 @@ ncly auth login deepgram
 ncly skill view nicely
 ncly describe 'transcript run youtube' --json
 
-# Find a run whose answer was lost, then inspect it
-ncly run list --path 'transcript run youtube' --key "$URL" --json
+# Name the run before it starts, so a lost answer costs nothing
+ncly transcript run youtube --url "$URL" --run-id "$RUN_ID" --json
 ncly run view "$RUN_ID" --json
+
+# Without a run ID, find a run whose answer was lost, then inspect it
+ncly run list --path 'transcript run youtube' --key "$URL" --json
 ```
 
 Each extension's spec holds the examples of its own commands, such as [transcript's](../../extensions/transcript/spec.md#examples).

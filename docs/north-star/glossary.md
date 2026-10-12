@@ -74,6 +74,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - A manifest holds one command declaration per command
 - Core starts an extension with canonical arguments, and checks its answer; an answer that breaks the contract is a protocol failure
 - An answer and its exit code always agree; exit 75 alone permits an automatic retry
+- A problem names what went wrong with its code, and may name the next command as words
 - A grant lets one key reach one extension
 - A report command keeps its report on stdout, even when a check fails
 
@@ -111,6 +112,12 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: the one JSON object that a command prints under `--json`, with `ok` and, on failure, `errors`
 - Exit code
   - Def.: the number a command exits with. Each error code maps to one
+- Problem
+  - Def.: one entry of `errors` or `warnings`: a `code`, a `message`, a `hint`, and an optional `next`
+  - Project note: [Output](contract.md#output) defines it. Agents act on `code` and `next`, never on `message` or `hint`
+- Next command
+  - Def.: the command that a problem's hint names, as an array of words in `next`, present only when it runs as is
+  - Distinct from: a hint, the text for a human, which may wrap the same command in a sentence
 - Report command
   - Def.: a command whose result is a report, such as `ncly doctor`
 - Grant
@@ -129,6 +136,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - A run record references its artifacts and the evidence of each step
 - Record support persists a step's intent before an effect that cannot safely be repeated, and derives retry safety from the effects that the steps declare
 - Resume continues a run record after checking its evidence, and never repeats an unknown effect
+- A run ID names one run; a call with a run ID that a record holds continues that run instead of starting another
 - Dry run and execution share one preparation
 
 ### Definitions
@@ -139,6 +147,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: a simulation that uses the same preparation as execution and changes nothing outside Nicely's cache
 - Run record
   - Def.: the durable evidence of one operation, identified by `run_id`, including its step outcomes and artifact references
+- Run ID
+  - Def.: the identifier of one run, chosen by the caller with `--run-id`, or generated
+  - Project note: [Run IDs](contract.md#run-ids) defines what a call with an existing run ID does
 - Effect
   - Def.: what an operation does outside Nicely's cache and state and the run's temporary files, such as a user write, network access, or a paid request
   - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract.md#record-format) lists

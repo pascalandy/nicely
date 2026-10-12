@@ -16,16 +16,19 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 
 `ncly` also runs agents, through the `agent` extension. Profiles in the config name a harness, a model, and an effort. Other extensions use agents through `ncly agent run`, as transcript does for its summary.
 
-Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, read the bundled `nicely` skill with `ncly skill view nicely`, discover one command, check readiness, prepare its invocation with dry run, then execute it. Each extension ships a skill that teaches agents its own commands.
+Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, read the bundled `nicely` skill with `ncly skill view nicely`, discover one command with `ncly describe`, prepare its invocation with a dry run, which checks what that invocation needs, then execute it under a run ID that they chose, so that a lost answer costs nothing. `ncly doctor` checks the whole machine, during setup or when a dry run reports a problem that the agent cannot explain. Each extension ships a skill that teaches agents its own commands.
+
+Every extension extends the same loop instead of adding one: its commands appear in `ncly describe`, its skill in `ncly skill list`, and its codes in its manifest. An agent that knows the loop uses a new extension without learning anything else.
 
 | Source of truth | What it establishes |
 |---|---|
 | [Command declaration](core-spec.md#ncly-describe) | Installed capabilities, input constraints, result types, and supported modes |
-| [Doctor](core-spec.md#ncly-doctor) | Local readiness, with free network checks only on request |
-| [Dry run](contract.md#operations) | The invocation's plan and checks still pending before execution |
+| [Doctor](core-spec.md#ncly-doctor) | The machine's readiness, with free network checks only on request |
+| [Dry run](contract.md#operations) | The invocation's plan, its readiness, and the checks that only execution can make |
 | [Run inspection](core-spec.md#ncly-run) | Saved step evidence and `active`, which reports whether a process holds the run lock |
 | Artifacts | The full output files, referenced by path and verified fingerprints |
 | [Explicit resume](contract.md#inspection-and-explicit-resume) | The saved outputs that current verification permits the extension to reuse |
+| [Run ID](contract.md#run-ids) | The one run that a call names, so that repeating the call continues that run instead of starting another |
 
 Commands with paid work or reusable partial results keep records. An agent inspects a recorded failure before choosing a recovery action. Overall exit 75 alone permits an automatic repeat of the same invocation. A saved status describes the operation's last recorded outcome; the execution lock establishes whether a process owns the run now.
 

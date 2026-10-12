@@ -39,7 +39,9 @@ Each action has one verb in every domain. Reuse a verb from this table when it f
 | `status` | Reports the current state |
 | `resume` | Continues a recorded run after checking which steps are safe |
 
-`ncly --help` lists domains and commands with one line each. `ncly <domain> --help` lists the actions of that domain, and `ncly help <domain>` prints the same text. Every help page ends with two to five examples. `ncly` and `ncly <domain>` without a verb print their help on stdout and exit 0.
+`ncly --help` lists domains and commands with one line each. `ncly <domain> --help` lists the actions of that domain, and `ncly help <domain>` prints the same text. Every help page ends with two to five examples. From [M04](../milestones/M04-skill.md), the first example of `ncly --help` is `ncly skill view nicely`, so an agent that starts with the help finds the skill that teaches it the rest. `ncly` and `ncly <domain>` without a verb print their help on stdout and exit 0.
+
+A usage line shows a required argument as `<name>`, an optional one as `[name]`, and a group of flags that needs exactly one of them as `(--latest | --path <folder>)`. The help of a command that writes, uses the network, or may bill says so in one line, and names `--dry-run` when the command supports it. Both come from the command's declaration, as `ncly describe` does, so help and discovery never disagree.
 
 ## Global flags
 
@@ -64,6 +66,7 @@ Every command that writes accepts `--dry-run`. The other flags below apply when 
 | `-n`, `--dry-run` | Uses the same preparation as execution and shows the planned effects and checks still pending. It changes no user file, config, key, grant, or persistent run record. It reads no key and sends no paid request. It may fill only Nicely's cache, including Python dependencies. |
 | `-f`, `--force` | Answers yes to every confirmation, such as an overwrite or a deletion. It never installs a prerequisite and never grants a key, because both need a human in a terminal. |
 | `-o`, `--output <path>` | Writes the result to this file, or to this folder when the command writes several files. |
+| `--run-id <id>` | Names the run of a recorded command, so that a repeated call continues that run, as [Run IDs](#run-ids) defines. |
 
 Commands that call the network or run for minutes also accept `--timeout <duration>`. A duration is `30s`, `5m`, `2h`, or a number of seconds. Each command states its default in its help.
 
@@ -103,6 +106,9 @@ Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON`
 | `code` | A stable code from the [error registry](#error-codes). Agents branch on this key. |
 | `message` | Human text in the active language. Agents never parse it. |
 | `hint` | The command or the action that fixes the problem. A command is never translated. |
+| `next` | Optional. The command that the hint names, as an array of words, such as `["ncly","skill","list"]`, present only when that command runs as is, with no value left to fill in. Agents run it instead of copying a command out of the hint, as [D053](decisions/D053-next-command.md) decides. |
+
+`next` never changes what the exit code allows. After exit 78, a human runs it. It never names a repeat of a call that the exit code forbids repeating. A `next` command that writes or bills still gets its dry run first.
 
 A failure after partial work keeps the data keys that still apply, such as `output_dir`, next to `errors`. A recorded operation also returns `run_id`, including on failure. Large results are referenced by their artifact paths instead of copied into diagnostics or run listings.
 
@@ -132,7 +138,7 @@ Exit 75 is a promise that the same invocation is safe to repeat. It requires all
 
 Apply this rule to the whole invocation, including successful batch items and writes that happened before a lock failed. A free operation is not necessarily safe to repeat. Unknown effects, non-repeatable writes, and any started paid request exclude 75. Such runtime failures exit 1 and retain evidence for inspection or an explicit resume. Signals retain 130 and 143.
 
-In a recorded operation, the record settles conditions 2 and 3: exit 75 requires every step that has left `pending` to declare the `none` or `repeatable` effect, as [Record format](#record-format) defines. A `failed` step counts too, because it may have made part of its effect, such as a reserved result folder before a refused upload.
+In a recorded operation, the record settles conditions 2 and 3 for the steps that this invocation started: exit 75 requires every step whose intent this invocation persisted to declare the `none` or `repeatable` effect, as [Record format](#record-format) defines. Such a step counts even when it then failed, because it may have made part of its effect, such as a reserved result folder before a refused upload. A step that an earlier attempt completed, and that this invocation only reuses, does not count, because a repeat reuses it again.
 
 An idempotence claim includes destinations, configuration, external actions, and the result of a second invocation. Merely obtaining the same final file contents does not prove that no duplicate action occurred. Each writing command states what a repeated invocation does.
 
@@ -150,7 +156,7 @@ An idempotence claim includes destinations, configuration, external actions, and
 
 Codes 124 to 127, and every code from 128 up other than 130 and 143, stay reserved for the shell.
 
-Only the overall process exit 75 permits an automatic repeat of the same invocation. An item error describes that item's cause, not the safety of repeating the whole command. A caller retains the complete answer and `run_id` before extracting artifact paths. After fixing a recorded failure, it inspects the run and requests an explicit resume instead of repeating the original command.
+Only the overall process exit 75 permits an automatic repeat of the same invocation. An item error describes that item's cause, not the safety of repeating the whole command. A caller retains the complete answer and `run_id` before extracting artifact paths. After fixing a recorded failure, it inspects the run and requests an explicit resume, through `ncly run resume` or through the same call with the same `--run-id`, instead of repeating the original command under a new run.
 
 ## Error codes
 
@@ -191,7 +197,9 @@ Warnings use codes from this table, and an extension's own warnings start with i
 
 Core owns the top-level keys, such as `lang`. Each extension owns the table named after its domain, such as `[skill]` or `[agent]`, and its spec defines that table.
 
-Precedence, highest first: flags, environment variables, `config.local.toml`, `config.toml`, then defaults. A table, such as `[agent.profiles.everyday]`, merges key by key across the files. A list, such as `[skill] paths`, from a higher source replaces the whole list below it.
+Precedence, highest first: flags, environment variables, `config.local.toml`, `config.toml`, then defaults. A table, such as `[agent.profiles.everyday]`, merges key by key across the files. A list, such as `[skill] paths`, from a higher source replaces the whole list below it. Each resolved value keeps its source: the flag, the variable, the file that set it, or the default. [ncly describe](core-spec.md#ncly-describe) reports it, and a hint about a configured value names it, such as the file that lists a missing folder.
+
+A path in a config file is absolute or starts with `~/`, which stands for the home folder. Any other path is `CONFIG_INVALID`, because its meaning would depend on the folder where `ncly` runs.
 
 | Purpose | Path |
 |---|---|
@@ -321,7 +329,7 @@ Core renders an extension's help and completion descriptions from its manifest a
 
 Core validates a call to an extension from its manifest, as it validates its own commands: an unknown command or flag, a flag without its value, or an extra argument fails with `USAGE_INVALID` before the extension starts. `--help`, `--version`, `ncly help <domain>`, and a group without a verb never start it.
 
-Core then starts the executable with the canonical arguments, as [D049](decisions/D049-canonical-arguments.md) decides: the words of the command path after the domain, then each flag that the caller set, in the order of the manifest, as one `--<name>=<value>` word, then `--`, then the positional arguments, including the operands that followed the caller's `--`. A switch passes as `--<name>=true` or `--<name>=false`, and a repeated flag passes once, with its last value. Global flags never reach the extension as arguments: their resolved values reach it as variables. For example, `ncly -v hello run -g Hi Ada --json` starts `ncly-hello run --greeting=Hi -- Ada`, with `NCLY_VERBOSE=1` and `NCLY_JSON=1`.
+Core then starts the executable with the canonical arguments, as [D049](decisions/D049-canonical-arguments.md) decides: the words of the command path after the domain, then each flag that the caller set, in the order of the manifest, as one `--<name>=<value>` word, then `--`, then the positional arguments, including the operands that followed the caller's `--`. A switch passes as `--<name>=true` or `--<name>=false`, and a repeated flag passes once, with its last value. A flag that the manifest declares variadic, such as the `--url` of `ncly transcript run youtube`, instead passes one word per value, in the caller's order. The manifest key that declares it arrives with its first consumer. Global flags never reach the extension as arguments: their resolved values reach it as variables. For example, `ncly -v hello run -g Hi Ada --json` starts `ncly-hello run --greeting=Hi -- Ada`, with `NCLY_VERBOSE=1` and `NCLY_JSON=1`.
 
 The extension inherits stdin and the working directory of `ncly`, and receives the environment of [Programs that ncly runs](#programs-that-ncly-runs). Core reports no config error before it starts an extension: it resolves `lang` as help does, skipping a config file that it cannot read. The extension reports `CONFIG_INVALID` when it reads a broken file, including a wrong core key such as `lang`, as [Configuration](#configuration) requires of every command that reads the config.
 
@@ -336,7 +344,7 @@ Core accepts the answer only when every rule below holds:
 1. The exit code is one of [Exit codes](#exit-codes): 0, 1, 2, 75, 78, 130, or 143
 2. The answer is one line that holds one JSON object, with `ok`, a boolean that is `true` exactly when the exit code is 0, and `contract_version`, the integer `1`, in exactly one place. A success puts it on stdout. A failure puts it on the last line of stderr, with stdout empty. A report puts its findings on stdout with exit 0 or 78, as [Output](#output) says, and a report command that fails itself answers as any failure, on stderr
 3. An answer on stderr has a non-empty `errors`, and an answer on stdout has none
-4. `errors` and `warnings`, when present, are arrays of objects that each hold the strings `code`, `message`, and `hint`. Each code is uppercase letters, digits, and underscores
+4. `errors` and `warnings`, when present, are arrays of objects that each hold the strings `code`, `message`, and `hint`, and, when present, `next`, a non-empty array of strings. Each code is uppercase letters, digits, and underscores
 5. `results`, when present, is an array of objects that each hold the boolean `ok`, which is `false` exactly when the item has a non-empty `errors`. A success has no failed item
 6. An error code that starts with the extension's domain and an underscore is declared in its manifest. A warning code is checked for its form only
 7. When core knows the leading error code, as its own or as a declared one, it maps to the exit code. No top-level error code that core knows maps to a more cautious exit code, in the order of [Output](#output), whatever the codes that core does not know
@@ -397,13 +405,15 @@ The SDK accepts the error codes that the manifest declares, and every warning co
 
 The domain prepares an operation from resolved inputs and configuration, performs its steps, and verifies their results. Dry run uses that same preparation and reports pending checks, such as authentication. Execution repeats checks affected by changed inputs or destinations before applying effects. A dry run is not a reservation or a guarantee that the environment will stay unchanged.
 
+Preparation checks the prerequisites that the invocation selects, such as a program or another extension, so a dry run fails with the code that execution would answer, and `pending_checks` holds only what execution alone can check, such as a key. A dry run is therefore the readiness check of one invocation, and [ncly doctor](core-spec.md#ncly-doctor) the readiness check of the machine, as [D034](decisions/D034-shared-preparation.md) decides. An agent needs no doctor call before each command.
+
 Commands that incur a bill or can leave reusable partial work record an execution before the first such effect. The first are `ncly agent run` and transcript. Read-only discovery and dry runs create no run record. Each domain declares its recording and resume support before code is written.
 
 The SDK's record support owns run IDs, durable records, step transitions, and result publication, for core and every Go extension. It persists each step's intent, which turns the step `unknown`, and its final status, in the order that [Records and evidence](#records-and-evidence) requires, and derives [Retry safety](#retry-safety) from the effects that the steps declare, so a domain never states retry safety a second time. The domain names its steps, declares the effect of each, verifies their results, and owns the evidence that makes them resumable. The program runner owns child processes, their environment, timeouts, and signals. It does not decide whether a business action is safe to repeat.
 
 ### Records and evidence
 
-A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps the non-secret input fingerprints, resolved profile and relevant tool versions needed to check a resume. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
+A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps the non-secret input fingerprints, resolved profile and relevant tool versions needed to check a resume. Its `inputs` hold what a call with the same run ID compares, as [Run IDs](#run-ids) defines, so the domain fingerprints each file or text input, such as a task, rather than keeping its path alone. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
 
 Every effect of a recorded operation happens inside a step. Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
 
@@ -411,17 +421,17 @@ Records distinguish `running`, `completed`, `failed`, `interrupted`, and `unknow
 
 Keep records under the XDG state directory and give every run its own temporary directory. Write each record atomically under a lock. Lock shared destinations or configuration at the point of mutation and revalidate while holding the lock. A conflict follows Retry safety, including effects already completed elsewhere in the run.
 
-Records survive the process. Nicely retains them until the user removes their JSON files and never automatically deletes output artifacts. Listings bound both record count and item-key previews. A missing record or an unsupported record version never causes the original operation to be started again.
+Records survive the process. Nicely retains them until the user removes their JSON files and never automatically deletes output artifacts. Listings bound both record count and item-key previews. `ncly run resume` of a missing record or of an unsupported record version never starts the original operation again.
 
 ### Record format
 
-Each run has one record, `runs/<run_id>.json` in the state directory, such as `~/.local/state/nicely/runs/`. The record is one JSON object. While holding `runs/<run_id>.lock`, the writer, core or an extension through the SDK, writes a temporary file in the same directory, syncs that file, renames it, then syncs the parent directory. Newly created state directories are synced with their parents too. This persistence barrier finishes before acknowledging a non-repeatable effect. A failed barrier prevents the effect. Atomic visibility alone is not durable acknowledgement.
+Each run has one record, `runs/<run_id>.json` in the state directory, such as `~/.local/state/nicely/runs/`. A run keeps an artifact that no user folder holds, such as the answer of `ncly agent run`, in the folder `runs/<run_id>/` beside its record. The record is one JSON object. While holding `runs/<run_id>.lock`, the writer, core or an extension through the SDK, writes a temporary file in the same directory, syncs that file, renames it, then syncs the parent directory. Newly created state directories are synced with their parents too. This persistence barrier finishes before acknowledging a non-repeatable effect. A failed barrier prevents the effect. Atomic visibility alone is not durable acknowledgement.
 
 The platform helper uses the durable flush supported by the system. On macOS, it also uses `F_FULLFSYNC` after syncing metadata, because [Apple's fsync documentation](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html) distinguishes an ordinary sync from flushing the drive cache. A failed required flush stops the operation. Persistence relies on the filesystem and device honoring these operations; Nicely cannot promise survival of arbitrary hardware failure.
 
 The execution process holds the run lock until it exits. A new operation that consumes a source run also holds that source's lock while it executes, to exclude a concurrent source resume. The operating system releases each lock when its owner dies. Lock files may remain; their existence alone does not establish ownership. Before recording a step as completed, the domain independently verifies its artifacts and syncs their files and containing directories.
 
-`run_id` is an opaque string of lowercase letters, digits, and hyphens, such as `20261007-214501-3f9a2c`. Readers never parse it. A run's temporary directory sits in the system temporary directory, carries the run ID in its name, and is removed when the run ends, including after Ctrl-C or SIGTERM.
+`run_id` is the ID that the caller chose or one that the SDK generated, as [Run IDs](#run-ids) defines, such as `20261007-214501-3f9a2c`. Readers never parse it. A run's temporary directory sits in the system temporary directory, carries the run ID in its name, and is removed when the run ends, including after Ctrl-C or SIGTERM.
 
 | Key | Type | Meaning |
 |---|---|---|
@@ -466,11 +476,30 @@ Each extension reuses these keys where they fit and defines its own `inputs` and
 
 Inspection is read-only and reports saved evidence, not an assumption that a process marked running is still alive. Resume checks that no execution still owns the run, validates the record version, and verifies the saved inputs, relevant configuration, tool compatibility, and artifacts. For `ncly run resume`, the relevant configuration excludes the profile, because resume uses the profile that the run recorded.
 
-A supported resume reuses verified completed steps and continues only steps whose execution is known to be safe. It records each attempt under the same run ID. Changed or missing evidence returns `RESUME_UNSAFE` with an explanation and the artifacts still available. `--force` does not override uncertainty or make a non-repeatable effect safe.
+A supported resume reuses verified completed steps and continues only steps whose execution is known to be safe. It records each attempt under the same run ID. Changed or missing evidence returns `RESUME_UNSAFE` with an explanation and the artifacts still available. In a batch, a refusal that concerns one item, such as its unknown summary, fails that item in `results` with `RESUME_UNSAFE`, while the other items continue, and a changed input of the whole run refuses the whole resume. `--force` does not override uncertainty or make a non-repeatable effect safe.
 
-For example, a saved transcript and a summary that was never started permit a resume of the summary alone. An unanswered paid summary request is unknown and is not sent again automatically. A domain may resolve an unknown step from complete, independently verified local artifacts, or from a reliable external lookup. This establishes a reusable result; it never authorizes redispatch of an unresolved request. Otherwise the user must inspect the evidence and explicitly choose any new operation that might repeat a charge.
+For example, a saved transcript and a summary that was never started permit a resume of the summary alone. An unanswered paid summary request is unknown and is not sent again automatically. A domain may resolve an unknown step from complete, independently verified local artifacts, from the record of a child run that the step's intent names, or from a reliable external lookup. This establishes a reusable result; it never authorizes redispatch of an unresolved request. Otherwise the user must inspect the evidence and explicitly choose any new operation that might repeat a charge.
 
 Nicely has no background worker or scheduler. A record makes work inspectable after a session ends. It does not keep the process alive or promise that an arbitrary harness task can resume.
+
+### Run IDs
+
+A recorded command accepts `--run-id <id>`, so that its caller knows the run's ID before the run starts, as [D052](decisions/D052-caller-run-ids.md) decides. Without it, the SDK generates one. An ID holds 1 to 64 lowercase letters, digits, and hyphens, and starts with a letter or a digit. Any other value is `USAGE_INVALID`.
+
+A call whose ID no record holds starts a new run under that ID. A call whose ID a record holds starts no new run. Before any effect, it takes the first case that applies:
+
+1. The record's format version is unsupported: `RESUME_UNSAFE`
+2. The record's command path or `inputs` differ from those that the call prepares: `USAGE_INVALID`, because the ID names another call
+3. Another process holds the run: exit 75 with `TEMPORARY` and a `run view` hint, as for `ncly run resume`
+4. The run completed: its verified saved result, without running a step again
+5. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
+6. Otherwise: `RESUME_UNSAFE`, with the artifacts still available
+
+A repeated call with the same ID therefore never repeats an effect that the record does not prove safe, and a dry run with it describes what the call would do, as `ncly run resume --dry-run` does. After lost output, a caller that chose the ID reads the run with `ncly run view <id>`, or makes the same call again, and needs no search with `ncly run list`.
+
+A step that starts a recorded command for its own work, such as transcript calling `ncly agent run`, chooses the child's ID and persists it with the step's intent, before the call. After a lost answer, the step makes the same call with the same ID. A completed child then returns its saved result without a new request, and a child that never recorded its run starts, because a recorded command persists its record before its first effect.
+
+Deleting a record forgets its run: a later call with its ID starts a new run.
 
 ### Dry-run answer
 
