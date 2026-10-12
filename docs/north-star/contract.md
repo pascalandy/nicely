@@ -329,7 +329,7 @@ Core renders an extension's help and completion descriptions from its manifest a
 
 Core validates a call to an extension from its manifest, as it validates its own commands: an unknown command or flag, a flag without its value, or an extra argument fails with `USAGE_INVALID` before the extension starts. `--help`, `--version`, `ncly help <domain>`, and a group without a verb never start it.
 
-Core then starts the executable with the canonical arguments, as [D049](decisions/D049-canonical-arguments.md) decides: the words of the command path after the domain, then each flag that the caller set, in the order of the manifest, as one `--<name>=<value>` word, then `--`, then the positional arguments, including the operands that followed the caller's `--`. A switch passes as `--<name>=true` or `--<name>=false`, and a repeated flag passes once, with its last value. A flag that the manifest declares variadic, such as the `--url` of `ncly transcript run youtube`, instead passes one word per value, in the caller's order. The manifest key that declares it arrives with its first consumer. Global flags never reach the extension as arguments: their resolved values reach it as variables. For example, `ncly -v hello run -g Hi Ada --json` starts `ncly-hello run --greeting=Hi -- Ada`, with `NCLY_VERBOSE=1` and `NCLY_JSON=1`.
+Core then starts the executable with the canonical arguments, as [D049](decisions/D049-canonical-arguments.md) decides: the words of the command path after the domain, then each flag that the caller set, in the order of the manifest, as one `--<name>=<value>` word, then `--`, then the positional arguments, including the operands that followed the caller's `--`. A switch passes as `--<name>=true` or `--<name>=false`, and a repeated flag passes once, with its last value. A flag that the manifest declares variadic, such as the `--url` of `ncly transcript run youtube`, instead passes one word per value, in the caller's order. The manifest key that declares it arrives with its first consumer, and a Go handler receives the values in order, as [SDK](#sdk) defines. Global flags never reach the extension as arguments: their resolved values reach it as variables. For example, `ncly -v hello run -g Hi Ada --json` starts `ncly-hello run --greeting=Hi -- Ada`, with `NCLY_VERBOSE=1` and `NCLY_JSON=1`.
 
 The extension inherits stdin and the working directory of `ncly`, and receives the environment of [Programs that ncly runs](#programs-that-ncly-runs). Core reports no config error before it starts an extension: it resolves `lang` as help does, skipping a config file that it cannot read. The extension reports `CONFIG_INVALID` when it reads a broken file, including a wrong core key such as `lang`, as [Configuration](#configuration) requires of every command that reads the config.
 
@@ -371,9 +371,10 @@ type Extension struct {
 type Handler func(ctx context.Context, call Call) contract.Outcome
 
 type Call struct {
-	Path    string            // such as "hello run"
-	Args    []string          // the positional arguments
-	Flags   map[string]string // each flag that the caller set, by long name; a switch holds "true" or "false"
+	Path    string              // such as "hello run"
+	Args    []string            // the positional arguments
+	Flags   map[string]string   // each flag that the caller set, by long name, except a variadic one; a switch holds "true" or "false"
+	Lists   map[string][]string // each variadic flag that the caller set, by long name, with its values in the caller's order
 	JSON    bool
 	Mode    contract.Mode
 	Printer *i18n.Printer // in the language of NCLY_LANG
@@ -386,7 +387,7 @@ func Main(e Extension) // runs the extension as this process, then exits with it
 func Check(e Extension) error
 ```
 
-`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. It prints the result by its kind, from the command's `result`:
+`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. `Main` prints the result by its kind, from the command's `result`:
 
 - `object` and `batch`: in human mode, the handler writes its text to `Stdout`. With `--json`, it writes nothing there, and the SDK prints the answer from the outcome
 - `report`: in human mode, the handler writes its report to `Stdout`. With `--json`, the SDK prints the findings from the outcome's data on stdout, in an answer without `errors`, as [Output](#output) says. In both modes, the handler returns its findings in that data, and sets the outcome's `HumanNeeded` when a finding needs a human, which makes the exit code 78 instead of 0, and `ok` false with `--json`. Core's doctor uses the same outcome from M05
@@ -413,7 +414,7 @@ The SDK's record support owns run IDs, durable records, step transitions, and re
 
 ### Records and evidence
 
-A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps the non-secret input fingerprints, resolved profile and relevant tool versions needed to check a resume. Its `inputs` hold what a call with the same run ID compares, as [Run IDs](#run-ids) defines, so the domain fingerprints each file or text input, such as a task, rather than keeping its path alone. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
+A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps the non-secret input fingerprints, resolved profile and relevant tool versions needed to check a resume. A call with the same run ID compares the record's `inputs` and the ordered keys of its items, such as the URLs of a transcription, as [Run IDs](#run-ids) defines. Together they hold every input that tells two calls apart, so the domain fingerprints each file or text input, such as a task, rather than keeping its path alone. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
 
 Every effect of a recorded operation happens inside a step. Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
 
@@ -489,7 +490,7 @@ A recorded command accepts `--run-id <id>`, so that its caller knows the run's I
 A call whose ID no record holds starts a new run under that ID. A call whose ID a record holds starts no new run. Before any effect, it takes the first case that applies:
 
 1. The record's format version is unsupported: `RESUME_UNSAFE`
-2. The record's command path or `inputs` differ from those that the call prepares: `USAGE_INVALID`, because the ID names another call
+2. The record's command path, `inputs`, or ordered item keys differ from those that the call prepares: `USAGE_INVALID`, because the ID names another call
 3. Another process holds the run: exit 75 with `TEMPORARY` and a `run view` hint, as for `ncly run resume`
 4. The run completed: its verified saved result, without running a step again
 5. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
@@ -497,9 +498,9 @@ A call whose ID no record holds starts a new run under that ID. A call whose ID 
 
 A repeated call with the same ID therefore never repeats an effect that the record does not prove safe, and a dry run with it describes what the call would do, as `ncly run resume --dry-run` does. After lost output, a caller that chose the ID reads the run with `ncly run view <id>`, or makes the same call again, and needs no search with `ncly run list`.
 
-A step that starts a recorded command for its own work, such as transcript calling `ncly agent run`, chooses the child's ID and persists it with the step's intent, before the call. After a lost answer, the step makes the same call with the same ID. A completed child then returns its saved result without a new request, and a child that never recorded its run starts, because a recorded command persists its record before its first effect.
+A step that starts a recorded command for its own work, such as transcript calling `ncly agent run`, chooses the child's ID and persists it with the step's intent, before the call. It passes the child only inputs that a resume reproduces, such as an absolute folder rather than its own working directory, so a repeated call matches the child's record. After a lost answer, the step first reads the child's record, such as with `ncly run view <id> --json`. Only an existing record permits the same call with the same ID, and a completed child then returns its saved result without a new request. Any other outcome leaves the step `unknown` with `RESUME_UNSAFE`, whose `next` names the explicit new operation. A refusal of the repeated call, such as `USAGE_INVALID` for a changed input, proves nothing about the first call, and neither does a missing record: the step's intent shows that the child may have started, and the user may have deleted its record after the child billed.
 
-Deleting a record forgets its run: a later call with its ID starts a new run.
+Deleting a record forgets its run: a caller's later direct call with its ID starts a new run, while a step that persisted the ID refuses, as the paragraph above says.
 
 ### Dry-run answer
 
