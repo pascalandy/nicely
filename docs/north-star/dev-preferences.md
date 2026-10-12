@@ -14,7 +14,7 @@ Keep the mockup and its receipt outside the repository, such as in `~/Documents/
 
 ## Keep the docs a tower
 
-The docs stack like the code: the glossary fixes the words, the vision and the principles say what and why, the architecture says where, the specs say exactly how, and the milestones say when. [Find what you need](../../AGENTS.md#find-what-you-need) maps each question to its file, and [D025](decisions/D025-docs-layout.md) explains why. Keep the tower whenever you change a doc:
+The docs form layers like the code: the glossary fixes the words, the vision and the principles say what and why, the architecture says where, the specs say exactly how, and the milestones say when. [Find what you need](../../AGENTS.md#find-what-you-need) maps each question to its file, and [D025](decisions/D025-docs-layout.md) explains why. Keep the tower whenever you change a doc:
 
 1. Each file answers one question, which its opening lines state.
 2. A meaning lives in one place. Every other file links to it instead of restating it.

@@ -231,7 +231,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 ### Relations
 
 - Primitives compose into commands and extensions
-- Layers stack abstractions: foundation → runtime layer → application layer
+- Layers build abstractions from the bottom up: foundation → runtime layer → application layer
 - An interface hides its implementation
 - An additive extension adds to its host; a behavioral extension changes it
 
