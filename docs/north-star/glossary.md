@@ -184,7 +184,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: `config.local.toml`, which holds what belongs to one machine and overrides the shared config
 - Catalog
   - Def.: one TOML file of translated text for one language, whose entries each have an ID, a description for the translator, and plural forms
-  - Project note: core and each extension keep their own. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest
+  - Project note: core, the SDK, and each extension keep their own. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest
 - Pseudo-locale
   - Def.: a generated test language that marks every catalog string
 
