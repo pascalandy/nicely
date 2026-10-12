@@ -13,7 +13,7 @@ Implement [ncly describe](../north-star/core-spec.md#ncly-describe). Grow the de
 
 Describe comes before [M04](M04-skill.md), so that `skill` finds the skills of installed extensions through `ncly describe --json`, as an agent would, and the `nicely` skill teaches discovery from its first release.
 
-The scenarios reach a bundled extension through `ncly-bundled`, the test build of M02 whose bundled list holds the fixture `hello`, and an external one through the shell fixture of M01. No scenario starts either one.
+The scenarios reach a bundled extension through `ncly-bundled`, the test build of M02 whose bundled list holds the fixture `hello`, and an external one through the shell fixture of M01. No scenario of describe or help starts either one, and only the valid calls of `usage_declarations.txtar` do.
 
 ## Cards
 
@@ -36,11 +36,12 @@ An unknown path answers `NOT_FOUND`, whose `next` is `["ncly","describe"]`. As t
 
 ### M03-T2 Command detail
 
-- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest)
-- **Proves:** `testdata/script/describe_command.txtar`
+- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest), [Dispatch](../north-star/contract.md#dispatch), [SDK](../north-star/contract.md#sdk)
+- **Proves:** `testdata/script/describe_command.txtar`, `testdata/script/usage_declarations.txtar`
 
 A command path returns `args`, `flags` with the applicable write, output, timeout, and run ID flags, `flag_groups`, `effects`, `requires`, `modes`, and `examples`. Extend the M00 declarations, and add each field to [Manifest](../north-star/contract.md#manifest) in the same pull request, where they lack one: requiredness, value types, defaults, variadic flags, flag groups, effects, modes, and the programs and keys that a command requires. A fixture command that declares the `recorded` mode lists `run-id` among its flags.
 
+Validation uses the same fields. A missing required argument or flag, a value that its type rejects, and a call that breaks a flag group each answer `USAGE_INVALID` before the command runs, so no fixture's execution marker appears: through `ncly` for the core commands that declare them and for the external shell fixture, and through the SDK's entry point, `ncly-hello` run directly, for the Go fixture. A fixture flag that the manifest declares variadic receives two distinct values, one of them holding a comma, and keeps them in the caller's order through core's parsing, dispatch, and the SDK's parsing: the shell fixture receives one `--<name>=<value>` word per value, and the Go fixture's handler reads them from `Lists`, through `ncly` and run directly.
 
 ### M03-T3 Result schemas
 

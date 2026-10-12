@@ -375,7 +375,7 @@ type Call struct {
 	Path    string              // such as "hello run"
 	Args    []string            // the positional arguments
 	Flags   map[string]string   // each flag that the caller set, by long name, except a variadic one; a switch holds "true" or "false"
-	Lists   map[string][]string // each variadic flag that the caller set, by long name, with its values in the caller's order
+	Lists   map[string][]string // each variadic flag that the caller set, by long name, with its values in the caller's order, from M03
 	JSON    bool
 	Mode    contract.Mode
 	Printer *i18n.Printer // in the language of NCLY_LANG
