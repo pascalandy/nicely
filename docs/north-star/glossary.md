@@ -208,6 +208,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 ### Relations
 
 - A milestone holds cards, at most five of them for agents; a card is one pull request
+- A stack holds layers, bottom to top; a layer is one branch and its pull request, based on the layer below
 - A principle links its decisions; a decision records what was decided, why, and what was rejected
 
 ### Definitions
@@ -217,6 +218,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Project note: its status is `planned`, `ready`, `active`, or `done`. M99 is the parking lot, and its status stays `open`
 - Card
   - Def.: one pull request of a milestone, with its owner, its dependencies, what to read, and what proves it
+- Stack
+  - Def.: a chain of pull requests that build on each other, as `gh stack` manages them
+  - Project note: later work stacks on an open pull request, as [dev-preferences.md](dev-preferences.md#wait-for-pascals-review-before-a-merge) asks
 - Principle
   - Def.: a rule that shapes every design choice, in [principles.md](principles.md)
 - Decision
@@ -239,6 +243,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Layer
   - Def.: a level of abstraction that depends only on the levels below it
   - Project note: platform, contract, services, core, and extensions, drawn in [architecture.md](architecture.md#layers)
+  - Distinct from: a layer of a [stack](#planning), which `just check-layers` checks
 - Foundation
   - Def.: the lowest layer, which hides the outside world behind one interface
   - Project note: the platform
