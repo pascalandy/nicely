@@ -9,16 +9,16 @@ Version: v0.5.0
 
 ## Scope
 
-Implement [ncly doctor](../north-star/core-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M16](M16-transcript-finish.md). Doctor adds bounded local `--version` probes to the program runner that M01 brought.
+Implement [ncly doctor](../north-star/core-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M16](M16-transcript-finish.md). Doctor adds bounded local `--version` probes to the program runner that M01 brought. It runs them one at a time, because the runner's cleanup signals every descendant of `ncly`, so a probe's timeout would also stop a probe that runs beside it. Probes run together only once [#49](https://github.com/pascalandy/nicely/issues/49) scopes that cleanup to one program.
 
 ## Open questions
 
 Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Extensions](../north-star/contract.md#extensions), then delete this section.
 
-- How an extension adds checks beyond its manifest's `requires`, such as the Python version or the browser cookies of transcript: a declared doctor command that core runs, or checks that the manifest declares
+- How an extension adds checks beyond its manifest's `requires`, such as the Python version or the browser cookies of transcript: a declared report command that core runs within doctor's timeout, as [D044](../north-star/decisions/D044-additive-extensions.md) allows, or checks that the manifest declares
 - How doctor tells an unknown config key from a key in an extension's table, so `CONFIG_UNKNOWN_KEY` never fires on a key that an installed extension owns
 - Where the install command of each prerequisite lives for each system, such as in the manifest's `requires`
-- Whether the install offer makes doctor a command that writes, which accepts `--dry-run` and then never starts an installer. If it does, auth in [M06](M06-auth.md) is no longer the first writing command
+- Whether the install offer makes doctor a command that writes, which accepts `--dry-run` and then never starts an installer, or moves to an explicit `ncly doctor --install <check>`, so that plain doctor never writes or asks. If doctor writes, auth in [M06](M06-auth.md) is no longer the first writing command
 
 ## Cards
 
@@ -35,14 +35,14 @@ Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Ex
 - **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Output](../north-star/contract.md#output), [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `testdata/script/doctor_core.txtar`
 
-Add the path that keeps a failed report on stdout, because an ordinary failed answer goes to stderr. Invalid config is the failed `core.config` finding with `CONFIG_INVALID`, independent checks still run, and an unknown key is a `CONFIG_UNKNOWN_KEY` warning. Doctor exits 0 without a failed check, 78 with one, and 1 when doctor itself fails.
+Add the path that keeps a failed report on stdout, because an ordinary failed answer goes to stderr. Add `doctor` to the `nicely` skill: an agent calls it during setup, or when a dry run reports a problem that the agent cannot explain. Invalid config is the failed `core.config` finding with `CONFIG_INVALID`, independent checks still run, and an unknown key is a `CONFIG_UNKNOWN_KEY` warning. Doctor exits 0 without a failed check, 78 with one, and 1 when doctor itself fails.
 
 ### M05-T2 Bounded probes
 
 - **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `testdata/script/doctor_probe.txtar`
 
-Add a bounded local `--version` probe of each required program to the program runner. `--timeout` bounds the checks, 30 seconds by default. A missing or too old program fails with `PREREQ_MISSING`, and a probe that hangs ends at the timeout.
+Add a bounded local `--version` probe of each required program to the program runner, run one at a time. `--timeout` bounds the checks, 30 seconds by default. A missing or too old program fails with `PREREQ_MISSING`, whose `next` holds the install command when one is known for this system, and a probe that hangs ends at the timeout, after which the remaining probes report that they did not run.
 
 ### M05-T3 Extensions component
 

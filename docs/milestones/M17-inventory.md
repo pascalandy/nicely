@@ -16,7 +16,7 @@ Collect the tools on Pascal's machines:
 - macOS: `brew leaves`, and by frequency of use in zsh: `LC_ALL=C sed 's/^: [0-9]*:[0-9]*;//' ~/.zsh_history | awk '{print $1}' | sort | uniq -c | sort -rn | head -50`
 - Omarchy: `pacman -Qe`, and by frequency of use in bash: `awk '{print $1}' ~/.bash_history | sort | uniq -c | sort -rn | head -50`
 
-The table has one row per tool: the tool, its domain, where it goes, which is a first-party extension, Pascal's private tap, or drop, and one line of reason.
+The table has one row per task, because a tool's name says little about the work: the task, the command or recipe that does it today, its usual inputs, its expected result, the friction it causes, the domain that would carry it, where it goes, which is a first-party extension, Pascal's private tap, or drop, and one line of reason. Recipes in `justfile`s and Pascal's skills show tasks that shell history hides behind `just` or `uv`.
 
 ### Conventions for the everyday domains
 
@@ -44,7 +44,7 @@ Move these into each domain's spec when its milestone becomes ready.
 - **Read:** [Scope](#scope)
 - **Proves:** the table in this file
 
-Run the commands above on both machines and add the table to this file.
+Run the commands above on both machines, read the recipes that they call, and add the table to this file.
 
 ### M17-T2 Approve the table
 

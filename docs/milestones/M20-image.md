@@ -14,6 +14,7 @@ A candidate everyday domain, to confirm in [M17](M17-inventory.md). `ncly image 
 ## Open questions
 
 - The image tool to wrap
+- What each output promises beyond its format, such as the orientation, the colors, transparency, animation, and location metadata, and which background replaces transparency in a JPEG
 - The spec of each command, in `extensions/image/spec.md`, and the cards
 
 ## Cards

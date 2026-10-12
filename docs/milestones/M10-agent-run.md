@@ -50,7 +50,7 @@ The step declares the `paid` effect. The SDK writes every step transition and de
 - **Read:** [ncly run](../north-star/core-spec.md#ncly-run), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
 - **Proves:** `testdata/script/run_view.txtar`
 
-`ncly run view` returns the record plus `active`, which comes from the lock and never from the saved status. A failed saved run still exits 0. An unknown run is `NOT_FOUND`, and an unsupported record version is reported, never read as a known format.
+`ncly run view` returns the record plus `active`, which comes from the lock and never from the saved status. Add `ncly run view` and `--run-id` to the `nicely` skill: an agent names each recorded call's run, and reads it back after lost output. A failed saved run still exits 0. An unknown run is `NOT_FOUND`, and an unsupported record version is reported, never read as a known format.
 
 ### M10-T4 Cancellation and failures
 

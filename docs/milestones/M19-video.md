@@ -25,6 +25,7 @@ stderr '"code":"CONFIRMATION_REQUIRED"'
 
 ## Open questions
 
+- What each output promises beyond its container, such as the codecs, the tracks that it keeps, the orientation, and HDR sources, and how a dry run shows it
 - The spec of each command, in `extensions/video/spec.md`, and the cards
 
 ## Cards

@@ -34,7 +34,7 @@ Settle each one in [ncly run](../north-star/core-spec.md#ncly-run) and [Extensio
 - **Read:** [ncly run](../north-star/core-spec.md#ncly-run), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/run_resume.txtar`
 
-`ncly run resume <run-id>` hands the run to the extension that owns it. An unknown run is `NOT_FOUND`, a run held by another process exits 75 with `TEMPORARY` and a `run view` hint before any effect, and an unsupported command or record version is `RESUME_UNSAFE`. Dry run describes the remaining steps only.
+`ncly run resume <run-id>` hands the run to the extension that owns it, and the `nicely` skill gains its line. An unknown run is `NOT_FOUND`, a run held by another process exits 75 with `TEMPORARY` and a `run view` hint before any effect, and an unsupported command or record version is `RESUME_UNSAFE`. Dry run describes the remaining steps only.
 
 ### M15-T2 Reuse saved work
 

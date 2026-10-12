@@ -10,6 +10,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | Remote commands | `--host` runs a command on another machine over SSH, including `ncly doctor --host` | A remote task needs Nicely, or a remote command needs a key |
 | Dotfiles for Linux machines | A dotfiles repository that carries the shared config to each Omarchy machine | Pascal adds a second Linux machine. This lives outside Nicely |
 | Launcher | A bare `ncly` in interactive mode opens a fuzzy command palette, and prints help everywhere else | The everyday domains of M18 to M20 exist |
+| Help by intent | The root help groups commands by purpose, such as tools, inspect and recover, and set up, and `ncly help --search <text>` finds a command by its words. Agents already search `ncly describe --json` | The root help lists more than ten commands, after a mockup that Pascal picks |
 | `--explain` | Prints the underlying command and a link to the wrapped tool | The everyday domains wrap several tools |
 | `ncly tools` | A showcase of every curated tool, why it was chosen, and its credits | The everyday domains ship |
 | Aliases | Git-style aliases in the config, such as `md = "markdown view"` | A command feels too long in daily use |
@@ -22,9 +23,11 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | Agent code review | Exposes the built-in review mode of each harness through the `agent` extension | Pascal reviews code through `ncly agent` weekly |
 | Public docs build | `ncly docs build --public` builds and hosts only the `public` projects | A project needs public docs |
 | Record check in core | Core reads the run record of an answer that exits 75 and turns it into a protocol failure when the record breaks [Retry safety](../north-star/contract.md#retry-safety), as [D045](../north-star/decisions/D045-step-effects.md) defers | A tap carries an extension that does not use the Go SDK |
+| Answer limits | The answer check bounds the size of a held answer and of a held stderr line, its JSON depth, and rejects invalid UTF-8 and duplicate keys, then stops the extension and answers `RUNTIME`. An extension built on the SDK cannot produce these answers | A tap carries an extension that does not use the Go SDK |
 | Hooks | Lets an extension change how core or another extension behaves, which [D044](../north-star/decisions/D044-additive-extensions.md) excludes | A need appears that neither core, the SDK, nor the extension that owns the step can meet |
 | Progress events | Long commands expose live JSON Lines events and a step list. Run records already keep effect boundaries and support inspection after interruption | Live progress adds value beyond the saved run record |
 | Transcript in Go | Ports the Python program of the transcript extension to Go | Python blocks a release or a translation |
+| Structured summaries | A bundled prompt writes, beside its Markdown, a versioned JSON file of decisions, actions, and open questions, each citing a segment of the transcript that a local check verifies | Pascal wants to search decisions or actions across summaries |
 | Transcript on Omarchy | The paid end-to-end check of `ncly transcript` passes on Omarchy, with YouTube cookies from a Linux browser. [#23](https://github.com/pascalandy/nicely/issues/23) tracks it | Pascal needs transcripts on Omarchy |
 | Nested deadlines and cleanup | The program runner passes `NCLY_DEADLINE`, an absolute UTC time, to every program, and each `ncly` ends its work before that time minus its 15 seconds of cleanup. A nested `ncly` also gets a shorter cleanup than its parent. It then times out, or records `interrupted`, before the parent's SIGKILL | M14 makes transcript call `ncly agent run` |
 | More languages | Spanish, Japanese, and others, through the M22 workflow | A user asks, or `fr-CA` proves the workflow |
