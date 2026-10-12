@@ -7,9 +7,9 @@
 Transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through an agent profile.
 
 ```
-ncly transcript run youtube --url <url>... [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--timeout <duration>] [--dry-run] [--json]
-ncly transcript run zoom (--latest | --path <folder>) [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--timeout <duration>] [--dry-run] [--json]
-ncly transcript summary run <run-id> [--key <key>]... [--prompt <name>] [--profile <name>] [--timeout <duration>] [--dry-run] [--json]
+ncly transcript run youtube --url <url>... [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
+ncly transcript run zoom (--latest | --path <folder>) [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
+ncly transcript summary run <run-id> [--key <key>]... [--prompt <name>] [--profile <name>] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
 ncly transcript prompt list [--json]
 ```
 
