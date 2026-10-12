@@ -61,7 +61,7 @@ A run shows one spinner on a terminal, in the picked look, and none in JSON or n
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
 - **Proves:** the session's transcript, attached to the pull request
 
-An agent in a fresh session, given only the line that points to `ncly skill view nicely`, discovers a command, plans it, inspects a recorded failure without full transcripts or logs, then dry-runs and explicitly resumes supported work without repeating a paid step. Fix the skills until it does.
+An agent in a fresh session, given only the line that points to `ncly skill view nicely`, discovers a command, plans it, runs it under a run ID that it chose, inspects a recorded failure without full transcripts or logs, then dry-runs and explicitly resumes supported work without repeating a paid step. Fix the skills until it does.
 
 ## After this milestone
 

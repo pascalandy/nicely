@@ -7,19 +7,20 @@
 Transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through an agent profile.
 
 ```
-ncly transcript run youtube --url <url> [<url>...] [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--timeout <duration>] [--dry-run] [--json]
+ncly transcript run youtube --url <url>... [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--timeout <duration>] [--dry-run] [--json]
 ncly transcript run zoom (--latest | --path <folder>) [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--timeout <duration>] [--dry-run] [--json]
-ncly transcript summary run <run-id> [--prompt <name>] [--profile <name>] [--timeout <duration>] [--dry-run] [--json]
+ncly transcript summary run <run-id> [--key <key>]... [--prompt <name>] [--profile <name>] [--timeout <duration>] [--dry-run] [--json]
 ncly transcript prompt list [--json]
 ```
 
+- `--url` repeats, once per video, and the items run one at a time, in the order of the URLs
 - `ncly transcript run` needs the `deepgram` key, which its manifest declares and a human grants to transcript. Without it, the command exits 78 with `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, as [Keys](../../docs/north-star/contract.md#keys) and [Grants](../../docs/north-star/contract.md#grants) define.
 - `--profile` names an [agent profile](../agent/spec.md#profiles) for the summary. Without a profile, the run saves the transcript, skips the summary, and adds `TRANSCRIPT_SUMMARY_SKIPPED`, whose hint shows a profile to add. `--no-summary` skips the summary without a warning. It cannot combine with `--profile` or `--prompt`; these are two optional exclusive flag groups
 - `--dry-run` follows the [global definition](../../docs/north-star/contract.md#global-flags): it validates the plan without a key, a paid request, or a change to the user's files, and answers as [Dry-run answer](../../docs/north-star/contract.md#dry-run-answer) defines, with the shapes of [Dry-run examples](#dry-run-examples).
 - `--timeout` covers preparation and execution, 570 seconds by default, with at most 15 additional seconds for process cleanup. An agent gives its shell a longer limit than that total, with a margin, or chooses a shorter `ncly` timeout. No universal shell limit or default is assumed. A batch may need a longer timeout
 - `--open` opens each result folder as soon as it appears, through `open` on macOS and `xdg-open` on Linux, detached as [Normal end](../../docs/north-star/contract.md#programs-that-ncly-runs) allows. Dry run never opens it
 - Exit 75 follows Retry safety, including any local writes. Never rerun an exit 1 automatically, because work may be partial or already billed
-- The extension's Go code owns the summary step and runs it through `ncly agent run --json`, with the transcript as material and the recorded profile as `--harness`, `--model`, `--effort`, and `--provider`, so tools stay off, a resume keeps the recorded profile, and the [agent extension](../agent/spec.md) owns profiles, adapters, and the depth limit. Python stops at the transcript and returns its verified artifacts
+- The extension's Go code owns the summary step and runs it through `"$NCLY_BIN" agent run --json`, with the prompt as `--task-file`, a copy of the verified transcript in the run's temporary folder as `--input`, the recorded profile as `--harness`, `--model`, `--effort`, and `--provider`, and a child run ID as `--run-id`. Tools therefore stay off, a resume keeps the recorded profile, a lost answer stays recoverable, and the [agent extension](../agent/spec.md) owns profiles, adapters, and the depth limit. Python stops at the transcript and returns its verified artifacts
 - A recorded run returns `run_id`. Its normal execution answer always contains `results`, even for one item, as [Output](../../docs/north-star/contract.md#output) describes. `summary run` and resume use that same item shape. This is a declared batch result; the object answers of core remain unchanged
 - Each item carries `url` or the Zoom `recording` folder, `output_dir`, `transcript`, and `summary`. The last three are paths or `null` until available. An unsuccessful item adds its `errors`; a saved transcript remains referenced when its summary fails. A URL given twice is `USAGE_INVALID` before any effect, because each item key names one item
 
@@ -55,7 +56,7 @@ prompt = "short_summary"
 | `zoom.recordings` | `~/Documents/Zoom` | The folder where Zoom saves recordings. `--latest` picks the newest meeting folder, and `--path` takes a folder name or a full path |
 | `zoom.prompt` | `short_summary` | The default prompt for Zoom |
 
-Go reserves each new result folder, named after the video title or meeting, or `<name>-2`, `<name>-3`, and so on when taken. Under the output resource lock, it records the candidate path before creating it and rechecks any collision. Creating the directory reserves its name; two new transcriptions never share a folder or write into an existing one. A failure after reservation exits 1 for the new transcription, even if no audio was sent, because repeating the command creates another folder. Explicit resume reuses the recorded folder instead. Only effects of the current invocation decide retry safety, not paid work reused from an earlier attempt.
+Go reserves each new result folder, named after the video title or meeting, or `<name>-2`, `<name>-3`, and so on when taken. Under the output resource lock, it records the candidate path before creating it and rechecks any collision. Creating the directory reserves its name; two new transcriptions never share a folder or write into an existing one. A failure after reservation exits 1 for the new transcription, even if no audio was sent, because repeating the command creates another folder. Explicit resume reuses the recorded folder instead. Only effects of the current invocation decide retry safety, not paid work reused from an earlier attempt, as [Retry safety](../../docs/north-star/contract.md#retry-safety) defines.
 
 Repeating `transcript run` transcribes and bills Deepgram again. Resume and `summary run` reuse the recorded folder. Every summary uses `<prompt-name>-<run-id>.md`, including the initial summary, so a new operation preserves every earlier record's artifact fingerprint.
 
@@ -72,6 +73,7 @@ These options of the transcript CLI change:
 | Transcript CLI | ncly |
 |---|---|
 | `--output-dir` | `--output` |
+| `--timeout`, a budget for each URL | `--timeout`, one budget for the whole invocation, 570 seconds by default |
 | `--debug`, `TRANSCRIPT_DEBUG` | `NCLY_DEBUG=1` |
 | `--provider`, `--model`, `--effort` | A profile in the config |
 | `--no-progress` | Removed, because `--json` and non-interactive mode already hide the spinner |
@@ -86,12 +88,13 @@ These options of the transcript CLI change:
 Each transcription item has `transcribe`, then `summarize` unless skipped. Both steps declare the `paid` effect. Python prepares the complete item set before emitting its initial plan. Go validates that set and creates the initial `running` record with pending steps before allowing any user-side mutation. Temporary audio preparation may overlap that validation after Python sends the plan. `started_at` is the invocation's start time and stays unchanged on resume. A step reaches `completed` only after Go independently verifies its required files, syncs them, and durably records their fingerprints.
 
 - `transcribe` turns `unknown` before result-folder reservation and upload, as the protocol below requires. A download failure before intent leaves it `pending` with a saved problem. After acknowledgement, it turns `failed` only when transport failed before any audio was sent or Deepgram returned a 4xx refusal. Any 5xx status and any transport timeout or lost connection after sending audio leave it `unknown`. The transport disables automatic upload retries, including SDK retries; one acknowledgement permits at most one request
-- `summarize` turns `unknown` before `ncly agent run` starts. It turns `failed` only when that run exits 2 or 78, because the agent extension exits with those codes only before its harness starts. Any other end without a saved summary leaves the step `unknown`, because the harness may already have billed. The step's evidence keeps the agent run's `run_id`
+- `summarize` turns `unknown` before `ncly agent run` starts, and its intent records the child run ID that transcript chose for that call, as [Run IDs](../../docs/north-star/contract.md#run-ids) defines. Each attempt of the step chooses a new child ID. The step turns `failed` only when that run exits 2 or 78, because the agent extension exits with those codes only before its harness starts. Any other end without a saved summary leaves the step `unknown`, because the harness may already have billed
 - The record keeps the `inputs` that the table below lists. It keeps as tools the program and `yt-dlp` versions that the `intent` reports, and the harness version that the agent run reports
 - Resume takes the URL, selected Zoom folder, and absolute output folder from the record. It never selects `--latest` again. It rereads the prompt and refuses a changed fingerprint. For Zoom, it verifies the recorded audio and compares the program's `audio` in `plan` and `intent` before acknowledgement. Resume uses the recorded profile without resolving it again; `summary run --profile` changes it. Only programs needed by `run` steps require a current version check, so a summary-only resume needs no `uv` or Deepgram key. A version above its minimum does not block resume; below it returns `PREREQ_MISSING`. Unsupported record or protocol versions return `RESUME_UNSAFE`
 - Resume verifies the recorded inputs and artifacts, reuses completed steps, and runs pending or failed ones. For an unknown transcription only, the complete recorded artifact set of `raw_transcript.txt`, `raw_sentences.txt`, and `raw_transcript.json` may establish local completion after a lost final message. Go independently verifies every path, size, hash, and usable transcript format. Dry run plans reuse without rewriting the record; explicit resume persists the reconciled completion without another upload
-- An unanswered transcription without that complete evidence, any unknown summary, a changed input or artifact, or an unexpected file at a path that resume would write returns `RESUME_UNSAFE`, retaining the available artifacts. `--force` overrides none of these refusals. The existence of an unrecorded file alone never proves paid completion
-- An `unknown` `summarize` step names `ncly transcript summary run <run-id>` in its hint. An `unknown` `transcribe` step names `ncly run view <run-id>`, because a new transcription may bill Deepgram again
+- For an unknown summary, resume repeats its agent call with the recorded child run ID. A completed child returns its saved answer, which transcript verifies and publishes as the summary without a new request. A child that never recorded its run starts now, because the agent extension records its run before its harness starts. A child that did not complete answers `RESUME_UNSAFE`, and the summary stays `unknown`
+- An unanswered transcription without that complete evidence, a summary whose child did not complete, a changed input or artifact, or an unexpected file at a path that resume would write returns `RESUME_UNSAFE`, retaining the available artifacts. Such a refusal fails its item and lets the other items continue, while a changed prompt refuses the whole run. `--force` overrides none of these refusals. The existence of an unrecorded file alone never proves paid completion
+- A summary whose child did not complete names `ncly transcript summary run <run-id> --key <item key>` in its hint and its `next`, so that the new operation covers that item alone. An `unknown` `transcribe` step names `ncly run view <run-id>`, because a new transcription may bill Deepgram again
 
 The transcript domain defines these `inputs` keys:
 
@@ -145,17 +148,19 @@ A Zoom run records this:
 
 `ncly transcript summary run <run-id>` summarizes saved transcripts as a new recorded operation. It resolves its profile first: `--profile`, then the source run's recorded profile, then the current `default_profile`. If none applies, a form asks in interactive mode; otherwise it exits 2 with `USAGE_INVALID` and a hint showing `--profile`. Until a profile is known it reads no item, writes no record, and bills nothing.
 
-Before reading items or starting a summary, execution takes the source run lock and holds it until the new operation ends. A busy source returns 75 with `TEMPORARY` and a `run view` hint, before effects. Dry run only checks ownership and never holds or reserves the source for execution.
+Before reading items, execution takes the source run lock. It holds the lock while it checks each item's eligibility and records the new run with the verified transcript references, then releases it before the first summary starts, so a long summary never blocks the source. A busy source returns 75 with `TEMPORARY` and a `run view` hint, before effects. Dry run only checks ownership and never holds or reserves the source for execution.
+
+`--key` selects the source items to summarize, once per item, so a new summary of one item never bills the others again. Without it, every item is selected. A key that the source run lacks is `NOT_FOUND` before effects. The selected items keep the order of the source.
 
 Its prompt name comes from `--prompt`, the recorded source prompt, then the source's current default, such as `youtube.prompt`. It reads the current prompt text: a missing prompt is `NOT_FOUND` before effects; a changed hash is allowed and stored in the new record. This is a new operation, while resume preserves the recorded prompt fingerprint.
 
-An item is eligible when its transcription is completed or locally reconciles from the complete recorded artifact set defined in Steps and resume. Any other item fails in `results` with `RESUME_UNSAFE`. If none is eligible, the failed answer includes `source_run` and `results` but no `run_id`; no record or harness starts.
+An item is eligible when its transcription is completed or locally reconciles from the complete recorded artifact set defined in Steps and resume. Any other selected item fails in `results` with `RESUME_UNSAFE`. If none is eligible, the failed answer includes `source_run` and `results` but no `run_id`; no record or harness starts.
 
-A mixed operation records every source item in its original order. Eligible items copy verified transcript references and original timestamps into a completed `transcribe` step, then add a pending `summarize` step. An ineligible item records only a failed `summarize` step with its `RESUME_UNSAFE` problem and its source `output_dir`, possibly `null`. That item never becomes executable in this operation. Resume reproduces its saved error while continuing eligible pending or failed summaries; including the rejected item later requires a new operation. This is transcript-domain handling, without a new shared status.
+The new record holds each selected item in source order, with one `summarize` step. An eligible item's step starts `pending`, and its evidence holds the transcript that it summarizes: the source run ID, and the path, size, and `sha256` of each transcript artifact. The record has no `transcribe` step, because this run transcribed nothing. An ineligible item's step is `failed`, with its `RESUME_UNSAFE` problem and its source `output_dir`, possibly `null`, and never becomes executable in this operation. Resume reproduces its saved error while continuing eligible pending or failed summaries; including the rejected item later requires a new operation.
 
 The new record keeps `source_run` for provenance and its own resolved prompt and profile. It copies no transcript content or source audio dependency.
 
-When a new record is created, normal execution returns `run_id`, `source_run`, and `results` with the transcript item shape. Each summary goes to the recorded result folder as `<prompt-name>-<new-run-id>.md`, preserving source artifacts. `run resume` supports this record: it verifies copied transcript evidence and continues eligible pending or failed summaries without transcribing again. Unknown summaries still refuse resume and hint `ncly transcript summary run <source_run>`. This new operation may bill and starts only on an explicit call.
+When a new record is created, normal execution returns `run_id`, `source_run`, and `results` with the transcript item shape. Each summary goes to the recorded result folder as `<prompt-name>-<new-run-id>.md`, preserving source artifacts. `run resume` supports this record: it verifies the transcript that each step's evidence names, and continues eligible pending or failed summaries without transcribing again. An unknown summary resolves through its child agent run, as in Steps and resume, and otherwise hints `ncly transcript summary run <source_run> --key <item key>`. This new operation may bill and starts only on an explicit call.
 
 ### Protocol with the Python program
 
@@ -207,10 +212,10 @@ A new transcription reports its output parent without reserving a result folder:
 {"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output":"/Users/me/transcripts","steps":[{"id":"transcribe","action":"run"}],"effects":{"user_writes":true,"network":true,"paid":true}}],"pending_checks":[{"id":"auth.deepgram","message":"Authentication is checked only during execution."}]}
 ```
 
-A summary alone, from `ncly transcript summary run <run-id> --dry-run --json`, reuses the transcript and waits for the harness to start:
+A summary alone, from `ncly transcript summary run <run-id> --dry-run --json`, summarizes the saved transcript and leaves the harness login to execution:
 
 ```json
-{"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output_dir":"/Users/me/transcripts/Video_title","steps":[{"id":"transcribe","action":"reuse"},{"id":"summarize","action":"run"}],"effects":{"user_writes":true,"network":true,"paid":true}}],"pending_checks":[{"id":"agent.claude","message":"The harness login is checked when the summary starts."}]}
+{"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output_dir":"/Users/me/transcripts/Video_title","steps":[{"id":"summarize","action":"run"}],"effects":{"user_writes":true,"network":true,"paid":true}}],"pending_checks":[{"id":"agent.claude","message":"The harness login is checked when the summary starts."}]}
 ```
 
 A resume that reuses every step, from `ncly run resume <run-id> --dry-run --json`, has nothing pending:

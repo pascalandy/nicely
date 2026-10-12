@@ -21,6 +21,9 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 
 - How `just check` runs ruff, pyright, and pytest on `extensions/transcript/python/` through `uv`
 - How the test transport reaches the real Python program in a scenario without a production endpoint override
+- Whether two URLs of the same video count once, as the transcript CLI does by video ID, with a warning that names the duplicates, or fail with `USAGE_INVALID`, as the spec says today of a URL given twice
+- Which files the program writes besides the three transcripts, such as its metadata, and when, so that resume treats them as known files
+- Which programs the download path needs from an empty cache besides `uv` and Python, such as `ffmpeg` and a JavaScript runtime that the `yt-dlp` README lists, so that `ncly doctor transcript` checks them in [M16](M16-transcript-finish.md)
 
 ## Cards
 

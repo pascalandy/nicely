@@ -9,14 +9,13 @@ Version: v0.10.0
 
 ## Scope
 
-`ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. Record support starts in `sdk/`, as [Records and evidence](../north-star/contract.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/core-spec.md#ncly-run) `list` and `view`. Resume waits for [M15](M15-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
+`ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. It brings `--run-id` too, as [Run IDs](../north-star/contract.md#run-ids) defines, which links transcript's summary step to its child run in [M14](M14-transcript-summary.md). Record support starts in `sdk/`, as [Records and evidence](../north-star/contract.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/core-spec.md#ncly-run) `list` and `view`. Resume waits for [M15](M15-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
 
 ## Open questions
 
 Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) and [Record format](../north-star/contract.md#record-format), then delete this section.
 
-- The item key of an agent run, which `ncly run list --key` filters on, and the `inputs` that it records, such as a fingerprint of the material
-- How a caller links a child run to its own step before the child can bill, so the link survives a lost answer: a `--run-id` that the caller chooses and records in its intent, which also lets an agent find a run after lost output and refuses a second run with the same ID, or a parent reference that the child records from its environment, which needs a scan of the records to find a child
+- The item key of an agent run, which `ncly run list --key` filters on
 
 ## Cards
 
@@ -33,7 +32,9 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Operations](../north-star/contract.md#operations), [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Retry safety](../north-star/contract.md#retry-safety)
 - **Proves:** `extensions/agent/testdata/script/agent_run.txtar`, `extensions/agent/testdata/script/agent_run_record.txtar`, `testdata/script/record_retry_safety.txtar`
 
-`ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
+`ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer, which it also saves as the step's artifact in `runs/<run-id>/`. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
+
+With `--run-id`, a new ID names the run. The same call again returns the saved answer, and the counted stub harness runs once. The same ID with another task is `USAGE_INVALID`, the ID of a run that did not complete is `RESUME_UNSAFE`, and both start no harness.
 
 The step declares the `paid` effect. The SDK writes every step transition and derives retry safety from the declared effects, so `ncly-agent` never reports an effect level of its own. A fixture extension with a `repeatable` step, then a `paid` one, proves the derivation: a temporary failure exits 75 while the paid step is `pending`, and 1 once that step has left `pending`, even as `failed`.
 
@@ -65,4 +66,4 @@ Build the boundary hook, which lives only in the test binary and kills the proce
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
 - **Proves:** the observations in the pull request, and the check date in `extensions/agent/spec.md`
 
-Recheck the adapters' flags against the installed `claude` and `pi`, then run each one once with material that tries to use tools, hooks, MCP servers, and loaded extensions, and observe that it cannot. A stub accepting flags or a harness returning text is not that proof. Each run may bill a little, so ask Pascal before starting.
+Recheck the adapters' flags against the installed `claude` and `pi`, then run each one once with material that tries to use tools, hooks, MCP servers, and loaded extensions, and observe that it cannot. Check how each adapter detects a machine policy that it cannot override, such as the hooks of a managed settings file of Claude Code, and record it in the spec. A stub accepting flags or a harness returning text is not that proof. Each run may bill a little, so ask Pascal before starting.

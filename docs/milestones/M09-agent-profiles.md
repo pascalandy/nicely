@@ -17,7 +17,6 @@ Before taps exist, `just install` builds the first-party extensions and puts the
 
 Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), then delete this section.
 
-- Whether `ncly agent run` reads stdin without `-` when stdin is a pipe, given that some harnesses leave stdin open
 - The answer keys of `ncly agent run` that transcript records: `run_id`, `answer`, `profile`, `harness`, the harness version, `model`, and `duration_ms`
 
 ## Cards
@@ -49,7 +48,7 @@ Create `extensions/agent/` with its manifest, spec, and `SKILL.md`, built as `nc
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters), [ncly agent](../../extensions/agent/spec.md#ncly-agent)
 - **Proves:** `extensions/agent/testdata/script/agent_dry_run.txtar`
 
-The `claude` adapter checks the harness version, 2.1.291 or later, and `--dry-run` shows the profile, the requested mode, and the redacted invocation with its tools-off flags. A stub harness in `PATH` proves that the harness never starts. A harness older than its minimum is `PREREQ_MISSING`. A profile for a harness without an adapter fails with `CAPABILITY_UNSUPPORTED`.
+The `claude` adapter checks the harness version, 2.1.291 or later, and `--dry-run` shows the profile, the requested mode, and the redacted invocation with its tools-off flags, which apply unless `--tools` is set. The task comes from the argument or `--task-file`, and material from `--input`, with stdin read only for `--input -`, so a dry run under an open pipe never waits. `--tools` with `--input` is `USAGE_INVALID`. A stub harness in `PATH` proves that the harness never starts. A harness older than its minimum is `PREREQ_MISSING`. A profile for a harness without an adapter fails with `CAPABILITY_UNSUPPORTED`.
 
 ### M09-T4 Pi adapter dry run
 
