@@ -1,15 +1,17 @@
-# M03 Skill
+# M04 Skill
 
 Status: planned
-Version: v0.3.0
+Version: v0.4.0
 
 ## Demo
 
-`ncly skill list` and `ncly skill view` run as the first bundled extension, and the bundled `nicely` skill teaches an agent to use Nicely.
+`ncly skill list` and `ncly skill view` run as the first bundled extension, over the configured folders, the installed extensions, and the bundled `nicely` skill, which teaches an agent to use Nicely.
 
 ## Scope
 
 `skill` is bundled because an agent needs it to operate Nicely: one line in an agent's instructions, `ncly skill view nicely`, replaces the long text that README.md used to plan. Its spec is [extensions/skill/spec.md](../../extensions/skill/spec.md). Output stays plain in this milestone. The styled list and the Markdown rendering of `view` arrive in [M07](M07-forms.md).
+
+[M03](M03-describe.md) comes first, so `skill` reads the skills of installed extensions through `ncly describe --json`, as an agent would, and needs no discovery code of its own.
 
 The draft of the `nicely` skill, from the agent instructions that README.md planned. Lines about transcript move to the transcript skill in [M16](M16-transcript-finish.md):
 
@@ -32,18 +34,19 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 
 - Where an installed extension keeps its `SKILL.md`, such as beside its manifest, and how `list` names that source
 - The final text of the `nicely` skill, and how it names commands that later milestones add
+- How completion reaches values that only an extension knows, such as skill names, and profile names from [M09](M09-agent-profiles.md). Settle it in [Extensions](../north-star/contract.md#extensions)
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M03-T1 | Skill list | agent | — | todo |
-| M03-T2 | Skill view | agent | M03-T1 | todo |
-| M03-T3 | The nicely skill | agent | M03-T2 | todo |
-| M03-T4 | Skills from extensions | agent | M03-T1 | todo |
-| M03-T5 | Fresh-session check | agent | M03-T3 | todo |
+| M04-T1 | Skill list | agent | — | todo |
+| M04-T2 | Skill view | agent | M04-T1 | todo |
+| M04-T3 | Skills from extensions | agent | M04-T1 | todo |
+| M04-T4 | The nicely skill | agent | M04-T2 | todo |
+| M04-T5 | Skill name completion | agent | M04-T1 | todo |
 
-### M03-T1 Skill list
+### M04-T1 Skill list
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `extensions/skill/testdata/script/skill_list.txtar`, `extensions/skill/testdata/script/skill_shadowed.txtar`, `extensions/skill/testdata/script/skill_invalid.txtar`, `extensions/skill/testdata/script/skill_links.txtar`
@@ -55,30 +58,32 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 - A valid folder comes before a missing one in `paths`, so `list` returns the valid skills and adds `SKILL_SOURCE_MISSING`
 - A linked skill folder is listed once with the path of the link, and a broken link is skipped
 
-### M03-T2 Skill view
+### M04-T2 Skill view
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `extensions/skill/testdata/script/skill_view.txtar`
 
 `ncly skill view <name>`, with or without `--json`, and the `ncly skill <name>` shortcut. The first line names the skill's folder. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2.
 
-### M03-T3 The nicely skill
+### M04-T3 Skills from extensions
+
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract.md#extensions), [ncly describe](../north-star/core-spec.md#ncly-describe)
+- **Proves:** `extensions/skill/testdata/script/skill_extension.txtar`
+
+The `SKILL.md` of an installed extension appears in `list` with its source, and `view` reads it, so every extension can teach agents how to use it. `skill` finds it through `ncly describe --json`, never by searching for extensions itself.
+
+### M04-T4 The nicely skill
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Agents in both directions](../north-star/vision.md#agents-in-both-directions)
-- **Proves:** `extensions/skill/testdata/script/skill_nicely.txtar`
+- **Proves:** `extensions/skill/testdata/script/skill_nicely.txtar`, and the session's transcript, attached to the pull request
 
 The skill extension embeds the `nicely` skill, which `list` shows with its bundled source. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`.
 
-### M03-T4 Skills from extensions
+Then an agent in a fresh harness session, given only that line, finds and reads a skill using only `ncly`. Fix the `nicely` skill until it does.
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract.md#extensions)
-- **Proves:** `extensions/skill/testdata/script/skill_extension.txtar`
+### M04-T5 Skill name completion
 
-The `SKILL.md` of an installed extension appears in `list` with its source, and `view` reads it, so every extension can teach agents how to use it.
+- **Read:** [ncly completion](../north-star/core-spec.md#ncly-completion), [Extensions](../north-star/contract.md#extensions)
+- **Proves:** `extensions/skill/testdata/script/skill_completion.txtar`
 
-### M03-T5 Fresh-session check
-
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
-- **Proves:** the session's transcript, attached to the pull request
-
-An agent in a fresh harness session, given only the one-line instruction, finds and reads a skill using only `ncly skill`. Fix the `nicely` skill until it does.
+Completion suggests skill names after `ncly skill view`, through the mechanism that this milestone settles for the values that only an extension knows.

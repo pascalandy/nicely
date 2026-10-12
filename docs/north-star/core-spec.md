@@ -8,8 +8,8 @@ This file specifies the commands of core. They follow [contract.md](contract.md)
 ncly
 ├── completion zsh|bash|fish        M00
 ├── <domain> [arguments]            M01
-├── skill list|view|<name>          M03
-├── describe [command...]           M04
+├── describe [command...]           M03
+├── skill list|view|<name>          M04
 ├── doctor [component]              M05
 ├── auth login|logout|status        M06
 ├── run list|view                   M10

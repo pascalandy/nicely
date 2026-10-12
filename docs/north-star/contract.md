@@ -169,7 +169,7 @@ The set of codes is open: later milestones add core codes, and every extension a
 | `TEMPORARY` | 75 | A temporary failure for which the whole invocation meets Retry safety | M00 |
 | `INTERRUPTED` | 130 | Ctrl-C stopped the command | M00 |
 | `TERMINATED` | 143 | SIGTERM stopped the command | M00 |
-| `NOT_FOUND` | 2 | The named skill, service, profile, component, run, prompt, or recording does not exist | M03 |
+| `NOT_FOUND` | 2 | The named command, skill, service, profile, component, run, prompt, or recording does not exist | M03 |
 | `PREREQ_MISSING` | 78 | A required tool is absent or too old | M05 |
 | `AUTH_MISSING` | 78 | A required key is in neither the environment nor the keychain | M06 |
 | `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for the `auth` check of `ncly doctor` | M06 |
@@ -183,7 +183,7 @@ Warnings use codes from this table, and an extension's own warnings start with i
 | Code | When | Since |
 |---|---|---|
 | `CONFIG_UNKNOWN_KEY` | A config file holds a key that this version of `ncly` does not know | M00 |
-| `CONFIG_DEFAULTS_USED` | Discovery used defaults because a config file could not be read | M04 |
+| `CONFIG_DEFAULTS_USED` | Discovery used defaults because a config file could not be read | M03 |
 
 ## Configuration
 
@@ -231,10 +231,10 @@ Effects distinguish user writes, network access, and paid requests. Modes distin
 
 Core is a small host. Every domain that does work for the user is an extension, as [D004](decisions/D004-minimal-core.md) decides. An extension comes in one of two transports, with one manifest format and one contract:
 
-- A **bundled** extension is a Go package compiled into `ncly`, with its manifest and catalogs embedded. Only what an agent needs to operate Nicely is bundled: `skill`, in M03
+- A **bundled** extension is a Go package compiled into `ncly`, with its manifest and catalogs embedded. Only what an agent needs to operate Nicely is bundled: `skill`, in M04
 - An **external** extension is an executable named `ncly-<domain>`, with its manifest `ncly-<domain>.toml` and its catalogs in the folder `ncly-<domain>.locales/` beside it, as [D048](decisions/D048-static-manifest-and-catalogs.md) decides. Core finds it as [Discovery](#discovery) defines, and taps bring more from M12. The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
 
-Core commands and bundled extensions always win over an external extension with the same name. Discovery, from [ncly describe](core-spec.md#ncly-describe) in M04 and [ncly doctor](core-spec.md#ncly-doctor) in M05, reports the source it selected and every extension that another one hides.
+Core commands and bundled extensions always win over an external extension with the same name. Discovery, from [ncly describe](core-spec.md#ncly-describe) in M03 and [ncly doctor](core-spec.md#ncly-doctor) in M05, reports the source it selected and every extension that another one hides.
 
 An extension receives the environment that [Programs that ncly runs](#programs-that-ncly-runs) defines, which carries the global flags as variables. It answers with the envelope of [Output](#output) and the exit codes of [Exit codes](#exit-codes). It may use core's [error codes](#error-codes), and its manifest declares its own. It translates its own text into the language of `NCLY_LANG`. It may be written in any language: a Python extension can be one file with the shebang `#!/usr/bin/env -S uv run --script` and its dependencies inline.
 

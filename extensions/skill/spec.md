@@ -1,6 +1,6 @@
 # skill extension spec
 
-`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M03](../../docs/milestones/M03-skill.md) builds it, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
+`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
 
 ## ncly skill
 
@@ -55,8 +55,8 @@ The `skill` component of `ncly doctor` warns with `SKILL_SOURCE_MISSING` for a f
 
 | Code | When | Since |
 |---|---|---|
-| `SKILL_SHADOWED` | Two skills share a name, in two sources or inside one folder of `[skill] paths` | M03 |
-| `SKILL_NO_SOURCE` | No skill folder is configured | M03 |
-| `SKILL_INVALID` | A `SKILL.md` cannot be read, its frontmatter is invalid, or it lacks `name` or `description` | M03 |
-| `SKILL_SOURCE_MISSING` | A folder of `[skill] paths` is missing or cannot be read | M03 |
+| `SKILL_SHADOWED` | Two skills share a name, in two sources or inside one folder of `[skill] paths` | M04 |
+| `SKILL_NO_SOURCE` | No skill folder is configured | M04 |
+| `SKILL_INVALID` | A `SKILL.md` cannot be read, its frontmatter is invalid, or it lacks `name` or `description` | M04 |
+| `SKILL_SOURCE_MISSING` | A folder of `[skill] paths` is missing or cannot be read | M04 |
 | `SKILL_NAME_MISMATCH` | A skill's subfolder name differs from the `name` in its `SKILL.md` | M05 |

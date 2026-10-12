@@ -9,7 +9,7 @@ Version: v0.1.0
 
 ## Scope
 
-Core finds executables named `ncly-<domain>`, reads their manifests and catalogs without running them, starts them with a validated call, and checks what they answer, as [Extensions](../north-star/contract.md#extensions) defines. This milestone uses fixture extensions only. The first bundled extension, `skill`, arrives in [M03](M03-skill.md), and the first real external one, `agent`, in [M09](M09-agent-profiles.md).
+Core finds executables named `ncly-<domain>`, reads their manifests and catalogs without running them, starts them with a validated call, and checks what they answer, as [Extensions](../north-star/contract.md#extensions) defines. This milestone uses fixture extensions only. The first bundled extension, `skill`, arrives in [M04](M04-skill.md), and the first real external one, `agent`, in [M09](M09-agent-profiles.md).
 
 - The fixtures are shell scripts that live in the scenario archives, beside their manifests and their `en` catalogs. A fixture that writes a file when it runs proves that core did not start it
 - Core validates an extension's call from its manifest, as it does for its own commands, then passes the canonical arguments of [Dispatch](../north-star/contract.md#dispatch)
