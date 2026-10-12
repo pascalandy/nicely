@@ -179,6 +179,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: a named combination of harness, provider, model, and effort, stored in the config
 - Skill
   - Def.: a folder with a `SKILL.md` that teaches an agent a task
+  - Project note: an extension's skill is named after its domain. The bundled `nicely` skill teaches core
 
 ## Configuration and text
 

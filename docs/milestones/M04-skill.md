@@ -13,28 +13,24 @@ Version: v0.4.0
 
 [M03](M03-describe.md) comes first, so `skill` reads the skills of installed extensions through `ncly describe --json`, as an agent would, and needs no discovery code of its own.
 
-The draft of the `nicely` skill, from the agent instructions that README.md planned. Lines about transcript move to the transcript skill in [M16](M16-transcript-finish.md):
+The `nicely` skill teaches only what this release can do, as [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill) says, and [M05](M05-doctor.md), [M10](M10-agent-run.md), and [M15](M15-resume.md) add their lines. Its draft for this milestone:
 
 ```text
-Set NCLY_NO_INPUT=1 and NCLY_JSON=1 for ncly calls
-Use a targeted ncly describe, the appropriate ncly doctor component, then the command's --dry-run before execution
-Find skills with ncly skill list and read one with ncly skill view NAME
-Parse codes and fields, never translated messages
-Retain the invocation's RFC3339 start time, exit code, full stdout and stderr, and run_id
-Give the shell a timeout longer than ncly's timeout plus 15 seconds of cleanup and a margin
-Only overall exit 75 permits an automatic repeat of the same invocation. Item errors do not permit a retry. Relay human-action hints
-After lost output, use ncly run list --path PATH --key KEY --since RFC3339 --json with the original command path, item key, and start time. If the time is lost, omit --since. Preserve ambiguous matches
-Inspect candidates with ncly run view RUN_ID. active reports the execution lock. Never infer that a run is idle from its saved status
-For an inactive run, inspect ncly run resume RUN_ID --dry-run before explicitly resuming supported work
+Set NCLY_NO_INPUT=1 and NCLY_JSON=1 for every ncly call
+List commands with ncly describe --json, then read one with ncly describe PATH --json: its flags, effects, modes, and result keys
+Run a command that writes or bills with --dry-run first. The dry run checks what that call needs
+Branch on the exit code and errors[].code, never on message or hint. next holds the command to run as words
+Exit 2: fix the call. Exit 78: relay hint and next to the human. Exit 1: inspect before anything else. Only exit 75 permits repeating the same call
+An item error describes its item and never permits a retry
+Give the shell a timeout longer than the command's --timeout plus 15 seconds of cleanup
+Each domain ships a skill named after it: read it with ncly skill view DOMAIN. ncly skill list lists every skill
 ```
 
 ## Open questions
 
-Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), then delete this section.
+Settle it in [Extensions](../north-star/contract.md#extensions), then delete this section.
 
-- Where an installed extension keeps its `SKILL.md`, such as beside its manifest, and how `list` names that source
-- The final text of the `nicely` skill, and how it names commands that later milestones add
-- How completion reaches values that only an extension knows, such as skill names, and profile names from [M09](M09-agent-profiles.md). Settle it in [Extensions](../north-star/contract.md#extensions)
+- How completion reaches values that only an extension knows, such as skill names, and profile names from [M09](M09-agent-profiles.md): such as core forwarding the completion request to the extension, which [D044](../north-star/decisions/D044-additive-extensions.md) allows
 
 ## Cards
 
@@ -51,11 +47,11 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `extensions/skill/testdata/script/skill_list.txtar`, `extensions/skill/testdata/script/skill_shadowed.txtar`, `extensions/skill/testdata/script/skill_invalid.txtar`, `extensions/skill/testdata/script/skill_links.txtar`
 
-`ncly skill list` over `[skill] paths`, as the first bundled extension, with `SKILL_SHADOWED`, `SKILL_NO_SOURCE`, `SKILL_INVALID`, and `SKILL_SOURCE_MISSING`. As the first command that reads the config, it maps an unreadable, malformed, or wrongly typed config to `CONFIG_INVALID`. The scenarios cover these edge cases:
+`ncly skill list` over `[skill] paths`, as the first bundled extension, with `source` and `SKILL_SHADOWED`, `SKILL_NO_SOURCE`, `SKILL_INVALID`, and `SKILL_SOURCE_MISSING`. As the first command that fails on a broken config, where discovery falls back to defaults, it maps an unreadable, malformed, or wrongly typed config to `CONFIG_INVALID`, including a relative folder in `paths`. Its `[skill]` table decodes through `sdk/config`, which keeps each value's source from [M03-T4](M03-describe.md#m03-t4-config-sources). Add `skill` to the bundled list of `cmd/ncly`, and update that list's comment. The scenarios cover these edge cases:
 
 - Two subfolders of one folder declare the same `name`, and the first byte by byte wins with `SKILL_SHADOWED`
 - A `SKILL.md` lacks `description`, so `list` omits it, and the `SKILL_INVALID` hint names its path
-- A valid folder comes before a missing one in `paths`, so `list` returns the valid skills and adds `SKILL_SOURCE_MISSING`
+- A valid folder comes before a missing one in `paths`, so `list` returns the valid skills and adds `SKILL_SOURCE_MISSING`, whose hint names the config file that lists the missing folder
 - A linked skill folder is listed once with the path of the link, and a broken link is skipped
 
 ### M04-T2 Skill view
@@ -63,21 +59,21 @@ Settle each one in [extensions/skill/spec.md](../../extensions/skill/spec.md), t
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `extensions/skill/testdata/script/skill_view.txtar`
 
-`ncly skill view <name>`, with or without `--json`, and the `ncly skill <name>` shortcut. The first line names the skill's folder. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2.
+`ncly skill view <name>`, with or without `--json`. The first line names the skill's folder. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2 and the `next` `ncly skill list`. As the first answer with `next` that crosses the answer check, it proves that core passes `next` on from an extension and rejects a `next` that is not an array of strings.
 
 ### M04-T3 Skills from extensions
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract.md#extensions), [ncly describe](../north-star/core-spec.md#ncly-describe)
 - **Proves:** `extensions/skill/testdata/script/skill_extension.txtar`
 
-The `SKILL.md` of an installed extension appears in `list` with its source, and `view` reads it, so every extension can teach agents how to use it. `skill` finds it through `ncly describe --json`, never by searching for extensions itself.
+The skill of an installed extension appears in `list` with the source `extension`, and `view` reads it, so every extension can teach agents how to use it. `skill` finds it through the `skill` key of `ncly describe --json`, never by searching for extensions itself, so the skill of an extension that core hides never appears. The shell fixture of M01 gets a `ncly-hello.skill/` folder, the Go fixture embeds its skill, and `Check` refuses a skill whose `name` is not the domain.
 
 ### M04-T4 The nicely skill
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Agents in both directions](../north-star/vision.md#agents-in-both-directions)
 - **Proves:** `extensions/skill/testdata/script/skill_nicely.txtar`, and the session's transcript, attached to the pull request
 
-The skill extension embeds the `nicely` skill, which `list` shows with its bundled source. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`.
+The skill extension embeds the `nicely` skill as the data of its bundled source, not as a skill of its own domain, and `list` shows it with the source `bundled` and a `null` path. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. The first example of `ncly --help` becomes `ncly skill view nicely`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`. The scenario fails when the skill names an `ncly` command or an error code that this `ncly` lacks, or holds more than 60 lines.
 
 Then an agent in a fresh harness session, given only that line, finds and reads a skill using only `ncly`. Fix the `nicely` skill until it does.
 

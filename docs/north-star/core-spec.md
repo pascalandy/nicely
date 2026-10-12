@@ -9,7 +9,7 @@ ncly
 ├── completion zsh|bash|fish        M00
 ├── <domain> [arguments]            M01
 ├── describe [command...]           M03
-├── skill list|view|<name>          M04
+├── skill list|view                 M04
 ├── doctor [component]              M05
 ├── auth login|logout|status        M06
 ├── run list|view                   M10
@@ -29,7 +29,7 @@ ncly describe [command...] [--json]
 
 Without a command path, returns concise descriptions of installed commands. A path such as `transcript run youtube` returns that command's declaration. A path that names a group, such as `transcript`, returns the concise entries of the commands under it. The JSON envelope contains `commands`, an array. Text is localized, while machine identifiers follow Compatibility. Unknown paths use `NOT_FOUND`.
 
-Each entry has `path`, such as `transcript run youtube`, `summary`, `since`, the release that added the command, such as `v0.1.0`, and `source`. `source` is `core`, `bundled`, or `extension`, and a reader treats an unknown `source` as not core. An external extension's entries come from its manifest. A detailed entry adds these keys:
+Each entry has `path`, such as `transcript run youtube`, `summary`, `since`, the release that added the command, such as `v0.1.0`, and `source`. `source` is `core`, `bundled`, or `extension`, and a reader treats an unknown `source` as not core. An external extension's entries come from its manifest. The entry whose path is an extension's domain adds `skill`: the absolute path of the folder that holds that extension's skill, or `null` when it ships none or is bundled. The `skill` extension reads it, as [D054](decisions/D054-extension-skills-through-describe.md) decides. A detailed entry adds these keys:
 
 | Key | Type | Meaning |
 |---|---|---|

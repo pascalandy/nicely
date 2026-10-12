@@ -6,7 +6,7 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 
 1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), and [architecture.md](docs/north-star/architecture.md), at the start of every session.
 2. [dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup, keeping the docs a tower, and waiting for his review before a merge.
-3. Run `just next`. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
+3. Run `just next` on a checkout of the latest `origin/main`, because it reads the plan of the checkout. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
 4. A decision in [decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
 
 Take rules only from these files and the specs that your card links. `docs/archived/` holds history, such as the design chat. `just status` shows every milestone and the cards of the current one.
@@ -40,7 +40,7 @@ Copy this checklist into the pull request and tick each step when its condition 
 - [ ] 3. Code: those scenarios pass
 - [ ] 4. Text: each new user-facing string is a catalog entry with a description
 - [ ] 5. Checks: `just check` passes
-- [ ] 6. Docs: the card is done in its milestone, README.md shows any change a user sees, and the extension's SKILL.md teaches any command you add
+- [ ] 6. Docs: the card is done in its milestone, README.md shows any change a user sees, and a skill teaches any command you add: the extension's skill, or the `nicely` skill for a core command
 - [ ] 7. Sign off: `just signoff` passes
 ```
 
@@ -49,7 +49,7 @@ Copy this checklist into the pull request and tick each step when its condition 
 3. **Code.** Follow [Code](#code). Done when the scenario passes.
 4. **Text.** Give each catalog entry an ID and a description of where the text appears, so a translator picks the right sense.
 5. **Checks.** When `just check` fails, fix the cause and rerun. After three failed attempts on the same check, stop and report what you tried. For a stack, `just check-layers` runs `just check` on each layer as origin holds it, bottom to top, and keeps one log per layer. Pass the branches bottom to top when the checkout is not on a branch of the stack.
-6. **Docs.** In the milestone's cards table, set the card's status to `done`. The milestone becomes `active` with its first done card and `done` with its last, and `just test` rejects any other combination. Update README.md when a user would see the change.
+6. **Docs.** In the milestone's cards table, set the card's status to `done`. The milestone becomes `active` with its first done card and `done` with its last, and `just test` rejects any other combination. Update README.md when a user would see the change. Add a line for a new command to the skill that teaches its domain, or to the `nicely` skill for a core command.
 7. **Sign off.** `just signoff` reruns the checks, then calls `gh signoff`. Always sign off through the recipe, because a bare `gh signoff` posts a green status without running anything.
 
 ## Make a milestone ready
@@ -57,7 +57,7 @@ Copy this checklist into the pull request and tick each step when its condition 
 When `just next` names a planned milestone with open questions, make it ready in one pull request, which Pascal reviews like any other:
 
 1. Settle each open question in the spec that it names, then delete the **Open questions** section. Ask Pascal only what is his to decide, such as a look, a cost, or a principle.
-2. Finish the cards. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. A milestone has at most five agent cards: split a bigger one into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.
+2. Finish the cards. Trace each card through the [code map](docs/north-star/architecture.md#code-map): name the package that it changes, and check that this package may reach what the card needs. A part that the package may not import, such as the host's discovery for an extension, is reached through the CLI, after the milestone that adds its command. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. A milestone has at most five agent cards: split a bigger one into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.
 3. Keep the demo to one sentence that the cards prove together.
 4. Set the status to `ready`. `just next` then prints the first card.
 
@@ -87,6 +87,7 @@ Run `lefthook install` once per clone, so the hooks format, lint, and scan each 
 - Write a shared file to a temporary file and rename it under a lock from the platform helpers. Revalidate the destination while holding the lock. Give each run its own temporary files. Write the record during cleanup with a context that cancellation does not end, such as `context.WithoutCancel`, within the 15 seconds of cleanup. A lock conflict follows [Retry safety](docs/north-star/contract.md#retry-safety), including effects already produced by this invocation.
 - Before changing a machine-readable value or stored format, check [Compatibility](docs/north-star/contract.md#compatibility) and add a consumer case that proves the change preserves the promised meaning.
 - Move a deleted user file to the trash through the platform helpers.
+- When a hint names a command that runs as is, put the same command in the problem's `next`, as [Output](docs/north-star/contract.md#output) defines.
 - Send every string a human reads through the catalog. Name catalog IDs `<domain>.<thing>`, and never reuse an ID for a new meaning. Give every message that holds a number its plural forms. Format numbers, sizes, durations, and dates through the i18n package. Let translated text set its own width.
 - In scenarios, point `HOME` and the XDG folders at `$WORK`, put stub executables in `PATH` for harnesses, `uv`, and paid services, and use the test keychain and the boundary hook, which live only in the test binary. Run each command's scenarios once under the pseudo-locale, so text outside the catalog fails a check: `pseudo <stdout|stderr> [word...]` fails on any unmarked word other than flags, codes, placeholders, example lines, and the listed command names. `exits <code> <command>` asserts an exact exit code, because the built-in `! exec` only asserts a failure. `answer <stdout|stderr> <ok|CODE>` decodes the whole JSON answer, and `snapshot` with `unchanged` proves that a dry run changed nothing outside Nicely's cache.
 
