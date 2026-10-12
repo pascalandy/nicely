@@ -31,14 +31,14 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 - **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [ncly agent](../../extensions/agent/spec.md#ncly-agent)
 - **Proves:** `extensions/transcript/testdata/script/transcript_summary.txtar`
 
-Preparation calls `ncly agent run --dry-run --json` with the profile before any transcription dispatch, and records the resolved profile, which the summary passes back to `ncly agent run` as flags, with the prompt as `--task-file`, a copy of the transcript as `--input`, and a child run ID that the step's intent records first. The summary is its own recorded step, written as `<prompt-name>-<run-id>.md`. Without a profile, the run saves the transcript and adds `TRANSCRIPT_SUMMARY_SKIPPED`. `--no-summary` excludes `--profile` and `--prompt`. With a profile but without the agent extension, the run fails with `PREREQ_MISSING` before transcription.
+Preparation calls `ncly agent run --dry-run --json` with the profile before any transcription dispatch, and records the resolved profile, which the summary passes back to `ncly agent run` as flags, with the prompt as `--task-file`, a copy of the transcript as `--input`, the item's `output_dir` as `--cwd`, and a child run ID that the step's intent records first. The summary is its own recorded step, written as `<prompt-name>-<run-id>.md`. Without a profile, the run saves the transcript and adds `TRANSCRIPT_SUMMARY_SKIPPED`. `--no-summary` excludes `--profile` and `--prompt`. With a profile but without the agent extension, the run fails with `PREREQ_MISSING` before transcription.
 
 ### M14-T2 Summary failures
 
 - **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume)
 - **Proves:** `extensions/transcript/testdata/script/transcript_summary_failures.txtar`
 
-Stop after saving the transcript and before starting the summary. An agent run that exits 2 or 78 fails the step. Any other end without a saved summary leaves it `unknown`, with no silent retry, and its hint and `next` name `ncly transcript summary run <run-id> --key <item key>`.
+Stop after saving the transcript and before starting the summary. An agent run that exits 2 or 78 on the attempt's first call fails the step. Any other end without a saved summary leaves it `unknown`, with no silent retry, and its hint and `next` name `ncly transcript summary run <run-id> --key <item key>`.
 
 ### M14-T3 Summary run
 

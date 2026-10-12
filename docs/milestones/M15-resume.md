@@ -38,17 +38,17 @@ Settle each one in [ncly run](../north-star/core-spec.md#ncly-run) and [Extensio
 
 ### M15-T2 Reuse saved work
 
-- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume)
+- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Run IDs](../north-star/contract.md#run-ids)
 - **Proves:** `extensions/transcript/testdata/script/transcript_resume.txtar`
 
-Resume a saved transcript whose summary never started: counted calls prove that transcription is not repeated, and a summary-only resume needs no `uv` and no Deepgram key. A resume that reuses the completed transcription and fails for a temporary cause before the summary's intent exits 75, because it started no step. The same call with the run's `--run-id` resumes it as `ncly run resume` does. Change the config's profile, and the remaining steps still use the recorded one. A completed run returns its verified result without another paid call. A lost completion message is reconciled only when every recorded artifact verifies.
+Resume a saved transcript whose summary never started: counted calls prove that transcription is not repeated, and a summary-only resume needs no `uv` and no Deepgram key. A resume that reuses the completed transcription and fails for a temporary cause before the summary's intent exits 75, because it started no step. The same call with the run's `--run-id` resumes it as `ncly run resume` does. The same ID with another URL, and a summary run's ID with another `--key`, each answer `USAGE_INVALID` before any effect, and the counted calls prove that neither starts a program. Change the config's profile, and the remaining steps still use the recorded one. A completed run returns its verified result without another paid call. A lost completion message is reconciled only when every recorded artifact verifies.
 
 ### M15-T3 Refuse unsafe work
 
 - **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
 - **Proves:** `extensions/transcript/testdata/script/transcript_resume_unsafe.txtar`
 
-A changed input or artifact, missing or mismatched evidence, a summary whose child agent run did not complete, and an unknown transcription without its complete artifact set each return `RESUME_UNSAFE`, with the available artifacts, and `--force` overrides none of them. In a batch, such a refusal fails its item while the other items continue, and a changed prompt refuses the whole run. An unknown summary whose child completed publishes the child's saved answer, and the counted stub harness runs no second time. The run that ended with a 504 after upload is refused with no replay. A failed attempt whose paid step stays pending keeps its code, message, and hint.
+A changed input or artifact, missing or mismatched evidence, a summary whose child agent run did not complete or has no record, and an unknown transcription without its complete artifact set each return `RESUME_UNSAFE`, with the available artifacts, and `--force` overrides none of them. In a batch, such a refusal fails its item while the other items continue, and a changed prompt refuses the whole run. Resumed from another folder, an unknown summary whose child completed publishes the child's saved answer, because the call passes the recorded `output_dir` as `--cwd`, and the counted stub harness runs no second time. Delete that child's record, and the summary stays `unknown`, with `next` naming `ncly transcript summary run <run-id> --key <item key>`, while the harness still runs no second time. A stub agent extension that answers the repeated call with `USAGE_INVALID` leaves the summary `unknown` with `RESUME_UNSAFE` too. The run that ended with a 504 after upload is refused with no replay. A failed attempt whose paid step stays pending keeps its code, message, and hint.
 
 ### M15-T4 Resume a summary run
 

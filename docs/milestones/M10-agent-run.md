@@ -15,7 +15,7 @@ Version: v0.10.0
 
 Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) and [Record format](../north-star/contract.md#record-format), then delete this section.
 
-- The item key of an agent run, which `ncly run list --key` filters on
+- The item key of an agent run, which `ncly run list --key` filters on and a call with the same run ID compares
 
 ## Cards
 
