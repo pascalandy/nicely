@@ -56,7 +56,7 @@ The `extensions` component lists every extension that core finds and where it ca
 - **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `testdata/script/doctor_skill.txtar`
 
-The `skill` component warns with `SKILL_SOURCE_MISSING`, `SKILL_NAME_MISMATCH`, and `SKILL_INVALID`. A folder of `[skill] paths` whose name differs from its skill's `name` is a warning, and the report stays `ok`, while an installed extension's skill in `ncly-<domain>.skill/`, named after its domain, gets no `SKILL_NAME_MISMATCH`.
+The `skill` component warns with `SKILL_SOURCE_MISSING`, `SKILL_NAME_MISMATCH`, and `SKILL_INVALID`. A skill subfolder of `[skill] paths` whose name differs from its skill's `name` is a warning, and the report stays `ok`. A correctly named skill in a folder named `skills`, and an installed extension's skill in `ncly-<domain>.skill/`, named after its domain, get no `SKILL_NAME_MISMATCH`.
 
 ### M05-T5 Install offers
 
