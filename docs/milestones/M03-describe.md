@@ -13,7 +13,7 @@ Implement [ncly describe](../north-star/core-spec.md#ncly-describe). Grow the de
 
 Describe comes before [M04](M04-skill.md), so that `skill` finds the skills of installed extensions through `ncly describe --json`, as an agent would, and the `nicely` skill teaches discovery from its first release.
 
-The scenarios reach a bundled extension through `ncly-bundled`, the test build of M02 whose bundled list holds the fixture `hello`, and an external one through the shell fixture of M01. No scenario of describe or help starts either one, and only the valid calls of `usage_declarations.txtar` do.
+The scenarios reach a bundled extension through `ncly-bundled`, the test build of M02 whose bundled list holds the fixture `hello`, and an external one through the shell fixture of M01. Calls to describe and help, and calls with invalid usage, start neither one, as an execution marker that never appears proves. `describe_schema.txtar` starts the fixture in separate calls to collect its real answers, and `usage_declarations.txtar` starts it for its valid calls.
 
 ## Cards
 
