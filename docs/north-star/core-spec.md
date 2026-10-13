@@ -72,7 +72,7 @@ ncly completion zsh|bash|fish
 
 Prints the completion script on stdout. The Homebrew formula installs these scripts, and each Linux archive ships them in `completions/`. The AUR package will install them too, once it ships. Users run this command only for a manual setup.
 
-Completion also suggests the values that declarations list, such as skill names, auth services, and doctor components, and an extension's values, such as profiles and transcript prompts.
+Completion also suggests the values that core knows, such as auth services and doctor components, and the values that only an extension knows, such as skill names, profiles, and transcript prompts, from the list command that the declaration names, as [Completion values](contract.md#completion-values) defines.
 
 ## ncly doctor
 

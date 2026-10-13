@@ -22,6 +22,7 @@ ncly skill view <name> [--json]
 - `view` prints the `SKILL.md` of the skill. When the skill has a folder, the first line gives it, so the relative paths inside the skill resolve: `<!-- skill-dir: /Users/me/code/skills/transcript -->`. In interactive mode, Glamour renders the Markdown, from M07.
 - A mode, such as `andy-mode`, is a skill like any other. `view` prints its router, which names its routes.
 - An unknown name exits 2 with `NOT_FOUND`, whose `next` is `ncly skill list`.
+- Completion suggests skill names after `ncly skill view`: the `name` argument declares `values_from` on `skill list`, as [Completion values](../../docs/north-star/contract.md#completion-values) defines.
 
 ```json
 {"ok":true,"contract_version":1,"skills":[{"name":"nicely","description":"Use before running any ncly command.","path":null,"source":"bundled"},{"name":"transcript","description":"Use when the user invokes `transcript` or asks to transcribe a YouTube video or Zoom recording.","path":"/Users/me/code/skills/transcript","source":"config"}]}

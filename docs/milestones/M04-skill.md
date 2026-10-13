@@ -26,12 +26,6 @@ Give the shell a timeout longer than the command's --timeout plus 15 seconds of 
 Each extension ships a skill named after its domain: ncly skill view DOMAIN. The skill domain has none: this skill covers it and core. ncly skill list lists every skill
 ```
 
-## Open questions
-
-Settle it in [Extensions](../north-star/contract.md#extensions), then delete this section.
-
-- How completion reaches values that only an extension knows, such as skill names, and profile names from [M09](M09-agent-profiles.md): such as core forwarding the completion request to the extension, which [D044](../north-star/decisions/D044-additive-extensions.md) allows
-
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
@@ -79,7 +73,7 @@ Then an agent in a fresh harness session, given only that line, finds and reads 
 
 ### M04-T5 Skill name completion
 
-- **Read:** [ncly completion](../north-star/core-spec.md#ncly-completion), [Extensions](../north-star/contract.md#extensions)
-- **Proves:** `extensions/skill/testdata/script/skill_completion.txtar`
+- **Read:** [Completion values](../north-star/contract.md#completion-values), [Manifest](../north-star/contract.md#manifest), [ncly completion](../north-star/core-spec.md#ncly-completion)
+- **Proves:** `extensions/skill/testdata/script/skill_completion.txtar`, `testdata/script/completion.txtar`, `testdata/script/extension_manifest.txtar`
 
-Completion suggests skill names after `ncly skill view`, through the mechanism that this milestone settles for the values that only an extension knows.
+Add `values_from` to the manifest in `sdk/contract` and to core's completion in `internal/cli`. The `name` argument of `skill view` declares it on `skill list`, so `ncly skill view <Tab>` suggests the names that `ncly skill list` returns. With the shell fixture, `completion.txtar` proves that a list command that fails, that answers without the key, or that outlasts the 2 seconds suggests nothing and prints nothing. `extension_manifest.txtar` proves that a `values_from` that names an undeclared command, a group, or a command whose kind is not `object` makes the manifest invalid.
