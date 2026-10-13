@@ -5,7 +5,7 @@ Version: v0.9.0
 
 ## Demo
 
-`ncly agent run --dry-run` shows the selected profile and the redacted claude or pi invocation, without starting a harness.
+`ncly agent run --dry-run` with a task shows the selected profile and the redacted claude or pi invocation, without starting a harness.
 
 ## Scope
 
