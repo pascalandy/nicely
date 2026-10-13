@@ -1,6 +1,6 @@
 # D008 Use one flag for every confirmation
 
-Decided 2026-10-05. In non-interactive mode, `--force` answers yes to every confirmation, such as an overwrite or a deletion. There is no `--yes`. Installing a prerequisite and granting a key are the exceptions: both wait for a human in a terminal, as principles 5 and 6 require.
+Decided 2026-10-05, revised 2026-10-13. In non-interactive mode, `--force` answers yes to every confirmation, such as an overwrite or a deletion. There is no `--yes`. Granting a key is the exception: it waits for a human in a terminal, as principle 5 requires.
 
 **Why.** clig.dev asks for `-f` or `--force` when a confirmation cannot be asked. One concept gets one flag, so an agent never has to guess which of two flags a step needs.
 

@@ -18,7 +18,6 @@ Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Ex
 - How an extension adds checks beyond its manifest's `requires`, such as the Python version or the browser cookies of transcript: a declared report command that core runs within doctor's timeout, as [D044](../north-star/decisions/D044-additive-extensions.md) allows, or checks that the manifest declares
 - How doctor tells an unknown config key from a key in an extension's table, so `CONFIG_UNKNOWN_KEY` never fires on a key that an installed extension owns
 - Where the install command of each prerequisite lives for each system, such as in the manifest's `requires`
-- Whether the install offer makes doctor a command that writes, which accepts `--dry-run` and then never starts an installer, or moves to an explicit `ncly doctor --install <check>`, so that plain doctor never writes or asks. If doctor writes, auth in [M06](M06-auth.md) is no longer the first writing command
 
 ## Cards
 
@@ -28,7 +27,6 @@ Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Ex
 | M05-T2 | Bounded probes | agent | M05-T1 | todo |
 | M05-T3 | Extensions component | agent | M05-T2 | todo |
 | M05-T4 | Skill component | agent | M05-T1 | todo |
-| M05-T5 | Install offers | agent | M05-T2 | todo |
 
 ### M05-T1 Report and core component
 
@@ -57,10 +55,3 @@ The `extensions` component lists every extension that core finds and where it ca
 - **Proves:** `testdata/script/doctor_skill.txtar`
 
 The `skill` component warns with `SKILL_SOURCE_MISSING`, `SKILL_NAME_MISMATCH`, and `SKILL_INVALID`. A skill subfolder of `[skill] paths` whose name differs from its skill's `name` is a warning, and the report stays `ok`. A correctly named skill in a folder named `skills`, and an installed extension's skill in `ncly-<domain>.skill/`, named after its domain, get no `SKILL_NAME_MISMATCH`.
-
-### M05-T5 Install offers
-
-- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Modes](../north-star/contract.md#modes), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
-- **Proves:** `testdata/script/doctor_install.txtar`
-
-In interactive mode, doctor shows a missing tool's install command and runs it only after a yes. In non-interactive mode, it never installs anything, and the hint of the failed check holds the command.

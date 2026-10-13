@@ -84,15 +84,14 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 |---|---|
 | `component` | `core`, `auth`, `extensions`, or the domain of an extension that declares checks, such as `skill` or `transcript`. Without it, doctor checks all of them. |
 | `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. |
-| `--timeout` | Bounds the checks, including local version probes and free network checks, 30 seconds by default. Installation after human confirmation is separate from those checks |
+| `--timeout` | Bounds the checks, including local version probes and free network checks, 30 seconds by default. |
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
 - Invalid or unreadable config produces the failed `core.config` finding with `CONFIG_INVALID`, even for a selected component. Doctor continues independent checks and omits checks whose required configuration could not be resolved. It never reports those omitted checks as passing
 - When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` with `KEYRING_UNAVAILABLE` otherwise.
 - The `extensions` component lists every extension that core finds and its source, every extension that another one hides, every incompatible manifest, the programs that each manifest requires, and every grant that no extension declares anymore. It starts no extension.
 - An extension's own checks, such as those of the [skill component](../../extensions/skill/spec.md#doctor-checks), appear under its domain.
-- In interactive mode, when a tool is missing and its install command for this system is known, doctor shows the command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and runs it only after a yes.
-- In non-interactive mode, doctor never installs anything. The hint of each failed check holds the command, and its `next` holds the same command as words when it runs as is.
+- Doctor never installs anything, in any mode, as [D011](decisions/D011-local-checks.md) decides. When a tool is missing or too old and its install command for this system is known, the hint of its failed check holds that command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and its `next` holds the same command as words. The human runs it.
 - Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it exits 1 with `errors`.
 
 ```json

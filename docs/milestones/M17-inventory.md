@@ -27,7 +27,7 @@ Move these into each domain's spec when its milestone becomes ready.
 - Preparation expands and orders inputs once, detects duplicate destinations and input/output collisions, and validates the whole batch before effects. Execution revalidates destinations under their resource locks
 - Publish a completed artifact from a temporary file, preserve successful items after another item fails, and record reusable partial work through the SDK's records. Resume verifies artifacts before skipping them. The overall exit follows Retry safety across all items, even though these commands make no paid request
 - Without input in interactive mode, a file picker opens in the folder set by `input` under `[paths]` in the config
-- A wrapped tool, such as `ffmpeg`, is no package dependency. `ncly doctor` offers to install it, and the AUR package lists it in `optdepends`. Homebrew discourages optional dependencies, so the formula leaves it out
+- A wrapped tool, such as `ffmpeg`, is no package dependency. `ncly doctor` checks it and gives its install command, and the AUR package lists it in `optdepends`. Homebrew discourages optional dependencies, so the formula leaves it out
 - Each command runs with no config file on macOS and on Omarchy
 - Each domain also verifies an interrupted batch, changed destinations after dry run, and a repeat invocation, comparing actual files and tool calls. A free conversion that already overwrote a non-repeatable destination must not report 75 merely because its later error was temporary
 

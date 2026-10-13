@@ -16,7 +16,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D008](D008-one-confirmation-flag.md) | Use one flag for every confirmation |
 | [D009](D009-ask-in-a-terminal.md) | Ask in a terminal, fail elsewhere |
 | [D010](D010-keychain-or-environment.md) | Keep keys in the keychain or the environment |
-| [D011](D011-local-checks.md) | Check locally by default, test live on request |
+| [D011](D011-local-checks.md) | Check locally by default, test live on request, and install nothing |
 | [D012](D012-translatable-from-day-one.md) | Make every word of core translatable from day one |
 | [D013](D013-go-everywhere.md) | Write core and the first-party extensions in Go |
 | [D014](D014-public-from-day-one.md) | Publish from the first commit |
