@@ -59,7 +59,7 @@ The `opencode` adapter, with its provider and its verified tools-off mode.
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent)
 - **Proves:** `extensions/agent/testdata/script/agent_check_unchanged.txtar`
 
-`--check-unchanged` exits 1 with `AGENT_FILES_CHANGED` when a covered file changed during the run, and reports nothing about ignored files.
+`--check-unchanged` exits 1 with `AGENT_FILES_CHANGED` when a covered file changed during the run, and reports nothing about ignored files. A completed run's ID with the flag toggled answers `USAGE_INVALID`, and the counted stub harness starts no second time.
 
 ### M11-T5 Doctor agent
 
