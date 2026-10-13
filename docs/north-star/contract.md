@@ -310,6 +310,7 @@ exit = 1
 | `commands[].result` | table | The command's result, the same object as `result` in [ncly describe](core-spec.md#ncly-describe), whose fields join with their first consumer. M01 reads `kind`: `object`, the default, `batch`, `report`, or `text`, which tells core how to check the answer |
 | `commands[].doctor` | boolean | Optional, from M05. `true` marks the domain's status command, which doctor runs to collect the extension's own checks, as [Status command](#status-command) defines |
 | `commands[].requires.bins` | array | From M03. The names of the programs that the command may run, each a key of `programs` |
+| `commands[].requires.keys` | array | From M03. The services whose keys the command may need, each a service name, as [Keys](#keys) defines. `ncly auth status` and `ncly doctor` read them from M06 |
 | `errors` | array | The extension's own error codes, each with `code` and `exit`, in the order that decides which one leads an answer, as [Output](#output) defines |
 | `programs` | table | From M03. One table per program that a command may run, keyed by the name of the executable that core looks for in `PATH`, such as `[programs.ffmpeg]`, so that each program has one definition. M03 reads the names, and M05 the keys below. [Required programs](core-spec.md#required-programs) defines how doctor checks them |
 | `programs.<name>.conditional` | boolean | Optional, from M05. `true` when a command needs the program only for some configs or invocations, such as one harness among several, and no command needs it on every call. Doctor never checks a conditional program |
@@ -327,6 +328,7 @@ A manifest is invalid unless every rule below holds. Core rejects it before work
 - Each own code starts with the domain in uppercase and an underscore, such as `HELLO_GRUMPY`, differs from every core code, appears once, and maps to `1`, `2`, or `78`. Exit 75 belongs to `TEMPORARY` alone, because [Retry safety](#retry-safety) judges the whole invocation, and 130 and 143 belong to the signals
 - A command that sets `doctor` is a status command that qualifies, as [Status command](#status-command) defines
 - Each key of `programs` is a file name, without `/`, and at least one command names it. Each name in the `requires.bins` of a command is a key of `programs`, and appears once there
+- Each name in the `requires.keys` of a command is a service name, as [Keys](#keys) defines, and appears once there
 - From M05, a `version` is one or more numbers joined by dots, a `probe` is a non-empty array of strings, and each command of `install` is a non-empty array of strings
 - The `en` catalog holds every catalog ID that the manifest names
 
@@ -579,10 +581,11 @@ A new item has `output`, the output folder that will hold its result folder. An 
 
 ## Keys
 
-- A service has a name of lowercase letters and digits, such as `deepgram`. Its environment variable is the name in uppercase followed by `_API_KEY`, such as `DEEPGRAM_API_KEY`.
+- A service has a name of lowercase letters and digits that starts with a letter, such as `deepgram`, other than `keychain`, which names the check of the keychain itself. Its environment variable is the name in uppercase followed by `_API_KEY`, such as `DEEPGRAM_API_KEY`. An extension declares the services that each command needs in the `requires.keys` of its [manifest](#manifest).
 - Core reads a key from its environment variable first. It reads the key from the keychain only when that variable is empty, and only for a command whose declaration needs the key and an extension that a human granted it to, as [Grants](#grants) defines. A dry run reads no key. `ncly auth` and `ncly doctor` also check the keychain. The keychain entry uses the service `nicely` and the account named after the service.
-- Each keychain call has a time limit: 60 seconds in interactive mode, where a human can answer an unlock prompt, and 10 seconds otherwise. A keychain that does not answer in time counts as unavailable. A command that needs a key exits 78 with `KEYRING_UNAVAILABLE` when the key is missing from the environment and the keychain is unavailable, and its hint names the variable to export. When the keychain answers without the key, the code is `AUTH_MISSING`.
-- A key is never accepted as a flag. `ncly auth login` reads it from a masked field, or from stdin with `--stdin`.
+- Each keychain call has a time limit: 60 seconds in interactive mode, where a human can answer an unlock prompt, and 10 seconds otherwise. A keychain that does not answer a read in time counts as unavailable. Once a call finds the keychain unavailable, the command asks it nothing more and counts it unavailable for every later key, so a command that reads several keys waits for one limit at most. A command that needs a key exits 78 with `KEYRING_UNAVAILABLE` when the key is missing from the environment and the keychain is unavailable, and its hint names the variable to export. When the keychain answers without the key, the code is `AUTH_MISSING`.
+- `KEYRING_UNAVAILABLE` names a keychain that fails before any write. A write, the `Set` of `ncly auth login` or the `Delete` of `ncly auth logout`, that fails or gets no answer within its limit has an unknown effect, because the keychain may still store or remove the key after `ncly` answers. The command then exits 1 with `RUNTIME`, as [Retry safety](#retry-safety) requires, with a hint that asks the human to check `ncly auth status`, and that command as its `next`. A service missing from that report proves nothing about its key, so for a service that no installed extension declares, the hint sends the human to Nicely's entry in the OS keychain.
+- A key is never accepted as a flag. In a terminal, `ncly auth login` reads it without echo, through a plain prompt that the masked field of [M07](../milestones/M07-forms.md) replaces. With `--stdin`, it reads the key from stdin.
 - A key is never printed. `ncly auth status` reports where a key comes from, never its value.
 
 ## Grants
@@ -594,6 +597,8 @@ In a nested call, such as transcript calling `ncly agent run`, core passes the k
 ## Programs that ncly runs
 
 Core runs extensions, including each qualifying list command that completion runs and each status command that doctor runs, as [Completion values](#completion-values) and [Status command](#status-command) define, and doctor's version probes. An extension runs its own programs, such as transcript's Python program or a harness that the `agent` extension starts, through the SDK's program runner, which follows the same rules. None of them runs in a sandbox. A program runs with the rights of the user, so it could read the keychain or any file itself. Adding a tap or installing an extension means trusting its author.
+
+One program starts outside the program runner. On macOS, go-keyring, which `internal/keychain` wraps for [Keys](#keys), starts `/usr/bin/security` itself, and passes it a key on its stdin, never in its arguments. That program therefore has no process group of its own, no timeout from the runner, and no pipes that the runner owns. The keychain sits at layer 0, below the runner, and a write that it abandons at its limit keeps an unknown effect whether or not something stops `security`, as Keys defines, so the runner would make no call safer. Cancellation still reaches `security` through its parent process, as it reaches every descendant, and a signal during a write keeps exit 130 or 143 with an effect that stays unknown. The exception covers this one program, never a `security` that an extension starts.
 
 **Environment.** A program receives the environment of its parent with these changes:
 
