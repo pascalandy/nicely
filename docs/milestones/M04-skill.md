@@ -73,14 +73,15 @@ Then an agent in a fresh harness session, given only that line, finds and reads 
 
 ### M04-T5 Skill name completion
 
-- **Read:** [Completion values](../north-star/contract.md#completion-values), [Manifest](../north-star/contract.md#manifest), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [ncly completion](../north-star/core-spec.md#ncly-completion)
-- **Proves:** `extensions/skill/testdata/script/skill_completion.txtar`, `testdata/script/completion.txtar`, `testdata/script/extension_manifest.txtar`
+- **Read:** [Completion values](../north-star/contract.md#completion-values), [Manifest](../north-star/contract.md#manifest), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [ncly completion](../north-star/core-spec.md#ncly-completion), [ncly describe](../north-star/core-spec.md#ncly-describe)
+- **Proves:** `extensions/skill/testdata/script/skill_completion.txtar`, `testdata/script/completion.txtar`, `testdata/script/extension_manifest.txtar`, `sdk/contract/compat_test.go`
 
-Add `values_from` to the manifest in `sdk/contract`, with the one check that a list command qualifies, which the manifest and completion share. Core's completion in `internal/cli` dispatches the list command through the extension that discovery found, and the program runner in `sdk/runner` gains a kill at the limit without cleanup. The `name` argument of `skill view` declares `values_from` on `skill list`, so `ncly skill view <Tab>` suggests the names that `ncly skill list` returns. With the shell fixture, `completion.txtar` proves that:
+Add `values_from` to the manifest in `sdk/contract`, with the one check that a list command qualifies, which the manifest and completion share. Core's completion in `internal/cli` dispatches the list command through the extension that discovery found, and the program runner in `sdk/runner` gains a stop at the limit with neither cleanup nor drain limit. The `name` argument of `skill view` declares `values_from` on `skill list`, so `ncly skill view <Tab>` suggests the names that `ncly skill list` returns, and `ncly describe 'skill view' --json` shows that `values_from` on `name`. A consumer case in `compat_test.go` reads an argument with and without `values_from`. With the shell fixture, `completion.txtar` proves that:
 
 - A flag that takes a value completes from its `values_from` with the values that match the typed prefix
 - A `values_from` that names the list command of a second fixture completes from it, and one whose foreign list command is not installed or does not qualify suggests nothing
 - An argument value and a flag value that the list does not hold both reach the fixture's handler, because `values_from` never restricts what a command accepts
 - A list command that fails, that answers without the key, or that outlasts the 2 seconds suggests nothing and prints nothing, and the one that outlasts them gets SIGKILL and never SIGTERM. With `BASH_COMP_DEBUG_FILE` set, that file names the timeout as the reason
+- A list command whose descendant keeps stdout open still ends completion within the 2 seconds
 
 `extension_manifest.txtar` proves that a `values_from` on a switch makes the manifest invalid, and so does one that names a command of its own domain that is undeclared or does not qualify: a group, a command whose verb is not `list`, that takes an argument, whose kind is not `object`, that omits `effects`, or whose effects declare `user_writes` or `paid`.
