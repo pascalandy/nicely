@@ -38,7 +38,7 @@ Use a Lip Gloss version that no longer probes the terminal at load: an upstream 
 - **Read:** [ncly auth](../north-star/core-spec.md#ncly-auth), [Modes](../north-star/contract.md#modes)
 - **Proves:** `testdata/script/auth_form.txtar`
 
-In interactive mode, `ncly auth login` asks for the key in a masked field, and a replacement or a logout asks for confirmation, in the picked looks. After the form, `ncly` prints the equivalent command after `Next time:`.
+In interactive mode, `ncly auth login` asks for the key in a masked field, and a replacement or a logout asks for confirmation, in the picked looks, in place of the plain prompts of [M06](M06-auth.md). After the form, `ncly` prints the equivalent command after `Next time:`.
 
 ### M07-T4 Styled reports and skill view
 

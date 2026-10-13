@@ -78,7 +78,7 @@ Interactive mode applies when stdin and stdout are terminals, `--no-input` and `
 |---|---|---|
 | Every required value is given | Runs | Runs |
 | A required value is missing | A form asks only for the missing values | Exit 2, `USAGE_INVALID`, and a hint with the full command |
-| A step needs a confirmation and `--force` is absent | Asks for confirmation | Exit 2, `CONFIRMATION_REQUIRED`, and a hint that adds `--force` |
+| A step needs a confirmation and `--force` is absent | Asks for confirmation. Any answer but yes changes nothing and exits 2 with `CONFIRMATION_REQUIRED` | Exit 2, `CONFIRMATION_REQUIRED`, and a hint that adds `--force` |
 | A step only a human can do, such as typing or granting a key | Asks | Exit 78, `TERMINAL_REQUIRED`, and a hint that names the command to run in a terminal |
 
 After an interactive run that used a form, `ncly` prints the equivalent command on stderr, after the line `Next time:`. The command itself is never translated.
@@ -167,7 +167,7 @@ The set of codes is open: later milestones add core codes, and every extension a
 | Code | Exit | When | Since |
 |---|---|---|---|
 | `USAGE_INVALID` | 2 | Unknown command, bad flag, or a missing value in non-interactive mode | M00 |
-| `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent | M00 |
+| `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent, or a human declined it in interactive mode | M00 |
 | `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type, or cannot be read | M00 |
 | `EXTENSION_INVALID` | 78 | The extension of the named domain cannot run: its manifest or its `en` catalog is missing, unreadable, or invalid, or speaks another format or contract version. In `ncly doctor`, its status command gave an answer that doctor rejects, or failed with an exit code other than 78, as [Status command](#status-command) defines | M01 |
 | `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing or granting a key | M00 |

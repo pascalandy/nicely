@@ -135,22 +135,33 @@ ncly auth logout <service> [--dry-run] [--force]
 ncly auth status [--json]
 ```
 
-Core declares no service of its own. Each extension declares the services it needs in its manifest, such as `deepgram` for transcript, and any service name works the same way.
+Core declares no service of its own. Each extension declares the services that its commands need in the `requires.keys` of its manifest, such as `deepgram` for transcript, and any service name works the same way, as [Keys](contract.md#keys) defines. A name that breaks that rule, including `keychain`, exits 2 with `USAGE_INVALID` before any other step. [D057](decisions/D057-auth-edge-cases.md) records how their edge cases compare with `gh`, Docker, and clig.dev.
 
-- `login` stores the key in the keychain. Replacing a stored key asks for confirmation, or needs `--force` in non-interactive mode. In non-interactive mode without `--stdin`, `login` exits 78 with `TERMINAL_REQUIRED` and the hint ``Run `ncly auth login <service>` in a terminal``. `TERMINAL_REQUIRED` wins over `KEYRING_UNAVAILABLE`, because `login` without a terminal and without `--stdin` never reaches the keychain. An agent relays this hint to the human and never pipes a key itself.
-- `logout` removes the key from the keychain. It asks for confirmation, or needs `--force` in non-interactive mode.
-- When the keychain is unavailable, `login` and `logout` exit 78 with `KEYRING_UNAVAILABLE`, and the hint names the environment variable to use instead.
-- `status` is a report command. It reports whether the keychain answers, then lists every service that an installed extension declares, with its grants. `ok` is `false`, with exit 78, only when the keychain does not answer and a listed service has no key in the environment. That service's entry then adds `code`, set to `KEYRING_UNAVAILABLE`, the code of the failed `auth` check in `ncly doctor`.
+- `login` stores the key in the keychain. It asks the keychain before it reads a key or asks for a confirmation, so a human never types a key that cannot be stored. Replacing a stored key asks for confirmation, or needs `--force` in non-interactive mode.
+- In interactive mode without `--stdin`, `login` asks for the key in a plain prompt, until the masked field of [M07](../milestones/M07-forms.md) replaces it. It turns echo off before it shows the key prompt, and restores the terminal's state when the prompt ends, so the key never shows. With `--stdin`, it reads stdin to its end, and a terminal on stdin exits 2 with `USAGE_INVALID`, because the key would show as the human types it. Either way, `login` removes the whitespace around the key, including the final line ending, and an empty key stores nothing and exits 2 with `USAGE_INVALID`.
+- In non-interactive mode without `--stdin`, `login` exits 78 with `TERMINAL_REQUIRED` and the hint ``Run `ncly auth login <service>` in a terminal``. `TERMINAL_REQUIRED` wins over `KEYRING_UNAVAILABLE`, because `login` without a terminal and without `--stdin` never reaches the keychain. An agent relays this hint to the human and never pipes a key itself.
+- `logout` removes the key from the keychain. It asks for confirmation, or needs `--force` in non-interactive mode. A service without a stored key exits 2 with `NOT_FOUND` before any confirmation, with the `next` `ncly auth status`. When the service's variable holds a key, the hint names that variable, because `logout` never changes the environment.
+- When the keychain is unavailable before they write, `login` and `logout` exit 78 with `KEYRING_UNAVAILABLE`. The hint of `login` names the environment variable to use instead, and the hint of `logout` asks the human to unlock the keychain. A write that starts, then fails or gets no answer within its limit, exits 1 with `RUNTIME` and the hint and `next` that [Keys](contract.md#keys) defines, because the key may change after `ncly` answers.
+- Until the forms of M07, a confirmation is a plain `y/N` prompt whose words come from the catalog. Only a yes confirms. Any other answer, an empty one, or the end of input changes nothing and exits 2 with `CONFIRMATION_REQUIRED`, as [Modes](contract.md#modes) defines. A plain prompt is no form, so `ncly` prints no `Next time:` line after it. Ctrl-C at a prompt exits 130 with `INTERRUPTED` and leaves the terminal's echo as it found it.
+
+`status` is a report command. It asks the keychain once whether it answers, then lists, once each and in name order, the services that the commands of installed extensions declare. It reads the manifest of the extension that runs for each domain, as [Discovery](contract.md#discovery) finds it, and skips an invalid one. It reads the keychain entry of a listed service only when the service's variable is empty, and lists no other service, as [D057](decisions/D057-auth-edge-cases.md) decides. A key stored for a service that no installed extension declares stays in the keychain, and `status` lists it once an extension declares that service.
+
+Each entry of `services` has `service`, `configured`, and `source`, which is `env`, `keychain`, or `none`, in the order of [Keys](contract.md#keys), the variable first and then the keychain. From [M08](../milestones/M08-grants.md), an entry adds `grants`. A key is never printed. `ok` is `false`, with exit 78, when a listed service has no key, and that service's entry then adds the keys of a problem, as [Output](contract.md#output) defines:
+
+- `AUTH_MISSING` when the keychain answers without the key, with the hint `ncly auth login <service>` and the same `next`
+- `KEYRING_UNAVAILABLE` when the keychain does not answer and the variable is empty, with a hint that names the variable to export and no `next`, because the hint leaves a value to fill in
+
+An unavailable keychain alone leaves `ok` true, with `keychain` set to `unavailable`, because every listed key may come from the environment, as on a machine reached over SSH. A missing key fails `status` as it fails the `auth` component of [ncly doctor](#ncly-doctor), so both report the same verdict for each service.
 
 For `login` and `logout`, `--dry-run` takes precedence over secret input and confirmation. It describes the intended action without reading stdin for a key, opening a keychain entry, or prompting. Checks that would require a keychain read, including whether login would replace a key, are reported as pending. This simulation does not require a terminal or `--stdin`.
 
 Their dry-run JSON has `dry_run: true`, `plan`, an array with one entry containing the service `key`, `action` (`login` or `logout`), and `effects` (`user_writes: true`, `network: false`, `paid: false`), plus `pending_checks`, whose entries have `id` and `message`. The check `auth.keychain` covers availability, existing keys, and any replacement confirmation. A successful login or logout answers `service` and `action`, never a key.
 
 ```json
-{"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"deepgram","configured":true,"source":"keychain"}]}
+{"ok":false,"contract_version":1,"keychain":"available","services":[{"service":"deepgram","configured":true,"source":"keychain"},{"service":"openai","configured":false,"source":"none","code":"AUTH_MISSING","message":"No OpenAI key found.","hint":"ncly auth login openai","next":["ncly","auth","login","openai"]}]}
 ```
 
-`keychain` is `available` or `unavailable`. `source` is `env`, `keychain`, or `none`. To move a key from another secret store, pipe it once: `<command that prints the key> | ncly auth login deepgram --stdin`.
+`keychain` is `available` or `unavailable`. To move a key from another secret store, pipe it once: `<command that prints the key> | ncly auth login deepgram --stdin`.
 
 ## Examples
 
