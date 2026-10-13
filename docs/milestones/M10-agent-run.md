@@ -34,7 +34,7 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 
 `ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer, which it also saves as the step's artifact in `runs/<run-id>/`. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
 
-With `--run-id`, a new ID names the run. The same call again returns the saved answer, and the counted stub harness runs once. The same ID with another task is `USAGE_INVALID`, the ID of a run that did not complete is `RESUME_UNSAFE`, and both start no harness.
+With `--run-id`, the caller's ID reaches `ncly-agent` through dispatch and names its record, `runs/<id>.json`. The same call again returns the saved answer, and the counted stub harness runs once. The same ID with another task is `USAGE_INVALID`, the ID of a run that did not complete is `RESUME_UNSAFE`, and both start no harness.
 
 The step declares the `paid` effect. The SDK writes every step transition and derives retry safety from the declared effects, so `ncly-agent` never reports an effect level of its own. A fixture extension with a `repeatable` step, then a `paid` one, proves the derivation: a temporary failure exits 75 while the paid step is `pending`, and 1 once that step has left `pending`, even as `failed`.
 
