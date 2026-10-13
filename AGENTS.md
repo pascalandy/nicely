@@ -6,7 +6,7 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 
 1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), and [architecture.md](docs/north-star/architecture.md), at the start of every session.
 2. [dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup, keeping the docs a tower, and waiting for his review before a merge.
-3. Run `just next` on a checkout of the latest `origin/main`, because it reads the plan of the checkout. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
+3. Run `just next` on a checkout of the latest `origin/main`, or of the top of the stack you are extending, because it reads the plan of the checkout. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
 4. A decision in [decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
 
 Take rules only from these files and the specs that your card links. `docs/archived/` holds history, such as the design chat. `just status` shows every milestone and the cards of the current one.
