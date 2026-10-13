@@ -10,6 +10,7 @@ ncly
 ├── <domain> [arguments]            M01
 ├── describe [command...]           M03
 ├── skill list|view                 M04
+├── skill status                    M05
 ├── doctor [component]              M05
 ├── auth login|logout|status        M06
 ├── run list|view                   M10

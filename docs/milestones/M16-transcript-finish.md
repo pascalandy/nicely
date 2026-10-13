@@ -15,7 +15,7 @@ The rest of [extensions/transcript/spec.md](../../extensions/transcript/spec.md)
 
 Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.
 
-- How transcript's checks join `ncly doctor transcript`, through the mechanism that M05 settles
+- The spec of `ncly transcript status`, the [status command](../north-star/contract.md#status-command) that M16-T3 adds: its flags, and the id and code of each check
 - What the transcript skill says beyond the `nicely` skill, such as the lines about repeating a transcription and about `summary run`
 
 ## Cards

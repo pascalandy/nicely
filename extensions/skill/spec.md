@@ -1,6 +1,6 @@
 # skill extension spec
 
-`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
+`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, [M05](../../docs/milestones/M05-doctor.md) adds `status`, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
 
 ## ncly skill
 
@@ -12,7 +12,7 @@ ncly skill status [--json]
 
 - Skills come from the folders in `[skill] paths`, then from the `nicely` skill that ships inside `ncly`, then from installed extensions. Taps add more sources in M12. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
 - `skill` finds the skills of installed extensions through `ncly describe --json`, whose entry for each extension's domain gives the folder of its skill, as [D054](../../docs/north-star/decisions/D054-extension-skills-through-describe.md) decides. It never searches for extensions itself, so it lists the skill of the extension that core runs, never one that core hides.
-- A skill's subfolder in `[skill] paths`, or in a tap from M12, takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works, and `ncly skill status` warns. An extension's skill keeps the folder `ncly-<domain>.skill/`, so doctor compares its `name` with the domain instead.
+- A skill's subfolder in `[skill] paths`, or in a tap from M12, takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works, and `ncly skill status` warns. An extension's skill keeps the folder `ncly-<domain>.skill/`, so `status` compares its `name` with the domain instead.
 - A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links, and `skill link` creates them from M12. A broken link is not a skill, and `list` skips it.
 - When two sources hold the same skill name, the first source wins and `list` adds a `SKILL_SHADOWED` warning. Two subfolders that resolve to the same folder are one skill, listed with the path of the first, without a warning.
 - Inside one folder of `paths`, when two subfolders declare the same `name`, the subfolder whose name sorts first byte by byte wins, and `list` adds `SKILL_SHADOWED`.
@@ -35,7 +35,7 @@ ncly skill status [--json]
 
 `ncly` ships the `nicely` skill, which teaches an agent to operate Nicely: the variables to set, discovery with `ncly describe`, dry run before execution, codes and `next` rather than messages, retry safety, run IDs, and recovery through `ncly run`. One line in an agent's instructions points to it: run `ncly skill view nicely` before using `ncly`. The first example of `ncly --help` names it too. A skill named `nicely` in `[skill] paths` wins over it, with `SKILL_SHADOWED`.
 
-The skill teaches only what the release that ships it can do. M04 ships the loop with `describe`, dry run, codes, and exit codes, and each milestone that adds a core command adds its lines: `doctor` in M05, `run` and run IDs in M10, and `run resume` in M15. A test fails when the skill names an `ncly` command or an error code that this `ncly` lacks. The skill holds at most 60 lines, so an agent reads it in one call.
+The skill teaches only what the release that ships it can do. M04 ships the loop with `describe`, dry run, codes, and exit codes, and each milestone that adds a command of core or of the skill domain adds its lines: `doctor` and `skill status` in M05, `run` and run IDs in M10, and `run resume` in M15. A test fails when the skill names an `ncly` command or an error code that this `ncly` lacks. The skill holds at most 60 lines, so an agent reads it in one call.
 
 Every extension ships a skill named after its domain, which teaches an agent to use that extension, so `ncly skill list` grows with every extension installed, and an agent that meets a domain in `ncly describe` reads `ncly skill view <domain>`. The `skill` extension ships no skill named `skill`: the `nicely` skill, which it serves as its bundled source, teaches core and the skill domain together.
 
