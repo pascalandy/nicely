@@ -16,7 +16,7 @@ Agents operate `ncly`. Every command runs without a terminal, answers in JSON on
 
 `ncly` also runs agents, through the `agent` extension. Profiles in the config name a harness, a model, and an effort. Other extensions use agents through `ncly agent run`, as transcript does for its summary.
 
-Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, read the bundled `nicely` skill with `ncly skill view nicely`, discover one command with `ncly describe`, prepare its invocation with a dry run, which checks what that invocation needs, then execute it under a run ID that they chose, so that a lost answer costs nothing. `ncly doctor` checks the whole machine, during setup or when a dry run reports a problem that the agent cannot explain. Each extension ships a skill that teaches agents its own commands.
+Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, then read the bundled `nicely` skill with `ncly skill view nicely`. They discover a command with `ncly describe`. They dry-run a command that writes or bills: the dry run checks what that invocation needs. For a recorded command, they choose a [run ID](contract.md#run-ids) before the call, so that a lost answer costs nothing. `ncly doctor` checks the whole machine, during setup or when a dry run reports a problem that the agent cannot explain. Each extension ships a skill that teaches agents its own commands.
 
 Every extension extends the same loop instead of adding one: its commands appear in `ncly describe`, its skill in `ncly skill list`, and its codes in its manifest. An agent that knows the loop uses a new extension without learning anything else.
 
