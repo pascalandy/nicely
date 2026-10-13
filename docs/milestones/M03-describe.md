@@ -55,7 +55,7 @@ Validation reads the same fields, so no constraint ships unenforced. In `usage_v
 - **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Configuration](../north-star/contract.md#configuration)
 - **Proves:** `testdata/script/describe_config.txtar`, `sdk/config/config_test.go`
 
-`config` lists each key a command reads, with its value and source, and never a secret. An extension's command names the keys that it reads in its manifest. `sdk/config` keeps the source of each value as it merges the files: the flag, the variable, the file that set it, or the default. A table merges key by key, so each of its keys keeps its own source, and a list keeps the source of the file that replaced it, even when that list is empty. With an invalid config file, discovery uses defaults and adds `CONFIG_DEFAULTS_USED`.
+`config` lists each key a command reads, with its value and source, and never a secret. An extension's command names the keys that it reads in its manifest, as dotted paths under its domain, where a table such as `agent.profiles` covers every key beneath it, because doctor in [M05](M05-doctor.md) checks the extension's table against these keys, as [Configuration](../north-star/contract.md#configuration) defines. `sdk/config` keeps the source of each value as it merges the files: the flag, the variable, the file that set it, or the default. A table merges key by key, so each of its keys keeps its own source, and a list keeps the source of the file that replaced it, even when that list is empty. With an invalid config file, discovery uses defaults and adds `CONFIG_DEFAULTS_USED`.
 
 ### M03-T5 Help and dispatch from declarations
 

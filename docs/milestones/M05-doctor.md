@@ -11,12 +11,6 @@ Version: v0.5.0
 
 Implement [ncly doctor](../north-star/core-spec.md#ncly-doctor) with the `core`, `extensions`, and `skill` components. The `auth` component arrives with keys in [M06](M06-auth.md), and the `transcript` component in [M16](M16-transcript-finish.md). Doctor adds bounded local `--version` probes to the program runner that M01 brought. It runs them one at a time, because the runner's cleanup signals every descendant of `ncly`, so a probe's timeout would also stop a probe that runs beside it. Probes run together only once [#49](https://github.com/pascalandy/nicely/issues/49) scopes that cleanup to one program.
 
-## Open questions
-
-Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Extensions](../north-star/contract.md#extensions), then delete this section.
-
-- How doctor tells an unknown config key from a key in an extension's table, so `CONFIG_UNKNOWN_KEY` never fires on a key that an installed extension owns
-
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
