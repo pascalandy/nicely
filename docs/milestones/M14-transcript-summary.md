@@ -38,14 +38,14 @@ Preparation calls `ncly agent run --dry-run --json` with the profile before any 
 - **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume)
 - **Proves:** `extensions/transcript/testdata/script/transcript_summary_failures.txtar`
 
-Stop after saving the transcript and before starting the summary. An agent run that exits 2 or 78 on the attempt's first call fails the step. Any other end without a saved summary leaves it `unknown`, with no silent retry, and its hint and `next` name `ncly transcript summary run <run-id> --key <item key>`.
+Stop after saving the transcript and before starting the summary. An agent run that exits 2 or 78 on the attempt's first call fails the step. Any other end without a saved summary leaves it `unknown`, with no silent retry, and its hint and `next` name `ncly transcript summary run <source-run-id> --key <item key>`.
 
 ### M14-T3 Summary run
 
 - **Read:** [ncly transcript summary run](../../extensions/transcript/spec.md#ncly-transcript-summary-run)
 - **Proves:** `extensions/transcript/testdata/script/transcript_summary_run.txtar`
 
-`ncly transcript summary run <run-id>` resolves its profile and prompt, records the verified transcript references in the evidence of each `summarize` step of a new record with `source_run`, without a `transcribe` step, and writes `<prompt-name>-<new-run-id>.md` without transcribing again. `--key` selects items, and an unknown key is `NOT_FOUND` before any effect.
+`ncly transcript summary run <source-run-id>` resolves its profile and prompt, records the verified transcript references in the evidence of each `summarize` step of a new record with `source_run`, without a `transcribe` step, and writes `<prompt-name>-<new-run-id>.md` without transcribing again. `--key` selects items, and an unknown key is `NOT_FOUND` before any effect.
 
 ### M14-T4 Mixed and busy sources
 
