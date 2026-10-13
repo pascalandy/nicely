@@ -59,7 +59,7 @@ Settle it in [Extensions](../north-star/contract.md#extensions), then delete thi
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
 - **Proves:** `extensions/skill/testdata/script/skill_view.txtar`
 
-`ncly skill view <name>`, with or without `--json`. The first line names the skill's folder. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2 and the `next` `ncly skill list`. As the first answer with `next` that crosses the answer check, it proves that core passes `next` on from an extension and rejects a `next` that is not an array of strings.
+`ncly skill view <name>`, with or without `--json`. The text view adds the folder line only when the skill has a folder, and `--json` returns the fields that [ncly skill](../../extensions/skill/spec.md#ncly-skill) specifies. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2 and the `next` `ncly skill list`. As the first answer with `next` that crosses the answer check, it proves that core passes `next` on from an extension and rejects a `next` that is not an array of strings.
 
 ### M04-T3 Skills from extensions
 
