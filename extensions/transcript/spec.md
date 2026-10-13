@@ -244,6 +244,6 @@ jq -r '.run_id, .results[].output_dir' answer.json
 
 # A missing key, seen by a script
 ncly transcript run youtube --url "$URL" --json
-# stderr: {"ok":false,"contract_version":1,"errors":[{"code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram"}]}
+# stderr: {"ok":false,"contract_version":1,"errors":[{"code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram","next":["ncly","auth","login","deepgram"]}]}
 # exit code: 78
 ```
