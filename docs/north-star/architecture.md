@@ -94,4 +94,4 @@ The other folders:
 | `markdown`, `video`, `image` | Everyday tasks that need no configuration | external | M18 to M20, after the inventory of M17 |
 | `docs` | Gathers project docs into one private site | external | M21 |
 
-Core reserves the names of the core and bundled rows. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key. First impressions come from the everyday domains.
+[Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key. First impressions come from the everyday domains.

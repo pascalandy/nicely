@@ -63,10 +63,10 @@ The `opencode` adapter, with its provider and its verified tools-off mode.
 
 ### M11-T5 Doctor agent
 
-- **Read:** [Status command](../north-star/contract.md#status-command), [Required programs](../north-star/core-spec.md#required-programs), [ncly doctor](../north-star/core-spec.md#ncly-doctor)
+- **Read:** [Status command](../north-star/contract.md#status-command), [Required programs](../north-star/core-spec.md#required-programs), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Adapters](../../extensions/agent/spec.md#adapters)
 - **Proves:** `extensions/agent/testdata/script/agent_status.txtar`
 
-The agent manifest marks each harness as a `conditional` program, so doctor never fails a harness that no profile selects. `ncly agent status` checks the harness of each profile through the program check of `sdk/runner`, which runs only its declared local version probe, never a harness task, and fails a missing or too old one with `PREREQ_MISSING` and its install command. `ncly doctor agent` lists the same checks. In `agent_status.txtar`, the harness of the configured profile is present, another supported harness is absent, and `ncly doctor agent` stays `ok`. A selected harness below its minimum version then fails with `PREREQ_MISSING`, the unused absent one still fails nothing, and the counted stub harnesses prove that no task starts.
+`ncly agent status` checks the harness of each profile through the program check of `sdk/runner`, which runs only its declared local version probe, never a harness task, and fails a missing or too old one with `PREREQ_MISSING` and its install command. `ncly doctor agent` lists the same checks. In `agent_status.txtar`, the harness of the configured profile is present, another supported harness is absent, and `ncly doctor agent` stays `ok`. A selected harness below its minimum version then fails with `PREREQ_MISSING`, the unused absent one still fails nothing, and the counted stub harnesses prove that no task starts.
 
 ## After this milestone
 
