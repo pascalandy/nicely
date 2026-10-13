@@ -23,7 +23,7 @@ Branch on the exit code and errors[].code, never on message or hint. next holds 
 Exit 2: fix the call. Exit 78: relay hint and next to the human. Exit 1: inspect before anything else. Only exit 75 permits repeating the same call
 An item error describes its item and never permits a retry
 Give the shell a timeout longer than the command's --timeout plus 15 seconds of cleanup
-Each domain ships a skill named after it: read it with ncly skill view DOMAIN. ncly skill list lists every skill
+Each extension ships a skill named after its domain: ncly skill view DOMAIN. The skill domain has none: this skill covers it and core. ncly skill list lists every skill
 ```
 
 ## Open questions
