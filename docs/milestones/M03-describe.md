@@ -23,7 +23,7 @@ The scenarios reach a bundled extension through `ncly-bundled`, the test build o
 | M03-T2 | Command detail | agent | M03-T1 | todo |
 | M03-T3 | Result schemas | agent | M03-T2 | todo |
 | M03-T4 | Config sources | agent | M03-T2 | todo |
-| M03-T5 | Help from declarations | agent | M03-T2 | todo |
+| M03-T5 | Usage from declarations | agent | M03-T2 | todo |
 
 ### M03-T1 Concise listing
 
@@ -36,12 +36,10 @@ An unknown path answers `NOT_FOUND`, whose `next` is `["ncly","describe"]`. As t
 
 ### M03-T2 Command detail
 
-- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest), [Dispatch](../north-star/contract.md#dispatch), [SDK](../north-star/contract.md#sdk)
-- **Proves:** `testdata/script/describe_command.txtar`, `testdata/script/usage_declarations.txtar`
+- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest)
+- **Proves:** `testdata/script/describe_command.txtar`
 
 A command path returns `args`, `flags`, `flag_groups`, `effects`, `requires`, `modes`, and `examples`, where `flags` holds the declared flags, plus `--dry-run` and `--run-id` when `modes` sets `dry_run` or `recorded`. Extend the M00 declarations, and add each field to [Manifest](../north-star/contract.md#manifest) in the same pull request, where they lack one: requiredness, value types, defaults, variadic flags, flag groups, effects, modes, and the programs and keys that a command requires. A fixture command that declares the `recorded` mode lists `run-id` among its flags.
-
-Validation uses the same fields. A missing required argument or flag, a value that its type rejects, and a call that breaks a flag group each answer `USAGE_INVALID` before the command runs, so no fixture's execution marker appears: through `ncly` for the core commands that declare them and for the external shell fixture, and through the SDK's entry point, `ncly-hello` run directly, for the Go fixture. A fixture flag that the manifest declares variadic receives two distinct values, one of them holding a comma, and keeps them in the caller's order through core's parsing, dispatch, and the SDK's parsing: the shell fixture receives one `--<name>=<value>` word per value, and the Go fixture's handler reads them from `Lists`, through `ncly` and run directly. A fixture command whose `modes` sets `dry_run` and `recorded` receives `--dry-run=true` and `--run-id=<id>` after its own flags, the Go fixture's handler reads both from `Flags`, and a manifest that declares either as an own flag is invalid.
 
 ### M03-T3 Result schemas
 
@@ -57,9 +55,11 @@ Validation uses the same fields. A missing required argument or flag, a value th
 
 `config` lists each key a command reads, with its value and source, and never a secret. An extension's command names the keys that it reads in its manifest. `sdk/config` keeps the source of each value as it merges the files: the flag, the variable, the file that set it, or the default. A table merges key by key, so each of its keys keeps its own source, and a list keeps the source of the file that replaced it, even when that list is empty. With an invalid config file, discovery uses defaults and adds `CONFIG_DEFAULTS_USED`.
 
-### M03-T5 Help from declarations
+### M03-T5 Usage from declarations
 
-- **Read:** [Usage](../north-star/contract.md#usage), [Command descriptions](../north-star/contract.md#command-descriptions)
-- **Proves:** `testdata/script/help.txtar`
+- **Read:** [Usage](../north-star/contract.md#usage), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest), [Dispatch](../north-star/contract.md#dispatch), [SDK](../north-star/contract.md#sdk)
+- **Proves:** `testdata/script/help.txtar`, `testdata/script/usage_declarations.txtar`
 
-The help of the fixture commands of M03-T2 shows a required argument as `<name>`, an optional one as `[name]`, a flag group as `(--a | --b)`, and one line for a command that writes, uses the network, or may bill, with `--dry-run` named when it is supported, in the help style of M00. The scenario compares each page with the answer of `ncly describe` for the same command, so help and discovery never disagree, and runs once under the pseudo-locale.
+Help, validation, and dispatch read the declarations of M03-T2. The help of its fixture commands shows a required argument as `<name>`, an optional one as `[name]`, a flag group as `(--a | --b)`, and one line for a command that writes, uses the network, or may bill, with `--dry-run` named when it is supported, in the help style of M00. `help.txtar` compares each page with the answer of `ncly describe` for the same command, so help and discovery never disagree, and runs once under the pseudo-locale.
+
+Validation uses the same fields. In `usage_declarations.txtar`, a missing required argument or flag, a value that its type rejects, and a call that breaks a flag group each answer `USAGE_INVALID` before the command runs, so no fixture's execution marker appears: through `ncly` for the core commands that declare them and for the external shell fixture, and through the SDK's entry point, `ncly-hello` run directly, for the Go fixture. A fixture flag that the manifest declares variadic receives two distinct values, one of them holding a comma, and keeps them in the caller's order through core's parsing, dispatch, and the SDK's parsing: the shell fixture receives one `--<name>=<value>` word per value, and the Go fixture's handler reads them from `Lists`, through `ncly` and run directly. A fixture command whose `modes` sets `dry_run` and `recorded` receives `--dry-run=true` and `--run-id=<id>` after its own flags, the Go fixture's handler reads both from `Flags`, and a manifest that declares either as an own flag is invalid.
