@@ -28,7 +28,7 @@ env LANG=fr_CA.UTF-8
 env DEEPGRAM_API_KEY=
 exits 78 ncly transcript run youtube --url https://www.youtube.com/watch?v=VIDEO_ID --json
 stderr '"code":"AUTH_MISSING"'
-stderr '"hint":"ncly auth login deepgram"'
+stderr '"next":\["ncly","auth","login","deepgram"\]'
 ```
 
 ## Cards
