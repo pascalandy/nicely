@@ -10,7 +10,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/extension"
 )
 
-// bundled lists the extensions compiled into ncly. skill joins it in M03.
+// bundled lists the extensions compiled into ncly. skill joins it in M04.
 var bundled []extension.Extension
 
 func main() { os.Exit(run(bundled)) }
