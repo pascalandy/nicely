@@ -77,6 +77,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - A problem names what went wrong with its code, and may name the next command as words
 - A grant lets one key reach one extension
 - A report command keeps its report on stdout, even when a check fails
+- Completion takes the values that only an extension knows from a list command
 
 ### Definitions
 
@@ -120,6 +121,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Distinct from: a hint, the text for a human, which may wrap the same command in a sentence
 - Report command
   - Def.: a command whose result is a report, such as `ncly doctor`
+- List command
+  - Def.: a command whose verb is `list`, such as `ncly skill list`
+  - Project note: [Completion values](contract.md#completion-values) defines when completion may run one: never one that writes a user file or bills
 - Grant
   - Def.: the permission, given by a human in a terminal, for one extension to receive one key
 - Interactive mode
