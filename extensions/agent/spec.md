@@ -61,7 +61,7 @@ A profile with an effort that its harness rejects, or with a `provider` for `cla
 
 ## Adapters
 
-M09 builds the adapters for `claude` and `pi`, and M11 adds `codex`, `grok`, and `opencode`. Until then, a profile that names another harness fails with `CAPABILITY_UNSUPPORTED`. Each adapter turns the tools off, sends the task on stdin, and checks the answer:
+M09 builds the adapters for `claude` and `pi`, and M11 adds `codex`, `grok`, and `opencode`. Until then, a profile that names another harness fails with `CAPABILITY_UNSUPPORTED`. Each adapter enforces the tools mode that [ncly agent](#ncly-agent) requests, sends the task on stdin, and checks the answer. The tools flags listed below are those of the tools-off mode:
 
 - `claude`, version 2.1.291 or later, runs with `--print`, `--model`, `--effort`, `--system-prompt`, and `--output-format json`. It turns tools off with `--tools ""`, `--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, `--setting-sources ""`, `--disable-slash-commands`, `--no-session-persistence`, and `--permission-mode dontAsk`. `--settings` turns hooks off and sets `CLAUDE_CODE_EFFORT_LEVEL`, which would otherwise override `--effort`. The answer is `result`, and `is_error` must be `false`. The effort is `low`, `medium`, `high`, `xhigh`, or `max`, and a profile for `claude` has no `provider`
 - `pi`, version 1.0.4 or later, runs with `--print`, `--model <provider>/<model>`, `--thinking`, and `--system-prompt`. It turns tools off with `--no-tools`, `--no-session`, `--no-skills`, `--no-prompt-templates`, `--no-context-files`, `--no-extensions`, and `--no-approve`. The answer is stdout, which must not be empty. The effort is `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`
