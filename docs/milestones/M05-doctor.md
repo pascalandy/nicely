@@ -15,7 +15,6 @@ Implement [ncly doctor](../north-star/core-spec.md#ncly-doctor) with the `core`,
 
 Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Extensions](../north-star/contract.md#extensions), then delete this section.
 
-- How an extension adds checks beyond its manifest's `requires`, such as the Python version or the browser cookies of transcript: a declared report command that core runs within doctor's timeout, as [D044](../north-star/decisions/D044-additive-extensions.md) allows, or checks that the manifest declares
 - How doctor tells an unknown config key from a key in an extension's table, so `CONFIG_UNKNOWN_KEY` never fires on a key that an installed extension owns
 
 ## Cards

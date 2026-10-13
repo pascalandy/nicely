@@ -61,3 +61,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D053](D053-next-command.md) | Give a problem its next command as words |
 | [D054](D054-extension-skills-through-describe.md) | Find the skills of installed extensions through ncly describe |
 | [D055](D055-completion-values-from-a-list-command.md) | Complete an extension's values from a list command |
+| [D056](D056-extension-status-command.md) | Let an extension add doctor checks through its status command |

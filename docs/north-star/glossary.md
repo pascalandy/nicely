@@ -77,6 +77,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - A problem names what went wrong with its code, and may name the next command as words
 - A grant lets one key reach one extension
 - A report command keeps its report on stdout, even when a check fails
+- Doctor lists the checks of an extension's status command under the extension's component
 - Completion takes the values that only an extension knows from a list command
 
 ### Definitions
@@ -124,6 +125,10 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Distinct from: a hint, the text for a human, which may wrap the same command in a sentence
 - Report command
   - Def.: a command whose result is a report, such as `ncly doctor`
+- Status command
+  - Def.: the report command `ncly <domain> status` that an extension's manifest marks for doctor, which runs it and lists its checks under the extension's component
+  - Project note: [Status command](contract.md#status-command) defines it. An agent may also call it alone
+  - Distinct from: `ncly auth status`, a command of core that reports keys
 - List command
   - Def.: a command whose verb is `list`, such as `ncly skill list`
   - Project note: [Completion values](contract.md#completion-values) defines when completion may run one: never one that writes a user file or bills

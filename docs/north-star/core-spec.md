@@ -83,23 +83,37 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 | Argument or flag | Effect |
 |---|---|
 | `component` | `core`, `auth`, `extensions`, or the domain of an installed extension, such as `skill` or `transcript`. Without it, doctor checks all of them. |
-| `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. |
-| `--timeout` | Bounds the checks, including local version probes and free network checks, 30 seconds by default. |
+| `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. Doctor passes it to each status command that declares it. |
+| `--timeout` | Bounds the checks, including local version probes, status commands, and free network checks, 30 seconds by default. |
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
 - Invalid or unreadable config produces the failed `core.config` finding with `CONFIG_INVALID`, even for a selected component. Doctor continues independent checks and omits checks whose required configuration could not be resolved. It never reports those omitted checks as passing
 - When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` with `KEYRING_UNAVAILABLE` otherwise.
-- The `extensions` component lists every extension that core finds and its source, every extension that another one hides, every incompatible manifest, and every grant that no extension declares anymore. It starts no extension.
-- Each installed extension is a component named after its domain. It holds the checks of the programs that its manifest requires, as [Required programs](#required-programs) defines, and its own checks, such as those of the [skill component](../../extensions/skill/spec.md#doctor-checks).
+- The `extensions` component starts no extension. It holds one `extensions.<domain>` entry for each extension that core finds, with its `domain`, `source`, and `path`: a `pass` for the extension that runs, a `pass` with `hidden_by` for each extension that a core command, a bundled extension, or an earlier extension hides, and a `fail` with `EXTENSION_INVALID` for an incompatible manifest. It also lists every grant that no extension declares anymore.
+- Each installed extension is a component named after its domain. It holds the checks of the programs that its manifest requires, as [Required programs](#required-programs) defines, and the checks of its status command, as [Status command](contract.md#status-command) defines, such as those of [ncly skill status](../../extensions/skill/spec.md#ncly-skill-status).
 - Doctor never installs anything, in any mode, as [D011](decisions/D011-local-checks.md) decides. When a tool is missing or too old and its install command for this system is known, as [Required programs](#required-programs) defines, the hint of its failed check holds that command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and its `next` holds the same command as words. The human runs it.
-- When `--timeout` expires, doctor kills the version probe that runs, with its descendants, at once, without the 15 seconds of cleanup, because a probe writes nothing. That check fails with `CHECK_TIMEOUT`, and so does each check that doctor had not started.
-- Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it exits 1 with `errors`.
+- When `--timeout` expires, doctor kills the version probe or the status command that runs, with its descendants, at once, without the 15 seconds of cleanup, because neither writes. That check fails with `CHECK_TIMEOUT`, and so does each check that doctor had not started.
+- Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it answers with `errors`, such as `NOT_FOUND` with exit 2 for an unknown component, `EXTENSION_INVALID` with exit 78 for the domain of an extension whose manifest is invalid, or `RUNTIME` with exit 1.
 
 ```json
 {"ok":false,"contract_version":1,"checks":[{"id":"transcript.uv","component":"transcript","status":"pass","message":"uv found"},{"id":"auth.deepgram","component":"auth","status":"fail","code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram","next":["ncly","auth","login","deepgram"]}]}
 ```
 
-`status` is `pass`, `warn`, or `fail`. A warning never changes the exit code.
+Each check is an object with these keys:
+
+| Key | Meaning |
+|---|---|
+| `id` | What the check examines, as `<component>.<name>`, such as `transcript.uv`. A check that finds several problems of one kind lists one entry per problem under the same `id`, each with its own hint, and one `pass` entry when it finds none |
+| `component` | The component of the check |
+| `status` | `pass`, `warn`, or `fail`. A warning never changes the exit code |
+| `code` | Absent from a `pass`. A failed check's code maps to exit 78, and a warning's code is a warning code |
+| `message` | Human text in the active language |
+| `hint` | Absent from a `pass`. The command or the action that fixes the problem |
+| `next` | Optional. The command that the hint names, as words, as [Output](contract.md#output) defines |
+| `domain` | Only in an entry of the `extensions` component. The domain of the extension that the entry describes |
+| `source` | Only in an entry of the `extensions` component. `bundled` or `extension`, as `source` in [ncly describe](#ncly-describe) |
+| `path` | Only in an entry of the `extensions` component. The absolute path of the extension's executable, as discovery found it, or `null` for a bundled extension |
+| `hidden_by` | Only in the entry of an extension that another one hides. An object with `source`, which is `core`, `bundled`, or `extension`, and `path`, the absolute path of the executable that wins, or `null` for a core command or a bundled extension |
 
 ### Required programs
 
@@ -109,7 +123,7 @@ For each program in the `programs` of an extension's manifest that is not `condi
 - When the program declares `version`, doctor runs it with the arguments of `probe`, with stdin closed, in its own process group. It reads the version from stdout, or from stderr when stdout holds none: the first run of two or more numbers joined by dots, such as `6.1.1` in `ffmpeg version 6.1.1-3ubuntu5`. It compares that version with `version` number by number, where a missing number counts as 0, so `3.12` meets `3.12.0`. An older version fails with `PREREQ_MISSING`, and so does a probe that exits with another code than 0 or prints no version, because doctor cannot then show that the program works
 - The hint of a failed check holds the install command of the first package manager in this order that `install` names and this machine has in `PATH`: `brew` on macOS, and `pacman`, `apt`, `dnf`, then `brew` on Linux. Its `next` holds the same words. Doctor ignores any other name, so a later release can add one. Without a command for this machine, the hint names the program to install, and the check has no `next`
 
-Doctor never checks a conditional program, whether it is absent, present, or too old. Only the extension knows whether its config selects the program, and a copy that no config selects is no failure, so one rule covers every case. Preparation checks the conditional programs that an invocation selects, as [Operations](contract.md#operations) says.
+Doctor never checks a conditional program, whether it is absent, present, or too old. Only the extension knows whether its config selects the program, and a copy that no config selects is no failure, so one rule covers every case. Preparation checks the conditional programs that an invocation selects, as [Operations](contract.md#operations) says, and the extension's status command checks the ones that its config selects, as [Status command](contract.md#status-command) defines.
 
 ## ncly auth
 
