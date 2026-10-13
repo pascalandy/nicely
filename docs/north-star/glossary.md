@@ -100,6 +100,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Manifest
   - Def.: the file that declares an extension's commands, effects, modes, and requirements, read without starting the extension
   - Project note: `ncly-<domain>.toml`, whose schema [Manifest](contract.md#manifest) defines
+- Conditional program
+  - Def.: a program in a manifest's `programs` that a command needs only for some configs or invocations, such as one harness among several
+  - Project note: [Required programs](core-spec.md#required-programs) defines it. Doctor never checks it, and preparation checks it when an invocation selects it
 - Canonical arguments
   - Def.: the one form in which core passes a validated call to an extension: the command path after the domain, each flag as `--<name>=<value>`, then `--` and the positional arguments
   - Project note: [Dispatch](contract.md#dispatch) defines it. `--dry-run` and `--run-id` pass as words after the own flags; a flag that has a variable, such as `--json`, reaches the extension as that variable instead

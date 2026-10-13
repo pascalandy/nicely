@@ -19,7 +19,7 @@ ncly
 
 `<domain>` is an extension. `skill` is the bundled extension, as [Extensions](contract.md#extensions) defines, and [extensions/skill/spec.md](../../extensions/skill/spec.md) specifies it. External extensions, such as `agent` and `transcript`, list their commands in their own specs.
 
-Core reserves the names of its own commands and of the bundled extensions, the rows marked core or bundled in the [domain table](architecture.md#domains-and-commands), plus `help`, `version`, and `config`. An external extension never runs under a reserved name. A name that is neither a command of this version nor an installed extension fails with `USAGE_INVALID`, including a reserved name whose command arrives in a later milestone.
+Core reserves the names of its own commands and of the bundled extensions, the rows marked core or bundled in the [domain table](architecture.md#domains-and-commands), plus `help`, `version`, and `config`, and `core` and `extensions`, which name components of [ncly doctor](#ncly-doctor) beside each installed extension's domain. An external extension never runs under a reserved name. A name that is neither a command of this version nor an installed extension fails with `USAGE_INVALID`, including a reserved name whose command arrives in a later milestone.
 
 ## ncly describe
 
@@ -38,7 +38,7 @@ Each entry has `path`, such as `transcript run youtube`, `summary`, and `source`
 | `flag_groups` | array | Each group has `flags`, an array of long flag names, and integer `min` and `max`, the permitted number supplied. Zoom's `latest` and `path` have `min: 1` and `max: 1` |
 | `result` | object | `kind`: `object`, `report`, `batch`, or `text`; `keys`: top-level successful data keys; `schema`: JSON Schema for normal JSON answers, including item fields, errors, types, nullability, and closed enums. `dry_run_schema` is present when supported. A text result ignores `--json`, has empty `keys`, and omits schemas |
 | `effects` | object | Conservative possible effects: `user_writes`, `network`, and `paid`. Dry run describes the selected invocation's effects |
-| `requires` | object | `bins` and `keys`, possible program and service prerequisites. Preparation selects the ones needed by this invocation, so a skipped summary requires no harness |
+| `requires` | object | `bins` and `keys`, possible program and service prerequisites. Each entry of `bins` is an object with the program's `name` and the keys of its entry in the `programs` of the [manifest](contract.md#manifest), such as `version` and `conditional`. Preparation selects the ones needed by this invocation, so a skipped summary requires no harness |
 | `modes` | object | The booleans `dry_run`, `recorded`, and `resume` |
 | `config` | array | Each config key that the command reads, with `key`, `value`, and `source`, which is a file path, an environment variable, or `default`. A secret value never appears |
 | `examples` | array | Full command lines |
@@ -82,16 +82,17 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 
 | Argument or flag | Effect |
 |---|---|
-| `component` | `core`, `auth`, `extensions`, or the domain of an extension that declares checks, such as `skill` or `transcript`. Without it, doctor checks all of them. |
+| `component` | `core`, `auth`, `extensions`, or the domain of an installed extension, such as `skill` or `transcript`. Without it, doctor checks all of them. |
 | `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. |
 | `--timeout` | Bounds the checks, including local version probes and free network checks, 30 seconds by default. |
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
 - Invalid or unreadable config produces the failed `core.config` finding with `CONFIG_INVALID`, even for a selected component. Doctor continues independent checks and omits checks whose required configuration could not be resolved. It never reports those omitted checks as passing
 - When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` with `KEYRING_UNAVAILABLE` otherwise.
-- The `extensions` component lists every extension that core finds and its source, every extension that another one hides, every incompatible manifest, the programs that each manifest requires, and every grant that no extension declares anymore. It starts no extension.
-- An extension's own checks, such as those of the [skill component](../../extensions/skill/spec.md#doctor-checks), appear under its domain.
-- Doctor never installs anything, in any mode, as [D011](decisions/D011-local-checks.md) decides. When a tool is missing or too old and its install command for this system is known, the hint of its failed check holds that command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and its `next` holds the same command as words. The human runs it.
+- The `extensions` component lists every extension that core finds and its source, every extension that another one hides, every incompatible manifest, and every grant that no extension declares anymore. It starts no extension.
+- Each installed extension is a component named after its domain. It holds the checks of the programs that its manifest requires, as [Required programs](#required-programs) defines, and its own checks, such as those of the [skill component](../../extensions/skill/spec.md#doctor-checks).
+- Doctor never installs anything, in any mode, as [D011](decisions/D011-local-checks.md) decides. When a tool is missing or too old and its install command for this system is known, as [Required programs](#required-programs) defines, the hint of its failed check holds that command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and its `next` holds the same command as words. The human runs it.
+- When `--timeout` expires, doctor kills the version probe that runs, with its descendants, at once, without the 15 seconds of cleanup, because a probe writes nothing. That check fails with `CHECK_TIMEOUT`, and so does each check that doctor had not started.
 - Doctor is a report command. It exits 0 when no check fails and 78 when at least one check needs a human. When doctor itself fails, it exits 1 with `errors`.
 
 ```json
@@ -99,6 +100,16 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 ```
 
 `status` is `pass`, `warn`, or `fail`. A warning never changes the exit code.
+
+### Required programs
+
+For each program in the `programs` of an extension's manifest that is not `conditional`, as [Manifest](contract.md#manifest) declares them, the extension's component holds a check whose id is `<domain>.<name>`, such as `transcript.uv`:
+
+- Doctor looks for an executable file named `name` in each folder of `PATH`, in order, and skips an empty or relative entry, as [Discovery](contract.md#discovery) does. A program that it does not find fails with `PREREQ_MISSING`
+- When the program declares `version`, doctor runs it with the arguments of `probe`, with stdin closed, in its own process group. It reads the version from stdout, or from stderr when stdout holds none: the first run of two or more numbers joined by dots, such as `6.1.1` in `ffmpeg version 6.1.1-3ubuntu5`. It compares that version with `version` number by number, where a missing number counts as 0, so `3.12` meets `3.12.0`. An older version fails with `PREREQ_MISSING`, and so does a probe that exits with another code than 0 or prints no version, because doctor cannot then show that the program works
+- The hint of a failed check holds the install command of the first package manager in this order that `install` names and this machine has in `PATH`: `brew` on macOS, and `pacman`, `apt`, `dnf`, then `brew` on Linux. Its `next` holds the same words. Doctor ignores any other name, so a later release can add one. Without a command for this machine, the hint names the program to install, and the check has no `next`
+
+Doctor never checks a conditional program, whether it is absent, present, or too old. Only the extension knows whether its config selects the program, and a copy that no config selects is no failure, so one rule covers every case. Preparation checks the conditional programs that an invocation selects, as [Operations](contract.md#operations) says.
 
 ## ncly auth
 

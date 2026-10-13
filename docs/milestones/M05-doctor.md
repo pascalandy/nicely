@@ -17,7 +17,6 @@ Settle each one in [ncly doctor](../north-star/core-spec.md#ncly-doctor) and [Ex
 
 - How an extension adds checks beyond its manifest's `requires`, such as the Python version or the browser cookies of transcript: a declared report command that core runs within doctor's timeout, as [D044](../north-star/decisions/D044-additive-extensions.md) allows, or checks that the manifest declares
 - How doctor tells an unknown config key from a key in an extension's table, so `CONFIG_UNKNOWN_KEY` never fires on a key that an installed extension owns
-- Where the install command of each prerequisite lives for each system, such as in the manifest's `requires`
 
 ## Cards
 
@@ -47,7 +46,7 @@ Add a bounded local `--version` probe of each required program to the program ru
 - **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/doctor_extensions.txtar`
 
-The `extensions` component lists every extension that core finds and where it came from, every extension that a core command, a bundled extension, or an earlier extension hides, every incompatible manifest, and the programs that each manifest requires. It starts no extension.
+The `extensions` component lists every extension that core finds and where it came from, every extension that a core command, a bundled extension, or an earlier extension hides, and every incompatible manifest. It starts no extension.
 
 ### M05-T4 Skill component
 
