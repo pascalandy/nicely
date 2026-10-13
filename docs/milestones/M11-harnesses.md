@@ -20,7 +20,7 @@ Extend the `claude` and `pi` adapters of M09 with `codex`, `grok`, and `opencode
 Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), then delete this section.
 
 - The verified tools-off flags and supported versions of each new harness
-- The key variables that each harness reads, which its adapter declares as optional keys
+- The key variables that each harness reads, whose services its adapter declares as optional keys, and how to declare a harness whose key variable no service name derives, such as `AZURE_OPENAI_API_KEY`
 - Whether `ncly agent model list` replaces the `list models` command of the transcript CLI
 
 ## Cards

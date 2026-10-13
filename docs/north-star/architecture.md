@@ -66,13 +66,13 @@ Each part has one owner: one package and one spec section.
 | 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
 | 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `sdk/contract/` | [contract.md](contract.md) |
 | 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/`, from M01 | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
-| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants | `internal/keychain/`, from M06 | [Keys](contract.md#keys) |
+| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/`, from M06 | [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 
 A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
 
 The other folders:
 
-- `cmd/ncly/`: the entry point, which passes core the bundled extensions in an explicit list, and runs one of them when started under its name
+- `cmd/ncly/`: the entry point, which passes core the bundled extensions in an explicit list and, from M06, the keychain's backend, and runs one of those extensions when started under its name
 - `internal/specdoc/`: reads the tables of the north-star docs for the tests that compare code and spec
 - `testdata/script/`: core's testscript scenarios. An extension keeps its own in `extensions/<name>/testdata/script/`, and the test binary of `cmd/ncly` runs both
 - `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` and `just test` name it

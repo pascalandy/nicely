@@ -39,7 +39,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 - An extension is bundled or external; a first-party extension can be either
 - The SDK implements the contract and the services in Go, for core and every Go extension
-- The program runner starts every program that core or an extension runs
+- The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](contract.md#programs-that-ncly-runs) names
 - A Python program lives inside an extension and talks to its Go code in JSON only
 
 ### Definitions
@@ -62,7 +62,8 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: the public Go packages in `sdk/` that implement the contract and the shared services, for core and for every Go extension
   - Distinct from: services, the one layer of the SDK that runs work
 - Program runner
-  - Def.: the service that runs every other program, with its environment, timeout, signals, and cleanup
+  - Def.: the service that runs programs for core and extensions, with their environment, timeout, signals, and cleanup
+  - Project note: [Programs that ncly runs](contract.md#programs-that-ncly-runs) defines its scope, including the one program that starts outside it
 - Python program
   - Def.: Python code that an extension embeds while it moves to Go, such as transcript's
 
@@ -75,6 +76,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Core starts an extension with canonical arguments, and checks its answer; an answer that breaks the contract is a protocol failure
 - An answer and its exit code always agree; exit 75 alone permits an automatic retry
 - A problem names what went wrong with its code, and may name the next command as words
+- A command declares the services whose keys it may need
 - A grant lets one key reach one extension
 - A report command keeps its report on stdout, even when a check fails
 - Doctor lists the checks of an extension's status command under the extension's component
@@ -134,11 +136,19 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Project note: [Completion values](contract.md#completion-values) defines when completion may run one: never one that writes a user file or bills
 - Grant
   - Def.: the permission, given by a human in a terminal, for one extension to receive one key
+- Service
+  - Def.: a network service whose key `ncly auth` manages, such as Deepgram, named `deepgram`
+  - Project note: [Keys](contract.md#keys) defines its name and the variable of its key, such as `DEEPGRAM_API_KEY`. A command declares its services in the `requires.keys` of its manifest
+  - Distinct from: services, layer 2, and the service field of a keychain entry
 - Interactive mode
   - Def.: the mode in which `ncly` may ask questions. [Modes](contract.md#modes) defines when it applies
   - Distinct from: non-interactive mode
 - Non-interactive mode
   - Def.: every case outside interactive mode. A missing value fails instead of opening a form
+- Plain prompt
+  - Def.: a one-line question in the terminal, such as the key prompt without echo of `ncly auth login` or a `y/N` confirmation
+  - Project note: [ncly auth](core-spec.md#ncly-auth) defines it, and the forms of [M07](../milestones/M07-forms.md) replace it
+  - Distinct from: a form, which the shared tui package builds and [Modes](contract.md#modes) describes
 
 ## Operations
 
