@@ -11,7 +11,7 @@ ncly skill view <name> [--json]
 
 - Skills come from the folders in `[skill] paths`, then from the `nicely` skill that ships inside `ncly`, then from installed extensions. Taps add more sources in M12. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
 - `skill` finds the skills of installed extensions through `ncly describe --json`, whose entry for each extension's domain gives the folder of its skill, as [D054](../../docs/north-star/decisions/D054-extension-skills-through-describe.md) decides. It never searches for extensions itself, so it lists the skill of the extension that core runs, never one that core hides.
-- A skill's subfolder takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works and `ncly doctor skill` warns.
+- A skill's subfolder in `[skill] paths`, or in a tap from M12, takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works and `ncly doctor skill` warns. An extension's skill keeps the folder `ncly-<domain>.skill/`, so doctor compares its `name` with the domain instead.
 - A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links, and `skill link` creates them from M12. A broken link is not a skill, and `list` skips it.
 - When two sources hold the same skill name, the first source wins and `list` adds a `SKILL_SHADOWED` warning. Two subfolders that resolve to the same folder are one skill, listed with the path of the first, without a warning.
 - Inside one folder of `paths`, when two subfolders declare the same `name`, the subfolder whose name sorts first byte by byte wins, and `list` adds `SKILL_SHADOWED`.
@@ -50,7 +50,7 @@ paths = ["~/code/skills"]
 
 ## Doctor checks
 
-The `skill` component of `ncly doctor` warns with `SKILL_SOURCE_MISSING` for a folder of `[skill] paths` that is missing or cannot be read. It warns with `SKILL_NAME_MISMATCH` when a subfolder's name differs from its `name`, and with `SKILL_INVALID` for a `SKILL.md` that cannot be read, whose frontmatter is invalid, or that lacks `name` or `description`. A warning leaves the report `ok`.
+The `skill` component of `ncly doctor` warns with `SKILL_SOURCE_MISSING` for a folder of `[skill] paths` that is missing or cannot be read. It warns with `SKILL_NAME_MISMATCH` when a subfolder of `[skill] paths`, or of a tap from M12, is not named after its skill, or an installed extension's skill is not named after the domain that `ncly describe` gives, and with `SKILL_INVALID` for a `SKILL.md` that cannot be read, whose frontmatter is invalid, or that lacks `name` or `description`. A warning leaves the report `ok`.
 
 ## Warning codes
 
@@ -60,4 +60,4 @@ The `skill` component of `ncly doctor` warns with `SKILL_SOURCE_MISSING` for a f
 | `SKILL_NO_SOURCE` | No skill folder is configured | M04 |
 | `SKILL_INVALID` | A `SKILL.md` cannot be read, its frontmatter is invalid, or it lacks `name` or `description` | M04 |
 | `SKILL_SOURCE_MISSING` | A folder of `[skill] paths` is missing or cannot be read | M04 |
-| `SKILL_NAME_MISMATCH` | A skill's subfolder name differs from the `name` in its `SKILL.md` | M05 |
+| `SKILL_NAME_MISMATCH` | A subfolder of `[skill] paths`, or of a tap from M12, is not named after its skill, or an extension's skill is not named after its domain | M05 |
