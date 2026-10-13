@@ -19,7 +19,8 @@ Settle each one in [Grants](../north-star/contract.md#grants), then delete this 
 - The local grant record and the consent flow for a changed extension source
 - The source identity of an extension found in `PATH` or the data folder, before taps exist
 - Whether an extension started in a terminal asks for a missing grant, or always exits with `KEY_NOT_GRANTED` and names the grant command
-- How a manifest declares an optional key, such as a harness key, which reaches the extension only when granted and present
+- How a manifest declares an optional key, such as a harness key, which reaches the extension only when granted and present, and how `ncly auth status` and `ncly doctor` report a missing optional key
+- How doctor bounds the keychain read that starting a status command that declares a key requires, so a keychain that does not answer costs only that check
 - How core tells an extension which of its declared keys no human granted, so the extension answers `KEY_NOT_GRANTED` rather than `AUTH_MISSING`
 
 ## Cards
