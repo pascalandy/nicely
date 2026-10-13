@@ -179,7 +179,7 @@ The set of codes is open: later milestones add core codes, and every extension a
 | `PREREQ_MISSING` | 78 | A required tool is absent or too old, or its version probe fails or prints no version | M05 |
 | `CHECK_TIMEOUT` | 78 | A check of `ncly doctor` did not finish within its `--timeout` | M05 |
 | `AUTH_MISSING` | 78 | A required key is in neither the environment nor the keychain | M06 |
-| `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for the `auth` check of `ncly doctor` | M06 |
+| `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for an `auth.<service>` check of `ncly doctor` | M06 |
 | `KEY_NOT_GRANTED` | 78 | An extension needs a key that no human granted to it | M08 |
 | `CAPABILITY_UNSUPPORTED` | 78 | The selected program cannot enforce a required mode or protocol | M09 |
 | `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401 | M13 |
@@ -191,6 +191,7 @@ Warnings use codes from this table, and an extension's own warnings start with i
 |---|---|---|
 | `CONFIG_UNKNOWN_KEY` | A config file holds a key that this version of `ncly` does not know | M00 |
 | `CONFIG_DEFAULTS_USED` | Discovery used defaults because a config file could not be read | M03 |
+| `KEYRING_ENV_ONLY` | The OS keychain does not answer, so keys come only from the environment. The `auth.keychain` check of `ncly doctor` warns with it | M06 |
 
 ## Configuration
 

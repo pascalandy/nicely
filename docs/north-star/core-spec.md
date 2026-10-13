@@ -90,7 +90,7 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
 - Invalid or unreadable config produces the failed `core.config` finding with `CONFIG_INVALID`, even for a selected component. Doctor continues independent checks and omits checks whose required configuration could not be resolved. It never reports those omitted checks as passing
 - Each unknown key, as [Configuration](contract.md#configuration) defines it, is a `warn` entry of `core.config` with `CONFIG_UNKNOWN_KEY`, whose hint names the key and the file that holds it.
-- When the keychain is unavailable, its check is `warn` if every key that a component needs comes from the environment, and `fail` with `KEYRING_UNAVAILABLE` otherwise.
+- The `auth` component checks the keychain and each key that an installed extension declares, as [Required keys](#required-keys) defines.
 - The `extensions` component starts no extension. It holds one `extensions.<domain>` entry for each extension that core finds, with its `domain`, `source`, and `path`: a `pass` for the extension that runs, a `pass` with `hidden_by` for each extension that a core command, a bundled extension, or an earlier extension hides, and a `fail` with `EXTENSION_INVALID` for an incompatible manifest. It also lists every grant that no extension declares anymore.
 - Each installed extension is a component named after its domain. It holds the checks of the programs that its manifest requires, as [Required programs](#required-programs) defines, and the checks of its status command, as [Status command](contract.md#status-command) defines, such as those of [ncly skill status](../../extensions/skill/spec.md#ncly-skill-status).
 - Doctor never installs anything, in any mode, as [D011](decisions/D011-local-checks.md) decides. When a tool is missing or too old and its install command for this system is known, as [Required programs](#required-programs) defines, the hint of its failed check holds that command, such as `brew install ffmpeg` or `sudo pacman -S ffmpeg`, and its `next` holds the same command as words. The human runs it.
@@ -126,6 +126,16 @@ For each program in the `programs` of an extension's manifest that is not `condi
 - The hint of a failed check holds the install command of the first package manager in this order that `install` names and this machine has in `PATH`: `brew` on macOS, and `pacman`, `apt`, `dnf`, then `brew` on Linux. Its `next` holds the same words. Doctor ignores any other name, so a later release can add one. Without a command for this machine, the hint names the program to install, and the check has no `next`
 
 Doctor never checks a conditional program, whether it is absent, present, or too old. Only the extension knows whether its config selects the program, and a copy that no config selects is no failure, so one rule covers every case. Preparation checks the conditional programs that an invocation selects, as [Operations](contract.md#operations) says, and the extension's status command checks the ones that its config selects, as [Status command](contract.md#status-command) defines.
+
+### Required keys
+
+The `auth` component holds the check of the keychain, then one check for each service that [ncly auth status](#ncly-auth) lists, in its order, so doctor and `status` give each service the same verdict:
+
+- `auth.keychain` passes when the keychain answers. When it does not, the check is a `warn` with `KEYRING_ENV_ONLY`, whose hint says to unlock the keychain or to export the variable of each key, and which has no `next`. An unavailable keychain alone never fails the report, as [D010](decisions/D010-keychain-or-environment.md) decides
+- `auth.<service>`, such as `auth.deepgram`, passes when the key comes from the environment or the keychain, and its message names the source, never the value. Otherwise it fails with the `code`, `hint`, and `next` of the service's entry in `status`, such as `AUTH_MISSING` with the hint and `next` `ncly auth login <service>`
+- When no installed extension declares a service, the component holds `auth.keychain` alone
+
+Doctor asks the keychain as `status` does, and runs its `auth` component last, after every other check, so its questions to the keychain never cost a check that already finished. This order changes when doctor runs the checks, not where the report lists them. Each keychain call gets the smaller of its limit in [Keys](contract.md#keys) and the time left of `--timeout`. When the keychain's limit ends first, the keychain counts as unavailable, and doctor asks it nothing more. When `--timeout` ends first, the check that waits on the keychain fails with `CHECK_TIMEOUT`, and so does each check that doctor had not started, as for a version probe. Doctor stops waiting at once, because a keychain call writes nothing. In interactive mode, an unlock prompt therefore gets what remains of the 30 seconds of the default `--timeout`, not the 60 seconds of the keychain's limit.
 
 ## ncly auth
 
