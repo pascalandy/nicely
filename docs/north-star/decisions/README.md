@@ -60,4 +60,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D052](D052-caller-run-ids.md) | Let the caller name a run, so that a repeated call continues it |
 | [D053](D053-next-command.md) | Give a problem its next command as words |
 | [D054](D054-extension-skills-through-describe.md) | Find the skills of installed extensions through ncly describe |
-| [D055](D055-completion-values-from-a-list-command.md) | Complete an extension's values from its own list command |
+| [D055](D055-completion-values-from-a-list-command.md) | Complete an extension's values from a list command |
