@@ -101,7 +101,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Project note: `ncly-<domain>.toml`, whose schema [Manifest](contract.md#manifest) defines
 - Canonical arguments
   - Def.: the one form in which core passes a validated call to an extension: the command path after the domain, each flag as `--<name>=<value>`, then `--` and the positional arguments
-  - Project note: [Dispatch](contract.md#dispatch) defines it. `--dry-run` and `--run-id` pass as words after the own flags; the other global flags reach the extension as variables instead
+  - Project note: [Dispatch](contract.md#dispatch) defines it. `--dry-run` and `--run-id` pass as words after the own flags; a flag that has a variable, such as `--json`, reaches the extension as that variable instead
 - Protocol failure
   - Def.: an answer or an exit code from an extension or an embedded program that breaks the contract
   - Project note: core answers `RUNTIME` in its place, as [Answer check](contract.md#answer-check) defines
