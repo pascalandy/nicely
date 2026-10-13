@@ -38,7 +38,7 @@ Each extension ships a skill named after its domain: ncly skill view DOMAIN. The
 
 ### M04-T1 Skill list
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract.md#configuration)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract.md#configuration), [SDK](../north-star/contract.md#sdk)
 - **Proves:** `extensions/skill/testdata/script/skill_list.txtar`, `extensions/skill/testdata/script/skill_shadowed.txtar`, `extensions/skill/testdata/script/skill_invalid.txtar`, `extensions/skill/testdata/script/skill_links.txtar`
 
 `ncly skill list` over `[skill] paths`, as the first bundled extension, with `source` and `SKILL_SHADOWED`, `SKILL_NO_SOURCE`, `SKILL_INVALID`, and `SKILL_SOURCE_MISSING`. As the first command that fails on a broken config, where discovery falls back to defaults, it maps an unreadable, malformed, or wrongly typed config to `CONFIG_INVALID`, including a relative folder in `paths`. Its `[skill]` table decodes through `sdk/config`, which keeps each value's source from [M03-T4](M03-describe.md#m03-t4-config-sources). Add `skill` to the bundled list of `cmd/ncly`, and update that list's comment. The extension lives in `extensions/skill/`. It reads the frontmatter of a `SKILL.md` with `go.yaml.in/yaml/v3`, through a reader in `sdk/extension`, because an extension imports only `sdk/` and `Check` reuses that reader in [M04-T3](#m04-t3-skills-from-extensions). The scenarios cover these edge cases:
@@ -60,14 +60,14 @@ Each extension ships a skill named after its domain: ncly skill view DOMAIN. The
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract.md#extensions), [SDK](../north-star/contract.md#sdk), [ncly describe](../north-star/core-spec.md#ncly-describe)
 - **Proves:** `extensions/skill/testdata/script/skill_extension.txtar`
 
-The skill of an installed extension appears in `list` with the source `extension`, and `view` reads it, so every extension can teach agents how to use it. `skill` finds it through the `skill` key of `"$NCLY_BIN" describe --json`, which it runs through the program runner of `sdk/runner`, never by searching for extensions itself, so the skill of an extension that core hides never appears. The shell fixture of M01 gets a `ncly-hello.skill/` folder. `extension.Extension` in `sdk/extension` gains `Skill`, the Go fixture embeds its skill there, and `Check` refuses a skill whose `name` is not the domain, read with the reader of M04-T1.
+The skill of an installed extension appears in `list` with the source `extension`, and `view` reads it, so every extension can teach agents how to use it. `skill` finds it through the `skill` key of `"$NCLY_BIN" describe --json`, which it runs through the program runner of `sdk/runner`, never by searching for extensions itself, so the skill of an extension that core hides never appears. The shell fixture of M01 gets a `ncly-hello.skill/` folder. `extension.Extension` in `sdk/extension` gains `Skill`, and the Go fixture embeds its skill there. The `install` command of the test binary in `cmd/ncly` writes that skill as `ncly-hello.skill/`, as installing an external extension does. `Check` refuses a skill whose `name` is not the domain, read with the reader of M04-T1.
 
 ### M04-T4 The nicely skill
 
 - **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Agents in both directions](../north-star/vision.md#agents-in-both-directions)
 - **Proves:** `extensions/skill/testdata/script/skill_nicely.txtar`, and the session's transcript, attached to the pull request
 
-The skill extension embeds the `nicely` skill as the data of its bundled source, not as a skill of its own domain, and `list` shows it with the source `bundled` and a `null` path. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. The first example of `ncly --help`, in `internal/cli`, becomes `ncly skill view nicely`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`. The scenario fails when the skill names an `ncly` command or an error code that this `ncly` lacks, or holds more than 60 lines.
+The skill extension embeds the `nicely` skill as the data of its bundled source, not as a skill of its own domain, and `list` shows it with the source `bundled` and a `null` path. A skill named `nicely` in `[skill] paths` wins with `SKILL_SHADOWED`. The first example of `ncly --help`, in `internal/cli`, becomes `ncly skill view nicely`. README.md tells users to add one line to their agent instructions: run `ncly skill view nicely` before using `ncly`. The scenario fails when the skill names an `ncly` command or an error code that this `ncly` lacks, or holds more than 60 lines. It reads the commands from `ncly describe --json`, and the codes from a command of the test binary in `cmd/ncly` that lists the registry of `sdk/contract`, because no command of `ncly` lists its codes.
 
 Then an agent in a fresh harness session, given only that line, finds and reads a skill using only `ncly`. Fix the `nicely` skill until it does.
 
