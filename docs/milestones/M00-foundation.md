@@ -93,7 +93,7 @@ The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archi
 
 A zero exit from the full recipe proves the local rehearsal for that captured source. On success, review the retained artifacts. On failure, use any retained files to diagnose the failed check. Fix the cause, then rerun the full recipe. A component check on retained artifacts proves only that component's result. A source change requires a fresh full recipe run.
 
-`release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. The first real dispatch, publishing authorization, macOS execution, and the installation check belong to the first release.
+`release.yml` has only a manual `workflow_dispatch` trigger with a required tag input. It checks out and validates that exact tag before any publication. Preparing or pushing the workflow file does not run it. Publishing authorization, macOS execution, and the installation check belong to the first release.
 
 ## Out of scope
 
