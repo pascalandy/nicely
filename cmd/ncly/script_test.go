@@ -19,6 +19,7 @@ func TestMain(m *testing.M) {
 		"ncly":           testNcly,
 		"closedpipe":     closedPipe,
 		"exitcode":       exitCode,
+		"pgroup":         pgroup,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the

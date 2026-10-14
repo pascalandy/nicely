@@ -373,3 +373,22 @@ func exitCode() {
 		os.Exit(127)
 	}
 }
+
+// pgroup is the pgroup program of the scenarios: it runs a command in a
+// process group of its own, as job control starts a background job, without
+// the terminal that dash 0.5.12 needs for set -m: pgroup <command>
+// [args...]. A shell without job control starts a background command with
+// Ctrl-C ignored, and Go keeps that, so pgroup handles Ctrl-C, which exec
+// then resets to its default action.
+func pgroup() {
+	path, err := exec.LookPath(os.Args[1])
+	if err == nil {
+		signal.Notify(make(chan os.Signal, 1), os.Interrupt)
+		err = syscall.Setpgid(0, 0)
+	}
+	if err == nil {
+		err = syscall.Exec(path, os.Args[1:], os.Environ())
+	}
+	fmt.Fprintln(os.Stderr, "pgroup:", err)
+	os.Exit(127)
+}

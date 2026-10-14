@@ -87,15 +87,15 @@ func say(_ context.Context, call extension.Call) contract.Outcome {
 	return contract.Outcome{}
 }
 
-// program writes finished.txt, starts a grandchild in its own process
-// group, and runs until a signal ends it. Under STUBBORN_CHILD, it ignores
+// program writes finished.txt, starts a grandchild in its own process group
+// through the pgroup program of the scenarios, and runs until a signal ends
+// it. It writes program.pid after the grandchild writes its ID, so a scenario
+// that waits for program.pid finds both. Under STUBBORN_CHILD, it ignores
 // SIGTERM, so only SIGKILL ends it.
 const program = `
 echo done > finished.txt
-set -m
-sleep 60 >/dev/null 2>&1 &
-echo $! > grandchild.pid
-set +m
+pgroup sh -c 'echo $$ > grandchild.tmp; mv grandchild.tmp grandchild.pid; exec sleep 60' >/dev/null 2>&1 &
+while [ ! -f grandchild.pid ]; do sleep 0.01; done
 if [ -n "$STUBBORN_CHILD" ]; then trap '' TERM; fi
 echo $$ > program.tmp
 mv program.tmp program.pid

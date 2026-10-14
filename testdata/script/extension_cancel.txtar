@@ -134,11 +134,10 @@ wait)
   if [ "$2" = "--stopped=true" ]; then
     trap 'echo "{\"ok\":false,\"contract_version\":1,\"output_dir\":\"/Users/me/out\",\"errors\":[{\"code\":\"INTERRUPTED\",\"message\":\"Stopped by the fixture.\",\"hint\":\"ncly hello wait\"}]}" >&2; exit 130' INT
   fi
-  # set -m starts the grandchild in its own process group, where Ctrl-C is not ignored.
-  set -m
-  sh "$WORK/grandchild.sh" >/dev/null 2>&1 &
+  # pgroup starts the grandchild in its own process group, where Ctrl-C is not ignored,
+  # with no terminal and whichever shell sh is.
+  pgroup sh "$WORK/grandchild.sh" >/dev/null 2>&1 &
   grandchild=$!
-  set +m
   if [ "$2" = "--instant=true" ]; then
     exec sleep 60
   fi
