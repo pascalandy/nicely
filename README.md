@@ -10,7 +10,7 @@ ncly completion bash
 
 ## Status
 
-Nicely is in early development and has no release yet. [The vision](docs/north-star/vision.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
+Nicely is in early development. [The vision](docs/north-star/vision.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
 
 The current build implements help, the version, and shell completion. It finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`, shows their help and completion from their manifests, starts them with a call that it has checked, checks their JSON answer before passing it on, and stops them and their child processes on Ctrl-C. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
 
@@ -32,7 +32,7 @@ The bundled `nicely` skill teaches one loop: find a command with `ncly describe`
 
 ## Install
 
-There is no release yet. The first release installs with:
+Install with:
 
 | System | Installation |
 |---|---|

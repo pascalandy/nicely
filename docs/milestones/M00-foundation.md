@@ -15,7 +15,7 @@ All three were in place before M00-T6. The AUR account moved to [M99](M99-parkin
 - The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
 - `main` requires the status check `signoff`
 
-The first release, v0.0.1, waits for Pascal, as [Release](../../AGENTS.md#release) says. It is no card, so it never blocks a milestone.
+The first release is v0.2.0, because v0.0.1 and v0.1.0 never shipped. Releases wait for Pascal, as [Release](../../AGENTS.md#release) says. A release is no card, so it never blocks a milestone.
 
 ## Cards
 
