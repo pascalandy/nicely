@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 RELEASE_SCRATCH=""
 
-# shellcheck disable=SC2329
+# shellcheck disable=SC2317,SC2329
 fct_finish() {
 	local status=$?
 	if [[ -n "${RELEASE_SCRATCH}" ]]; then
