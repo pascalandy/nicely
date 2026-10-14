@@ -78,7 +78,7 @@ A milestone file holds `Status`, `Version`, and the sections **Demo**, an option
 
 The [code map](docs/north-star/architecture.md#code-map) names the package and the spec section of each part. The rules below name each package by its role.
 
-Run `lefthook install` once per clone, so the hooks format, lint, and scan each commit and test each push.
+Run `lefthook install` once per clone, so the hooks format, lint, and scan each commit and test each push. On Pascal's machines, a fetch or a push that moves `origin/main` also fast-forwards the main clone, unless it is off `main`, has uncommitted changes, or has commits origin lacks.
 
 - Keep the code of `sdk/` and `extensions/` free of imports from `internal/`, as `just lint` checks. The one exception is a test that imports `internal/specdoc` to compare the code with the docs. An extension reaches core through its environment and the CLI, and another extension only through the CLI, as [Extensions](docs/north-star/contract.md#extensions) says. Adding a domain never edits core.
 - Build interactive screens from the shared tui package only, so every command looks the same. Add a component there when the first command needs it, after Pascal picks its look from a published mockup, as [dev-preferences.md](docs/north-star/dev-preferences.md#decide-the-look-with-a-published-mockup) asks. Until Pascal picks the looks in [M07](docs/milestones/M07-forms.md), a new command reuses the help and error styles of M00 and prints the rest as plain text, so it waits on no mockup.

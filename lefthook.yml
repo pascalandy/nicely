@@ -20,3 +20,13 @@ pre-push:
   commands:
     test:
       run: just test
+
+# Fleet sync: when a fetch or a push moves origin's default branch, each
+# machine of the fleet fast-forwards this clone; see the fleet skill
+rc: ~/.claude/skills/fleet/scripts/lefthook_rc.sh
+
+reference-transaction:
+  commands:
+    fleet-sync:
+      use_stdin: true
+      run: test ! -f ~/.claude/skills/fleet/scripts/fleet_sync.sh || sh ~/.claude/skills/fleet/scripts/fleet_sync.sh {1}
