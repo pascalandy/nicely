@@ -2,7 +2,7 @@
 
 Each decision records what was decided, why, and what was rejected. It states its rule briefly, and [principles.md](../principles.md), [contract.md](../contract.md), [core-spec.md](../core-spec.md), and the extension specs hold the full rules.
 
-A new decision takes the next number, a file named `D0NN-<short-slug>.md` that starts with `# D0NN <title>`, and a row in this index. Until v0.0.1 ships, fix a decision in place, because git keeps the old text. From v0.0.1, add a new decision that names the one it replaces, and mark the old one `Replaced by Dxxx`.
+A new decision takes the next number, a file named `D0NN-<short-slug>.md` that starts with `# D0NN <title>`, and a row in this index. Until v1.0.0 ships, fix a decision in place, because git and each release tag keep the old text. From v1.0.0, add a new decision that names the one it replaces, and mark the old one `Replaced by Dxxx`.
 
 | Decision | Title |
 |---|---|
