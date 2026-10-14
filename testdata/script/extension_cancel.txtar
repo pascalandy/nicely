@@ -1,7 +1,8 @@
 # Ctrl-C and SIGTERM reach the extension and every descendant that core can reach,
 # and the first signal decides the verdict. hello wait writes finished.txt, starts a
-# grandchild in its own process group, writes the grandchild's ID once it is ready,
-# and waits. exitcode passes the signal on to ncly and writes its exit code.
+# grandchild in its own process group, and waits. The grandchild writes its ID once it
+# is ready, and the name of the signal that ends it, which the SIGKILL of cleanup never
+# writes. exitcode passes the signal on to ncly and writes its exit code.
 chmod 755 bin/ncly-hello
 env PATH=$WORK/bin:$PATH
 
@@ -14,10 +15,11 @@ grep '^130$' exit.txt
 ! stdout .
 answer stderr INTERRUPTED
 gone grandchild.pid
+grep '^INT$' grandchild.sig
 exists finished.txt
 
 # SIGTERM: TERMINATED with exit 143
-rm grandchild.pid finished.txt
+rm grandchild.pid grandchild.sig finished.txt
 exec exitcode exit.txt ncly hello wait --json &
 waitfile grandchild.pid
 term
@@ -26,10 +28,11 @@ grep '^143$' exit.txt
 ! stdout .
 answer stderr TERMINATED
 gone grandchild.pid
+grep '^TERM$' grandchild.sig
 exists finished.txt
 
 # An extension that traps the signal and answers keeps its keys under the signal's verdict
-rm grandchild.pid
+rm grandchild.pid grandchild.sig
 exec exitcode exit.txt ncly hello wait --trap --json &
 waitfile grandchild.pid
 kill -INT
@@ -39,9 +42,10 @@ grep '^130$' exit.txt
 answer stderr INTERRUPTED
 stderr '"output_dir":"/Users/me/out"'
 gone grandchild.pid
+grep '^INT$' grandchild.sig
 
 # An extension that answers the signal's code itself keeps that error first, with its key
-rm grandchild.pid
+rm grandchild.pid grandchild.sig
 exec exitcode exit.txt ncly hello wait --stopped --json &
 waitfile grandchild.pid
 kill -INT
@@ -51,6 +55,7 @@ answer stderr INTERRUPTED
 stderr '"output_dir":"/Users/me/out"'
 stderr '"message":"Stopped by the fixture\."'
 gone grandchild.pid
+grep '^INT$' grandchild.sig
 
 # A Ctrl-C at the terminal reaches core and the extension together, so the extension may
 # exit before core sees its own Ctrl-C, whether it ends at once or answers first. Core
@@ -62,14 +67,14 @@ exec sh group.sh --trap
 grep -count=30 '^130$' exit.txt
 
 # Without --json, core adds its error block only when the extension's exit code differs from the signal's
-rm grandchild.pid
+rm grandchild.pid grandchild.sig
 exec exitcode exit.txt ncly hello wait &
 waitfile grandchild.pid
 kill -INT
 wait
 grep '^130$' exit.txt
 ! stderr .
-rm grandchild.pid
+rm grandchild.pid grandchild.sig
 exec exitcode exit.txt ncly hello wait --trap &
 waitfile grandchild.pid
 term
@@ -78,6 +83,7 @@ grep '^143$' exit.txt
 stdout '"output_dir"'
 stderr '^error\[TERMINATED\]: Stopped by SIGTERM'
 gone grandchild.pid
+grep '^TERM$' grandchild.sig
 
 -- group.sh --
 # group.sh <flag> sends Ctrl-C to the process group of ncly and the extension 30 times,
@@ -106,6 +112,14 @@ while [ $run -lt 30 ]; do
     kill "$grandchild" 2>/dev/null
   fi
 done
+-- grandchild.sh --
+# grandchild.sh writes its process ID once its traps are set, then runs until a signal
+# ends it, and writes the name of that signal.
+trap 'echo INT > "$WORK/grandchild.sig"; exit 130' INT
+trap 'echo TERM > "$WORK/grandchild.sig"; exit 143' TERM
+echo $$ > "$WORK/grandchild.tmp"
+mv "$WORK/grandchild.tmp" "$WORK/grandchild.pid"
+while :; do sleep 0.1; done
 -- bin/ncly-hello --
 #!/bin/sh
 case "$1" in
@@ -122,11 +136,9 @@ wait)
   fi
   # set -m starts the grandchild in its own process group, where Ctrl-C is not ignored.
   set -m
-  sleep 60 >/dev/null 2>&1 &
+  sh "$WORK/grandchild.sh" >/dev/null 2>&1 &
   grandchild=$!
   set +m
-  echo "$grandchild" > "$WORK/grandchild.tmp"
-  mv "$WORK/grandchild.tmp" "$WORK/grandchild.pid"
   if [ "$2" = "--instant=true" ]; then
     exec sleep 60
   fi
