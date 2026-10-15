@@ -60,6 +60,12 @@ cp nopaths.toml $CFG/config.toml
 exec ncly skill list --json
 stdout '"skills":\[\],"warnings":\[\{"code":"SKILL_NO_SOURCE",'
 
+# So does an empty [skill]
+cp emptyskill.toml $CFG/config.toml
+exec ncly skill list --json
+answer stdout ok
+stdout '"warnings":\[\{"code":"SKILL_NO_SOURCE","message":"No skill folder is configured\."'
+
 # A broken config fails list with CONFIG_INVALID and exit 78, naming the file, while
 # discovery keeps going with the defaults
 cp broken.toml $CFG/config.toml
@@ -132,6 +138,8 @@ paths = ["~/gone", "~/skills", "~/nofolder.txt"]
 -- nopaths.toml --
 [skill]
 paths = []
+-- emptyskill.toml --
+[skill]
 -- broken.toml --
 [skill]
 paths = [

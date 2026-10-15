@@ -232,15 +232,21 @@ func (v Values) Under(key string) []Value {
 // Decode decodes the value at key, such as skill.paths, into target, a
 // pointer to the type that the key holds, as Load decodes the keys of core.
 // It returns the value with the file that set it, or one from Default that
-// leaves target unchanged when no file sets key. A value of another type is
-// an InvalidError about the file that set it, and so is a table at key, or
-// a value where a table above key belongs.
+// leaves target unchanged when no file sets key, such as under an empty
+// table above key. A value of another type is an InvalidError about the
+// file that set it, and so is a table at key, or a value where a table
+// above key belongs.
 func (v Values) Decode(key string, target any) (Value, error) {
 	words := strings.Split(key, ".")
 	for i := 1; i < len(words); i++ {
-		if above, found := v[strings.Join(words[:i], ".")]; found {
-			return above, &InvalidError{File: above.Source, Err: fmt.Errorf("%q is not a table", above.Key)}
+		above, found := v[strings.Join(words[:i], ".")]
+		if !found {
+			continue
 		}
+		if table, isTable := above.Value.(map[string]any); isTable && len(table) == 0 {
+			return Value{Key: key, Source: Default}, nil
+		}
+		return above, &InvalidError{File: above.Source, Err: fmt.Errorf("%q is not a table", above.Key)}
 	}
 	set, found := v[key]
 	if !found {
