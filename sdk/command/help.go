@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/pascalandy/nicely/sdk/tui"
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ func HelpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
 		local, inherited := c.LocalFlags(), c.InheritedFlags()
 		page := tui.HelpPage{
 			Summary:       c.Short,
+			Note:          effectsLine(p, c.Annotations[effectsAnnotation]),
 			UsageTitle:    p.T("help.usage"),
 			Usage:         c.UseLine(),
 			ExamplesTitle: p.T("help.examples"),
@@ -54,6 +56,35 @@ func HelpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
 		}
 		_, _ = fmt.Fprint(tui.Output(c.OutOrStdout(), noColor), tui.Help(page))
 	}
+}
+
+// effectIDs holds the catalog ID of each effect that a help page names.
+var effectIDs = map[string]string{
+	"user_writes": "help.effect_user_writes",
+	"network":     "help.effect_network",
+	"paid":        "help.effect_paid",
+}
+
+// effectsLine names the effects of a command in one line, and --dry-run
+// when the command supports it, or returns "" for a command without effects.
+func effectsLine(p *i18n.Printer, annotation string) string {
+	var effects []string
+	dryRun := false
+	for _, name := range strings.Fields(annotation) {
+		if name == "dry_run" {
+			dryRun = true
+			continue
+		}
+		effects = append(effects, p.T(effectIDs[name]))
+	}
+	if len(effects) == 0 {
+		return ""
+	}
+	data := map[string]any{"Effects": strings.Join(effects, p.T("help.effect_separator")), "Flag": "--" + contract.DryRunFlag.Name}
+	if dryRun {
+		return p.T("help.effects_dry_run", data)
+	}
+	return p.T("help.effects", data)
 }
 
 func flagEntries(set *pflag.FlagSet) []tui.Entry {

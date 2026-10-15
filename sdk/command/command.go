@@ -21,18 +21,9 @@ import (
 // command that groups others: alone it prints its help, and an unknown word
 // after it is a usage error.
 func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, []string) error) *cobra.Command {
-	use := []string{d.Path[len(d.Path)-1]}
-	variadic := false
-	for _, a := range d.Args {
-		if a.Variadic {
-			use = append(use, "["+a.Name+"...]")
-			variadic = true
-		} else {
-			use = append(use, "["+a.Name+"]")
-		}
-	}
+	variadic := len(d.Args) > 0 && d.Args[len(d.Args)-1].Variadic
 	c := &cobra.Command{
-		Use:     strings.Join(use, " "),
+		Use:     usage(d),
 		Short:   text.T(d.Summary),
 		Example: strings.Join(d.Examples, "\n"),
 		Args: func(c *cobra.Command, args []string) error {
@@ -65,6 +56,8 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 	}
 	if run == nil {
 		c.RunE = func(c *cobra.Command, _ []string) error { return c.Help() }
+	} else {
+		c.Annotations = effectAnnotations(d)
 	}
 	for _, f := range d.Flags {
 		addFlag(c.Flags(), text, f)
@@ -73,6 +66,81 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 		addFlag(c.Flags(), p, f)
 	}
 	return c
+}
+
+// usage returns the usage of a command after its path, as Usage in
+// contract.md shows it: each argument, <name> when required and [name]
+// otherwise, each required flag outside a group, then each flag group, in
+// parentheses when the group needs a flag and in brackets otherwise.
+func usage(d contract.Command) string {
+	words := []string{d.Path[len(d.Path)-1]}
+	for _, a := range d.Args {
+		name := a.Name
+		if a.Variadic {
+			name += "..."
+		}
+		if a.Required {
+			words = append(words, "<"+name+">")
+		} else {
+			words = append(words, "["+name+"]")
+		}
+	}
+	flag := func(name string) string {
+		for _, f := range d.Flags {
+			if f.Name == name && f.Value != "" {
+				return "--" + name + " <" + f.Value + ">"
+			}
+		}
+		return "--" + name
+	}
+	grouped := map[string]bool{}
+	for _, g := range d.FlagGroups {
+		for _, name := range g.Flags {
+			grouped[name] = true
+		}
+	}
+	for _, f := range d.Flags {
+		if f.Required && !grouped[f.Name] {
+			words = append(words, flag(f.Name))
+		}
+	}
+	for _, g := range d.FlagGroups {
+		var choices []string
+		for _, name := range g.Flags {
+			choices = append(choices, flag(name))
+		}
+		open, end := "[", "]"
+		if g.Min > 0 {
+			open, end = "(", ")"
+		}
+		words = append(words, open+strings.Join(choices, " | ")+end)
+	}
+	return strings.Join(words, " ")
+}
+
+// effectsAnnotation keeps the effects of a command that runs, which its
+// help names in one line: user_writes, network, and paid, then dry_run when
+// it supports --dry-run.
+const effectsAnnotation = "ncly-effects"
+
+func effectAnnotations(d contract.Command) map[string]string {
+	e := d.DeclaredEffects()
+	var effects []string
+	for _, effect := range []struct {
+		name string
+		on   bool
+	}{{"user_writes", e.UserWrites}, {"network", e.Network}, {"paid", e.Paid}} {
+		if effect.on {
+			effects = append(effects, effect.name)
+		}
+	}
+	if len(effects) == 0 {
+		return nil
+	}
+	if d.Modes.DryRun {
+		effects = append(effects, "dry_run")
+	}
+	return map[string]string{effectsAnnotation: strings.Join(effects, " ")}
 }
 
 // AddManifest adds the commands that a manifest declares under root, each

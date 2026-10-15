@@ -144,6 +144,30 @@ other = "{{.N}} GB"
 description = "A size in terabytes, 1000 gigabytes each. {{.N}} is a number already formatted, such as 1.5. TB is the unit symbol."
 other = "{{.N}} TB"
 
+["help.effects"]
+description = "Help page: one line under the summary of a command that changes files, uses the network, or may bill. {{.Effects}} lists them, such as `changes your files, uses the network`, from the help.effect_* entries joined by help.effect_separator."
+other = "Effects: {{.Effects}}."
+
+["help.effects_dry_run"]
+description = "Help page: the line of help.effects for a command that supports --dry-run, which shows what it would do without doing it. {{.Flag}} is that flag, --dry-run."
+other = "Effects: {{.Effects}}. Preview them with {{.Flag}}."
+
+["help.effect_user_writes"]
+description = "Help page: an item of help.effects, for a command that may change the user's files, config, keys, or grants."
+other = "changes your files"
+
+["help.effect_network"]
+description = "Help page: an item of help.effects, for a command that may use the network."
+other = "uses the network"
+
+["help.effect_paid"]
+description = "Help page: an item of help.effects, for a command that may send a paid request."
+other = "may bill"
+
+["help.effect_separator"]
+description = "Help page: what joins two items of help.effects, with its spaces."
+other = ", "
+
 ["help.usage"]
 description = "Help page: heading above the line that shows how to call the command."
 other = "Usage"

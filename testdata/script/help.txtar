@@ -96,3 +96,202 @@ env NO_COLOR= TERM=
 # The usage line keeps the positional arguments of a command
 exec ncly help help
 stdout '^  ncly help \[command\] \[flags\]$'
+
+# A command's help shows its arguments, its required flags, its flag groups, and one line
+# of effects from the declaration that ncly describe returns, so help and discovery never
+# disagree. A required argument is <name>, an optional one [name], a group that needs a
+# flag (--a | --b), and one that does not [--a | --b]
+env CLICOLOR_FORCE=
+chmod 755 bin/ncly-shop
+env PATH=$WORK/bin:$PATH
+exec ncly describe --help
+cp stdout page.txt
+stdout '^  ncly describe \[command\.\.\.\] \[flags\]$'
+! stdout 'Effects'
+exec ncly describe describe --json
+agree page.txt stdout
+
+exec ncly shop buy --help
+cp stdout page.txt
+stdout '^  ncly shop buy <item> \[quantity\] --store <name> \(--cash \| --card\) \[--email \| --sms\] \(--bag \| --box\) \[flags\]$'
+stdout '^Effects: changes your files, uses the network\. Preview them with --dry-run\.$'
+stdout '^  -n, --dry-run +Show the planned effects'
+stdout '^      --run-id <id> +Name the run'
+exec ncly describe shop buy --json
+agree page.txt stdout
+
+# A command that declares no effects may have every one, and a group names none
+exec ncly shop list --help
+cp stdout page.txt
+stdout '^Effects: changes your files, uses the network, may bill\.$'
+exec ncly describe shop list --json
+agree page.txt stdout
+exec ncly shop --help
+! stdout 'Effects'
+
+# The bundled Go fixture's help agrees with its describe answer too
+exec ncly-bundled hello pick --help
+cp stdout page.txt
+stdout '^  ncly hello pick <name> --mood <word> \(--left \| --right\) \[flags\]$'
+stdout '^Effects: changes your files\. Preview them with --dry-run\.$'
+exec ncly-bundled describe hello pick --json
+agree page.txt stdout
+
+# Under the pseudo-locale, every word of the page comes from a catalog, and the page still agrees
+exec ncly --lang en-XA shop buy --help
+cp stdout page.txt
+pseudo stdout shop buy
+exec ncly --lang en-XA describe shop buy --json
+agree page.txt stdout
+! exists ran
+
+-- bin/ncly-shop --
+#!/bin/sh
+echo "shop $*" >> "$WORK/ran"
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-shop.toml --
+format_version = 1
+contract_version = 1
+domain = "shop"
+
+[[commands]]
+path = "shop"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop list"
+summary = "shop.list.summary"
+examples = ["ncly shop list", "ncly shop list --json"]
+
+[[commands]]
+path = "shop buy"
+summary = "shop.buy.summary"
+examples = ["ncly shop buy apple --store north --cash --bag", "ncly shop buy apple 3 --store north --card --box --json"]
+effects = { user_writes = true, network = true }
+modes = { dry_run = true, recorded = true }
+requires = { bins = ["curl"], keys = ["shopapi"] }
+
+[[commands.args]]
+name = "item"
+summary = "shop.buy.item"
+required = true
+
+[[commands.args]]
+name = "quantity"
+summary = "shop.buy.quantity"
+type = "integer"
+
+[[commands.flags]]
+name = "store"
+shorthand = "s"
+value = "name"
+required = true
+summary = "shop.buy.store"
+
+[[commands.flags]]
+name = "budget"
+value = "amount"
+type = "number"
+default = 10.5
+summary = "shop.buy.budget"
+
+[[commands.flags]]
+name = "note"
+value = "text"
+variadic = true
+summary = "shop.buy.note"
+
+[[commands.flags]]
+name = "cash"
+summary = "shop.buy.cash"
+
+[[commands.flags]]
+name = "card"
+summary = "shop.buy.card"
+
+[[commands.flags]]
+name = "email"
+summary = "shop.buy.email"
+
+[[commands.flags]]
+name = "sms"
+summary = "shop.buy.sms"
+
+[[commands.flags]]
+name = "bag"
+summary = "shop.buy.bag"
+
+[[commands.flags]]
+name = "box"
+summary = "shop.buy.box"
+
+[[commands.flag_groups]]
+flags = ["cash", "card"]
+min = 1
+max = 1
+
+[[commands.flag_groups]]
+flags = ["email", "sms"]
+max = 1
+
+[[commands.flag_groups]]
+flags = ["bag", "box"]
+min = 1
+
+[programs.curl]
+-- bin/ncly-shop.locales/en.toml --
+["shop.summary"]
+description = "Summary of the shop fixture."
+other = "Buy things"
+
+["shop.list.summary"]
+description = "Summary of shop list."
+other = "List the stores"
+
+["shop.buy.summary"]
+description = "Summary of shop buy."
+other = "Buy an item"
+
+["shop.buy.item"]
+description = "The item argument of shop buy."
+other = "Item to buy"
+
+["shop.buy.quantity"]
+description = "The quantity argument of shop buy."
+other = "How many to buy"
+
+["shop.buy.store"]
+description = "The --store flag of shop buy."
+other = "Store to buy from"
+
+["shop.buy.budget"]
+description = "The --budget flag of shop buy."
+other = "Most to spend"
+
+["shop.buy.note"]
+description = "The --note flag of shop buy."
+other = "Note for the store, once per flag"
+
+["shop.buy.cash"]
+description = "The --cash flag of shop buy."
+other = "Pay cash"
+
+["shop.buy.card"]
+description = "The --card flag of shop buy."
+other = "Pay by card"
+
+["shop.buy.email"]
+description = "The --email flag of shop buy."
+other = "Send the receipt by email"
+
+["shop.buy.sms"]
+description = "The --sms flag of shop buy."
+other = "Send the receipt by text message"
+
+["shop.buy.bag"]
+description = "The --bag flag of shop buy."
+other = "Pack in a bag"
+
+["shop.buy.box"]
+description = "The --box flag of shop buy."
+other = "Pack in a box"

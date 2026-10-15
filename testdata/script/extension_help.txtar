@@ -21,7 +21,8 @@ exec ncly help hello
 cmp stdout hello-help.txt
 cmp stdout want-hello.txt
 
-# A command's help shows its arguments, its own flags apart from the global ones, and its examples
+# A command's help shows its arguments, its own flags apart from the global ones, and its examples.
+# Its manifest declares no effects, so its help names every one
 exec ncly hello run --help
 cmp stdout want-run.txt
 exec ncly help hello run
@@ -216,6 +217,8 @@ EXAMPLES
   $ ncly hello check --json
 -- want-run.txt --
 Greet someone by name
+
+Effects: changes your files, uses the network, may bill.
 
 USAGE
   ncly hello run [name] [flags]

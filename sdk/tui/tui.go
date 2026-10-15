@@ -61,7 +61,10 @@ type Section struct {
 
 // HelpPage is a help page, already in the active language.
 type HelpPage struct {
-	Summary       string
+	Summary string
+	// Note is one plain line under the summary, such as the effects of a
+	// command, or empty.
+	Note          string
 	UsageTitle    string
 	Usage         string
 	Sections      []Section
@@ -74,6 +77,9 @@ type HelpPage struct {
 func Help(p HelpPage) string {
 	var b strings.Builder
 	b.WriteString(p.Summary + "\n")
+	if p.Note != "" {
+		b.WriteString("\n" + p.Note + "\n")
+	}
 	block := func(title string, lines []string) {
 		if len(lines) == 0 {
 			return

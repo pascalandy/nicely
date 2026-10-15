@@ -411,3 +411,134 @@ func pgroup() {
 	fmt.Fprintln(os.Stderr, "pgroup:", err)
 	os.Exit(127)
 }
+
+// cmdAgree checks that a help page agrees with the answer of ncly describe
+// for the same command, in the same language: agree <help-file> <describe-file>.
+// The page starts with the summary, then the line of effects when the command
+// has one, naming --dry-run when it supports it. Its usage line shows each
+// argument as <name> when required and [name] otherwise, each required flag,
+// and each flag group in parentheses when it needs a flag and in brackets
+// otherwise. Each flag has a line with its summary, and each example appears.
+func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 2 {
+		ts.Fatalf("usage: agree <help-file> <describe-file>")
+	}
+	if err := agree(ts.ReadFile(args[0]), ts.ReadFile(args[1])); err != nil {
+		ts.Fatalf("agree: %v", err)
+	}
+}
+
+type described struct {
+	Path    string `json:"path"`
+	Summary string `json:"summary"`
+	Args    []struct {
+		Name     string `json:"name"`
+		Required bool   `json:"required"`
+		Variadic bool   `json:"variadic"`
+	} `json:"args"`
+	Flags []struct {
+		Name      string `json:"name"`
+		Shorthand string `json:"shorthand"`
+		Value     string `json:"value"`
+		Required  bool   `json:"required"`
+		Summary   string `json:"summary"`
+	} `json:"flags"`
+	FlagGroups []struct {
+		Flags []string `json:"flags"`
+		Min   int      `json:"min"`
+	} `json:"flag_groups"`
+	Effects  map[string]bool `json:"effects"`
+	Modes    map[string]bool `json:"modes"`
+	Examples []string        `json:"examples"`
+}
+
+func agree(page, answer string) error {
+	var a struct{ Commands []described }
+	if err := json.Unmarshal([]byte(answer), &a); err != nil || len(a.Commands) != 1 || a.Commands[0].Args == nil {
+		return fmt.Errorf("want the detail of one command, got %s", answer)
+	}
+	d := a.Commands[0]
+	lines := strings.Split(page, "\n")
+	if lines[0] != d.Summary {
+		return fmt.Errorf("the page starts with %q, the summary is %q", lines[0], d.Summary)
+	}
+	heading := 2
+	if d.Effects["user_writes"] || d.Effects["network"] || d.Effects["paid"] {
+		heading = 4
+		if lines[2] == "" || strings.Contains(lines[2], "--dry-run") != d.Modes["dry_run"] {
+			return fmt.Errorf("the line of effects %q disagrees with dry_run %t", lines[2], d.Modes["dry_run"])
+		}
+	}
+	if len(lines) <= heading+1 || lines[heading-1] != "" || !strings.HasPrefix(lines[heading+1], "  ncly "+d.Path) {
+		return fmt.Errorf("want the usage line of %s after line %d, got %q", d.Path, heading, lines)
+	}
+	usage := strings.Fields(strings.TrimPrefix(lines[heading+1], "  ncly "+d.Path))
+	values := map[string]string{}
+	for _, f := range d.Flags {
+		values[f.Name] = f.Value
+	}
+	flag := func(name string) string {
+		if values[name] != "" {
+			return "--" + name + " <" + values[name] + ">"
+		}
+		return "--" + name
+	}
+	var want []string
+	for _, arg := range d.Args {
+		name := arg.Name
+		if arg.Variadic {
+			name += "..."
+		}
+		if arg.Required {
+			want = append(want, "<"+name+">")
+		} else {
+			want = append(want, "["+name+"]")
+		}
+	}
+	grouped := map[string]bool{}
+	for _, g := range d.FlagGroups {
+		for _, name := range g.Flags {
+			grouped[name] = true
+		}
+	}
+	for _, f := range d.Flags {
+		if f.Required && !grouped[f.Name] {
+			want = append(want, flag(f.Name))
+		}
+	}
+	for _, g := range d.FlagGroups {
+		var choices []string
+		for _, name := range g.Flags {
+			choices = append(choices, flag(name))
+		}
+		group := strings.Join(choices, " | ")
+		if g.Min > 0 {
+			want = append(want, "("+group+")")
+		} else {
+			want = append(want, "["+group+"]")
+		}
+	}
+	want = append(want, "[flags]")
+	if got, wanted := strings.Join(usage, " "), strings.Join(want, " "); got != wanted {
+		return fmt.Errorf("usage %q, want %q", got, wanted)
+	}
+	for _, f := range d.Flags {
+		name := "    --" + f.Name
+		if f.Shorthand != "" {
+			name = "-" + f.Shorthand + ", --" + f.Name
+		}
+		if f.Value != "" {
+			name += " <" + f.Value + ">"
+		}
+		line := regexp.MustCompile(`(?m)^  ` + regexp.QuoteMeta(name) + ` +` + regexp.QuoteMeta(f.Summary) + `$`)
+		if !line.MatchString(page) {
+			return fmt.Errorf("no line for the flag %s with its summary %q", name, f.Summary)
+		}
+	}
+	for _, e := range d.Examples {
+		if !strings.Contains(page, "\n  $ "+e+"\n") {
+			return fmt.Errorf("no example %q", e)
+		}
+	}
+	return nil
+}

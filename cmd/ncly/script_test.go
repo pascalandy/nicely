@@ -89,6 +89,7 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 			"gone":      cmdGone,
 			"term":      cmdTerm,
 			"install":   cmdInstall,
+			"agree":     cmdAgree,
 		},
 	})
 }
