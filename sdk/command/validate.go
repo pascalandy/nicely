@@ -18,7 +18,8 @@ import (
 // groups. It returns the first problem, or nil.
 func validate(p *i18n.Printer, c *cobra.Command, d contract.Command, args []string) *contract.Problem {
 	usage := func(message string) *contract.Problem {
-		return &contract.Problem{Code: contract.UsageInvalid, Message: message, Hint: c.CommandPath() + " --help"}
+		problem := HelpUsage(c, message)
+		return &problem
 	}
 	for i, a := range d.Args {
 		values := args[min(i, len(args)):]

@@ -127,7 +127,7 @@ other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" take several
 
 ["extension.default"]
 description = "Reason inside extension.invalid, when the default of a flag does not fit it. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the flag."
-other = "{{.File}} gives the flag \"{{.Name}}\" of the command \"{{.Path}}\" a default that does not match its type, that a required flag or a flag with several values cannot have, or a switch other than false."
+other = "{{.File}} gives the flag \"{{.Name}}\" of the command \"{{.Path}}\" a default that does not fit it: of another type, a number that is not finite, a default on a required flag or a flag with several values, or a switch's default other than false."
 
 ["extension.flag_group"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Value}} the flags of one of its groups, such as --latest, --path. min and max are keys and stay as is."

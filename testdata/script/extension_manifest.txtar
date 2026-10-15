@@ -129,7 +129,7 @@ exits 78 ncly nshort --json
 stderr 'the flag -n, which a global flag'
 
 # Types, requiredness, variadic values, defaults, flag groups, and programs follow their rules
-exec sh broken.sh typebad switchtype required variadic default switchdefault group bin bintwice program
+exec sh broken.sh typebad switchtype required variadic default switchdefault nandefault group bin bintwice program
 exits 78 ncly typebad --json
 stderr 'gives \\"count\\" of the command \\"typebad run\\" the type \\"float\\"'
 exits 78 ncly switchtype --json
@@ -142,6 +142,8 @@ exits 78 ncly default --json
 stderr 'gives the flag \\"count\\" of the command \\"default run\\" a default'
 exits 78 ncly switchdefault --json
 stderr 'gives the flag \\"loud\\" of the command \\"switchdefault run\\" a default'
+exits 78 ncly nandefault --json
+stderr 'gives the flag \\"limit\\" of the command \\"nandefault run\\" a default'
 exits 78 ncly group --json
 stderr 'the group of flags --left, --nope'
 exits 78 ncly bin --json
@@ -524,6 +526,25 @@ summary = "switchdefault.summary"
 name = "loud"
 default = true
 summary = "switchdefault.summary"
+-- broken/nandefault.toml --
+format_version = 1
+contract_version = 1
+domain = "nandefault"
+
+[[commands]]
+path = "nandefault"
+summary = "nandefault.summary"
+
+[[commands]]
+path = "nandefault run"
+summary = "nandefault.summary"
+
+[[commands.flags]]
+name = "limit"
+value = "n"
+type = "number"
+default = nan
+summary = "nandefault.summary"
 -- broken/group.toml --
 format_version = 1
 contract_version = 1

@@ -37,6 +37,11 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 		Example: strings.Join(d.Examples, "\n"),
 		Args: func(c *cobra.Command, args []string) error {
 			if variadic || len(args) <= len(d.Args) {
+				// A group only prints its help, so nothing that a run needs
+				// applies to it.
+				if run == nil {
+					return nil
+				}
 				if problem := validate(p, c, d, args); problem != nil {
 					return Fail(*problem)
 				}

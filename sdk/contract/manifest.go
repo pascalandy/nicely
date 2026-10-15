@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"regexp"
 	"slices"
 	"strings"
@@ -351,9 +352,10 @@ func checkValues(path string, c Command) error {
 }
 
 // typed reports whether a value that TOML decoded has a type: an integer
-// for an integer, an integer or a float for a number.
+// for an integer, an integer or a finite float for a number, since JSON has
+// no NaN or infinity.
 func typed(value any, t Type) bool {
-	switch value.(type) {
+	switch v := value.(type) {
 	case string:
 		return t == TypeString
 	case bool:
@@ -361,7 +363,7 @@ func typed(value any, t Type) bool {
 	case int64:
 		return t == TypeInteger || t == TypeNumber
 	case float64:
-		return t == TypeNumber
+		return t == TypeNumber && !math.IsNaN(v) && !math.IsInf(v, 0)
 	}
 	return false
 }

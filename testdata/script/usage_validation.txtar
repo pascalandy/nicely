@@ -11,7 +11,7 @@ env PATH=$WORK/bin:$PATH
 exits 2 ncly shop buy --store north --cash --bag --json
 ! stdout .
 answer stderr USAGE_INVALID
-stderr '"message":"The argument \\u003citem\\u003e is missing.","hint":"ncly shop buy --help"'
+stderr '"message":"The argument \\u003citem\\u003e is missing.","hint":"ncly shop buy --help","next":\["ncly","shop","buy","--help"\]'
 exits 2 ncly shop buy apple --cash --bag --json
 answer stderr USAGE_INVALID
 stderr 'The flag --store is missing.'
@@ -35,6 +35,11 @@ exits 2 ncly shop buy apple --store north --cash --email --sms --bag --json
 stderr 'Give at most one of --email, --sms.'
 exits 2 ncly shop buy apple --store north --cash --json
 stderr 'Give at least one of --bag, --box.'
+
+# A group prints its help even when it declares a required flag, because it never runs
+exec ncly shop
+stdout '^Buy things$'
+! stderr .
 
 # The error block speaks the catalog's text
 exits 2 ncly --lang en-XA shop buy
@@ -73,6 +78,12 @@ domain = "shop"
 
 [[commands]]
 path = "shop"
+summary = "shop.summary"
+
+[[commands.flags]]
+name = "region"
+value = "name"
+required = true
 summary = "shop.summary"
 
 [[commands]]
