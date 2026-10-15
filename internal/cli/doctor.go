@@ -131,6 +131,10 @@ func addDoctor(p *i18n.Printer, root *cobra.Command, extensions []*extension) {
 		}
 		for _, c := range components {
 			r.Checks = append(r.Checks, c.checks()...)
+			// A signal that arrives while no probe runs ends doctor too.
+			if probes.signal == nil && probes.ctx.Err() != nil {
+				probes.signal = runner.SignalOf(probes.ctx)
+			}
 			if probes.signal != nil {
 				return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(probes.signal)}, text: func(io.Writer) error { return nil }}
 			}
