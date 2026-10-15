@@ -444,7 +444,8 @@ func (m Manifest) checkConfig(path string, c Command) error {
 // checkResult checks the schemas of one command's result, and resolves
 // their references. A text result has none, and only a command that
 // supports dry run has dry_run_schema. Each is an object schema whose
-// references are local.
+// references are local, and whose top level holds only the keywords that
+// AnswerSchema carries into the answer's schema.
 func checkResult(path string, c *Command) error {
 	for _, s := range []struct {
 		schema *map[string]any
@@ -458,7 +459,7 @@ func checkResult(path string, c *Command) error {
 			continue
 		}
 		resolved, err := ResolveSchema(*s.schema)
-		if !s.allow || err != nil || resolved["type"] != "object" {
+		if !s.allow || err != nil || !IsDataSchema(resolved) {
 			return broken("extension.schema", map[string]any{"Path": path, "Name": s.name})
 		}
 		*s.schema = resolved

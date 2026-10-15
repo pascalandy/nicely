@@ -161,10 +161,12 @@ stderr 'lists \\"lang\\" in config of the command \\"configkey run\\", which mus
 
 # A schema describes an object with local references only, a text result has none, and
 # only a command with dry run has dry_run_schema
-exec sh broken.sh remoteref textschema dryschema
+exec sh broken.sh remoteref closedschema textschema dryschema
 exits 78 ncly remoteref --json
 answer stderr EXTENSION_INVALID
 stderr 'gives the command \\"remoteref run\\" a schema that is not a JSON Schema of an object'
+exits 78 ncly closedschema --json
+stderr 'gives the command \\"closedschema run\\" a schema that is not a JSON Schema of an object'
 exits 78 ncly textschema --json
 stderr 'gives the command \\"textschema run\\" a schema'
 exits 78 ncly dryschema --json
@@ -689,3 +691,19 @@ summary = "dryschema.summary"
 [commands.result]
 schema = { type = "object" }
 dry_run_schema = { type = "object" }
+-- broken/closedschema.toml --
+format_version = 1
+contract_version = 1
+domain = "closedschema"
+
+[[commands]]
+path = "closedschema"
+summary = "closedschema.summary"
+
+[[commands]]
+path = "closedschema run"
+summary = "closedschema.summary"
+
+[commands.result.schema]
+type = "object"
+additionalProperties = false

@@ -203,6 +203,9 @@ func mustSchema(data []byte) map[string]any {
 	if err == nil {
 		schema, err = contract.ResolveSchema(schema)
 	}
+	if err == nil && !contract.IsDataSchema(schema) {
+		err = errors.New("describe: not a data schema")
+	}
 	if err != nil {
 		panic(err)
 	}

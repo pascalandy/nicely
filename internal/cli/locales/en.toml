@@ -158,8 +158,8 @@ description = "Hint under describe.defaults_used: what the user does next. {{.Fi
 other = "Fix {{.File}}."
 
 ["extension.schema"]
-description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the key of a schema, schema or dry_run_schema, which stays as is, as do JSON Schema, $ref, text, and object."
-other = "{{.File}} gives the command \"{{.Path}}\" a {{.Name}} that is not a JSON Schema of an object with local $ref only, or that a text result, or a command without dry run for dry_run_schema, cannot have."
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the key of a schema, schema or dry_run_schema, which stays as is, as do JSON Schema, $ref, type, properties, required, title, description, and text."
+other = "{{.File}} gives the command \"{{.Path}}\" a {{.Name}} that is not a JSON Schema of an object's keys, with only type, properties, required, title, and description at its top and local $ref only, or that a text result, or a command without dry run for dry_run_schema, cannot have."
 
 ["extension.program"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg. programs and requires.bins are keys and stay as is."

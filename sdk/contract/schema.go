@@ -138,6 +138,22 @@ func problemSchema() map[string]any {
 	}
 }
 
+// dataKeywords are the keywords of the top level of a data schema, which
+// AnswerSchema carries into the schema of the answer.
+var dataKeywords = []string{"$schema", "title", "description", "type", "properties", "required"}
+
+// IsDataSchema reports whether a resolved schema can describe the data keys
+// of an answer: an object schema whose top level holds only dataKeywords,
+// so that AnswerSchema drops no constraint.
+func IsDataSchema(schema map[string]any) bool {
+	for key := range schema {
+		if !slices.Contains(dataKeywords, key) {
+			return false
+		}
+	}
+	return schema["type"] == "object"
+}
+
 // AnswerSchema returns the JSON Schema of a whole answer of a result whose
 // data keys data describes, or nil for a text result. The envelope adds ok,
 // contract_version, errors, warnings, and, for a batch, results, whose items
