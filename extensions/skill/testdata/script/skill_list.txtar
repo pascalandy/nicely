@@ -75,8 +75,8 @@ exits 78 ncly --lang en-XA skill list
 pseudo stderr
 
 # So does a paths that is not a list of strings, a skill that is no table, a paths that is
-# a table, a relative folder, a lang of the wrong type, a number that JSON cannot hold, and
-# a file that cannot be read
+# a table, even an empty one over a list, a relative folder, a lang of the wrong type, a
+# number that JSON cannot hold, and a file that cannot be read
 cp wrongtype.toml $CFG/config.toml
 exits 78 ncly skill list --json
 answer stderr CONFIG_INVALID
@@ -87,6 +87,17 @@ stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is
 cp pathstable.toml $CFG/config.toml
 exits 78 ncly skill list --json
 stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is not a list of folders\."'
+cp emptytable.toml $CFG/config.toml
+exits 78 ncly skill list --json
+stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is not a list of folders\."'
+cp emptyinline.toml $CFG/config.toml
+exits 78 ncly skill list --json
+stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is not a list of folders\."'
+cp shared.toml $CFG/config.toml
+cp emptytable.toml $CFG/config.local.toml
+exits 78 ncly skill list --json
+stderr '"message":"'${CFG@R}'/config\.local\.toml gives \[skill\] paths a value that is not a list of folders\."'
+rm $CFG/config.local.toml
 cp relative.toml $CFG/config.toml
 exits 78 ncly skill list --json
 answer stderr CONFIG_INVALID
@@ -132,6 +143,11 @@ skill = ["~/skills"]
 -- pathstable.toml --
 [skill.paths]
 first = "~/skills"
+-- emptytable.toml --
+[skill.paths]
+-- emptyinline.toml --
+[skill]
+paths = {}
 -- relative.toml --
 [skill]
 paths = ["skills"]
