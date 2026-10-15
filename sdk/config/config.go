@@ -162,8 +162,9 @@ type Value struct {
 }
 
 // Values holds every value of the config files by dotted key, such as
-// skill.paths, each with the file that set it. A table is no value of its
-// own: each of its keys keeps its source.
+// skill.paths, each with the file that set it. A table with keys is no
+// value of its own: each of its keys keeps its source. An empty table with
+// no key beneath it is the value {} of its file.
 type Values map[string]Value
 
 // LoadValues reads the files as Load does, and keeps the source of each
