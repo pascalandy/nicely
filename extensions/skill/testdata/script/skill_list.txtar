@@ -1,0 +1,169 @@
+# ncly skill list lists the skills of the folders in [skill] paths, each subfolder with a
+# SKILL.md, sorted by name, with its source. skill is bundled, so it runs without any
+# install, and a list writes nothing.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+
+# Without a configured folder, the list is empty, and SKILL_NO_SOURCE names [skill] paths
+# in the shared config file
+exec ncly skill list --json
+answer stdout ok
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\],"warnings":\[\{"code":"SKILL_NO_SOURCE","message":"No skill folder is configured\.","hint":"Add the folders of your skills to \[skill\] paths in '${CFG@R}'/config\.toml\."\}\]\}$'
+! stderr .
+exec ncly skill list
+! stdout .
+stderr '^warning\[SKILL_NO_SOURCE\]: No skill folder is configured\.$'
+exec ncly --lang en-XA skill list
+pseudo stderr
+
+# Each folder of paths gives its skills, sorted by name byte by byte, whatever the folder
+# or the subfolder that holds them. A ~/ path starts at the home folder
+cp shared.toml $CFG/config.toml
+snapshot before
+exec ncly skill list
+cmp stdout list.txt
+! stderr .
+exec ncly skill list --json
+answer stdout ok
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"Zulu","description":"Use for upper case\.","path":"'${WORK@R}'/more/zulu","source":"config"\},\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/first","source":"config"\},\{"name":"beta","description":"Use for beta: with a colon\.","path":"'${WORK@R}'/more/beta","source":"config"\}\]\}$'
+! stderr .
+unchanged before
+cp stdout list.json
+
+# The answer matches the schema that describe gives, and describe reports where paths
+# comes from
+exec ncly describe 'skill list' --json
+cp stdout describe.json
+schema list.json describe.json schema
+stdout '"source":"bundled"'
+stdout '\{"key":"skill.paths","value":\["~/skills","~/more"\],"source":"'${CFG@R}'/config\.toml"\}'
+
+# The local config replaces the whole list of the shared one
+cp local.toml $CFG/config.local.toml
+exec ncly skill list --json
+stdout -count=2 '"source":"config"'
+stdout '"path":"'${WORK@R}'/more/beta"'
+! stdout '"alpha"'
+rm $CFG/config.local.toml
+
+# A missing folder before or after a valid one is skipped: the valid skills come back, and
+# SKILL_SOURCE_MISSING names the folder and the config file that lists it
+cp missing.toml $CFG/config.toml
+exec ncly skill list --json
+answer stdout ok
+stdout '"skills":\[\{"name":"alpha",'
+stdout '"warnings":\[\{"code":"SKILL_SOURCE_MISSING","message":"The skill folder '${WORK@R}'/gone is missing or cannot be read\.","hint":"Create '${WORK@R}'/gone, or remove it from \[skill\] paths in '${CFG@R}'/config\.toml\."\},\{"code":"SKILL_SOURCE_MISSING","message":"The skill folder '${WORK@R}'/nofolder\.txt is missing or cannot be read\.",'
+exec ncly --lang en-XA skill list
+pseudo stderr
+cp nopaths.toml $CFG/config.toml
+exec ncly skill list --json
+stdout '"skills":\[\],"warnings":\[\{"code":"SKILL_NO_SOURCE",'
+
+# A broken config fails list with CONFIG_INVALID and exit 78, naming the file, while
+# discovery keeps going with the defaults
+cp broken.toml $CFG/config.toml
+exits 78 ncly skill list --json
+! stdout .
+answer stderr CONFIG_INVALID
+stderr '"message":"'${CFG@R}'/config\.toml has an error on line 2\.","hint":"Fix '${CFG@R}'/config\.toml\."'
+exec ncly describe 'skill list' --json
+stdout '"code":"CONFIG_DEFAULTS_USED"'
+exits 78 ncly skill list
+stderr 'error\[CONFIG_INVALID\]: '
+exits 78 ncly --lang en-XA skill list
+pseudo stderr
+
+# So does a paths that is not a list of strings, a skill that is no table, a paths that is
+# a table, a relative folder, a lang of the wrong type, a number that JSON cannot hold, and
+# a file that cannot be read
+cp wrongtype.toml $CFG/config.toml
+exits 78 ncly skill list --json
+answer stderr CONFIG_INVALID
+stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is not a list of folders\.","hint":"Fix '${CFG@R}'/config\.toml\."'
+cp notatable.toml $CFG/config.toml
+exits 78 ncly skill list --json
+stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is not a list of folders\."'
+cp pathstable.toml $CFG/config.toml
+exits 78 ncly skill list --json
+stderr '"message":"'${CFG@R}'/config\.toml gives \[skill\] paths a value that is not a list of folders\."'
+cp relative.toml $CFG/config.toml
+exits 78 ncly skill list --json
+answer stderr CONFIG_INVALID
+stderr '"message":"'${CFG@R}'/config\.toml lists skills in \[skill\] paths, a folder that is neither absolute nor starts with ~/\.","hint":"Fix '${CFG@R}'/config\.toml\."'
+cp shared.toml $CFG/config.toml
+cp relative.toml $CFG/config.local.toml
+exits 78 ncly skill list --json
+stderr '"hint":"Fix '${CFG@R}'/config\.local\.toml\."'
+rm $CFG/config.local.toml
+cp lang.toml $CFG/config.toml
+exits 78 ncly skill list --json
+answer stderr CONFIG_INVALID
+cp notfinite.toml $CFG/config.toml
+exits 78 ncly skill list --json
+answer stderr CONFIG_INVALID
+stderr '"message":"'${CFG@R}'/config\.toml is not a valid config file\."'
+rm $CFG/config.toml
+mkdir $CFG/config.toml
+exits 78 ncly skill list --json
+answer stderr CONFIG_INVALID
+stderr '"message":"'${CFG@R}'/config\.toml is not a valid config file\."'
+
+-- shared.toml --
+[skill]
+paths = ["~/skills", "~/more"]
+-- local.toml --
+[skill]
+paths = ["~/more"]
+-- missing.toml --
+[skill]
+paths = ["~/gone", "~/skills", "~/nofolder.txt"]
+-- nopaths.toml --
+[skill]
+paths = []
+-- broken.toml --
+[skill]
+paths = [
+-- wrongtype.toml --
+[skill]
+paths = "~/skills"
+-- notatable.toml --
+skill = ["~/skills"]
+-- pathstable.toml --
+[skill.paths]
+first = "~/skills"
+-- relative.toml --
+[skill]
+paths = ["skills"]
+-- lang.toml --
+lang = 1
+-- notfinite.toml --
+[skill]
+other = [1.5, nan]
+-- nofolder.txt --
+Not a folder.
+-- list.txt --
+Zulu   Use for upper case.
+alpha  Use for alpha.
+beta   Use for beta: with a colon.
+-- skills/first/SKILL.md --
+---
+name: alpha
+description: Use for alpha.
+---
+
+# Alpha
+-- skills/notes.md --
+A file beside the skills is no skill.
+-- skills/empty/README.md --
+A folder without SKILL.md is no skill.
+-- more/beta/SKILL.md --
+---
+name: beta
+description: "Use for beta: with a colon."
+---
+-- more/zulu/SKILL.md --
+---
+name: Zulu
+description: Use for upper case.
+---

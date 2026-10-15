@@ -1,0 +1,60 @@
+# A SKILL.md that cannot be read, whose frontmatter is invalid, or that lacks name or
+# description is no skill: list omits it, keeps the valid ones, and adds one SKILL_INVALID
+# whose hint names the file to fix. A subfolder without SKILL.md is no skill either, and
+# warns nothing.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+mkdir $WORK/.config/nicely
+cp config.toml $WORK/.config/nicely/config.toml
+mkdir skills/unreadable/SKILL.md
+
+exec ncly skill list --json
+answer stdout ok
+stdout '"skills":\[\{"name":"good","description":"Use when all is well\.","path":"'${WORK@R}'/skills/good","source":"config"\}\]'
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/nodescription/SKILL\.md lacks description in its frontmatter, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/nodescription/SKILL\.md\."\}'
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/noname/SKILL\.md lacks name in its frontmatter, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/noname/SKILL\.md\."\}'
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/badyaml/SKILL\.md has no valid frontmatter, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/badyaml/SKILL\.md\."\}'
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/nofrontmatter/SKILL\.md has no valid frontmatter, so it is no skill\.",'
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/notext/SKILL\.md has no valid frontmatter, so it is no skill\.",'
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/unreadable/SKILL\.md cannot be read, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/unreadable/SKILL\.md\."\}'
+! stdout 'skills/plain'
+! stdout 'Use without a name'
+! stderr .
+
+exec ncly skill list
+stdout '^good  Use when all is well\.$'
+stderr '^warning\[SKILL_INVALID\]: '
+exec ncly --lang en-XA skill list
+pseudo stderr
+
+-- config.toml --
+[skill]
+paths = ["~/skills"]
+-- skills/good/SKILL.md --
+---
+name: good
+description: Use when all is well.
+---
+-- skills/nodescription/SKILL.md --
+---
+name: nodescription
+---
+-- skills/noname/SKILL.md --
+---
+description: Use without a name.
+---
+-- skills/badyaml/SKILL.md --
+---
+name: [unclosed
+description: Broken.
+---
+-- skills/nofrontmatter/SKILL.md --
+# No frontmatter
+
+name: nofrontmatter
+-- skills/notext/SKILL.md --
+---
+name: 7
+description: [a list]
+---
+-- skills/plain/README.md --
+No SKILL.md here.

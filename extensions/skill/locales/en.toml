@@ -1,0 +1,67 @@
+["skill.summary"]
+description = "Summary of the skill domain in `ncly --help`. A skill is a folder whose SKILL.md teaches an agent a task."
+other = "Find the skills that teach agents"
+
+["skill.list.summary"]
+description = "Summary of `ncly skill list`."
+other = "List the skills of every source"
+
+["skill.config_invalid"]
+description = "Error CONFIG_INVALID of `ncly skill list` when a config file cannot be read or is invalid, with no line number. {{.File}} is the path of the file."
+other = "{{.File}} is not a valid config file."
+
+["skill.config_invalid_line"]
+description = "Error CONFIG_INVALID of `ncly skill list` when a config file has an error on a known line. {{.File}} is the path of the file, and {{.Line}} a line number."
+other = "{{.File}} has an error on line {{.Line}}."
+
+["skill.paths_invalid"]
+description = "Error CONFIG_INVALID of `ncly skill list` when the paths key of the [skill] table is not a list of folders. {{.File}} is the path of the config file. [skill] paths names the key and stays as is."
+other = "{{.File}} gives [skill] paths a value that is not a list of folders."
+
+["skill.path_relative"]
+description = "Error CONFIG_INVALID of `ncly skill list` when a folder in [skill] paths is a relative path. {{.File}} is the path of the config file, and {{.Folder}} the folder as the file writes it. [skill] paths names the key, and ~/ stands for the home folder; both stay as is."
+other = "{{.File}} lists {{.Folder}} in [skill] paths, a folder that is neither absolute nor starts with ~/."
+
+["skill.config_hint"]
+description = "Hint under a CONFIG_INVALID error of `ncly skill list`: what the user does next. {{.File}} is the path of the config file."
+other = "Fix {{.File}}."
+
+["skill.no_source"]
+description = "Warning SKILL_NO_SOURCE of `ncly skill list`, when the config names no folder of skills."
+other = "No skill folder is configured."
+
+["skill.no_source_hint"]
+description = "Hint under skill.no_source: what the user does next. {{.File}} is the path of the shared config file. [skill] paths names the key and stays as is."
+other = "Add the folders of your skills to [skill] paths in {{.File}}."
+
+["skill.source_missing"]
+description = "Warning SKILL_SOURCE_MISSING of `ncly skill list`, when a folder of [skill] paths is missing or cannot be read. {{.Folder}} is the path of the folder."
+other = "The skill folder {{.Folder}} is missing or cannot be read."
+
+["skill.source_missing_hint"]
+description = "Hint under skill.source_missing: what the user does next. {{.Folder}} is the path of the folder, and {{.File}} the config file that lists it. [skill] paths names the key and stays as is."
+other = "Create {{.Folder}}, or remove it from [skill] paths in {{.File}}."
+
+["skill.shadowed"]
+description = "Warning SKILL_SHADOWED of `ncly skill list`, when two skills declare the same name and the first one hides the other. {{.Name}} is the skill's name, {{.Path}} the folder of the hidden skill, and {{.Winner}} the folder of the skill that list keeps."
+other = "The skill {{.Name}} in {{.Path}} is hidden by the one in {{.Winner}}."
+
+["skill.shadowed_hint"]
+description = "Hint under skill.shadowed: what the user does next. {{.File}} is the SKILL.md of the hidden skill, and {{.Path}} its folder."
+other = "Rename the skill in {{.File}}, or remove {{.Path}}."
+
+["skill.invalid_unreadable"]
+description = "Warning SKILL_INVALID of `ncly skill list`, when a SKILL.md cannot be read, so list skips its folder. {{.File}} is the path of the SKILL.md."
+other = "{{.File}} cannot be read, so it is no skill."
+
+["skill.invalid_frontmatter"]
+description = "Warning SKILL_INVALID of `ncly skill list`, when a SKILL.md has no frontmatter, the YAML block between two lines ---, or one that is not valid, so list skips its folder. {{.File}} is the path of the SKILL.md."
+other = "{{.File}} has no valid frontmatter, so it is no skill."
+
+["skill.invalid_missing"]
+description = "Warning SKILL_INVALID of `ncly skill list`, when the frontmatter of a SKILL.md lacks a key, so list skips its folder. {{.File}} is the path of the SKILL.md, and {{.Key}} the key, name or description, which stays as is."
+other = "{{.File}} lacks {{.Key}} in its frontmatter, so it is no skill."
+
+["skill.invalid_hint"]
+description = "Hint under a SKILL_INVALID warning: what the user does next. {{.File}} is the path of the SKILL.md."
+other = "Fix {{.File}}."

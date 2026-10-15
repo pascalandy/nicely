@@ -229,6 +229,56 @@ func (v Values) Under(key string) []Value {
 	return found
 }
 
+// Decode decodes the value at key, such as skill.paths, into target, a
+// pointer to the type that the key holds, as Load decodes the keys of core.
+// It returns the value with the file that set it, or one from Default that
+// leaves target unchanged when no file sets key. A value of another type is
+// an InvalidError about the file that set it, and so is a table at key, or
+// a value where a table above key belongs.
+func (v Values) Decode(key string, target any) (Value, error) {
+	words := strings.Split(key, ".")
+	for i := 1; i < len(words); i++ {
+		if above, found := v[strings.Join(words[:i], ".")]; found {
+			return above, &InvalidError{File: above.Source, Err: fmt.Errorf("%q is not a table", above.Key)}
+		}
+	}
+	set, found := v[key]
+	if !found {
+		if beneath := v.Under(key); beneath[0].Source != Default {
+			return beneath[0], &InvalidError{File: beneath[0].Source, Err: fmt.Errorf("%q is a table", key)}
+		}
+		return Value{Key: key, Source: Default}, nil
+	}
+	var buf bytes.Buffer
+	if err := toml.NewEncoder(&buf).Encode(map[string]any{"value": set.Value}); err != nil {
+		return set, &InvalidError{File: set.Source, Err: err}
+	}
+	var wrapper struct {
+		Value toml.Primitive `toml:"value"`
+	}
+	meta, err := toml.Decode(buf.String(), &wrapper)
+	if err == nil {
+		err = meta.PrimitiveDecode(wrapper.Value, target)
+	}
+	if err != nil {
+		return set, &InvalidError{File: set.Source, Err: fmt.Errorf("%q: %w", key, err)}
+	}
+	return set, nil
+}
+
+// Path resolves a path that a config file holds: an absolute path as is,
+// and one that starts with ~/ from home. Any other path is an error,
+// because its meaning would depend on the folder where ncly runs.
+func Path(home, path string) (string, error) {
+	if rest, found := strings.CutPrefix(path, "~/"); found && filepath.IsAbs(home) {
+		return filepath.Join(home, rest), nil
+	}
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path), nil
+	}
+	return "", fmt.Errorf("%q is neither absolute nor starts with ~/", path)
+}
+
 // Lang resolves the language with its source, in the order of
 // Configuration in contract.md: the flag, NCLY_LANG, lang in the config
 // files, LC_ALL, LC_MESSAGES, LANG, then en from Default. files reads the

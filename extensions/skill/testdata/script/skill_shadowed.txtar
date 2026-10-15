@@ -1,0 +1,44 @@
+# When two skills share a name, the first wins and list adds SKILL_SHADOWED, whose hint
+# names the folder of the skill that it hides. Inside one folder, the subfolder whose name
+# sorts first byte by byte wins: Zed before alpha, though a dictionary puts alpha first.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+mkdir $WORK/.config/nicely
+cp config.toml $WORK/.config/nicely/config.toml
+
+exec ncly skill list --json
+answer stdout ok
+stdout '"skills":\[\{"name":"dup","description":"Use the Zed copy\.","path":"'${WORK@R}'/skills/Zed","source":"config"\},\{"name":"twice","description":"Use the first folder\.","path":"'${WORK@R}'/skills/twice","source":"config"\}\]'
+stdout '"warnings":\[\{"code":"SKILL_SHADOWED","message":"The skill dup in '${WORK@R}'/skills/alpha is hidden by the one in '${WORK@R}'/skills/Zed\.","hint":"Rename the skill in '${WORK@R}'/skills/alpha/SKILL\.md, or remove '${WORK@R}'/skills/alpha\."\},\{"code":"SKILL_SHADOWED","message":"The skill twice in '${WORK@R}'/later/twice is hidden by the one in '${WORK@R}'/skills/twice\.",'
+! stdout 'Use the alpha copy'
+! stdout 'Use the later folder'
+! stderr .
+
+exec ncly skill list
+stdout '^dup    Use the Zed copy\.$'
+stderr '^warning\[SKILL_SHADOWED\]: The skill dup in '
+exec ncly --lang en-XA skill list
+pseudo stderr
+
+-- config.toml --
+[skill]
+paths = ["~/skills", "~/later"]
+-- skills/alpha/SKILL.md --
+---
+name: dup
+description: Use the alpha copy.
+---
+-- skills/Zed/SKILL.md --
+---
+name: dup
+description: Use the Zed copy.
+---
+-- skills/twice/SKILL.md --
+---
+name: twice
+description: Use the first folder.
+---
+-- later/twice/SKILL.md --
+---
+name: twice
+description: Use the later folder.
+---

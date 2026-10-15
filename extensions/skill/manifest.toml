@@ -1,0 +1,25 @@
+format_version = 1
+contract_version = 1
+domain = "skill"
+
+[[commands]]
+path = "skill"
+summary = "skill.summary"
+examples = ["ncly skill list", "ncly skill list --json"]
+
+[[commands]]
+path = "skill list"
+summary = "skill.list.summary"
+examples = ["ncly skill list", "ncly skill list --json"]
+effects = {}
+config = ["skill.paths"]
+
+[commands.result.schema]
+type = "object"
+required = ["skills"]
+properties = { skills = { type = "array", items = { "$ref" = "#/$defs/skill" } } }
+
+[commands.result.schema."$defs".skill]
+type = "object"
+required = ["name", "description", "path", "source"]
+properties = { name = { type = "string" }, description = { type = "string" }, path = { type = ["string", "null"] }, source = { type = "string" } }

@@ -26,6 +26,9 @@ func TestMain(m *testing.M) {
 		// fixture through the routing of run, as in a release.
 		"ncly-bundled": testBundled,
 		"ncly-hello":   testBundled,
+		// ncly-skill is ncly started under the name of its bundled skill
+		// extension, as core starts it.
+		"ncly-skill": testNcly,
 	})
 }
 

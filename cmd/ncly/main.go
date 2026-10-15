@@ -5,13 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pascalandy/nicely/extensions/skill"
 	"github.com/pascalandy/nicely/internal/cli"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
 )
 
-// bundled lists the extensions compiled into ncly. skill joins it in M04.
-var bundled []extension.Extension
+// bundled lists the extensions compiled into ncly: only what an agent needs
+// to operate Nicely, which is skill, as Extensions in contract.md says.
+var bundled = []extension.Extension{skill.Extension}
 
 func main() { os.Exit(run(bundled)) }
 

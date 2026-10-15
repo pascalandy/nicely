@@ -20,7 +20,8 @@ stdout '\{"path":"completion","summary":"Print shell completion scripts","source
 stdout '\{"path":"completion zsh","summary":"Print the completion script for zsh","source":"core"\}'
 stdout '\{"path":"describe","summary":"Describe installed commands and their capabilities","source":"core"\}'
 stdout '\{"path":"hello","summary":"Greet people","source":"extension","skill":"'${WORK@R}'/bin/ncly-hello\.skill"\}'
-stdout '\{"path":"hello run","summary":"Greet someone by name","source":"extension"\}\]\}$'
+stdout '\{"path":"hello run","summary":"Greet someone by name","source":"extension"\},'
+stdout '\{"path":"skill","summary":"Find the skills that teach agents","source":"bundled","skill":null\},\{"path":"skill list","summary":"List the skills of every source","source":"bundled"\}\]\}$'
 ! stdout '"path":"completion[^}]*"skill"'
 ! stdout '"path":"hello [^}]*"skill"'
 ! stdout broken
@@ -69,7 +70,7 @@ cmp stderr broken.json
 
 # Under the pseudo-locale, every word of the list and of the error comes from a catalog
 exec ncly --lang en-XA describe
-pseudo stdout bonjour dire hello run completion bash fish zsh describe
+pseudo stdout bonjour dire hello run completion bash fish zsh describe skill list
 exits 2 ncly --lang en-XA describe nope
 pseudo stderr describe
 
@@ -85,6 +86,8 @@ completion zsh   Print the completion script for zsh
 describe         Describe installed commands and their capabilities
 hello            Greet people
 hello run        Greet someone by name
+skill            Find the skills that teach agents
+skill list       List the skills of every source
 -- want-hello.json --
 {"ok":true,"contract_version":1,"commands":[{"path":"hello","summary":"Greet people","source":"extension","skill":"$WORK/bin/ncly-hello.skill"},{"path":"hello run","summary":"Greet someone by name","source":"extension"}]}
 -- bin/ncly-hello --

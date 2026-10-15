@@ -64,7 +64,7 @@ stderr 'Unknown command "-h"'
 
 # Under the pseudo-locale, every word of the help comes from the catalog
 exec ncly --lang en-XA --help
-pseudo stdout completion describe
+pseudo stdout completion describe skill
 exec ncly --lang en-XA completion --help
 pseudo stdout completion zsh bash fish
 exec ncly --lang en-XA completion zsh --help
