@@ -20,7 +20,7 @@ The scenarios use the shell fixture of M01, which gains required programs, confi
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M05-T1 | Report and core component | agent | — | done |
-| M05-T2 | Required programs | agent | M05-T3 | todo |
+| M05-T2 | Required programs | agent | M05-T3 | done |
 | M05-T3 | Extensions component | agent | M05-T1 | done |
 | M05-T4 | Status commands and skill status | agent | M05-T2 | todo |
 
