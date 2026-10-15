@@ -44,6 +44,7 @@ Settle each one in a new `ncly tap` section of [core-spec.md](../north-star/core
 - How a tap ships a Go extension: a binary published for each system, or a build on the user's machine
 - How `ncly` finds the first-party extensions in the official tap, and how `just install` gives way to it
 - How one call reads a single revision of an extension while `sync` publishes another, such as through a pinned generation or a reader lock. The host reads the manifest, then the catalogs, then starts the executable by its path, so a publication between those reads mixes two revisions. Its card proves the answer with a scenario that publishes between manifest loading and process launch
+- How the canonical identity of a tap becomes the source of a grant, which is the path of the extension until taps, as [Grants](../north-star/contract.md#grants) defines
 - How Pascal's Python scripts move from the `{"ok":false,"errors":["…"]}` strings of his script-output convention to the error objects of D027
 
 ## Cards
