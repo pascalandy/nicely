@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,9 +55,14 @@ func addValuesCompletion(root *cobra.Command, d contract.Command, values func(co
 // completeValues suggests the values of a values_from that start with
 // prefix. Any failure suggests nothing and prints nothing, so a Tab never
 // shows an error: the reason goes to Cobra's completion debug log, which
-// BASH_COMP_DEBUG_FILE turns on.
-func completeValues(extensions []*extension, lang string, from contract.ValuesFrom, prefix string) []cobra.Completion {
-	values, err := listValues(extensions, lang, from)
+// BASH_COMP_DEBUG_FILE turns on. Ctrl-C or SIGTERM ends the list command and
+// its descendants at once, then ncly with the signal's code.
+func completeValues(extensions []*extension, g command.Globals, from contract.ValuesFrom, prefix string) []cobra.Completion {
+	values, err := listValues(extensions, g, from)
+	var stopped *stoppedError
+	if errors.As(err, &stopped) {
+		os.Exit(int(contract.Core.Decide(contract.Outcome{Signal: contract.StopSignal(stopped.signal)}).Exit))
+	}
 	if err != nil {
 		cobra.CompDebugln(fmt.Sprintf("values_from %q: %v", strings.Join(from.Command, " "), err), false)
 		return nil
@@ -72,12 +76,18 @@ func completeValues(extensions []*extension, lang string, from contract.ValuesFr
 	return suggested
 }
 
+// stoppedError reports a list command that a signal to ncly ended.
+type stoppedError struct{ signal os.Signal }
+
+func (e *stoppedError) Error() string { return "stopped by " + e.signal.String() }
+
 // listValues dispatches the list command that from names through the
 // extension that discovery found, once its own declaration qualifies, and
 // returns the field of each object under the key of its answer. The command
-// runs in its own process group with NCLY_JSON=1, never asks, and gets
-// valuesLimit, after which SIGKILL ends it and its descendants at once.
-func listValues(extensions []*extension, lang string, from contract.ValuesFrom) ([]string, error) {
+// runs in its own process group with the global flags of g and NCLY_JSON=1,
+// never asks, and gets valuesLimit, after which SIGKILL ends it and its
+// descendants at once.
+func listValues(extensions []*extension, g command.Globals, from contract.ValuesFrom) ([]string, error) {
 	path := strings.Join(from.Command, " ")
 	i := slices.IndexFunc(extensions, func(e *extension) bool { return e.domain == from.Command[0] })
 	if i < 0 {
@@ -96,7 +106,7 @@ func listValues(extensions []*extension, lang string, from contract.ValuesFrom) 
 	program := runner.Program{
 		Path:   e.path,
 		Args:   append(slices.Clone(d.Path[1:]), "--"),
-		Env:    runner.Environ(os.Environ(), extensionVars(command.Globals{JSON: true, Lang: lang})),
+		Env:    runner.Environ(os.Environ(), extensionVars(withJSON(g))),
 		Stdout: &stdout,
 		Stderr: stderr,
 		Limit:  valuesLimit,
@@ -104,10 +114,12 @@ func listValues(extensions []*extension, lang string, from contract.ValuesFrom) 
 	if e.bundled {
 		program.Name = executablePrefix + e.domain
 	}
-	result, err := runner.Run(context.Background(), program)
+	result, err := runner.Run(runner.OnSignal(), program)
 	switch {
 	case err != nil:
 		return nil, err
+	case result.Signal != nil:
+		return nil, &stoppedError{result.Signal}
 	case result.TimedOut:
 		return nil, fmt.Errorf("it did not answer within the timeout of %s", valuesLimit)
 	}
@@ -132,4 +144,11 @@ func listValues(extensions []*extension, lang string, from contract.ValuesFrom) 
 		values = append(values, value)
 	}
 	return values, nil
+}
+
+// withJSON returns g with machine mode on, as a list command that completion
+// runs gets it.
+func withJSON(g command.Globals) command.Globals {
+	g.JSON = true
+	return g
 }

@@ -213,8 +213,9 @@ func (e *extension) invalid(p *i18n.Printer) contract.Problem {
 const extensionGroup = "extensions"
 
 // addExtensions adds the commands of each valid extension under the root,
-// with the extension's text in the language that lang requests.
-func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions []*extension) {
+// with the extension's text in the language that g requests.
+func addExtensions(root *cobra.Command, p *i18n.Printer, g command.Globals, extensions []*extension) {
+	lang := g.Lang
 	root.AddGroup(&cobra.Group{ID: extensionGroup, Title: p.T("help.extensions")})
 	for _, e := range extensions {
 		if e.broken != nil {
@@ -228,7 +229,7 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions
 		domain.GroupID = extensionGroup
 		for _, d := range e.manifest.Commands {
 			addValuesCompletion(root, d, func(from contract.ValuesFrom, prefix string) []cobra.Completion {
-				return completeValues(extensions, lang, from, prefix)
+				return completeValues(extensions, g, from, prefix)
 			})
 		}
 	}

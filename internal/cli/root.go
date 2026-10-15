@@ -55,14 +55,14 @@ func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.Fi
 	// comes from the catalogs, so the tree is built again once the language
 	// is known.
 	en := catalogs.Printer("en")
-	core := newRoot(en, "", nil)
+	core := newRoot(en, command.Globals{}, nil)
 	cmd, _, _ := core.Find(args)
 	extensions := neededExtensions(newHost(bundled), core, command.Scan(cmd, args).Words)
-	cmd, _, _ = newRoot(en, "", extensions).Find(args)
+	cmd, _, _ = newRoot(en, command.Globals{}, extensions).Find(args)
 	line := command.Scan(cmd, args)
 	g := command.Resolve(line)
 	p := catalogs.Printer(g.Lang)
-	root := newRoot(p, g.Lang, extensions)
+	root := newRoot(p, g, extensions)
 	out := command.NewOutput(stdout)
 	root.SetArgs(args)
 	root.SetOut(out)
@@ -108,8 +108,9 @@ func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.Fi
 }
 
 // newRoot builds the command tree, with the commands of each valid
-// extension in the language that lang requests.
-func newRoot(p *i18n.Printer, lang string, extensions []*extension) *cobra.Command {
+// extension in the language that g requests. Completion passes g on to the
+// list commands that it runs.
+func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "ncly",
 		Short:         p.T(rootCommand.Summary),
@@ -123,8 +124,8 @@ func newRoot(p *i18n.Printer, lang string, extensions []*extension) *cobra.Comma
 	root.SetHelpCommand(help)
 	root.AddCommand(help)
 	addCompletion(p, root)
-	addDescribe(p, lang, root, extensions)
-	addExtensions(root, p, lang, extensions)
+	addDescribe(p, g.Lang, root, extensions)
+	addExtensions(root, p, g, extensions)
 	return root
 }
 

@@ -185,7 +185,33 @@ stdout '\A:4\n\z'
 ! exists got-term
 grep 'timeout' debug.log
 gone slow.pid
+gone slowchild.pid
 env BASH_COMP_DEBUG_FILE=
+
+# SIGTERM during completion ends the list command and its descendants at once, without
+# cleanup, and completion ends with 143
+rm slow.pid slowchild.pid
+exec exitcode exit.txt ncly __complete shop buy '' &
+waitfile slow.pid
+term
+wait
+grep '^143$' exit.txt
+gone slow.pid
+gone slowchild.pid
+! exists got-term
+
+# The list command gets the global flags that the call resolved, with NCLY_JSON=1, and no
+# key of a service
+env SHOP_MODE=env
+env SHOP_API_KEY=sk-never-passed
+exec ncly --no-input --no-color -v __complete shop buy ''
+stdout '^apple$'
+grep '^NCLY_JSON=1$' list-env.txt
+grep '^NCLY_NO_INPUT=1$' list-env.txt
+grep '^NCLY_VERBOSE=1$' list-env.txt
+grep '^NO_COLOR=1$' list-env.txt
+! grep sk-never-passed list-env.txt
+env SHOP_API_KEY=
 
 # A list command whose descendant keeps stdout open still ends completion within the 2
 # seconds, though it answers after one second, and its descendant ends too
@@ -223,9 +249,13 @@ case "$1 $2" in
   nofield) echo '{"ok":true,"contract_version":1,"items":[{"name":"apple"},{"label":"pear"}]}' ;;
   slow)
     trap 'echo term > "$WORK/got-term"' TERM
+    sleep 30 &
+    echo $! > "$WORK/slowchild.pid"
     echo $$ > "$WORK/slow.pid"
-    sleep 10 &
     wait ;;
+  env)
+    env > "$WORK/list-env.txt"
+    echo '{"ok":true,"contract_version":1,"items":[{"name":"apple"}]}' ;;
   holder)
     sleep 1
     sh -c 'echo $$ > "$WORK/holder.pid"; exec sleep 10' &

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/pascalandy/nicely/internal/specdoc"
+	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/spf13/cobra"
 )
@@ -130,6 +131,6 @@ func tree() []*cobra.Command {
 			walk(sub)
 		}
 	}
-	walk(newRoot(catalogs.Printer("en"), "", nil))
+	walk(newRoot(catalogs.Printer("en"), command.Globals{}, nil))
 	return all
 }

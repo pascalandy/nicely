@@ -39,9 +39,10 @@ type Program struct {
 	// in its own process group.
 	Terminal bool
 	// Limit, when set, bounds the program and the reading of its output, as
-	// completion bounds a list command. At the limit, Run sends SIGKILL to
-	// every descendant of ncly at once, without the cleanup of a signal, and
-	// closes the streams instead of starting the drain limit.
+	// completion bounds a list command. At the limit, or when ctx ends
+	// first, Run sends SIGKILL to every descendant of ncly at once, without
+	// the cleanup of a signal, and closes the streams instead of starting
+	// the drain limit.
 	Limit time.Duration
 }
 
@@ -134,9 +135,15 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		}
 	case <-ctx.Done():
 	case <-limit:
-		// A program that has a limit gets no cleanup: it ends at once, and
-		// so does every descendant that holds its streams.
 		result.TimedOut = true
+	}
+	if p.Limit > 0 && (result.TimedOut || ctx.Err() != nil) {
+		// A program that has a limit gets no cleanup: at the limit or on a
+		// signal, it ends at once, and so does every descendant that holds
+		// its streams.
+		if ctx.Err() != nil {
+			result.Signal = SignalOf(ctx)
+		}
 		signalTree(syscall.SIGKILL)
 		<-exited
 		drain(streams, time.Now())
