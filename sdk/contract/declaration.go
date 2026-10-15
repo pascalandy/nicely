@@ -85,6 +85,20 @@ type Arg struct {
 	// Variadic takes every remaining word. Only the last argument may be
 	// variadic.
 	Variadic bool
+	// ValuesFrom names the list command whose answer completion suggests
+	// values from, or is nil.
+	ValuesFrom *ValuesFrom
+}
+
+// ValuesFrom names where completion finds the values that only an extension
+// knows, as Completion values in contract.md defines: the path of a list
+// command, the key of its answer that holds an array of objects, and the
+// string key of each object to suggest. It only suggests: the command still
+// accepts any value.
+type ValuesFrom struct {
+	Command []string
+	Key     string
+	Field   string
 }
 
 // Flag is one flag. Env names the variable with the same effect, for a
@@ -107,6 +121,9 @@ type Flag struct {
 	// Default is the typed default, or nil when none applies. A switch
 	// defaults to false.
 	Default any
+	// ValuesFrom names the list command whose answer completion suggests
+	// values from, or is nil.
+	ValuesFrom *ValuesFrom
 }
 
 // FlagGroup bounds how many of its flags, by long name, a call may set.

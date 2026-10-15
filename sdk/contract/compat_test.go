@@ -254,3 +254,80 @@ func TestAConsumerRunsNextOnlyWhenPresent(t *testing.T) {
 		})
 	}
 }
+
+func TestAConsumerReadsAnArgumentWithAndWithoutValuesFrom(t *testing.T) {
+	// Arguments as ncly describe gives them, written out: values_from is
+	// present only when the declaration has one.
+	with := `{"name":"name","summary":"s","type":"string","required":true,"variadic":false,"values":[],"values_from":{"command":"skill list","key":"skills","field":"name"}}`
+	without := `{"name":"name","summary":"s","type":"string","required":true,"variadic":false,"values":[]}`
+	type valuesFrom struct{ Command, Key, Field string }
+	for _, c := range []struct {
+		line string
+		want *valuesFrom
+	}{{with, &valuesFrom{"skill list", "skills", "name"}}, {without, nil}} {
+		var arg struct {
+			Name       string      `json:"name"`
+			Required   bool        `json:"required"`
+			ValuesFrom *valuesFrom `json:"values_from"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &arg); err != nil {
+			t.Fatal(err)
+		}
+		if arg.Name != "name" || !arg.Required || (arg.ValuesFrom == nil) != (c.want == nil) || c.want != nil && *arg.ValuesFrom != *c.want {
+			t.Errorf("consumer read %+v from %s", arg, c.line)
+		}
+		// A consumer written before values_from reads the same argument.
+		var older struct {
+			Name     string `json:"name"`
+			Required bool   `json:"required"`
+			Values   []any  `json:"values"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &older); err != nil || older.Name != "name" || !older.Required || len(older.Values) != 0 {
+			t.Errorf("older consumer read %+v from %s", older, c.line)
+		}
+	}
+
+	// The manifest key that declares it, and an argument without one.
+	manifest := `format_version = 1
+contract_version = 1
+domain = "demo"
+
+[[commands]]
+path = "demo"
+summary = "demo.summary"
+
+[[commands]]
+path = "demo view"
+summary = "demo.summary"
+
+[[commands.args]]
+name = "name"
+summary = "demo.summary"
+values_from = { command = "demo item list", key = "items", field = "name" }
+
+[[commands.args]]
+name = "other"
+summary = "demo.summary"
+
+[[commands]]
+path = "demo item"
+summary = "demo.summary"
+
+[[commands]]
+path = "demo item list"
+summary = "demo.summary"
+effects = {}
+`
+	m, err := ParseManifest([]byte(manifest), "demo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	view, _ := m.Command("demo view")
+	got := view.Args[0].ValuesFrom
+	if got == nil || strings.Join(got.Command, " ") != "demo item list" || got.Key != "items" || got.Field != "name" {
+		t.Errorf("values_from of name is %+v", got)
+	}
+	if view.Args[1].ValuesFrom != nil {
+		t.Errorf("an argument without values_from has %+v", view.Args[1].ValuesFrom)
+	}
+}

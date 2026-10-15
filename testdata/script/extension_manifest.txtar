@@ -207,6 +207,35 @@ stdout '^  linked: '
 ! stdout '^  later:'
 ! exists ran
 
+# values_from sits on an argument or a flag that takes a value, names a command, a key, and a
+# field, and a command of its own domain only when that command qualifies: a list command
+# that runs, takes no argument, answers an object, and declares effects that neither write
+# user files nor bill. A foreign command is checked only when completion runs it
+exec sh broken.sh vfok vfswitch vfempty vfundeclared vfgroup vfverb vfarg vfkind vfnoeffects vfwrites vfpaid
+exec ncly vfok --help
+stdout 'vfok'
+exits 78 ncly vfswitch --json
+answer stderr EXTENSION_INVALID
+stderr 'gives the switch \\"loud\\" of the command \\"vfswitch run\\" a values_from'
+exits 78 ncly vfempty --json
+stderr 'gives \\"name\\" of the command \\"vfempty run\\" a values_from without its command, key, and field'
+exits 78 ncly vfundeclared --json
+stderr 'a values_from on \\"vfundeclared item missing list\\", which must be a list command'
+exits 78 ncly vfgroup --json
+stderr 'a values_from on \\"vfgroup item list\\", which must be a list command'
+exits 78 ncly vfverb --json
+stderr 'a values_from on \\"vfverb item show\\", which must be a list command'
+exits 78 ncly vfarg --json
+stderr 'a values_from on \\"vfarg item list\\", which must be a list command'
+exits 78 ncly vfkind --json
+stderr 'a values_from on \\"vfkind item list\\", which must be a list command'
+exits 78 ncly vfnoeffects --json
+stderr 'a values_from on \\"vfnoeffects item list\\", which must be a list command'
+exits 78 ncly vfwrites --json
+stderr 'a values_from on \\"vfwrites item list\\", which must be a list command'
+exits 78 ncly vfpaid --json
+stderr 'a values_from on \\"vfpaid item list\\", which must be a list command'
+
 -- stub.sh --
 #!/bin/sh
 echo "${0##*/}" >> "$WORK/ran"
@@ -764,3 +793,303 @@ summary = "olddialect.summary"
 "$schema" = "http://json-schema.org/draft-04/schema#"
 type = "object"
 properties = { count = { type = "number", minimum = 0, exclusiveMinimum = true } }
+-- broken/vfok.toml --
+format_version = 1
+contract_version = 1
+domain = "vfok"
+
+[[commands]]
+path = "vfok"
+summary = "vfok.summary"
+
+[[commands]]
+path = "vfok run"
+summary = "vfok.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfok.summary"
+values_from = { command = "vfok item list", key = "items", field = "name" }
+
+[[commands.flags]]
+name = "from"
+value = "name"
+summary = "vfok.summary"
+values_from = { command = "other item show", key = "items", field = "name" }
+
+[[commands]]
+path = "vfok item"
+summary = "vfok.summary"
+
+[[commands]]
+path = "vfok item list"
+summary = "vfok.summary"
+effects = { network = true }
+-- broken/vfswitch.toml --
+format_version = 1
+contract_version = 1
+domain = "vfswitch"
+
+[[commands]]
+path = "vfswitch"
+summary = "vfswitch.summary"
+
+[[commands]]
+path = "vfswitch run"
+summary = "vfswitch.summary"
+
+[[commands.flags]]
+name = "loud"
+summary = "vfswitch.summary"
+values_from = { command = "vfswitch item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfswitch item"
+summary = "vfswitch.summary"
+
+[[commands]]
+path = "vfswitch item list"
+summary = "vfswitch.summary"
+effects = {}
+-- broken/vfempty.toml --
+format_version = 1
+contract_version = 1
+domain = "vfempty"
+
+[[commands]]
+path = "vfempty"
+summary = "vfempty.summary"
+
+[[commands]]
+path = "vfempty run"
+summary = "vfempty.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfempty.summary"
+values_from = { command = "vfempty item list", key = "", field = "name" }
+
+[[commands]]
+path = "vfempty item"
+summary = "vfempty.summary"
+
+[[commands]]
+path = "vfempty item list"
+summary = "vfempty.summary"
+effects = {}
+-- broken/vfundeclared.toml --
+format_version = 1
+contract_version = 1
+domain = "vfundeclared"
+
+[[commands]]
+path = "vfundeclared"
+summary = "vfundeclared.summary"
+
+[[commands]]
+path = "vfundeclared run"
+summary = "vfundeclared.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfundeclared.summary"
+values_from = { command = "vfundeclared item missing list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfundeclared item"
+summary = "vfundeclared.summary"
+
+[[commands]]
+path = "vfundeclared item list"
+summary = "vfundeclared.summary"
+effects = {}
+-- broken/vfgroup.toml --
+format_version = 1
+contract_version = 1
+domain = "vfgroup"
+
+[[commands]]
+path = "vfgroup"
+summary = "vfgroup.summary"
+
+[[commands]]
+path = "vfgroup run"
+summary = "vfgroup.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfgroup.summary"
+values_from = { command = "vfgroup item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfgroup item"
+summary = "vfgroup.summary"
+
+[[commands]]
+path = "vfgroup item list"
+summary = "vfgroup.summary"
+effects = {}
+
+[[commands]]
+path = "vfgroup item list all"
+summary = "vfgroup.summary"
+-- broken/vfverb.toml --
+format_version = 1
+contract_version = 1
+domain = "vfverb"
+
+[[commands]]
+path = "vfverb"
+summary = "vfverb.summary"
+
+[[commands]]
+path = "vfverb run"
+summary = "vfverb.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfverb.summary"
+values_from = { command = "vfverb item show", key = "items", field = "name" }
+
+[[commands]]
+path = "vfverb item"
+summary = "vfverb.summary"
+
+[[commands]]
+path = "vfverb item show"
+summary = "vfverb.summary"
+effects = {}
+-- broken/vfarg.toml --
+format_version = 1
+contract_version = 1
+domain = "vfarg"
+
+[[commands]]
+path = "vfarg"
+summary = "vfarg.summary"
+
+[[commands]]
+path = "vfarg run"
+summary = "vfarg.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfarg.summary"
+values_from = { command = "vfarg item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfarg item"
+summary = "vfarg.summary"
+
+[[commands]]
+path = "vfarg item list"
+summary = "vfarg.summary"
+effects = {}
+
+[[commands.args]]
+name = "filter"
+summary = "vfarg.summary"
+-- broken/vfkind.toml --
+format_version = 1
+contract_version = 1
+domain = "vfkind"
+
+[[commands]]
+path = "vfkind"
+summary = "vfkind.summary"
+
+[[commands]]
+path = "vfkind run"
+summary = "vfkind.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfkind.summary"
+values_from = { command = "vfkind item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfkind item"
+summary = "vfkind.summary"
+
+[[commands]]
+path = "vfkind item list"
+summary = "vfkind.summary"
+effects = {}
+result = { kind = "report" }
+-- broken/vfnoeffects.toml --
+format_version = 1
+contract_version = 1
+domain = "vfnoeffects"
+
+[[commands]]
+path = "vfnoeffects"
+summary = "vfnoeffects.summary"
+
+[[commands]]
+path = "vfnoeffects run"
+summary = "vfnoeffects.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfnoeffects.summary"
+values_from = { command = "vfnoeffects item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfnoeffects item"
+summary = "vfnoeffects.summary"
+
+[[commands]]
+path = "vfnoeffects item list"
+summary = "vfnoeffects.summary"
+-- broken/vfwrites.toml --
+format_version = 1
+contract_version = 1
+domain = "vfwrites"
+
+[[commands]]
+path = "vfwrites"
+summary = "vfwrites.summary"
+
+[[commands]]
+path = "vfwrites run"
+summary = "vfwrites.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfwrites.summary"
+values_from = { command = "vfwrites item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfwrites item"
+summary = "vfwrites.summary"
+
+[[commands]]
+path = "vfwrites item list"
+summary = "vfwrites.summary"
+effects = { user_writes = true }
+-- broken/vfpaid.toml --
+format_version = 1
+contract_version = 1
+domain = "vfpaid"
+
+[[commands]]
+path = "vfpaid"
+summary = "vfpaid.summary"
+
+[[commands]]
+path = "vfpaid run"
+summary = "vfpaid.summary"
+
+[[commands.args]]
+name = "name"
+summary = "vfpaid.summary"
+values_from = { command = "vfpaid item list", key = "items", field = "name" }
+
+[[commands]]
+path = "vfpaid item"
+summary = "vfpaid.summary"
+
+[[commands]]
+path = "vfpaid item list"
+summary = "vfpaid.summary"
+effects = { paid = true, network = true }

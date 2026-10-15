@@ -109,6 +109,18 @@ other = "{{.File}} gives the command \"{{.Path}}\" the name \"{{.Name}}\", which
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the shorthand of one of its flags, such as g in -g."
 other = "{{.File}} gives the command \"{{.Path}}\" the shorthand \"{{.Name}}\", which must be one ASCII letter."
 
+["extension.values_from_switch"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of one of its flags, a switch. values_from is a key and stays as is."
+other = "{{.File}} gives the switch \"{{.Name}}\" of the command \"{{.Path}}\" a values_from, which only an argument or a flag that takes a value may have."
+
+["extension.values_from_empty"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of one of its arguments or flags. values_from, command, key, and field are keys and stay as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" a values_from without its command, key, and field."
+
+["extension.values_from_command"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} the name of one of its arguments or flags, and {{.Command}} the path of a command of the same manifest. values_from and list are words of the contract and stay as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" a values_from on \"{{.Command}}\", which must be a list command of the manifest that takes no argument, answers an object, and declares effects that neither write user files nor bill."
+
 ["extension.flag_taken"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a flag such as --json, --dry-run, or -v. --dry-run and --run-id are flags and stay as is."
 other = "{{.File}} gives the command \"{{.Path}}\" the flag {{.Name}}, which a global flag, --dry-run, --run-id, or another of its flags already uses."

@@ -98,6 +98,22 @@ var (
 // digits that start with a letter.
 func IsDomain(name string) bool { return domainName.MatchString(name) }
 
+// valuesFromFile is the TOML layout of a values_from table.
+type valuesFromFile struct {
+	Command string `toml:"command"`
+	Key     string `toml:"key"`
+	Field   string `toml:"field"`
+}
+
+// declared returns the ValuesFrom of a values_from table, or nil without
+// one.
+func (v *valuesFromFile) declared() *ValuesFrom {
+	if v == nil {
+		return nil
+	}
+	return &ValuesFrom{Command: strings.Fields(v.Command), Key: v.Key, Field: v.Field}
+}
+
 // manifestFile is the TOML layout of a manifest. Keys that it lacks are
 // ignored, as Compatibility asks of a reader.
 type manifestFile struct {
@@ -107,21 +123,23 @@ type manifestFile struct {
 		Summary  string   `toml:"summary"`
 		Examples []string `toml:"examples"`
 		Args     []struct {
-			Name     string `toml:"name"`
-			Summary  string `toml:"summary"`
-			Type     string `toml:"type"`
-			Required bool   `toml:"required"`
-			Variadic bool   `toml:"variadic"`
+			Name       string          `toml:"name"`
+			Summary    string          `toml:"summary"`
+			Type       string          `toml:"type"`
+			Required   bool            `toml:"required"`
+			Variadic   bool            `toml:"variadic"`
+			ValuesFrom *valuesFromFile `toml:"values_from"`
 		} `toml:"args"`
 		Flags []struct {
-			Name      string `toml:"name"`
-			Shorthand string `toml:"shorthand"`
-			Value     string `toml:"value"`
-			Summary   string `toml:"summary"`
-			Type      string `toml:"type"`
-			Required  bool   `toml:"required"`
-			Variadic  bool   `toml:"variadic"`
-			Default   any    `toml:"default"`
+			Name       string          `toml:"name"`
+			Shorthand  string          `toml:"shorthand"`
+			Value      string          `toml:"value"`
+			Summary    string          `toml:"summary"`
+			Type       string          `toml:"type"`
+			Required   bool            `toml:"required"`
+			Variadic   bool            `toml:"variadic"`
+			Default    any             `toml:"default"`
+			ValuesFrom *valuesFromFile `toml:"values_from"`
 		} `toml:"flags"`
 		FlagGroups []struct {
 			Flags []string `toml:"flags"`
@@ -205,12 +223,16 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 			c.Effects = &Effects{UserWrites: raw.Effects.UserWrites, Network: raw.Effects.Network, Paid: raw.Effects.Paid}
 		}
 		for _, a := range raw.Args {
-			c.Args = append(c.Args, Arg{Name: a.Name, Summary: a.Summary, Type: Type(a.Type), Required: a.Required, Variadic: a.Variadic})
+			c.Args = append(c.Args, Arg{
+				Name: a.Name, Summary: a.Summary, Type: Type(a.Type), Required: a.Required, Variadic: a.Variadic,
+				ValuesFrom: a.ValuesFrom.declared(),
+			})
 		}
 		for _, f := range raw.Flags {
 			c.Flags = append(c.Flags, Flag{
 				Name: f.Name, Shorthand: f.Shorthand, Value: f.Value, Summary: f.Summary,
 				Type: Type(f.Type), Required: f.Required, Variadic: f.Variadic, Default: f.Default,
+				ValuesFrom: f.ValuesFrom.declared(),
 			})
 		}
 		for _, g := range raw.FlagGroups {
@@ -279,6 +301,9 @@ func (m Manifest) check() error {
 		if err := checkGroups(path, c); err != nil {
 			return err
 		}
+		if err := m.checkValuesFrom(path, c); err != nil {
+			return err
+		}
 		if err := m.checkRequires(path, c); err != nil {
 			return err
 		}
@@ -329,6 +354,51 @@ func checkNames(path string, c Command) error {
 		}
 	}
 	return nil
+}
+
+// checkValuesFrom applies the rules of values_from to one command: it sits
+// on an argument or on a flag that takes a value, names a command, a key,
+// and a field, and, when the command starts with this domain, names a
+// command of this manifest that qualifies.
+func (m Manifest) checkValuesFrom(path string, c Command) error {
+	type named struct {
+		name string
+		from *ValuesFrom
+	}
+	var declared []named
+	for _, a := range c.Args {
+		declared = append(declared, named{a.Name, a.ValuesFrom})
+	}
+	for _, f := range c.Flags {
+		if f.ValuesFrom != nil && f.Value == "" {
+			return broken("extension.values_from_switch", map[string]any{"Path": path, "Name": f.Name})
+		}
+		declared = append(declared, named{f.Name, f.ValuesFrom})
+	}
+	for _, d := range declared {
+		data := map[string]any{"Path": path, "Name": d.name}
+		switch from := d.from; {
+		case from == nil:
+		case len(from.Command) == 0 || from.Key == "" || from.Field == "":
+			return broken("extension.values_from_empty", data)
+		case from.Command[0] == m.Domain:
+			if list, found := m.Command(strings.Join(from.Command, " ")); !found || !m.Qualifies(list) {
+				data["Command"] = strings.Join(from.Command, " ")
+				return broken("extension.values_from_command", data)
+			}
+		}
+	}
+	return nil
+}
+
+// Qualifies reports whether a command of the manifest may give completion
+// its values, as Completion values in contract.md defines: a list command
+// that runs, takes no argument, answers an object, and declares effects
+// that neither write user files nor bill. A command of core never
+// qualifies, which the caller checks.
+func (m Manifest) Qualifies(c Command) bool {
+	return m.Runs(c) && c.Path[len(c.Path)-1] == "list" && len(c.Args) == 0 &&
+		c.Result.Kind == ResultObject && c.Effects != nil && !c.Effects.UserWrites && !c.Effects.Paid
 }
 
 // checkValues applies the rules of types, requiredness, variadic values,
