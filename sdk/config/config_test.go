@@ -119,6 +119,9 @@ func TestLoadRejectsAnInvalidFile(t *testing.T) {
 		{"a syntax error", "\nlang =\n", "", false, 2},
 		{"a value of the wrong type", "lang = 1\n", "", false, 1},
 		{"an error in the local file names that file", `lang = "en"`, "x = [\n", true, 1},
+		{"a number that is not finite", "x = nan\n", "", false, 0},
+		{"infinity inside a list", "[a]\nb = [1.5, inf]\n", "", false, 0},
+		{"infinity in a table of an array", "[[a]]\nb = { c = -inf }\n", "", false, 0},
 	}
 	for _, c := range cases {
 		p := files(t, c.shared, c.local)

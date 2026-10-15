@@ -55,6 +55,14 @@ stderr '^warning\[CONFIG_DEFAULTS_USED\]: '
 exec ncly --lang en-XA describe shop buy
 pseudo stderr
 
+# A number that JSON cannot hold, such as inf in a list, makes the file invalid too, so
+# the answer keeps its JSON and warns without a line
+cp notfinite.toml $CFG/config.local.toml
+exec ncly describe shop buy --json
+answer stdout ok
+stdout '\{"key":"shop.limits","value":null,"source":"default"\}'
+stdout '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED","message":"'${CFG@R}'/config\.local\.toml cannot be read, so the configuration shown is the default one\."'
+
 ! exists ran
 
 -- shared.toml --
@@ -75,6 +83,9 @@ south = "2 Side St"
 -- broken.toml --
 [shop]
 limits = [
+-- notfinite.toml --
+[shop]
+limits = [1.5, inf]
 -- bin/ncly-shop --
 #!/bin/sh
 echo "shop $*" >> "$WORK/ran"

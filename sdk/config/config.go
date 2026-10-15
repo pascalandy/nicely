@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -110,6 +111,9 @@ func read(p Paths) ([]layer, []Key, error) {
 		var values map[string]any
 		if _, err := toml.Decode(string(text), &values); err != nil {
 			return nil, nil, invalid(file, err)
+		}
+		if key := notFinite("", values); key != "" {
+			return nil, nil, &InvalidError{File: file, Err: fmt.Errorf("%s holds a number that is not finite", key)}
 		}
 		var typed Config
 		meta, err := toml.Decode(string(text), &typed)
@@ -263,4 +267,36 @@ func invalid(file string, err error) *InvalidError {
 		e.Line, _ = strconv.Atoi(m[1])
 	}
 	return e
+}
+
+// notFinite returns the key of the first number that JSON cannot hold, nan
+// or inf, at or beneath key, or "" when there is none. A config value
+// reaches JSON in the answers of describe and of extensions, so such a
+// number is a value of the wrong type.
+func notFinite(key string, value any) string {
+	var items []any
+	switch v := value.(type) {
+	case float64:
+		if math.IsNaN(v) || math.IsInf(v, 0) {
+			return key
+		}
+	case map[string]any:
+		for _, name := range slices.Sorted(maps.Keys(v)) {
+			if found := notFinite(strings.TrimPrefix(key+"."+name, "."), v[name]); found != "" {
+				return found
+			}
+		}
+	case []map[string]any:
+		for _, table := range v {
+			items = append(items, table)
+		}
+	case []any:
+		items = v
+	}
+	for _, item := range items {
+		if found := notFinite(key, item); found != "" {
+			return found
+		}
+	}
+	return ""
 }
