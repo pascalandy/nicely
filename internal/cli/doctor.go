@@ -215,17 +215,13 @@ func declares(m contract.Manifest, key string) bool {
 // reserved by core or a bundled extension hides. extensions holds the
 // bundled ones and the first one found for each other domain.
 func extensionChecks(p *i18n.Printer, extensions []*extension) []check {
-	h := host{dirs: searchPath()}
 	winners := map[string]*extension{}
 	for _, e := range extensions {
 		winners[e.domain] = e
-		if e.bundled {
-			h.bundled = append(h.bundled, e)
-		}
 	}
 	found := map[string][]string{}
 	seen := map[string]bool{}
-	for _, dir := range h.dirs {
+	for _, dir := range searchPath() {
 		entries, _ := os.ReadDir(dir)
 		for _, entry := range entries {
 			domain, ok := strings.CutPrefix(entry.Name(), executablePrefix)
