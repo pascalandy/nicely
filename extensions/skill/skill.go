@@ -155,7 +155,7 @@ func described(ctx context.Context) ([]string, error) {
 		Path:   bin,
 		Name:   "ncly",
 		Args:   []string{"describe", "--json"},
-		Env:    os.Environ(),
+		Env:    runner.Environ(os.Environ(), nil),
 		Stdout: &stdout,
 		Stderr: &stderr,
 	})

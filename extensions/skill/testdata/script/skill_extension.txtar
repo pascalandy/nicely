@@ -67,10 +67,24 @@ env NCLY_BIN=
 exits 1 ncly-skill list --json
 answer stderr RUNTIME
 
+# describe gets the environment of a program that ncly runs, without the key of any service
+chmod 755 env-describe
+env NCLY_BIN=$WORK/env-describe
+env SHOP_API_KEY=sk-never-passed
+exec ncly-skill list --json
+answer stdout ok
+exists describe-env.txt
+! grep sk-never-passed describe-env.txt
+env SHOP_API_KEY=
+
 -- fail-describe --
 #!/bin/sh
 echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}' >&2
 exit 1
+-- env-describe --
+#!/bin/sh
+env > "$WORK/describe-env.txt"
+echo '{"ok":true,"contract_version":1,"commands":[]}'
 -- garbled-describe --
 #!/bin/sh
 echo '{"ok":true,"contract_version":1,"commands":[{"path":"shop","skill":7}]}'
