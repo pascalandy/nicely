@@ -77,3 +77,7 @@ other = "{{.File}} lacks {{.Key}} in its frontmatter, so it is no skill."
 ["skill.invalid_hint"]
 description = "Hint under a SKILL_INVALID warning: what the user does next. {{.File}} is the path of the SKILL.md."
 other = "Fix {{.File}}."
+
+["skill.describe_failed"]
+description = "Error RUNTIME of `ncly skill list` and `ncly skill view` when `ncly describe --json`, which gives the skills of the installed extensions, fails or gives an answer that skill cannot read."
+other = "ncly describe --json failed, so the skills of the installed extensions are unknown."

@@ -4,9 +4,11 @@
 package skill
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +22,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/pascalandy/nicely/sdk/runner"
 )
 
 //go:embed manifest.toml
@@ -48,8 +51,11 @@ type Skill struct {
 	content string
 }
 
-// sourceConfig is the source of a skill of a folder of [skill] paths.
-const sourceConfig = "config"
+// The sources of skills, in the order that list reads them.
+const (
+	sourceConfig    = "config"
+	sourceExtension = "extension"
+)
 
 const (
 	codeShadowed      contract.Code = "SKILL_SHADOWED"
@@ -58,8 +64,8 @@ const (
 	codeSourceMissing contract.Code = "SKILL_SOURCE_MISSING"
 )
 
-func list(_ context.Context, call extension.Call) contract.Outcome {
-	skills, warnings, problem := gather(call.Printer)
+func list(ctx context.Context, call extension.Call) contract.Outcome {
+	skills, warnings, problem := gather(ctx, call.Printer)
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
@@ -72,9 +78,9 @@ func list(_ context.Context, call extension.Call) contract.Outcome {
 // view prints the SKILL.md of one skill that list returns, after a line
 // that gives its folder, so that the relative paths inside it resolve. It
 // adds none of the warnings of list, which describe other skills.
-func view(_ context.Context, call extension.Call) contract.Outcome {
+func view(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
-	skills, _, problem := gather(p)
+	skills, _, problem := gather(ctx, p)
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
@@ -102,13 +108,23 @@ func view(_ context.Context, call extension.Call) contract.Outcome {
 }
 
 // gather returns the skills of every source, sorted by name byte by byte,
-// with the warnings of list, or the problem of a broken config.
-func gather(p *i18n.Printer) ([]Skill, []contract.Problem, *contract.Problem) {
+// with the warnings of list, or the problem of a broken config or of a
+// failed ncly describe.
+func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, *contract.Problem) {
 	home, _ := os.UserHomeDir()
 	paths := config.Locate(home, os.LookupEnv)
 	folders, file, problem := configured(p, home, paths)
 	if problem != nil {
 		return nil, nil, problem
+	}
+	installed, err := described(ctx)
+	if err != nil {
+		return nil, nil, &contract.Problem{
+			Code:    contract.Runtime,
+			Message: p.T("skill.describe_failed"),
+			Hint:    "ncly describe --json",
+			Next:    []string{"ncly", "describe", "--json"},
+		}
 	}
 	s := &scan{p: p, seen: map[string]bool{}, owner: map[string]string{}, skills: []Skill{}}
 	if len(folders) == 0 {
@@ -117,8 +133,54 @@ func gather(p *i18n.Printer) ([]Skill, []contract.Problem, *contract.Problem) {
 	for _, folder := range folders {
 		s.folder(folder, file)
 	}
+	for _, folder := range installed {
+		s.add(folder, sourceExtension)
+	}
 	slices.SortStableFunc(s.skills, func(a, b Skill) int { return cmp.Compare(a.Name, b.Name) })
 	return s.skills, s.warnings, nil
+}
+
+// described returns the folder of each installed extension's skill, in the
+// order of ncly describe, whose entry of each extension's domain gives it.
+// skill never searches for extensions itself, so it reads the skill of the
+// extension that core runs, never one that core hides. NCLY_BIN, which
+// core sets, names ncly, which starts under its own name.
+func described(ctx context.Context) ([]string, error) {
+	bin := os.Getenv("NCLY_BIN")
+	if bin == "" {
+		return nil, errors.New("NCLY_BIN is not set")
+	}
+	var stdout, stderr bytes.Buffer
+	result, err := runner.Run(ctx, runner.Program{
+		Path:   bin,
+		Name:   "ncly",
+		Args:   []string{"describe", "--json"},
+		Env:    os.Environ(),
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result.Signal != nil || result.Exit != 0 {
+		return nil, fmt.Errorf("ncly describe exited with %d", result.Exit)
+	}
+	var answer struct {
+		OK       bool `json:"ok"`
+		Commands []struct {
+			Skill *string `json:"skill"`
+		} `json:"commands"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &answer); err != nil || !answer.OK {
+		return nil, fmt.Errorf("ncly describe gave an answer that skill cannot read: %w", err)
+	}
+	var folders []string
+	for _, c := range answer.Commands {
+		if c.Skill != nil {
+			folders = append(folders, *c.Skill)
+		}
+	}
+	return folders, nil
 }
 
 // configured reads the folders of [skill] paths, each resolved from the
@@ -187,19 +249,21 @@ func (s *scan) folder(folder, file string) {
 		if err != nil || !info.IsDir() {
 			continue
 		}
-		if real, err := filepath.EvalSymlinks(path); err == nil {
-			if s.seen[real] {
-				continue
-			}
-			s.seen[real] = true
-		}
-		s.add(path)
+		s.add(path, sourceConfig)
 	}
 }
 
-// add adds the skill of one subfolder, or warns why its SKILL.md is no
-// skill. A subfolder without SKILL.md is no skill, and warns nothing.
-func (s *scan) add(path string) {
+// add adds the skill of one folder from a source, or warns why its SKILL.md
+// is no skill. A folder without SKILL.md is no skill, and warns nothing. A
+// folder already reached, links resolved, is the same skill, and warns
+// nothing either.
+func (s *scan) add(path, source string) {
+	if real, err := filepath.EvalSymlinks(path); err == nil {
+		if s.seen[real] {
+			return
+		}
+		s.seen[real] = true
+	}
 	file := filepath.Join(path, "SKILL.md")
 	data, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -226,7 +290,7 @@ func (s *scan) add(path string) {
 		return
 	}
 	s.owner[fm.Name] = path
-	s.skills = append(s.skills, Skill{Name: fm.Name, Description: fm.Description, Path: &path, Source: sourceConfig, content: string(data)})
+	s.skills = append(s.skills, Skill{Name: fm.Name, Description: fm.Description, Path: &path, Source: source, content: string(data)})
 }
 
 // write prints one line per skill: its name, then its description on one

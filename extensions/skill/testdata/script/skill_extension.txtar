@@ -1,0 +1,155 @@
+# The skill of an installed extension appears in list with the source extension, and view
+# reads it. skill finds it through the skill key of ncly describe --json, never by searching
+# for extensions itself, so the skill of an extension that core hides never appears. No
+# extension starts: each shell fixture appends its domain to $WORK/ran when it runs.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+chmod 755 bin/ncly-shop
+chmod 755 bin/ncly-hello
+chmod 755 bin/ncly-plain
+env PATH=$WORK/bin:$PATH
+
+# install writes the Go fixture's embedded skill beside it as ncly-hello.skill/, which hides
+# the shell fixture hello of PATH, whose skill never appears
+install hello
+exists $DATA/ncly-hello.skill/SKILL.md
+exec ncly skill list --json
+answer stdout ok
+stdout '"skills":\[\{"name":"hello","description":"Use when greeting someone with ncly hello\.","path":"'${DATA@R}'/ncly-hello\.skill","source":"extension"\},\{"name":"shop","description":"Use when buying with ncly shop\.","path":"'${WORK@R}'/bin/ncly-shop\.skill","source":"extension"\}\]'
+stdout '"warnings":\[\{"code":"SKILL_NO_SOURCE",'
+! stdout hidden
+! stdout plain
+
+# view reads an extension's skill, with its folder first
+exec ncly skill view shop
+cmpenv stdout want-shop.txt
+exec ncly skill view hello --json
+answer stdout ok
+stdout '"path":"'${DATA@R}'/ncly-hello\.skill","source":"extension"\}$'
+exits 2 ncly skill view hidden --json
+answer stderr NOT_FOUND
+
+# A folder of [skill] paths comes first, so its skill named shop hides the extension's with
+# SKILL_SHADOWED, and an extension's invalid skill is skipped with SKILL_INVALID
+cp config.toml $CFG/config.toml
+exec ncly skill list --json
+stdout '\{"name":"shop","description":"Use my own shop\.","path":"'${WORK@R}'/skills/shop","source":"config"\}'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill shop in '${WORK@R}'/bin/ncly-shop\.skill is hidden by the one in '${WORK@R}'/skills/shop\.",'
+exec ncly skill view shop --json
+stdout '"source":"config"'
+rm $CFG/config.toml
+cp bad.md bin/ncly-shop.skill/SKILL.md
+exec ncly skill list --json
+stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/bin/ncly-shop\.skill/SKILL\.md lacks description in its frontmatter, so it is no skill\.",'
+! stdout '"name":"shop"'
+
+! exists ran
+
+# Run directly, skill reads NCLY_BIN, which core sets. When ncly describe fails, gives an
+# answer that skill cannot read, or NCLY_BIN is unset, list and view fail with RUNTIME,
+# whose next is that call
+chmod 755 fail-describe
+chmod 755 garbled-describe
+env NCLY_BIN=$WORK/fail-describe
+exits 1 ncly-skill list --json
+! stdout .
+answer stderr RUNTIME
+stderr '"hint":"ncly describe --json","next":\["ncly","describe","--json"\]'
+exits 1 ncly-skill view hello --json
+answer stderr RUNTIME
+exits 1 ncly-skill --lang en-XA list
+pseudo stderr describe
+env NCLY_BIN=$WORK/garbled-describe
+exits 1 ncly-skill list --json
+answer stderr RUNTIME
+env NCLY_BIN=
+exits 1 ncly-skill list --json
+answer stderr RUNTIME
+
+-- fail-describe --
+#!/bin/sh
+echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}' >&2
+exit 1
+-- garbled-describe --
+#!/bin/sh
+echo '{"ok":true,"contract_version":1,"commands":[{"path":"shop","skill":7}]}'
+-- config.toml --
+[skill]
+paths = ["~/skills"]
+-- bad.md --
+---
+name: shop
+---
+-- want-shop.txt --
+<!-- skill-dir: $WORK/bin/ncly-shop.skill -->
+---
+name: shop
+description: Use when buying with ncly shop.
+---
+
+See [the stores](references/stores.md).
+-- skills/shop/SKILL.md --
+---
+name: shop
+description: Use my own shop.
+---
+-- bin/ncly-shop --
+#!/bin/sh
+echo shop >> "$WORK/ran"
+-- bin/ncly-shop.toml --
+format_version = 1
+contract_version = 1
+domain = "shop"
+
+[[commands]]
+path = "shop"
+summary = "shop.summary"
+-- bin/ncly-shop.locales/en.toml --
+["shop.summary"]
+description = "Summary of the shop fixture."
+other = "Buy things"
+-- bin/ncly-shop.skill/SKILL.md --
+---
+name: shop
+description: Use when buying with ncly shop.
+---
+
+See [the stores](references/stores.md).
+-- bin/ncly-shop.skill/references/stores.md --
+North and south.
+-- bin/ncly-hello --
+#!/bin/sh
+echo hello >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the hidden hello fixture."
+other = "Greet people"
+-- bin/ncly-hello.skill/SKILL.md --
+---
+name: hidden
+description: Never listed, because core runs the hello of the data folder.
+---
+-- bin/ncly-plain --
+#!/bin/sh
+echo plain >> "$WORK/ran"
+-- bin/ncly-plain.toml --
+format_version = 1
+contract_version = 1
+domain = "plain"
+
+[[commands]]
+path = "plain"
+summary = "plain.summary"
+-- bin/ncly-plain.locales/en.toml --
+["plain.summary"]
+description = "Summary of the plain fixture, which ships no skill."
+other = "Do plain things"
