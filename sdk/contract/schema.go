@@ -254,13 +254,14 @@ func IsDataSchema(schema map[string]any) bool {
 // data keys data describes, or nil for a text result. The envelope adds ok,
 // contract_version, errors, warnings, and, for a batch, results, whose items
 // add ok and errors to the item that data's results describes. A success
-// holds the keys that data requires. Unknown keys stay allowed, as
+// holds the keys that data requires and no error, and a failure other than
+// a report's holds at least one error. Unknown keys stay allowed, as
 // Compatibility asks. A nil data describes no key.
 func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 	if kind == ResultText {
 		return nil
 	}
-	problems := map[string]any{"type": "array", "minItems": 1, "items": problemSchema()}
+	problems := map[string]any{"type": "array", "items": problemSchema()}
 	properties := map[string]any{}
 	maps.Copy(properties, table(data["properties"]))
 	properties["ok"] = map[string]any{"type": "boolean"}
@@ -280,17 +281,30 @@ func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 		"required":   []any{"ok", "contract_version"},
 		"properties": properties,
 	}
-	if len(success) > 0 {
-		schema["if"] = map[string]any{"properties": map[string]any{"ok": map[string]any{"const": true}}}
-		schema["then"] = map[string]any{"required": success}
-	}
+	verdict(schema, success, kind != ResultReport)
 	return schema
+}
+
+// verdict ties a schema to ok, as Answer check does: a success holds the
+// required keys and no error, and, when failureErrors is set, a failure
+// holds at least one error. A report's failure may list its findings
+// instead.
+func verdict(schema map[string]any, required []any, failureErrors bool) {
+	success := map[string]any{"properties": map[string]any{"errors": map[string]any{"maxItems": 0}}}
+	if len(required) > 0 {
+		success["required"] = required
+	}
+	schema["if"] = map[string]any{"properties": map[string]any{"ok": map[string]any{"const": true}}}
+	schema["then"] = success
+	if failureErrors {
+		schema["else"] = map[string]any{"required": []any{"errors"}, "properties": map[string]any{"errors": map[string]any{"minItems": 1}}}
+	}
 }
 
 // resultsSchema wraps the schema of a batch's results, keeping its own
 // constraints, such as minItems. Each item adds ok and errors to the item
-// that the declaration describes, and holds its required keys only when it
-// succeeded.
+// that the declaration describes, and holds its required keys when it
+// succeeded and at least one error when it failed.
 func resultsSchema(declared map[string]any, problems map[string]any) map[string]any {
 	item := table(declared["items"])
 	properties := map[string]any{}
@@ -298,10 +312,7 @@ func resultsSchema(declared map[string]any, problems map[string]any) map[string]
 	properties["ok"] = map[string]any{"type": "boolean"}
 	properties["errors"] = problems
 	itemSchema := map[string]any{"type": "object", "required": []any{"ok"}, "properties": properties}
-	if required := list(item["required"]); len(required) > 0 {
-		itemSchema["if"] = map[string]any{"properties": map[string]any{"ok": map[string]any{"const": true}}}
-		itemSchema["then"] = map[string]any{"required": required}
-	}
+	verdict(itemSchema, list(item["required"]), true)
 	results := map[string]any{}
 	maps.Copy(results, declared)
 	results["type"] = "array"
