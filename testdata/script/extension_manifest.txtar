@@ -161,7 +161,7 @@ stderr 'lists \\"lang\\" in config of the command \\"configkey run\\", which mus
 
 # A schema describes an object with local references only, a text result has none, and
 # only a command with dry run has dry_run_schema
-exec sh broken.sh remoteref closedschema boolref badtype textschema dryschema
+exec sh broken.sh remoteref closedschema boolref badtype olddialect textschema dryschema
 exits 78 ncly remoteref --json
 answer stderr EXTENSION_INVALID
 stderr 'gives the command \\"remoteref run\\" a schema that is not a JSON Schema of an object'
@@ -169,6 +169,8 @@ exits 78 ncly closedschema --json
 stderr 'gives the command \\"closedschema run\\" a schema that is not a JSON Schema of an object'
 exits 78 ncly boolref --json
 stderr 'gives the command \\"boolref run\\" a schema that is not a JSON Schema of an object'
+exits 78 ncly olddialect --json
+stderr 'gives the command \\"olddialect run\\" a schema that is not a JSON Schema of an object'
 exits 78 ncly badtype --json
 stderr 'gives the command \\"badtype run\\" a schema that is not a JSON Schema of an object'
 exec ncly --help
@@ -745,3 +747,20 @@ summary = "badtype.summary"
 [commands.result.schema]
 type = "object"
 properties = { answer = { type = "banana" } }
+-- broken/olddialect.toml --
+format_version = 1
+contract_version = 1
+domain = "olddialect"
+
+[[commands]]
+path = "olddialect"
+summary = "olddialect.summary"
+
+[[commands]]
+path = "olddialect run"
+summary = "olddialect.summary"
+
+[commands.result.schema]
+"$schema" = "http://json-schema.org/draft-04/schema#"
+type = "object"
+properties = { count = { type = "number", minimum = 0, exclusiveMinimum = true } }

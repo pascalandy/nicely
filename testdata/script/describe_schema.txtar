@@ -71,6 +71,12 @@ exits 1 ncly bare batch --json
 schema stderr batch.json schema
 ! schema empty.json batch.json schema
 
+# A local reference may percent-encode its pointer, as a URI fragment does
+exec ncly describe bare spaced --json
+stdout '"keys":\["count"\]'
+stdout '"count":\{"minimum":0,"type":"integer"\}'
+! stdout '\$ref'
+
 -- empty.json --
 {"ok":true,"contract_version":1,"results":[]}
 -- bin/ncly-bare --
@@ -92,6 +98,16 @@ summary = "bare.summary"
 [[commands]]
 path = "bare run"
 summary = "bare.summary"
+
+[[commands]]
+path = "bare spaced"
+summary = "bare.summary"
+
+[commands.result.schema]
+"$schema" = "https://json-schema.org/draft/2020-12/schema"
+type = "object"
+properties = { count = { "$ref" = "#/$defs/a%20count" } }
+"$defs" = { "a count" = { type = "integer", minimum = 0 } }
 
 [[commands]]
 path = "bare batch"

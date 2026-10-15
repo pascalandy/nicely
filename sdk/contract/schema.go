@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"maps"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -25,14 +26,20 @@ var envelopeKeys = []string{"ok", "contract_version", "errors", "warnings"}
 // way to the schema that it points to, and $defs goes. Keywords beside a
 // $ref still apply, through allOf. Only the keywords that hold schemas are
 // walked, so a literal value, such as a const that holds $defs, stays as
-// it is. A schema that is not valid draft 2020-12, a remote reference,
+// it is. A $schema other than draft 2020-12 at the root, or any $schema
+// below it, a schema that is not valid draft 2020-12, a remote reference,
 // $id, $anchor, $dynamicRef, a reference that points nowhere, a cycle, and
 // a root that resolves to no object are errors.
 func ResolveSchema(schema map[string]any) (map[string]any, error) {
+	if dialect, declared := schema["$schema"]; declared && dialect != SchemaDialect {
+		return nil, errors.New("schema: only draft 2020-12 is supported")
+	}
 	if err := compileSchema(schema); err != nil {
 		return nil, err
 	}
-	resolved, err := inline(schema, schema, nil)
+	body := maps.Clone(schema)
+	delete(body, "$schema")
+	resolved, err := inline(body, schema, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +96,7 @@ func inline(node any, root map[string]any, seen []string) (any, error) {
 	if !isObject {
 		return node, nil
 	}
-	for _, key := range []string{"$id", "$anchor", "$dynamicRef", "$dynamicAnchor"} {
+	for _, key := range []string{"$schema", "$id", "$anchor", "$dynamicRef", "$dynamicAnchor"} {
 		if _, found := n[key]; found {
 			return nil, errors.New("schema: " + key + " is not supported")
 		}
@@ -168,9 +175,13 @@ func list(value any) []any {
 }
 
 // pointer follows a JSON pointer fragment, such as #/$defs/item, from root.
+// The fragment is percent-decoded first, as a URI fragment is.
 func pointer(root map[string]any, ref string) (any, bool) {
 	var node any = root
-	path := strings.TrimPrefix(ref, "#")
+	path, err := url.PathUnescape(strings.TrimPrefix(ref, "#"))
+	if err != nil {
+		return nil, false
+	}
 	if path == "" {
 		return node, true
 	}
