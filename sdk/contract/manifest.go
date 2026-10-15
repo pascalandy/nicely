@@ -144,7 +144,9 @@ type manifestFile struct {
 		} `toml:"requires"`
 		Config []string `toml:"config"`
 		Result struct {
-			Kind string `toml:"kind"`
+			Kind         string         `toml:"kind"`
+			Schema       map[string]any `toml:"schema"`
+			DryRunSchema map[string]any `toml:"dry_run_schema"`
 		} `toml:"result"`
 	} `toml:"commands"`
 	Errors []struct {
@@ -194,7 +196,7 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 			Modes:    Modes(raw.Modes),
 			Requires: Requires(raw.Requires),
 			Config:   raw.Config,
-			Result:   Result{Kind: ResultKind(raw.Result.Kind)},
+			Result:   Result{Kind: ResultKind(raw.Result.Kind), Schema: raw.Result.Schema, DryRunSchema: raw.Result.DryRunSchema},
 		}
 		if c.Result.Kind == "" {
 			c.Result.Kind = ResultObject
@@ -246,7 +248,7 @@ func (m Manifest) check() error {
 		return broken("extension.domain_command", map[string]any{"Path": m.Domain})
 	}
 	seen := map[string]bool{}
-	for _, c := range m.Commands {
+	for i, c := range m.Commands {
 		path := strings.Join(c.Path, " ")
 		for _, word := range c.Path {
 			if !pathWord.MatchString(word) {
@@ -281,6 +283,9 @@ func (m Manifest) check() error {
 			return err
 		}
 		if err := m.checkConfig(path, c); err != nil {
+			return err
+		}
+		if err := checkResult(path, &m.Commands[i]); err != nil {
 			return err
 		}
 	}
@@ -432,6 +437,31 @@ func (m Manifest) checkConfig(path string, c Command) error {
 		if bad {
 			return broken("extension.config_key", map[string]any{"Path": path, "Name": key, "Domain": m.Domain})
 		}
+	}
+	return nil
+}
+
+// checkResult checks the schemas of one command's result, and resolves
+// their references. A text result has none, and only a command that
+// supports dry run has dry_run_schema. Each is an object schema whose
+// references are local.
+func checkResult(path string, c *Command) error {
+	for _, s := range []struct {
+		schema *map[string]any
+		name   string
+		allow  bool
+	}{
+		{&c.Result.Schema, "schema", c.Result.Kind != ResultText},
+		{&c.Result.DryRunSchema, "dry_run_schema", c.Result.Kind != ResultText && c.Modes.DryRun},
+	} {
+		if *s.schema == nil {
+			continue
+		}
+		resolved, err := ResolveSchema(*s.schema)
+		if !s.allow || err != nil || resolved["type"] != "object" {
+			return broken("extension.schema", map[string]any{"Path": path, "Name": s.name})
+		}
+		*s.schema = resolved
 	}
 	return nil
 }

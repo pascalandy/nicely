@@ -1,0 +1,82 @@
+# The result of a command's detail gives its kind, its keys, and the JSON Schema of its
+# answers, draft 2020-12, with every reference resolved, plus dry_run_schema when the
+# command supports dry run. The fixture's real answers, collected in separate calls, fit
+# the schema that their invocation selects, so a schema cannot drift from what the
+# command answers. ncly-bundled is ncly with the Go fixture hello bundled.
+chmod 755 bin/ncly-bare
+env PATH=$WORK/bin:$PATH
+
+# Core's describe gives its own schema, and its answers fit it, a failure included
+exec ncly describe describe --json
+cp stdout describe.json
+stdout '"result":\{"kind":"object","keys":\["commands"\],"schema":\{"\$schema":"https://json-schema\.org/draft/2020-12/schema",'
+! stdout '\$ref'
+! stdout '"dry_run_schema":\{"\$schema"'
+schema describe.json describe.json schema
+exec ncly describe --json
+schema stdout describe.json schema
+exits 2 ncly describe nope --json
+schema stderr describe.json schema
+
+# A text result has empty keys and no schema
+exec ncly describe completion zsh --json
+stdout '"result":\{"kind":"text","keys":\[\]\}'
+
+# An object and its failure, then a report that needs a human, fit their schema
+exec ncly-bundled describe hello run --json
+cp stdout run.json
+stdout '"result":\{"kind":"object","keys":\["greeting"\],'
+exec ncly-bundled hello run Ada --json
+schema stdout run.json schema
+exits 1 ncly-bundled hello run --grumpy --json
+schema stderr run.json schema
+exec ncly-bundled describe hello check --json
+cp stdout check.json
+stdout '"result":\{"kind":"report","keys":\["checks"\],'
+! stdout '\$ref'
+exits 78 ncly-bundled hello check --json
+schema stdout check.json schema
+
+# A command with dry run has two schemas, and each answer fits only the one that its
+# invocation selects. The dry run writes nothing
+exec ncly-bundled describe hello pick --json
+cp stdout pick.json
+stdout '"keys":\["args","flags","lists","picked"\]'
+stdout '"dry_run_schema":\{"\$schema":'
+! stdout '\$ref'
+exec ncly-bundled hello pick Ada --mood calm --left --dry-run --json
+cp stdout dry.json
+schema dry.json pick.json dry_run_schema
+! schema dry.json pick.json schema
+! exists picked
+exec ncly-bundled hello pick Ada --mood calm --left --tag a --json
+schema stdout pick.json schema
+! schema stdout pick.json dry_run_schema
+exists picked
+
+# A command that declares no schema gets the envelope alone, with no key
+exec ncly describe bare run --json
+cp stdout bare.json
+stdout '"result":\{"kind":"object","keys":\[\],"schema":\{'
+exec ncly bare run --json
+schema stdout bare.json schema
+
+-- bin/ncly-bare --
+#!/bin/sh
+echo '{"ok":true,"contract_version":1,"anything":[1]}'
+-- bin/ncly-bare.toml --
+format_version = 1
+contract_version = 1
+domain = "bare"
+
+[[commands]]
+path = "bare"
+summary = "bare.summary"
+
+[[commands]]
+path = "bare run"
+summary = "bare.summary"
+-- bin/ncly-bare.locales/en.toml --
+["bare.summary"]
+description = "Summary of the bare fixture."
+other = "Answer without a schema"

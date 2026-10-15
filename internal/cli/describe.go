@@ -1,6 +1,9 @@
 package cli
 
 import (
+	"cmp"
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,8 +19,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//go:embed describe_schema.json
+var describeSchema []byte
+
 var describeCommand = contract.Command{
 	Path:    []string{"describe"},
+	Result:  contract.Result{Kind: contract.ResultObject, Schema: mustSchema(describeSchema)},
 	Summary: "describe.summary",
 	Args:    []contract.Arg{{Name: "command", Summary: "describe.command", Variadic: true}},
 	Effects: &contract.Effects{},
@@ -68,6 +75,7 @@ type detail struct {
 	Args       []argDetail    `json:"args"`
 	Flags      []flagDetail   `json:"flags"`
 	FlagGroups []groupDetail  `json:"flag_groups"`
+	Result     resultDetail   `json:"result"`
 	Effects    effectsDetail  `json:"effects"`
 	Requires   requiresDetail `json:"requires"`
 	Modes      modesDetail    `json:"modes"`
@@ -94,6 +102,13 @@ type flagDetail struct {
 	Values    []any  `json:"values"`
 	Default   any    `json:"default"`
 	Summary   string `json:"summary"`
+}
+
+type resultDetail struct {
+	Kind         contract.ResultKind `json:"kind"`
+	Keys         []string            `json:"keys"`
+	Schema       map[string]any      `json:"schema,omitempty"`
+	DryRunSchema map[string]any      `json:"dry_run_schema,omitempty"`
 }
 
 type groupDetail struct {
@@ -134,6 +149,7 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 		Args:       []argDetail{},
 		Flags:      []flagDetail{},
 		FlagGroups: []groupDetail{},
+		Result:     describeResult(d),
 		Effects:    effectsDetail(d.DeclaredEffects()),
 		Requires:   requiresDetail{Bins: names(d.Requires.Bins), Keys: names(d.Requires.Keys)},
 		Modes:      modesDetail(d.Modes),
@@ -166,6 +182,31 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 		out.FlagGroups = append(out.FlagGroups, groupDetail{Flags: g.Flags, Min: g.Min, Max: g.Max})
 	}
 	return out
+}
+
+// describeResult gives the kind of a command's result, its keys, and the
+// schemas of its answers: the normal one, and the dry-run one when the
+// command supports dry run. A text result has neither.
+func describeResult(d contract.Command) resultDetail {
+	kind := cmp.Or(d.Result.Kind, contract.ResultObject)
+	r := resultDetail{Kind: kind, Keys: contract.Keys(kind, d.Result.Schema), Schema: contract.AnswerSchema(kind, d.Result.Schema)}
+	if d.Modes.DryRun {
+		r.DryRunSchema = contract.AnswerSchema(kind, d.Result.DryRunSchema)
+	}
+	return r
+}
+
+// mustSchema reads a schema of core, whose references it resolves.
+func mustSchema(data []byte) map[string]any {
+	var schema map[string]any
+	err := json.Unmarshal(data, &schema)
+	if err == nil {
+		schema, err = contract.ResolveSchema(schema)
+	}
+	if err != nil {
+		panic(err)
+	}
+	return schema
 }
 
 func names(list []string) []named {

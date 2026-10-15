@@ -40,6 +40,12 @@ type Command struct {
 // Result describes what a command answers.
 type Result struct {
 	Kind ResultKind
+	// Schema is the JSON Schema of the data keys of a normal answer, an
+	// object schema whose references are resolved, or nil when the
+	// declaration gives none. AnswerSchema adds the envelope.
+	Schema map[string]any
+	// DryRunSchema is the same for the answer of a dry run.
+	DryRunSchema map[string]any
 }
 
 // ResultKind tells how a command answers, and so how core checks the answer

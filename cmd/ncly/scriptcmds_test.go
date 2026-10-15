@@ -21,6 +21,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/platform"
 	"github.com/rogpeppe/go-internal/testscript"
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 // cmdExits runs a command and asserts its exact exit code, which the built-in
@@ -542,3 +543,47 @@ func agree(page, answer string) error {
 	}
 	return nil
 }
+
+// cmdSchema validates an answer against the schema of the describe answer
+// for its command, with a JSON Schema validator of draft 2020-12 that never
+// fetches a remote schema: schema <answer-file> <describe-file> <schema|dry_run_schema>.
+// Negated, it asserts that the answer breaks that schema.
+func cmdSchema(ts *testscript.TestScript, neg bool, args []string) {
+	if len(args) != 3 || (args[2] != "schema" && args[2] != "dry_run_schema") {
+		ts.Fatalf("usage: schema <answer-file> <describe-file> <schema|dry_run_schema>")
+	}
+	var described struct {
+		Commands []struct {
+			Result map[string]json.RawMessage `json:"result"`
+		} `json:"commands"`
+	}
+	if err := json.Unmarshal([]byte(ts.ReadFile(args[1])), &described); err != nil || len(described.Commands) != 1 {
+		ts.Fatalf("schema: want the detail of one command in %s", args[1])
+	}
+	raw, found := described.Commands[0].Result[args[2]]
+	if !found {
+		ts.Fatalf("schema: the result has no %s", args[2])
+	}
+	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(string(raw)))
+	ts.Check(err)
+	compiler := jsonschema.NewCompiler()
+	compiler.DefaultDraft(jsonschema.Draft2020)
+	compiler.UseLoader(noRemote{})
+	ts.Check(compiler.AddResource("describe.json", doc))
+	schema, err := compiler.Compile("describe.json")
+	ts.Check(err)
+	answer, err := jsonschema.UnmarshalJSON(strings.NewReader(ts.ReadFile(args[0])))
+	ts.Check(err)
+	switch err := schema.Validate(answer); {
+	case neg && err == nil:
+		ts.Fatalf("schema: %s fits its %s", args[0], args[2])
+	case !neg && err != nil:
+		ts.Fatalf("schema: %s breaks its %s: %v", args[0], args[2], err)
+	}
+}
+
+// noRemote refuses to load any schema, so a reference that is not resolved
+// within the descriptor fails instead of reaching the network.
+type noRemote struct{}
+
+func (noRemote) Load(url string) (any, error) { return nil, fmt.Errorf("no remote schema: %s", url) }

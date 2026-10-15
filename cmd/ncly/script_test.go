@@ -90,6 +90,7 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 			"term":      cmdTerm,
 			"install":   cmdInstall,
 			"agree":     cmdAgree,
+			"schema":    cmdSchema,
 		},
 	})
 }

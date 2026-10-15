@@ -26,15 +26,32 @@ summary = "hello.run.greeting"
 name = "grumpy"
 summary = "hello.run.grumpy"
 
+[commands.result.schema]
+type = "object"
+required = ["greeting"]
+properties = { greeting = { type = "string" } }
+
 [[commands]]
 path = "hello check"
 summary = "hello.check.summary"
 examples = ["ncly hello check", "ncly hello check --json"]
-result = { kind = "report" }
 
 [[commands.flags]]
 name = "fail"
 summary = "hello.check.fail"
+
+[commands.result]
+kind = "report"
+
+[commands.result.schema]
+type = "object"
+required = ["checks"]
+properties = { checks = { type = "array", items = { "$ref" = "#/$defs/check" } } }
+
+[commands.result.schema."$defs".check]
+type = "object"
+required = ["id", "status"]
+properties = { id = { type = "string" }, status = { enum = ["ok", "warn", "fail"] } }
 
 [[commands]]
 path = "hello say"
@@ -58,6 +75,11 @@ summary = "hello.wait.stubborn"
 [[commands.flags]]
 name = "stubborn-child"
 summary = "hello.wait.stubborn_child"
+
+[commands.result.schema]
+type = "object"
+required = ["output_dir"]
+properties = { output_dir = { type = "string" } }
 
 [[commands]]
 path = "hello pick"
@@ -102,6 +124,17 @@ summary = "hello.pick.right"
 flags = ["left", "right"]
 min = 1
 max = 1
+
+[commands.result.schema]
+type = "object"
+required = ["picked", "args", "flags", "lists"]
+properties = { picked = { type = "string" }, args = { "$ref" = "#/$defs/words" }, flags = { type = "object", additionalProperties = { type = "string" } }, lists = { type = "object", additionalProperties = { "$ref" = "#/$defs/words" } } }
+"$defs" = { words = { type = "array", items = { type = "string" } } }
+
+[commands.result.dry_run_schema]
+type = "object"
+required = ["planned", "args", "flags", "lists"]
+properties = { planned = { const = "picked" }, args = { type = "array", items = { type = "string" } }, flags = { type = "object" }, lists = { type = "object" } }
 
 [[errors]]
 code = "HELLO_GRUMPY"

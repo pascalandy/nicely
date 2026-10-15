@@ -1,0 +1,92 @@
+{
+  "type": "object",
+  "required": ["commands"],
+  "properties": {
+    "commands": {"type": "array", "items": {"$ref": "#/$defs/entry"}}
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["path", "summary", "source"],
+      "properties": {
+        "path": {"type": "string"},
+        "summary": {"type": "string"},
+        "source": {"type": "string"},
+        "skill": {"type": ["string", "null"]},
+        "args": {"type": "array", "items": {"$ref": "#/$defs/arg"}},
+        "flags": {"type": "array", "items": {"$ref": "#/$defs/flag"}},
+        "flag_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["flags", "min", "max"],
+            "properties": {
+              "flags": {"type": "array", "items": {"type": "string"}},
+              "min": {"type": "integer", "minimum": 0},
+              "max": {"type": "integer", "minimum": 1}
+            }
+          }
+        },
+        "result": {
+          "type": "object",
+          "required": ["kind", "keys"],
+          "properties": {
+            "kind": {"enum": ["object", "report", "batch", "text"]},
+            "keys": {"type": "array", "items": {"type": "string"}},
+            "schema": {"type": "object"},
+            "dry_run_schema": {"type": "object"}
+          }
+        },
+        "effects": {"$ref": "#/$defs/booleans", "required": ["user_writes", "network", "paid"]},
+        "requires": {
+          "type": "object",
+          "required": ["bins", "keys"],
+          "properties": {
+            "bins": {"type": "array", "items": {"$ref": "#/$defs/named"}},
+            "keys": {"type": "array", "items": {"$ref": "#/$defs/named"}}
+          }
+        },
+        "modes": {"$ref": "#/$defs/booleans", "required": ["dry_run", "recorded", "resume"]},
+        "config": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "value", "source"],
+            "properties": {"key": {"type": "string"}, "value": true, "source": {"type": "string"}}
+          }
+        },
+        "examples": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "arg": {
+      "type": "object",
+      "required": ["name", "summary", "type", "required", "variadic", "values"],
+      "properties": {
+        "name": {"type": "string"},
+        "summary": {"type": "string"},
+        "type": {"$ref": "#/$defs/type"},
+        "required": {"type": "boolean"},
+        "variadic": {"type": "boolean"},
+        "values": {"type": "array"}
+      }
+    },
+    "flag": {
+      "type": "object",
+      "required": ["name", "shorthand", "value", "type", "required", "variadic", "values", "default", "summary"],
+      "properties": {
+        "name": {"type": "string"},
+        "shorthand": {"type": "string"},
+        "value": {"type": "string"},
+        "type": {"$ref": "#/$defs/type"},
+        "required": {"type": "boolean"},
+        "variadic": {"type": "boolean"},
+        "values": {"type": "array"},
+        "default": {"type": ["string", "boolean", "integer", "number", "null"]},
+        "summary": {"type": "string"}
+      }
+    },
+    "type": {"enum": ["string", "boolean", "integer", "number"]},
+    "named": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}}},
+    "booleans": {"type": "object", "additionalProperties": {"type": "boolean"}}
+  }
+}

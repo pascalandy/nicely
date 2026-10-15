@@ -8,6 +8,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.8
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/rogpeppe/go-internal v1.16.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/sys v0.48.0
