@@ -47,7 +47,7 @@ func TestReservedNamesAgreeWithTheDomainTable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"help", "version", "config"}
+	want := []string{"help", "version", "config", "core", "extensions"}
 	for _, row := range tables[0] {
 		if row[2] == "core" || row[2] == "bundled" {
 			want = append(want, specdoc.Backticked(row[0])...)

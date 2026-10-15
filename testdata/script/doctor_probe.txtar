@@ -1,0 +1,192 @@
+# Each installed extension is a component of doctor, which checks each program that its
+# manifest requires and does not mark conditional: it looks the program up in PATH, probes
+# the version that it declares, and names the install command of this machine's package
+# manager in a failed check. A conditional program, absent or too old, gets no check. Every
+# stub that doctor must not start appends its name to $WORK/ran.
+chmod 755 bin/ncly-hello
+chmod 755 bin/ncly-extensions
+chmod 755 bin/apt
+chmod 755 bin/brew
+chmod 755 bin/badtool
+chmod 755 bin/errtool
+chmod 755 bin/hangtool
+chmod 755 bin/maybeold
+chmod 755 bin/newtool
+chmod 755 bin/oldtool
+chmod 755 bin/plain
+chmod 755 bin/silent
+# PATH keeps ncly and the fixtures alone, so the other commands of the test binary are no
+# extensions here, and no real package manager counts
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/bin:$WORK/nbin
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+
+# The first package manager of the running system that the stub PATH holds gives the install
+# command: apt on Linux, where pacman comes first but is absent, and brew on macOS
+[linux] env INSTALL='"hint":"sudo apt install nothere","next":\["sudo","apt","install","nothere"\]'
+[darwin] env INSTALL='"hint":"brew install nothere","next":\["brew","install","nothere"\]'
+[linux] env OLDINSTALL='"hint":"sudo apt install oldtool","next":\["sudo","apt","install","oldtool"\]'
+[darwin] env OLDINSTALL='"hint":"brew install oldtool","next":\["brew","install","oldtool"\]'
+exits 78 ncly doctor hello --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"hello\.badtool","component":"hello","status":"fail","code":"PREREQ_MISSING","message":"badtool --version exited with 1, so its version is unknown\.","hint":"Install badtool\."\},\{"id":"hello\.errtool","component":"hello","status":"pass","message":"errtool 2\.1\.4 found at '${WORK@R}'/bin/errtool\."\},\{"id":"hello\.hangtool","component":"hello","status":"pass","message":"hangtool 1\.0 found at '${WORK@R}'/bin/hangtool\."\},\{"id":"hello\.newtool","component":"hello","status":"pass","message":"newtool 3\.12 found at '${WORK@R}'/bin/newtool\."\},\{"id":"hello\.nothere","component":"hello","status":"fail","code":"PREREQ_MISSING","message":"nothere is not installed\.",'$INSTALL'\},\{"id":"hello\.oldtool","component":"hello","status":"fail","code":"PREREQ_MISSING","message":"oldtool 1\.9\.9 is older than 2\.0\.",'$OLDINSTALL'\},\{"id":"hello\.paconly","component":"hello","status":"fail","code":"PREREQ_MISSING","message":"paconly is not installed\.","hint":"Install paconly\."\},\{"id":"hello\.plain","component":"hello","status":"pass","message":"plain found at '${WORK@R}'/bin/plain\."\},\{"id":"hello\.silent","component":"hello","status":"fail","code":"PREREQ_MISSING","message":"silent --version printed no version\.","hint":"Install silent\."\}\]\}\n\z'
+! stderr .
+cp stdout probe.json
+
+# ncly describe gives each program's entry, with the keys that the manifest declares
+exec ncly describe 'hello run' --json
+stdout '\{"name":"maybe","conditional":true,"version":"1\.0","install":\{"apt":\["sudo","apt","install","maybe"\]\}\}'
+stdout '\{"name":"newtool","version":"3\.12\.0","probe":\["-V"\]\}'
+stdout '\{"name":"plain"\}'
+exec ncly describe doctor --json
+cp stdout describe.json
+schema probe.json describe.json schema
+exits 78 ncly doctor --json
+stdout '"checks":\[\{"id":"core\.config",.*\{"id":"extensions\.hello",.*\{"id":"hello\.badtool",'
+exits 78 ncly doctor hello
+stdout '^fail  hello\.nothere  nothere is not installed\.\n      hint: (sudo apt|brew) install nothere$'
+exits 78 ncly --lang en-XA doctor hello
+pseudo stdout hello.badtool hello.errtool hello.hangtool hello.newtool hello.nothere hello.oldtool hello.paconly hello.silent hello.plain badtool errtool hangtool newtool nothere oldtool paconly silent plain --version sudo apt brew install
+! exists ran
+
+# A probe that outlasts --timeout is killed with its descendants, and its check fails with
+# CHECK_TIMEOUT, as does each check that had not started
+env HANG=1
+exits 78 ncly doctor hello --timeout 1s --json
+stdout '\{"id":"hello\.errtool","component":"hello","status":"pass",'
+stdout '\{"id":"hello\.hangtool","component":"hello","status":"fail","code":"CHECK_TIMEOUT","message":"hangtool --version did not finish within --timeout\.","hint":"Run ncly doctor again with a longer --timeout\."\},\{"id":"hello\.newtool","component":"hello","status":"fail","code":"CHECK_TIMEOUT","message":"Doctor ran out of time before it checked newtool\.","hint":"Run ncly doctor again with a longer --timeout\."\}'
+stdout '\{"id":"hello\.plain","component":"hello","status":"fail","code":"CHECK_TIMEOUT",'
+gone hang.pid
+gone hangchild.pid
+env HANG=
+
+# A timeout that is no duration is a usage error
+exits 2 ncly doctor --timeout soon --json
+answer stderr USAGE_INVALID
+exits 2 ncly doctor --timeout 0 --json
+answer stderr USAGE_INVALID
+exec ncly doctor core --timeout 45 --json
+answer stdout ok
+
+# The impostor ncly-extensions never runs: ncly doctor extensions is the built-in component
+exec ncly doctor extensions --json
+answer stdout ok
+stdout '"id":"extensions\.extensions","component":"extensions","status":"pass","message":"'${WORK@R}'/bin/ncly-extensions never runs, because ncly reserves the name extensions\.'
+! exists ran
+! exists impostor
+
+-- bin/ncly-hello --
+#!/bin/sh
+echo "hello $*" >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+requires = { bins = ["badtool", "errtool", "hangtool", "maybe", "maybeold", "newtool", "nothere", "oldtool", "paconly", "silent", "plain"] }
+
+[programs.badtool]
+version = "1.0"
+
+[programs.errtool]
+version = "2.1"
+
+[programs.hangtool]
+version = "1.0"
+
+[programs.maybe]
+conditional = true
+version = "1.0"
+install = { apt = ["sudo", "apt", "install", "maybe"] }
+
+[programs.maybeold]
+conditional = true
+version = "9.0"
+
+[programs.newtool]
+version = "3.12.0"
+probe = ["-V"]
+
+[programs.nothere]
+install = { pacman = ["sudo", "pacman", "-S", "nothere"], apt = ["sudo", "apt", "install", "nothere"], brew = ["brew", "install", "nothere"] }
+
+[programs.oldtool]
+version = "2.0"
+install = { winget = ["winget", "install", "oldtool"], brew = ["brew", "install", "oldtool"], apt = ["sudo", "apt", "install", "oldtool"] }
+
+[programs.paconly]
+install = { pacman = ["sudo", "pacman", "-S", "paconly"] }
+
+[programs.silent]
+version = "1.0"
+
+[programs.plain]
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Summary of hello run."
+other = "Greet someone"
+-- bin/ncly-extensions --
+#!/bin/sh
+echo impostor > "$WORK/impostor"
+-- bin/ncly-extensions.toml --
+format_version = 1
+contract_version = 1
+domain = "extensions"
+
+[[commands]]
+path = "extensions"
+summary = "extensions.summary"
+-- bin/ncly-extensions.locales/en.toml --
+["extensions.summary"]
+description = "Summary of the impostor."
+other = "Pretend to be core"
+-- bin/apt --
+#!/bin/sh
+echo apt >> "$WORK/ran"
+-- bin/brew --
+#!/bin/sh
+echo brew >> "$WORK/ran"
+-- bin/badtool --
+#!/bin/sh
+echo "badtool 1.0"
+exit 1
+-- bin/errtool --
+#!/bin/sh
+echo "errtool version 2.1.4 (built today)" >&2
+-- bin/hangtool --
+#!/bin/sh
+if [ "$HANG" = 1 ]; then
+  echo $$ > "$WORK/hang.pid"
+  /bin/sleep 30 &
+  echo $! > "$WORK/hangchild.pid"
+  wait
+fi
+echo "hangtool 1.0"
+-- bin/maybeold --
+#!/bin/sh
+echo maybeold >> "$WORK/ran"
+echo "maybeold 1.0"
+-- bin/newtool --
+#!/bin/sh
+if [ "$1" = -V ]; then echo "newtool 3.12"; exit 0; fi
+exit 1
+-- bin/oldtool --
+#!/bin/sh
+echo "oldtool version 1.9.9-beta2, protocol 4"
+-- bin/silent --
+#!/bin/sh
+echo "no number here"
+-- bin/plain --
+#!/bin/sh
+echo plain >> "$WORK/ran"

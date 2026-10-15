@@ -25,6 +25,32 @@ type Manifest struct {
 	// Programs holds the name of each program that a command may run, the
 	// keys of the manifest's programs table, sorted.
 	Programs []string
+	// Requirements holds the entry of each program, by name, from M05.
+	Requirements map[string]Requirement
+}
+
+// Requirement is a program's entry in the programs table of a manifest, as
+// Manifest in contract.md defines it.
+type Requirement struct {
+	// Conditional marks a program that only some configs or invocations
+	// need, which doctor never checks.
+	Conditional bool `toml:"conditional" json:"conditional,omitempty"`
+	// Version is the oldest version that works, such as 6.0, or empty when
+	// finding the program is enough.
+	Version string `toml:"version" json:"version,omitempty"`
+	// Probe holds the arguments that make the program print its version,
+	// or nil for the default, --version.
+	Probe []string `toml:"probe" json:"probe,omitempty"`
+	// Install holds one install command per package manager, by its name.
+	Install map[string][]string `toml:"install" json:"install,omitempty"`
+}
+
+// ProbeArgs returns the arguments of the version probe.
+func (r Requirement) ProbeArgs() []string {
+	if r.Probe == nil {
+		return []string{"--version"}
+	}
+	return r.Probe
 }
 
 // OwnCode is an error code that an extension declares.
@@ -171,8 +197,7 @@ type manifestFile struct {
 		Code string `toml:"code"`
 		Exit int    `toml:"exit"`
 	} `toml:"errors"`
-	// Programs holds one table per program, whose keys later milestones read.
-	Programs map[string]toml.Primitive `toml:"programs"`
+	Programs map[string]Requirement `toml:"programs"`
 }
 
 // ParseManifest reads the manifest of the extension of a domain and checks
@@ -251,6 +276,7 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 		m.Errors = append(m.Errors, OwnCode{Code: Code(e.Code), Exit: ExitCode(e.Exit)})
 	}
 	m.Programs = slices.Sorted(maps.Keys(file.Programs))
+	m.Requirements = file.Programs
 	if err := m.check(); err != nil {
 		return Manifest{}, err
 	}
@@ -484,16 +510,34 @@ func (m Manifest) checkRequires(path string, c Command) error {
 }
 
 // checkPrograms checks that each key of programs is a file name, without
-// "/", and that a command names it.
+// "/", and that a command names it, then its entry: a version of numbers
+// joined by dots, a probe that is not empty, and install commands that are
+// not empty.
 func (m Manifest) checkPrograms() error {
 	for _, name := range m.Programs {
 		named := slices.ContainsFunc(m.Commands, func(c Command) bool { return slices.Contains(c.Requires.Bins, name) })
 		if name == "" || name == "." || name == ".." || strings.Contains(name, "/") || !named {
 			return broken("extension.program", map[string]any{"Name": name})
 		}
+		r := m.Requirements[name]
+		switch {
+		case r.Version != "" && !versionNumber.MatchString(r.Version):
+			return broken("extension.program_version", map[string]any{"Name": name, "Value": r.Version})
+		case r.Probe != nil && len(r.Probe) == 0:
+			return broken("extension.program_probe", map[string]any{"Name": name})
+		}
+		for _, manager := range slices.Sorted(maps.Keys(r.Install)) {
+			if len(r.Install[manager]) == 0 {
+				return broken("extension.program_install", map[string]any{"Name": name, "Manager": manager})
+			}
+		}
 	}
 	return nil
 }
+
+// versionNumber is a version as a manifest declares it: one or more numbers
+// joined by dots.
+var versionNumber = regexp.MustCompile(`^[0-9]+(\.[0-9]+)*$`)
 
 // checkConfig checks the config keys that one command reads: each is a
 // dotted path of at least two key words under the domain, and appears once.

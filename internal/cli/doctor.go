@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"io"
@@ -8,14 +9,18 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/pascalandy/nicely/sdk/runner"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 //go:embed doctor_schema.json
@@ -26,10 +31,12 @@ var doctorCommand = contract.Command{
 	Result:  contract.Result{Kind: contract.ResultReport, Schema: mustSchema(doctorSchema)},
 	Summary: "doctor.summary",
 	Args:    []contract.Arg{{Name: "component", Summary: "doctor.component"}},
+	Flags:   []contract.Flag{{Name: "timeout", Value: "duration", Summary: "doctor.timeout", Default: "30s"}},
 	Effects: &contract.Effects{},
 	Examples: []string{
 		`ncly doctor`,
 		`ncly doctor core --json`,
+		`ncly doctor transcript --timeout 1m`,
 	},
 }
 
@@ -78,24 +85,39 @@ type report struct {
 }
 
 // component is a part of the machine that doctor checks, under the name
-// that the component argument gives it.
+// that the component argument gives it. extension is set for the
+// component of an installed extension.
 type component struct {
-	name   string
-	checks func() []check
+	name      string
+	checks    func() []check
+	extension *extension
 }
 
 // addDoctor adds ncly doctor, which reports its checks on stdout even when
-// one fails, as a report command does. It never starts an extension.
+// one fails, as a report command does. It starts no extension, and runs
+// the version probes one at a time, because the cleanup of the runner
+// reaches every descendant of ncly.
 func addDoctor(p *i18n.Printer, root *cobra.Command, extensions []*extension) {
-	root.AddCommand(command.Build(p, p, doctorCommand, func(_ *cobra.Command, args []string) error {
+	root.AddCommand(command.Build(p, p, doctorCommand, func(c *cobra.Command, args []string) error {
+		timeout, problem := parseTimeout(p, c.Flag("timeout"))
+		if problem != nil {
+			return command.Fail(*problem)
+		}
+		probes := &prober{p: p, ctx: runner.OnSignal(), deadline: time.Now().Add(timeout)}
 		components := []component{
-			{"core", func() []check { return coreChecks(p, extensions) }},
-			{"extensions", func() []check { return extensionChecks(p, extensions) }},
+			{name: "core", checks: func() []check { return coreChecks(p, extensions) }},
+			{name: "extensions", checks: func() []check { return extensionChecks(p, extensions) }},
+		}
+		for _, e := range extensions {
+			components = append(components, component{name: e.domain, checks: func() []check { return probes.programs(e) }, extension: e})
 		}
 		if len(args) > 0 {
 			i := slices.IndexFunc(components, func(c component) bool { return c.name == args[0] })
-			if i < 0 {
+			switch {
+			case i < 0:
 				return command.Fail(noComponent(p, args[0], components))
+			case components[i].extension != nil && components[i].extension.broken != nil:
+				return command.Fail(components[i].extension.invalid(p))
 			}
 			components = components[i : i+1]
 		}
@@ -109,6 +131,9 @@ func addDoctor(p *i18n.Printer, root *cobra.Command, extensions []*extension) {
 		}
 		for _, c := range components {
 			r.Checks = append(r.Checks, c.checks()...)
+			if probes.signal != nil {
+				return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(probes.signal)}, text: func(io.Writer) error { return nil }}
+			}
 		}
 		failed := slices.ContainsFunc(r.Checks, func(c check) bool { return c.Status == statusFail })
 		return &answered{
@@ -282,6 +307,105 @@ func extensionChecks(p *i18n.Printer, extensions []*extension) []check {
 			}
 			checks = append(checks, c)
 		}
+	}
+	return checks
+}
+
+// parseTimeout reads the value of --timeout: a duration such as 30s, 5m,
+// or 2h, or a number of seconds, above 0. Without the flag, the default of
+// its declaration applies.
+func parseTimeout(p *i18n.Printer, flag *pflag.Flag) (time.Duration, *contract.Problem) {
+	value := flag.Value.String()
+	if !flag.Changed {
+		value = doctorCommand.Flags[0].Default.(string)
+	}
+	d, err := time.ParseDuration(value)
+	if seconds, convErr := strconv.ParseUint(value, 10, 31); convErr == nil {
+		d, err = time.Duration(seconds)*time.Second, nil
+	}
+	if err != nil || d <= 0 {
+		problem := command.Usage(p.T("doctor.timeout_invalid", map[string]any{"Value": value}), "ncly doctor --timeout 30s")
+		return 0, &problem
+	}
+	return d, nil
+}
+
+// prober runs the program checks of doctor, one at a time, within the time
+// left of --timeout.
+type prober struct {
+	p        *i18n.Printer
+	ctx      context.Context
+	deadline time.Time
+	// spent is set once a check ran out of time, so that no other starts.
+	spent bool
+	// signal is the signal that ended a probe.
+	signal os.Signal
+}
+
+// programs checks each program that the manifest of an extension requires
+// and does not mark conditional, in the order of their names. A broken
+// manifest declares nothing that doctor can read.
+func (pr *prober) programs(e *extension) []check {
+	if e.broken != nil {
+		return nil
+	}
+	var checks []check
+	env := runner.Environ(os.Environ(), nil)
+	for _, name := range e.manifest.Programs {
+		r := e.manifest.Requirements[name]
+		if r.Conditional || pr.signal != nil {
+			continue
+		}
+		c := check{ID: e.domain + "." + name, Component: e.domain}
+		data := map[string]any{"Name": name, "Version": r.Version, "Probe": strings.Join(append([]string{name}, r.ProbeArgs()...), " ")}
+		timedOut := func(message string) {
+			c.Status, c.Code, c.Message, c.Hint = statusFail, contract.CheckTimeout, message, pr.p.T("doctor.timeout_hint")
+		}
+		left := time.Until(pr.deadline)
+		if pr.spent || left <= 0 {
+			pr.spent = true
+			timedOut(pr.p.T("doctor.not_started", data))
+			checks = append(checks, c)
+			continue
+		}
+		found, err := runner.CheckProgram(pr.ctx, name, r, env, left)
+		data["Path"], data["Found"], data["Exit"] = found.Path, found.Version, found.Exit
+		switch {
+		case err != nil:
+			found.Verdict = runner.ProgramProbeFailed
+			data["Exit"] = -1
+			found.Install = nil
+		case found.Signal != nil:
+			pr.signal = found.Signal
+			return checks
+		}
+		c.Status = statusFail
+		c.Code = contract.PrereqMissing
+		switch found.Verdict {
+		case runner.ProgramFound:
+			c.Status, c.Code, c.Message = statusPass, "", pr.p.T("doctor.program_found", data)
+			if found.Version != "" {
+				c.Message = pr.p.T("doctor.program_version", data)
+			}
+		case runner.ProgramTimedOut:
+			pr.spent = true
+			timedOut(pr.p.T("doctor.program_timeout", data))
+		case runner.ProgramMissing:
+			c.Message = pr.p.T("doctor.program_missing", data)
+		case runner.ProgramTooOld:
+			c.Message = pr.p.T("doctor.program_old", data)
+		case runner.ProgramProbeFailed:
+			c.Message = pr.p.T("doctor.program_probe_failed", data)
+		case runner.ProgramNoVersion:
+			c.Message = pr.p.T("doctor.program_no_version", data)
+		}
+		if found.Failed() {
+			c.Hint = pr.p.T("doctor.program_install", data)
+			if found.Install != nil {
+				c.Hint, c.Next = strings.Join(found.Install, " "), found.Install
+			}
+		}
+		checks = append(checks, c)
 	}
 	return checks
 }

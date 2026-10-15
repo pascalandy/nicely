@@ -56,6 +56,8 @@ type entry struct {
 	declaration contract.Command
 	text        *i18n.Printer
 	group       bool
+	// requirements holds the entries of the manifest's programs table.
+	requirements map[string]contract.Requirement
 }
 
 // listing is the answer of ncly describe for no path or a group.
@@ -143,8 +145,15 @@ type effectsDetail struct {
 }
 
 type requiresDetail struct {
-	Bins []named `json:"bins"`
-	Keys []named `json:"keys"`
+	Bins []binDetail `json:"bins"`
+	Keys []named     `json:"keys"`
+}
+
+// binDetail is a program that a command may run, with the keys of its
+// entry in the manifest's programs table, each present only when declared.
+type binDetail struct {
+	Name string `json:"name"`
+	contract.Requirement
 }
 
 type named struct {
@@ -170,10 +179,13 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 		FlagGroups: []groupDetail{},
 		Result:     describeResult(d),
 		Effects:    effectsDetail(d.DeclaredEffects()),
-		Requires:   requiresDetail{Bins: names(d.Requires.Bins), Keys: names(d.Requires.Keys)},
+		Requires:   requiresDetail{Bins: []binDetail{}, Keys: names(d.Requires.Keys)},
 		Modes:      modesDetail(d.Modes),
 		Config:     []config.Value{lang},
 		Examples:   append([]string{}, d.Examples...),
+	}
+	for _, name := range d.Requires.Bins {
+		out.Requires.Bins = append(out.Requires.Bins, binDetail{name, e.requirements[name]})
 	}
 	for _, key := range d.Config {
 		out.Config = append(out.Config, values.Under(key)...)
@@ -331,7 +343,7 @@ func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 		for _, d := range e.manifest.Commands {
 			en := entry{
 				Path: strings.Join(d.Path, " "), Summary: text.T(d.Summary), Source: sourceExtension,
-				declaration: d, text: text, group: !e.manifest.Runs(d),
+				declaration: d, text: text, group: !e.manifest.Runs(d), requirements: e.manifest.Requirements,
 			}
 			if e.bundled {
 				en.Source = sourceBundled

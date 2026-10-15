@@ -37,7 +37,7 @@ var rootCommand = contract.Command{
 // core ships their command.
 var reservedNames = []string{
 	"completion", "describe", "doctor", "auth", "run", "tap", "skill",
-	"help", "version", "config",
+	"help", "version", "config", "core", "extensions",
 }
 
 // Main runs ncly with args, without the program name, and returns its exit

@@ -149,6 +149,18 @@ other = "{{.File}} gives the command \"{{.Path}}\" the group of flags {{.Value}}
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a program name from its requires.bins. requires.bins and programs are keys and stay as is."
 other = "{{.File}} lists \"{{.Name}}\" in requires.bins of the command \"{{.Path}}\", which must name a key of programs once."
 
+["extension.program_version"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Name}} a program of its programs table, such as ffmpeg, and {{.Value}} the version that it declares."
+other = "{{.File}} gives the program \"{{.Name}}\" the version \"{{.Value}}\", which must be numbers joined by dots, such as 6.0."
+
+["extension.program_probe"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg, whose probe, the arguments that make it print its version, is empty."
+other = "{{.File}} gives the program \"{{.Name}}\" an empty probe, which must hold at least one argument."
+
+["extension.program_install"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Name}} a program of its programs table, such as ffmpeg, and {{.Manager}} the name of a package manager, such as brew or pacman, which stays as is."
+other = "{{.File}} gives the program \"{{.Name}}\" an empty install command for \"{{.Manager}}\"."
+
 ["extension.key"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys and keychain stay as is."
 other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain."
@@ -164,6 +176,54 @@ other = "Check this machine's config, tools, and extensions"
 ["doctor.component"]
 description = "Help page: summary of the component argument of `ncly doctor`, a part that doctor checks, such as core or the domain of an extension."
 other = "The part to check, such as core; all of them when omitted"
+
+["doctor.timeout"]
+description = "Help page: summary of the --timeout flag of `ncly doctor`, which bounds the checks. 30s and the examples are durations that stay as is."
+other = "Bound the checks, such as 45s, 2m, or a number of seconds"
+
+["doctor.timeout_invalid"]
+description = "Usage error of `ncly doctor` when the value of --timeout is no duration above 0. {{.Value}} is that value. 30s, 5m, 2h, and --timeout stay as is."
+other = "\"{{.Value}}\" is no duration for --timeout: use 30s, 5m, 2h, or a number of seconds above 0."
+
+["doctor.program_found"]
+description = "Report of `ncly doctor`: message of the check of a program that an extension requires, found in PATH. {{.Name}} is the program, such as ffmpeg, and {{.Path}} where it was found."
+other = "{{.Name}} found at {{.Path}}."
+
+["doctor.program_version"]
+description = "Report of `ncly doctor`: message of the check of a program found in PATH whose version is recent enough. {{.Name}} is the program, {{.Found}} the version that it printed, such as 6.1.1, and {{.Path}} where it was found."
+other = "{{.Name}} {{.Found}} found at {{.Path}}."
+
+["doctor.program_missing"]
+description = "Report of `ncly doctor`: message of the failed check of a program that an extension requires and that no folder of PATH holds. {{.Name}} is the program, such as ffmpeg."
+other = "{{.Name}} is not installed."
+
+["doctor.program_old"]
+description = "Report of `ncly doctor`: message of the failed check of a program older than the version that an extension needs. {{.Name}} is the program, {{.Found}} the version that it printed, and {{.Version}} the oldest version that works."
+other = "{{.Name}} {{.Found}} is older than {{.Version}}."
+
+["doctor.program_probe_failed"]
+description = "Report of `ncly doctor`: message of the failed check of a program whose version probe exited with an error. {{.Probe}} is the command that doctor ran, such as ffmpeg -version, which stays as is, and {{.Exit}} its exit code."
+other = "{{.Probe}} exited with {{.Exit}}, so its version is unknown."
+
+["doctor.program_no_version"]
+description = "Report of `ncly doctor`: message of the failed check of a program whose version probe printed no version number. {{.Probe}} is the command that doctor ran, such as ffmpeg -version, which stays as is."
+other = "{{.Probe}} printed no version."
+
+["doctor.program_install"]
+description = "Report of `ncly doctor`: hint of a failed program check when no install command is known for this machine. {{.Name}} is the program, such as ffmpeg."
+other = "Install {{.Name}}."
+
+["doctor.program_timeout"]
+description = "Report of `ncly doctor`: message of the check of a program whose version probe still ran when the time of --timeout ended. {{.Probe}} is the command that doctor ran, such as ffmpeg -version, and --timeout a flag; both stay as is."
+other = "{{.Probe}} did not finish within --timeout."
+
+["doctor.not_started"]
+description = "Report of `ncly doctor`: message of a check that doctor never started, because the time of --timeout had ended. {{.Name}} is what the check examines, such as ffmpeg."
+other = "Doctor ran out of time before it checked {{.Name}}."
+
+["doctor.timeout_hint"]
+description = "Report of `ncly doctor`: hint of a check that failed because the time of --timeout ended. ncly doctor and --timeout stay as is."
+other = "Run ncly doctor again with a longer --timeout."
 
 ["doctor.no_component"]
 description = "Error of `ncly doctor` when its argument names no component. {{.Component}} is that argument, and {{.Components}} the names of the components, such as core, which stay as is."

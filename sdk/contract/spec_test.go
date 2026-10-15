@@ -12,7 +12,7 @@ import (
 const contractDoc = "../../docs/north-star/contract.md"
 
 // shipped lists the milestones whose codes the registry holds.
-var shipped = []string{"M00", "M01", "M03"}
+var shipped = []string{"M00", "M01", "M03", "M05"}
 
 func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 	tables, err := specdoc.Tables(contractDoc, "Error codes")

@@ -390,3 +390,42 @@ func TestAConsumerReadsACheckWithAndWithoutTheKeysOfAnExtension(t *testing.T) {
 		}
 	}
 }
+
+func TestAConsumerReadsAProgramWithAndWithoutItsEntry(t *testing.T) {
+	// Entries of requires.bins as ncly describe gives them, written out:
+	// conditional, version, probe, and install appear only when the
+	// manifest declares them, and probe then defaults to --version.
+	with := `{"name":"ffmpeg","conditional":true,"version":"6.0","probe":["-version"],"install":{"brew":["brew","install","ffmpeg"]}}`
+	without := `{"name":"ffmpeg"}`
+	for _, c := range []struct {
+		line string
+		want Requirement
+	}{
+		{with, Requirement{Conditional: true, Version: "6.0", Probe: []string{"-version"}, Install: map[string][]string{"brew": {"brew", "install", "ffmpeg"}}}},
+		{without, Requirement{}},
+	} {
+		var bin struct {
+			Name        string              `json:"name"`
+			Conditional bool                `json:"conditional"`
+			Version     string              `json:"version"`
+			Probe       []string            `json:"probe"`
+			Install     map[string][]string `json:"install"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &bin); err != nil {
+			t.Fatal(err)
+		}
+		got := Requirement{Conditional: bin.Conditional, Version: bin.Version, Probe: bin.Probe, Install: bin.Install}
+		if bin.Name != "ffmpeg" || got.Conditional != c.want.Conditional || got.Version != c.want.Version ||
+			strings.Join(got.ProbeArgs(), " ") != strings.Join(c.want.ProbeArgs(), " ") ||
+			strings.Join(got.Install["brew"], " ") != strings.Join(c.want.Install["brew"], " ") {
+			t.Errorf("consumer read %+v from %s", bin, c.line)
+		}
+		// A consumer written before M05 reads the name alone.
+		var older struct {
+			Name string `json:"name"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &older); err != nil || older.Name != "ffmpeg" {
+			t.Errorf("older consumer read %+v from %s", older, c.line)
+		}
+	}
+}

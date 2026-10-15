@@ -35,6 +35,8 @@ const (
 	Interrupted          Code = "INTERRUPTED"
 	Terminated           Code = "TERMINATED"
 	NotFound             Code = "NOT_FOUND"
+	PrereqMissing        Code = "PREREQ_MISSING"
+	CheckTimeout         Code = "CHECK_TIMEOUT"
 
 	ConfigUnknownKey   Code = "CONFIG_UNKNOWN_KEY"
 	ConfigDefaultsUsed Code = "CONFIG_DEFAULTS_USED"
@@ -54,6 +56,8 @@ var errorCodes = []codeExit{
 	{ConfigInvalid, ExitHuman},
 	{ExtensionInvalid, ExitHuman},
 	{TerminalRequired, ExitHuman},
+	{PrereqMissing, ExitHuman},
+	{CheckTimeout, ExitHuman},
 	{UsageInvalid, ExitUsage},
 	{ConfirmationRequired, ExitUsage},
 	{NotFound, ExitUsage},

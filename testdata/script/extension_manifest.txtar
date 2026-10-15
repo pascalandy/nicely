@@ -153,6 +153,17 @@ stderr 'lists \\"curl\\" in requires.bins'
 exits 78 ncly program --json
 stderr 'declares the program \\"unused\\" in programs'
 
+# A program's version is numbers joined by dots, its probe is not empty, and each of its
+# install commands is not empty
+exec sh broken.sh progversion progprobe proginstall
+exits 78 ncly progversion --json
+answer stderr EXTENSION_INVALID
+stderr 'gives the program \\"curl\\" the version \\"v8\\", which must be numbers joined by dots'
+exits 78 ncly progprobe --json
+stderr 'gives the program \\"curl\\" an empty probe'
+exits 78 ncly proginstall --json
+stderr 'gives the program \\"curl\\" an empty install command for \\"brew\\"'
+
 # Each config key that a command reads lies under the domain, and appears once
 exec sh broken.sh configkey
 exits 78 ncly configkey --json
@@ -667,6 +678,55 @@ requires = { bins = ["curl"] }
 [programs.curl]
 
 [programs.unused]
+-- broken/progversion.toml --
+format_version = 1
+contract_version = 1
+domain = "progversion"
+
+[[commands]]
+path = "progversion"
+summary = "progversion.summary"
+
+[[commands]]
+path = "progversion run"
+summary = "progversion.summary"
+requires = { bins = ["curl"] }
+
+[programs.curl]
+version = "v8"
+-- broken/progprobe.toml --
+format_version = 1
+contract_version = 1
+domain = "progprobe"
+
+[[commands]]
+path = "progprobe"
+summary = "progprobe.summary"
+
+[[commands]]
+path = "progprobe run"
+summary = "progprobe.summary"
+requires = { bins = ["curl"] }
+
+[programs.curl]
+version = "8.0"
+probe = []
+-- broken/proginstall.toml --
+format_version = 1
+contract_version = 1
+domain = "proginstall"
+
+[[commands]]
+path = "proginstall"
+summary = "proginstall.summary"
+
+[[commands]]
+path = "proginstall run"
+summary = "proginstall.summary"
+requires = { bins = ["curl"] }
+
+[programs.curl]
+install = { apt = ["sudo", "apt", "install", "curl"], brew = [] }
 -- broken/configkey.toml --
 format_version = 1
 contract_version = 1

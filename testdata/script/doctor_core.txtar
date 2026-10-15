@@ -52,7 +52,7 @@ rm $CFG/config.toml
 # An unknown component is a failure of doctor itself: NOT_FOUND with exit 2, on stderr
 exits 2 ncly doctor nope --json
 answer stderr NOT_FOUND
-stderr '"message":"Doctor has no component nope\. Its components are: core, extensions\.","hint":"ncly doctor","next":\["ncly","doctor"\]'
+stderr '"message":"Doctor has no component nope\. Its components are: core, extensions, hello, skill\.","hint":"ncly doctor","next":\["ncly","doctor"\]'
 ! stdout .
 exits 2 ncly --lang en-XA doctor nope
 pseudo stderr doctor
