@@ -1,0 +1,154 @@
+# ncly describe lists core's commands and each extension's from the declarations
+# and the manifests alone. Every shell fixture appends its domain to $WORK/ran when it
+# runs, and none may run. ncly-bundled is ncly with the Go fixture hello bundled.
+chmod 755 bin/ncly-hello
+chmod 755 bin/ncly-bonjour
+chmod 755 bin/ncly-broken
+env PATH=$WORK/bin:$PATH
+
+# Without a path, the entries of every command come in the order of their paths,
+# and help prints nothing on stderr
+exec ncly describe
+! stderr .
+cmp stdout want-list.txt
+
+# The same list in JSON: path, summary, and source, and skill on an extension's domain alone
+exec ncly describe --json
+answer stdout ok
+stdout '^\{"ok":true,"contract_version":1,"commands":\[\{"path":"bonjour","summary":"Say hello in French","source":"extension","skill":null\},\{"path":"bonjour dire",'
+stdout '\{"path":"completion","summary":"Print shell completion scripts","source":"core"\}'
+stdout '\{"path":"completion zsh","summary":"Print the completion script for zsh","source":"core"\}'
+stdout '\{"path":"describe","summary":"Describe installed commands and their capabilities","source":"core"\}'
+stdout '\{"path":"hello","summary":"Greet people","source":"extension","skill":"'${WORK@R}'/bin/ncly-hello\.skill"\}'
+stdout '\{"path":"hello run","summary":"Greet someone by name","source":"extension"\}\]\}$'
+! stdout '"path":"completion[^}]*"skill"'
+! stdout '"path":"hello [^}]*"skill"'
+! stdout broken
+
+# A group path gives the group and the commands under it, as one word or as several
+exec ncly describe hello --json
+cmpenv stdout want-hello.json
+exec ncly describe completion --json
+stdout -count=4 '"path":"completion'
+! stdout '"path":"describe"'
+exec ncly describe completion zsh --json
+stdout '^\{"ok":true,"contract_version":1,"commands":\[\{"path":"completion zsh","summary":"Print the completion script for zsh","source":"core"\}\]\}$'
+cp stdout zsh.json
+exec ncly describe 'completion zsh' --json
+cmp stdout zsh.json
+
+# The bundled fixture hides the shell one, and its domain gives no skill folder
+exec ncly-bundled describe hello --json
+stdout '"commands":\[\{"path":"hello","summary":"Greet people","source":"bundled","skill":null\},\{"path":"hello check",'
+stdout '\{"path":"hello wait","summary":"[^"]+","source":"bundled"\}\]\}$'
+! stdout '"source":"extension"'
+
+# An unknown path answers NOT_FOUND, whose next lists the commands
+exits 2 ncly describe nope --json
+! stdout .
+answer stderr NOT_FOUND
+stderr '"hint":"ncly describe","next":\["ncly","describe"\]'
+exits 2 ncly describe hello nope --json
+answer stderr NOT_FOUND
+exits 2 ncly describe completion zsh extra --json
+answer stderr NOT_FOUND
+exits 2 ncly describe '' --json
+answer stderr NOT_FOUND
+exits 2 ncly describe nope
+stderr '^error\[NOT_FOUND\]: No command "nope" is installed\.$'
+stderr '^  hint: ncly describe$'
+
+# A path inside a broken extension's domain answers as ncly broken does
+exits 78 ncly broken --json
+cp stderr broken.json
+exits 78 ncly describe broken --json
+cmp stderr broken.json
+exits 78 ncly describe broken run --json
+cmp stderr broken.json
+
+# Under the pseudo-locale, every word of the list and of the error comes from a catalog
+exec ncly --lang en-XA describe
+pseudo stdout bonjour dire hello run completion bash fish zsh describe
+exits 2 ncly --lang en-XA describe nope
+pseudo stderr describe
+
+! exists ran
+
+-- want-list.txt --
+bonjour          Say hello in French
+bonjour dire     Say it out loud
+completion       Print shell completion scripts
+completion bash  Print the completion script for bash
+completion fish  Print the completion script for fish
+completion zsh   Print the completion script for zsh
+describe         Describe installed commands and their capabilities
+hello            Greet people
+hello run        Greet someone by name
+-- want-hello.json --
+{"ok":true,"contract_version":1,"commands":[{"path":"hello","summary":"Greet people","source":"extension","skill":"$WORK/bin/ncly-hello.skill"},{"path":"hello run","summary":"Greet someone by name","source":"extension"}]}
+-- bin/ncly-hello --
+#!/bin/sh
+echo hello >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Help page: summary of the hello fixture."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Help page: summary of hello run."
+other = "Greet someone by name"
+-- bin/ncly-hello.skill/SKILL.md --
+---
+name: hello
+---
+Greet people with ncly hello run.
+-- bin/ncly-bonjour --
+#!/bin/sh
+echo bonjour >> "$WORK/ran"
+-- bin/ncly-bonjour.toml --
+format_version = 1
+contract_version = 1
+domain = "bonjour"
+
+[[commands]]
+path = "bonjour"
+summary = "bonjour.summary"
+
+[[commands]]
+path = "bonjour dire"
+summary = "bonjour.dire.summary"
+-- bin/ncly-bonjour.locales/en.toml --
+["bonjour.summary"]
+description = "Help page: summary of the bonjour fixture."
+other = "Say hello in French"
+
+["bonjour.dire.summary"]
+description = "Help page: summary of bonjour dire."
+other = "Say it out loud"
+-- bin/ncly-broken --
+#!/bin/sh
+echo broken >> "$WORK/ran"
+-- bin/ncly-broken.toml --
+format_version = 1
+contract_version = 1
+domain = "broken"
+
+[[commands]]
+path = "broken"
+summary = "broken.summary"
+
+[[commands]]
+path = "broken run"
+summary = "broken.run.summary"

@@ -101,21 +101,40 @@ func checkAnswer(text, want string) error {
 }
 
 // problems decodes a non-empty array whose objects hold exactly a non-empty
-// code, message, and hint.
+// code, message, and hint, and may add next, a non-empty array of non-empty
+// words.
 func problems(raw json.RawMessage) ([]map[string]string, error) {
-	var list []map[string]string
+	var list []map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &list); err != nil {
 		return nil, err
 	}
 	if len(list) == 0 {
 		return nil, errors.New("empty or null")
 	}
-	for _, p := range list {
-		if len(p) != 3 || p["code"] == "" || p["message"] == "" || p["hint"] == "" {
-			return nil, fmt.Errorf("want non-empty code, message, and hint, got %v", p)
+	var decoded []map[string]string
+	for _, entry := range list {
+		p := map[string]string{}
+		for _, key := range []string{"code", "message", "hint"} {
+			var value string
+			if json.Unmarshal(entry[key], &value) != nil || value == "" {
+				return nil, fmt.Errorf("want non-empty code, message, and hint, got %s", raw)
+			}
+			p[key] = value
 		}
+		size := 3
+		if next, present := entry["next"]; present {
+			var words []string
+			if json.Unmarshal(next, &words) != nil || len(words) == 0 || slices.Contains(words, "") {
+				return nil, fmt.Errorf("want next as a non-empty array of words, got %s", next)
+			}
+			size++
+		}
+		if len(entry) != size {
+			return nil, fmt.Errorf("want only code, message, hint, and next, got %s", raw)
+		}
+		decoded = append(decoded, p)
 	}
-	return list, nil
+	return decoded, nil
 }
 
 var snapshots sync.Map

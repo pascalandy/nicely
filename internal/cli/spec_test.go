@@ -68,8 +68,13 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 	return keys
 }
 
-// TestCommandsAgreeWithTheSpec compares the declared commands with the M00
-// entries of the command tree, such as "completion zsh|bash|fish".
+// shipped lists the milestones whose commands core declares.
+var shipped = []string{"M00", "M03"}
+
+// TestCommandsAgreeWithTheSpec compares the declared commands with the
+// entries of the command tree that shipped, such as
+// "completion zsh|bash|fish". A word in brackets, such as [command...], is
+// an argument, not a command.
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	spec, err := specdoc.Block("../../docs/north-star/core-spec.md", "Command tree")
 	if err != nil {
@@ -78,12 +83,15 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	var want []string
 	for _, line := range spec {
 		fields := strings.Fields(strings.TrimLeft(line, "│├└─ "))
-		if len(fields) < 2 || fields[len(fields)-1] != "M00" {
+		if len(fields) < 2 || !slices.Contains(shipped, fields[len(fields)-1]) {
 			continue
 		}
 		path := fields[0]
 		want = append(want, path)
 		for _, words := range fields[1 : len(fields)-1] {
+			if strings.HasPrefix(words, "[") {
+				continue
+			}
 			for word := range strings.SplitSeq(words, "|") {
 				want = append(want, path+" "+word)
 			}
@@ -98,7 +106,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	slices.Sort(got)
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
-		t.Errorf("core-spec.md lists the M00 commands %q, ncly declares %q", want, got)
+		t.Errorf("core-spec.md lists the commands %q up to %s, ncly declares %q", want, shipped[len(shipped)-1], got)
 	}
 }
 

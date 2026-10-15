@@ -1,6 +1,6 @@
 # M03 Describe
 
-Status: ready
+Status: active
 Version: v0.3.0
 
 ## Demo
@@ -19,7 +19,7 @@ The scenarios reach a bundled extension through `ncly-bundled`, the test build o
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M03-T1 | Concise listing | agent | — | todo |
+| M03-T1 | Concise listing | agent | — | done |
 | M03-T2 | Command detail | agent | M03-T1 | todo |
 | M03-T3 | Result schemas | agent | M03-T2, M03-T5 | todo |
 | M03-T4 | Config sources | agent | M03-T2 | todo |

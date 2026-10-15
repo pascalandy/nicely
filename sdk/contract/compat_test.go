@@ -198,3 +198,59 @@ func TestAConsumerActsOnTheExitCodeOfACodeItDoesNotKnow(t *testing.T) {
 		}
 	}
 }
+
+// TestAConsumerRunsNextOnlyWhenPresent reads a problem with next and one
+// without it, as a consumer of contract version 1 does: it runs next as is
+// when the key is present, and relays the hint otherwise. A consumer
+// written before next existed reads the same answers.
+func TestAConsumerRunsNextOnlyWhenPresent(t *testing.T) {
+	cases := []struct {
+		name string
+		in   Problem
+		line string
+		want []string
+	}{
+		{
+			"next names the command of the hint as words",
+			Problem{Code: NotFound, Message: "m", Hint: "ncly describe", Next: []string{"ncly", "describe"}},
+			`{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"ncly describe","next":["ncly","describe"]}]}`,
+			[]string{"ncly", "describe"},
+		},
+		{
+			"a problem without next leaves the key out",
+			Problem{Code: UsageInvalid, Message: "m", Hint: "ncly completion --help"},
+			`{"ok":false,"contract_version":1,"errors":[{"code":"USAGE_INVALID","message":"m","hint":"ncly completion --help"}]}`,
+			nil,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, line := render(t, Outcome{Errors: []Problem{c.in}})
+			if line != c.line {
+				t.Fatalf("got  %s\nwant %s", line, c.line)
+			}
+			var answer struct {
+				Errors []map[string]json.RawMessage `json:"errors"`
+			}
+			if err := json.Unmarshal([]byte(line), &answer); err != nil {
+				t.Fatal(err)
+			}
+			raw, present := answer.Errors[0]["next"]
+			if present != (c.want != nil) {
+				t.Fatalf("next present = %t, want %t", present, c.want != nil)
+			}
+			if present {
+				var next []string
+				if err := json.Unmarshal(raw, &next); err != nil || strings.Join(next, " ") != strings.Join(c.want, " ") {
+					t.Errorf("the consumer would run %s, want %q", raw, c.want)
+				}
+			}
+			var older struct {
+				Errors []struct{ Code, Hint string } `json:"errors"`
+			}
+			if err := json.Unmarshal([]byte(line), &older); err != nil || older.Errors[0].Code != string(c.in.Code) || older.Errors[0].Hint != c.in.Hint {
+				t.Errorf("older consumer read %+v from %s", older, line)
+			}
+		})
+	}
+}

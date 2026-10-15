@@ -19,6 +19,9 @@ type Problem struct {
 	Code    Code   `json:"code"`
 	Message string `json:"message"`
 	Hint    string `json:"hint"`
+	// Next holds the command that Hint names, as words, only when that
+	// command runs as is. An empty Next leaves the key out.
+	Next []string `json:"next,omitempty"`
 }
 
 // Effect is the strongest change an invocation has made so far, from

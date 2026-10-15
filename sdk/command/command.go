@@ -22,15 +22,21 @@ import (
 // after it is a usage error.
 func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, []string) error) *cobra.Command {
 	use := []string{d.Path[len(d.Path)-1]}
+	variadic := false
 	for _, a := range d.Args {
-		use = append(use, "["+a.Name+"]")
+		if a.Variadic {
+			use = append(use, "["+a.Name+"...]")
+			variadic = true
+		} else {
+			use = append(use, "["+a.Name+"]")
+		}
 	}
 	c := &cobra.Command{
 		Use:     strings.Join(use, " "),
 		Short:   text.T(d.Summary),
 		Example: strings.Join(d.Examples, "\n"),
 		Args: func(c *cobra.Command, args []string) error {
-			if len(args) <= len(d.Args) {
+			if variadic || len(args) <= len(d.Args) {
 				return nil
 			}
 			extra := args[len(d.Args)]

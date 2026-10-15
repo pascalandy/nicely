@@ -50,6 +50,9 @@ type Arg struct {
 	// Values lists the only accepted values, which completion also offers.
 	// An empty list accepts any value.
 	Values []string
+	// Variadic takes every remaining word. Only the last argument may be
+	// variadic.
+	Variadic bool
 }
 
 // Flag is one flag. Env names the variable with the same effect, for a

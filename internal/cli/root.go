@@ -93,9 +93,15 @@ func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.Fi
 	default:
 		err = root.Execute()
 	}
-	var extensionCall *call
-	if errors.As(err, &extensionCall) {
+	var (
+		extensionCall *call
+		done          *answered
+	)
+	switch {
+	case errors.As(err, &extensionCall):
 		return extensionCall.run(p, g, stdout, stderr)
+	case errors.As(err, &done) && out.Err() == nil:
+		return done.print(p, g, out, stderr)
 	}
 	return command.Finish(p, g, contract.Core, out, err, "ncly --help", stdout, stderr)
 }
@@ -116,6 +122,7 @@ func newRoot(p *i18n.Printer, lang string, extensions []*extension) *cobra.Comma
 	root.SetHelpCommand(help)
 	root.AddCommand(help)
 	addCompletion(p, root)
+	addDescribe(p, lang, root, extensions)
 	addExtensions(root, p, lang, extensions)
 	return root
 }
@@ -145,12 +152,13 @@ func target(words []string) string {
 }
 
 // neededExtensions finds the extensions that a command line needs: none
-// for a command of core, the one whose domain it targets, and every one
-// otherwise, for the root's help, for completion, and for a word that names
-// no command, whose help is the root's.
+// for a command of core other than describe, the one whose domain it
+// targets, and every one otherwise, for describe, for the root's help, for
+// completion, and for a word that names no command, whose help is the
+// root's.
 func neededExtensions(h host, core *cobra.Command, words []string) []*extension {
 	name := target(words)
-	if name != "" && !isCompletionRequest(name) {
+	if name != "" && name != describeCommand.Path[0] && !isCompletionRequest(name) {
 		if isCommand(core, name) {
 			return nil
 		}
@@ -164,7 +172,11 @@ func neededExtensions(h host, core *cobra.Command, words []string) []*extension 
 // brokenTarget returns the extension that cannot run whose domain the
 // command line targets.
 func brokenTarget(extensions []*extension, words []string) *extension {
-	name := target(words)
+	return brokenDomain(extensions, target(words))
+}
+
+// brokenDomain returns the extension of a domain when it cannot run.
+func brokenDomain(extensions []*extension, name string) *extension {
 	for _, e := range extensions {
 		if e.domain == name && e.broken != nil {
 			return e

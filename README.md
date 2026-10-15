@@ -5,6 +5,7 @@ A curated, multilingual CLI toolbox that humans and AI agents operate equally we
 ```bash
 ncly --help
 ncly --version
+ncly describe --json
 ncly completion bash
 ```
 
@@ -12,7 +13,7 @@ ncly completion bash
 
 Nicely is in early development. [The vision](docs/north-star/vision.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
 
-The current build implements help, the version, and shell completion. It finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`, shows their help and completion from their manifests, starts them with a call that it has checked, checks their JSON answer before passing it on, and stops them and their child processes on Ctrl-C. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
+The current build implements help, the version, shell completion, and `ncly describe`, which lists the installed commands, core's and each extension's, with their summaries. It finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`, shows their help and completion from their manifests, starts them with a call that it has checked, checks their JSON answer before passing it on, and stops them and their child processes on Ctrl-C. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
 
 ## Planned commands
 

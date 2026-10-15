@@ -25,6 +25,18 @@ other = "Print the completion script for bash"
 description = "Help page: summary of `ncly completion fish`. fish is the name of a shell and stays as is."
 other = "Print the completion script for fish"
 
+["describe.summary"]
+description = "Help page and ncly describe: summary of `ncly describe`, which lists installed commands and tells what each one accepts, answers, and needs."
+other = "Describe installed commands and their capabilities"
+
+["describe.command"]
+description = "Help page: the argument of `ncly describe`, the words of a command path, such as `completion zsh`."
+other = "Path of a command or a group, such as completion zsh"
+
+["describe.not_found"]
+description = "Error of `ncly describe` when no installed command has the path that the user gave. {{.Path}} is that path, such as hello run, and stays as is."
+other = "No command \"{{.Path}}\" is installed."
+
 ["help.extensions"]
 description = "Help page: heading above the list of installed extensions, each a domain such as transcript."
 other = "Extensions"

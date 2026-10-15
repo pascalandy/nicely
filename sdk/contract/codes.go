@@ -34,8 +34,10 @@ const (
 	Temporary            Code = "TEMPORARY"
 	Interrupted          Code = "INTERRUPTED"
 	Terminated           Code = "TERMINATED"
+	NotFound             Code = "NOT_FOUND"
 
-	ConfigUnknownKey Code = "CONFIG_UNKNOWN_KEY"
+	ConfigUnknownKey   Code = "CONFIG_UNKNOWN_KEY"
+	ConfigDefaultsUsed Code = "CONFIG_DEFAULTS_USED"
 )
 
 type codeExit struct {
@@ -54,10 +56,11 @@ var errorCodes = []codeExit{
 	{TerminalRequired, ExitHuman},
 	{UsageInvalid, ExitUsage},
 	{ConfirmationRequired, ExitUsage},
+	{NotFound, ExitUsage},
 	{Temporary, ExitTemporary},
 }
 
-var warningCodes = []Code{ConfigUnknownKey}
+var warningCodes = []Code{ConfigUnknownKey, ConfigDefaultsUsed}
 
 // Known reports whether e is one of the exit codes of the contract.
 func (e ExitCode) Known() bool {
