@@ -71,6 +71,11 @@ exits 1 ncly bare batch --json
 schema stderr batch.json schema
 ! schema empty.json batch.json schema
 
+# A batch's dry run answers plan instead of results, so its schema needs no results
+exec ncly bare batch --dry-run --json
+schema stdout batch.json dry_run_schema
+! schema stdout batch.json schema
+
 # A local reference may percent-encode its pointer, as a URI fragment does
 exec ncly describe bare spaced --json
 stdout '"keys":\["count"\]'
@@ -81,6 +86,10 @@ stdout '"count":\{"minimum":0,"type":"integer"\}'
 {"ok":true,"contract_version":1,"results":[]}
 -- bin/ncly-bare --
 #!/bin/sh
+if [ "$1" = batch ] && [ "$2" = --dry-run=true ]; then
+  echo '{"ok":true,"contract_version":1,"dry_run":true,"plan":[],"pending_checks":[]}'
+  exit 0
+fi
 if [ "$1" = batch ]; then
   echo '{"ok":false,"contract_version":1,"results":[{"ok":true,"value":"a","mark":{"$defs":"literal"}},{"ok":false,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}],"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}' >&2
   exit 1
@@ -112,6 +121,7 @@ properties = { count = { "$ref" = "#/$defs/a%20count" } }
 [[commands]]
 path = "bare batch"
 summary = "bare.summary"
+modes = { dry_run = true, recorded = true }
 
 [commands.result]
 kind = "batch"
@@ -127,6 +137,11 @@ minItems = 1
 type = "object"
 required = ["value"]
 properties = { value = { type = "string" }, mark = { const = { "$defs" = "literal" } } }
+
+[commands.result.dry_run_schema]
+type = "object"
+required = ["dry_run", "plan", "pending_checks"]
+properties = { dry_run = { const = true }, plan = { type = "array" }, pending_checks = { type = "array" } }
 -- bin/ncly-bare.locales/en.toml --
 ["bare.summary"]
 description = "Summary of the bare fixture."

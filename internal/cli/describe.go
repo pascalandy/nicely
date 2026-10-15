@@ -186,12 +186,14 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 
 // describeResult gives the kind of a command's result, its keys, and the
 // schemas of its answers: the normal one, and the dry-run one when the
-// command supports dry run. A text result has neither.
+// command supports dry run. A text result has neither. A dry-run answer
+// describes the work instead of doing it, so it has no results even for a
+// batch.
 func describeResult(d contract.Command) resultDetail {
 	kind := cmp.Or(d.Result.Kind, contract.ResultObject)
 	r := resultDetail{Kind: kind, Keys: contract.Keys(kind, d.Result.Schema), Schema: contract.AnswerSchema(kind, d.Result.Schema)}
-	if d.Modes.DryRun {
-		r.DryRunSchema = contract.AnswerSchema(kind, d.Result.DryRunSchema)
+	if d.Modes.DryRun && kind != contract.ResultText {
+		r.DryRunSchema = contract.AnswerSchema(contract.ResultObject, d.Result.DryRunSchema)
 	}
 	return r
 }
