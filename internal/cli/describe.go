@@ -198,13 +198,23 @@ func typedValues(t contract.Type, values []string) []any {
 // the manifests of extensions, and never starts an extension.
 func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions []*extension) {
 	root.AddCommand(command.Build(p, p, describeCommand, func(c *cobra.Command, args []string) error {
+		// Discovery works with the defaults when a config file cannot be
+		// read, and says so in every answer, a failure's included.
+		values, err := config.LoadValues(config.Locate(home(), os.LookupEnv))
+		var warnings []contract.Problem
+		if err != nil {
+			values, warnings = nil, []contract.Problem{defaultsUsed(p, err)}
+		}
+		fail := func(problem contract.Problem) error {
+			return &command.Failure{Outcome: contract.Outcome{Errors: []contract.Problem{problem}, Warnings: warnings}}
+		}
 		words := strings.Fields(strings.Join(args, " "))
 		if len(args) > 0 && len(words) == 0 {
-			return command.Fail(notFound(p, ""))
+			return fail(notFound(p, ""))
 		}
 		if len(words) > 0 {
 			if e := brokenDomain(extensions, words[0]); e != nil {
-				return command.Fail(e.invalid(p))
+				return fail(e.invalid(p))
 			}
 		}
 		var found []entry
@@ -214,14 +224,7 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 			}
 		}
 		if len(found) == 0 {
-			return command.Fail(notFound(p, strings.Join(words, " ")))
-		}
-		// Discovery works with the defaults when a config file cannot be
-		// read, and says so.
-		values, err := config.LoadValues(config.Locate(home(), os.LookupEnv))
-		var warnings []contract.Problem
-		if err != nil {
-			values, warnings = nil, []contract.Problem{defaultsUsed(p, err)}
+			return fail(notFound(p, strings.Join(words, " ")))
 		}
 		// The path sorts first, so a path that names a command, not a group,
 		// gets its detail alone.

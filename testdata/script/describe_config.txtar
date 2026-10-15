@@ -46,6 +46,9 @@ stdout '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED","message":"'${CFG@R}'/confi
 ! stderr .
 exec ncly describe --json
 stdout '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED"'
+exits 2 ncly describe nope --json
+answer stderr NOT_FOUND
+stderr '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED"'
 exec ncly describe shop buy
 stdout '^shop buy  Buy an item$'
 stderr '^warning\[CONFIG_DEFAULTS_USED\]: '
