@@ -5,6 +5,7 @@ A curated, multilingual CLI toolbox that humans and AI agents operate equally we
 ```bash
 ncly --help
 ncly --version
+ncly skill view nicely
 ncly describe --json
 ncly skill list
 ncly completion bash
@@ -22,15 +23,15 @@ Nicely is a small core that every domain extends, in the spirit of Pi. Core brin
 
 Interactive forms will ask for missing values. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 
-## Planned agent instructions
+## Agent instructions
 
-Once the `skill` extension ships, one line in your agent instructions will teach an agent to use Nicely:
+Add one line to your agent instructions, such as `AGENTS.md` or `CLAUDE.md`, to teach an agent to use Nicely:
 
 ```text
 Before using ncly, run ncly skill view nicely
 ```
 
-The bundled `nicely` skill teaches one loop: find a command with `ncly describe`, dry-run it when it writes or bills, and, for a recorded command, choose a [run ID](docs/north-star/contract.md#run-ids) before the call, so that a lost answer costs nothing. Each error names its cause with a stable `code`, the exit code says who acts, and, when the hint names a command that runs as is, `next` holds that command as words. The skill also covers retry safety, inspection, and explicit resume, and each extension ships a skill for its own commands. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules. Saved records and verified output files retain work across sessions.
+The bundled `nicely` skill teaches only what this release can do: find a command with `ncly describe`, dry-run it when it writes or bills, and act on the stable `code` of each error and on the exit code, which says who acts. When the hint names a command that runs as is, `next` holds that command as words. Each extension ships a skill for its own commands, which `ncly skill list` lists. Later releases add [run IDs](docs/north-star/contract.md#run-ids), inspection, and explicit resume to the skill, so that a lost answer costs nothing. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules.
 
 ## Install
 
