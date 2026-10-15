@@ -62,6 +62,18 @@ other = "The skill {{.Name}} in {{.Path}} is hidden by the one in {{.Winner}}."
 description = "Hint under skill.shadowed: what the user does next. {{.File}} is the SKILL.md of the hidden skill, and {{.Path}} its folder."
 other = "Rename the skill in {{.File}}, or remove {{.Path}}."
 
+["skill.bundled_shadowed"]
+description = "Warning SKILL_SHADOWED of `ncly skill list`, when a skill in a folder of [skill] paths takes the name of the skill that ncly bundles, such as nicely, and hides it. {{.Name}} is the skill's name, and {{.Winner}} the folder of the skill that list keeps."
+other = "The skill {{.Name}} that ncly bundles is hidden by the one in {{.Winner}}."
+
+["skill.bundled_shadowed_hint"]
+description = "Hint under skill.bundled_shadowed: what the user does next. {{.File}} is the SKILL.md of the skill that hides the bundled one."
+other = "Rename the skill in {{.File}} to read the one that ncly bundles."
+
+["skill.shadowed_by_bundled"]
+description = "Warning SKILL_SHADOWED of `ncly skill list`, when an installed extension's skill takes the name of the skill that ncly bundles, such as nicely, which hides it. {{.Name}} is the skill's name, and {{.Path}} the folder of the hidden skill."
+other = "The skill {{.Name}} in {{.Path}} is hidden by the one that ncly bundles."
+
 ["skill.invalid_unreadable"]
 description = "Warning SKILL_INVALID of `ncly skill list`, when a SKILL.md cannot be read, so list skips its folder. {{.File}} is the path of the SKILL.md."
 other = "{{.File}} cannot be read, so it is no skill."

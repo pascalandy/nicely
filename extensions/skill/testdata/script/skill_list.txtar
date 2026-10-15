@@ -5,14 +5,14 @@ env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env CFG=$WORK/.config/nicely
 mkdir $CFG
 
-# Without a configured folder, the list is empty, and SKILL_NO_SOURCE names [skill] paths
+# Without a configured folder, the list holds the bundled skill alone, and SKILL_NO_SOURCE names [skill] paths
 # in the shared config file
 exec ncly skill list --json
 answer stdout ok
-stdout '^\{"ok":true,"contract_version":1,"skills":\[\],"warnings":\[\{"code":"SKILL_NO_SOURCE","message":"No skill folder is configured\.","hint":"Add the folders of your skills to \[skill\] paths in '${CFG@R}'/config\.toml\."\}\]\}$'
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\],"warnings":\[\{"code":"SKILL_NO_SOURCE","message":"No skill folder is configured\.","hint":"Add the folders of your skills to \[skill\] paths in '${CFG@R}'/config\.toml\."\}\]\}$'
 ! stderr .
 exec ncly skill list
-! stdout .
+stdout '^nicely  Use before running any ncly command\.$'
 stderr '^warning\[SKILL_NO_SOURCE\]: No skill folder is configured\.$'
 exec ncly --lang en-XA skill list
 pseudo stderr
@@ -26,7 +26,7 @@ cmp stdout list.txt
 ! stderr .
 exec ncly skill list --json
 answer stdout ok
-stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"Zulu","description":"Use for upper case\.","path":"'${WORK@R}'/more/zulu","source":"config"\},\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/first","source":"config"\},\{"name":"beta","description":"Use for beta: with a colon\.","path":"'${WORK@R}'/more/beta","source":"config"\}\]\}$'
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"Zulu","description":"Use for upper case\.","path":"'${WORK@R}'/more/zulu","source":"config"\},\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/first","source":"config"\},\{"name":"beta","description":"Use for beta: with a colon\.","path":"'${WORK@R}'/more/beta","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]\}$'
 ! stderr .
 unchanged before
 cp stdout list.json
@@ -58,7 +58,7 @@ exec ncly --lang en-XA skill list
 pseudo stderr
 cp nopaths.toml $CFG/config.toml
 exec ncly skill list --json
-stdout '"skills":\[\],"warnings":\[\{"code":"SKILL_NO_SOURCE",'
+stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\],"warnings":\[\{"code":"SKILL_NO_SOURCE",'
 
 # So does an empty [skill]
 cp emptyskill.toml $CFG/config.toml
@@ -167,9 +167,10 @@ other = [1.5, nan]
 -- nofolder.txt --
 Not a folder.
 -- list.txt --
-Zulu   Use for upper case.
-alpha  Use for alpha.
-beta   Use for beta: with a colon.
+Zulu    Use for upper case.
+alpha   Use for alpha.
+beta    Use for beta: with a colon.
+nicely  Use before running any ncly command.
 -- skills/first/SKILL.md --
 ---
 name: alpha

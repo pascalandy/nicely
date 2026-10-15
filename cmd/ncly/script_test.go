@@ -16,10 +16,13 @@ import (
 
 func TestMain(m *testing.M) {
 	testscript.Main(m, map[string]func(){
-		"ncly":           testNcly,
-		"closedpipe":     closedPipe,
-		"exitcode":       exitCode,
-		"pgroup":         pgroup,
+		"ncly":       testNcly,
+		"closedpipe": closedPipe,
+		"exitcode":   exitCode,
+		"pgroup":     pgroup,
+		// codes lists the registry of sdk/contract, one code per line,
+		// because no command of ncly lists its codes.
+		"codes":          printCodes,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the
@@ -94,6 +97,7 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 			"install":   cmdInstall,
 			"agree":     cmdAgree,
 			"schema":    cmdSchema,
+			"mentions":  cmdMentions,
 		},
 	})
 }

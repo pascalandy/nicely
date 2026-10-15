@@ -25,6 +25,7 @@ var version string
 var rootCommand = contract.Command{
 	Summary: "root.summary",
 	Examples: []string{
+		`ncly skill view nicely`,
 		`ncly completion zsh > "${fpath[1]}/_ncly"`,
 		`ncly --version`,
 		`NCLY_JSON=1 ncly help`,

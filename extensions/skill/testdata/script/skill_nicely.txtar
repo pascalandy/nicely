@@ -1,0 +1,162 @@
+# The skill extension bundles the nicely skill, which teaches an agent to use Nicely. list
+# shows it with the source bundled and a null path, view prints it without a folder line,
+# and the first example of ncly --help names it.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+
+exec ncly skill list --json
+answer stdout ok
+stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]'
+exec ncly skill view nicely
+! stdout 'skill-dir'
+stdout '\A---\nname: nicely\n'
+cp stdout nicely.md
+exec ncly skill view nicely --json
+answer stdout ok
+stdout '"name":"nicely","path":null,"source":"bundled"\}$'
+cp stdout nicely.json
+exec ncly describe 'skill view' --json
+cp stdout describe-view.json
+schema nicely.json describe-view.json schema
+exec ncly --help
+stdout '^EXAMPLES\n  \$ ncly skill view nicely\n'
+
+# The skill names only the commands that ncly describe gives, each in a code span, and the
+# codes of the registry, in at most 60 lines. codes lists the registry, because no command
+# of ncly lists its codes
+exec ncly describe --json
+cp stdout describe.json
+exec codes
+cp stdout codes.txt
+stdout '^NOT_FOUND$'
+stdout '^CONFIG_DEFAULTS_USED$'
+mentions nicely.md describe.json codes.txt
+
+# The check fails for a command or a verb that this ncly lacks, a code that it lacks, and a
+# 61st line, while an argument after a command, such as a skill name, and prose such as
+# every ncly call are no command
+! mentions command.md describe.json codes.txt
+! mentions verb.md describe.json codes.txt
+! mentions code.md describe.json codes.txt
+! mentions long.md describe.json codes.txt
+mentions argument.md describe.json codes.txt
+
+# A skill named nicely in [skill] paths wins with SKILL_SHADOWED, and the bundled one wins
+# over an installed extension's skill of the same name
+cp config.toml $CFG/config.toml
+chmod 755 bin/ncly-other
+env PATH=$WORK/bin:$PATH
+exec ncly skill list --json
+stdout '"skills":\[\{"name":"nicely","description":"Use my own rules\.","path":"'${WORK@R}'/skills/nicely","source":"config"\}\]'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely that ncly bundles is hidden by the one in '${WORK@R}'/skills/nicely\.","hint":"Rename the skill in '${WORK@R}'/skills/nicely/SKILL\.md to read the one that ncly bundles\."\}'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely in '${WORK@R}'/bin/ncly-other\.skill is hidden by the one in '${WORK@R}'/skills/nicely\.",'
+exec ncly skill view nicely
+stdout 'Use my own rules\.'
+exec ncly --lang en-XA skill list
+pseudo stderr
+rm $CFG/config.toml
+exec ncly skill list --json
+stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely in '${WORK@R}'/bin/ncly-other\.skill is hidden by the one that ncly bundles\.","hint":"Rename the skill in '${WORK@R}'/bin/ncly-other\.skill/SKILL\.md, or remove '${WORK@R}'/bin/ncly-other\.skill\."\}'
+exec ncly --lang en-XA skill list
+pseudo stderr
+
+-- config.toml --
+[skill]
+paths = ["~/skills"]
+-- skills/nicely/SKILL.md --
+---
+name: nicely
+description: Use my own rules.
+---
+-- bin/ncly-other --
+#!/bin/sh
+echo other >> "$WORK/ran"
+-- bin/ncly-other.toml --
+format_version = 1
+contract_version = 1
+domain = "other"
+
+[[commands]]
+path = "other"
+summary = "other.summary"
+-- bin/ncly-other.locales/en.toml --
+["other.summary"]
+description = "Summary of the other fixture."
+other = "Do other things"
+-- bin/ncly-other.skill/SKILL.md --
+---
+name: nicely
+description: Pretend to be the nicely skill.
+---
+-- command.md --
+Check the machine with `ncly doctor` first.
+-- verb.md --
+Check the skills with `ncly skill status --json`.
+-- code.md --
+Relay AUTH_MISSING to the human.
+-- argument.md --
+Read one with `ncly skill view transcript`, or `ncly describe skill view --json`, on every ncly call. Set `NCLY_JSON=1` and branch on NOT_FOUND.
+-- long.md --
+---
+name: long
+description: Too long.
+---
+Line 5
+Line 6
+Line 7
+Line 8
+Line 9
+Line 10
+Line 11
+Line 12
+Line 13
+Line 14
+Line 15
+Line 16
+Line 17
+Line 18
+Line 19
+Line 20
+Line 21
+Line 22
+Line 23
+Line 24
+Line 25
+Line 26
+Line 27
+Line 28
+Line 29
+Line 30
+Line 31
+Line 32
+Line 33
+Line 34
+Line 35
+Line 36
+Line 37
+Line 38
+Line 39
+Line 40
+Line 41
+Line 42
+Line 43
+Line 44
+Line 45
+Line 46
+Line 47
+Line 48
+Line 49
+Line 50
+Line 51
+Line 52
+Line 53
+Line 54
+Line 55
+Line 56
+Line 57
+Line 58
+Line 59
+Line 60
+Line 61

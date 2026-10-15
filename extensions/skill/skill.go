@@ -31,6 +31,12 @@ var manifest []byte
 //go:embed locales/*.toml
 var locales embed.FS
 
+// nicely is the skill that teaches an agent to use Nicely: the data of the
+// bundled source, not a skill of the skill domain, which ships none.
+//
+//go:embed nicely/SKILL.md
+var nicely []byte
+
 // Extension is the skill extension, which cmd/ncly bundles.
 var Extension = extension.Extension{
 	Manifest: manifest,
@@ -54,6 +60,7 @@ type Skill struct {
 // The sources of skills, in the order that list reads them.
 const (
 	sourceConfig    = "config"
+	sourceBundled   = "bundled"
 	sourceExtension = "extension"
 )
 
@@ -126,12 +133,15 @@ func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, 
 			Next:    []string{"ncly", "describe", "--json"},
 		}
 	}
-	s := &scan{p: p, seen: map[string]bool{}, owner: map[string]string{}, skills: []Skill{}}
+	s := &scan{p: p, seen: map[string]bool{}, owner: map[string]*string{}, skills: []Skill{}}
 	if len(folders) == 0 {
 		s.warn(codeNoSource, "skill.no_source", "skill.no_source_hint", map[string]any{"File": paths.Shared})
 	}
 	for _, folder := range folders {
 		s.folder(folder, file)
+	}
+	if fm, err := extension.ParseSkill(nicely); err == nil {
+		s.keep(Skill{Name: fm.Name, Description: fm.Description, Source: sourceBundled, content: string(nicely)})
 	}
 	for _, folder := range installed {
 		s.add(folder, sourceExtension)
@@ -218,12 +228,13 @@ func configured(p *i18n.Printer, home string, paths config.Paths) ([]string, str
 }
 
 // scan collects the skills of the sources in order, with their warnings.
-// owner maps each name to the path of the skill that took it first, and
-// seen holds each folder already reached, links resolved.
+// owner maps each name to the path of the skill that took it first, nil
+// for the bundled one, and seen holds each folder already reached, links
+// resolved.
 type scan struct {
 	p        *i18n.Printer
 	seen     map[string]bool
-	owner    map[string]string
+	owner    map[string]*string
 	skills   []Skill
 	warnings []contract.Problem
 }
@@ -285,12 +296,30 @@ func (s *scan) add(path, source string) {
 		s.warn(codeInvalid, "skill.invalid_frontmatter", "skill.invalid_hint", fill)
 		return
 	}
-	if winner, taken := s.owner[fm.Name]; taken {
-		s.warn(codeShadowed, "skill.shadowed", "skill.shadowed_hint", map[string]any{"Name": fm.Name, "Path": path, "Winner": winner, "File": file})
+	s.keep(Skill{Name: fm.Name, Description: fm.Description, Path: &path, Source: source, content: string(data)})
+}
+
+// keep adds a skill whose name no earlier source took, or warns that the
+// skill that took it first hides this one.
+func (s *scan) keep(k Skill) {
+	winner, taken := s.owner[k.Name]
+	if !taken {
+		s.owner[k.Name] = k.Path
+		s.skills = append(s.skills, k)
 		return
 	}
-	s.owner[fm.Name] = path
-	s.skills = append(s.skills, Skill{Name: fm.Name, Description: fm.Description, Path: &path, Source: source, content: string(data)})
+	data := map[string]any{"Name": k.Name}
+	switch {
+	case k.Path == nil:
+		data["Winner"], data["File"] = *winner, filepath.Join(*winner, "SKILL.md")
+		s.warn(codeShadowed, "skill.bundled_shadowed", "skill.bundled_shadowed_hint", data)
+	case winner == nil:
+		data["Path"], data["File"] = *k.Path, filepath.Join(*k.Path, "SKILL.md")
+		s.warn(codeShadowed, "skill.shadowed_by_bundled", "skill.shadowed_hint", data)
+	default:
+		data["Path"], data["Winner"], data["File"] = *k.Path, *winner, filepath.Join(*k.Path, "SKILL.md")
+		s.warn(codeShadowed, "skill.shadowed", "skill.shadowed_hint", data)
+	}
 }
 
 // write prints one line per skill: its name, then its description on one

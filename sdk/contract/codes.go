@@ -115,6 +115,17 @@ func (m Manifest) Registry() Registry {
 	return r
 }
 
+// Codes returns the error codes of the registry, in the order in which
+// they compete to lead, then its warning codes. A warning that only the
+// domain's prefix admits has no entry.
+func (r Registry) Codes() []Code {
+	var codes []Code
+	for _, e := range r.errors {
+		codes = append(codes, e.code)
+	}
+	return append(codes, r.warnings...)
+}
+
 func (r Registry) exit(c Code) (ExitCode, bool) {
 	for _, e := range r.errors {
 		if e.code == c {
