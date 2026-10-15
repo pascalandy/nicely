@@ -32,6 +32,11 @@ type Extension struct {
 	Manifest []byte
 	// Locales holds locales/<lang>.toml.
 	Locales fs.FS
+	// Skill holds skill/SKILL.md and the files that it names, which teach
+	// an agent the extension's commands. Installing an external extension
+	// writes them as ncly-<domain>.skill/. It is nil for an extension that
+	// ships no skill.
+	Skill fs.FS
 	// Handlers holds one handler per command that runs, keyed by path,
 	// such as "hello run".
 	Handlers map[string]Handler
@@ -113,9 +118,9 @@ func load(e Extension) (loaded, error) {
 	return l, nil
 }
 
-// Check reports what Main would refuse, and a catalog that breaks the
-// catalog rules of SDK in contract.md. Every Go extension has a test that
-// calls it.
+// Check reports what Main would refuse, a catalog that breaks the catalog
+// rules of SDK in contract.md, and a skill whose name is not the domain.
+// Every Go extension has a test that calls it.
 func Check(e Extension) error {
 	l, err := load(e)
 	if err != nil {
@@ -125,7 +130,31 @@ func Check(e Extension) error {
 	if err != nil {
 		return err
 	}
-	return i18n.CheckCatalogs(locales, l.manifest.Domain)
+	if err := i18n.CheckCatalogs(locales, l.manifest.Domain); err != nil {
+		return err
+	}
+	return checkSkill(e.Skill, l.manifest.Domain)
+}
+
+// checkSkill reports a skill that is no skill, or whose name is not the
+// domain, so that an agent goes from a domain to its skill without a
+// lookup.
+func checkSkill(skill fs.FS, domain string) error {
+	if skill == nil {
+		return nil
+	}
+	data, err := fs.ReadFile(skill, "skill/SKILL.md")
+	if err != nil {
+		return fmt.Errorf("skill: %w", err)
+	}
+	fm, err := ParseSkill(data)
+	if err != nil {
+		return fmt.Errorf("skill/SKILL.md: %w", err)
+	}
+	if fm.Name != domain {
+		return fmt.Errorf("skill/SKILL.md: the skill is named %q, not after the domain %q", fm.Name, domain)
+	}
+	return nil
 }
 
 // run runs the extension with args, without the program name, and returns

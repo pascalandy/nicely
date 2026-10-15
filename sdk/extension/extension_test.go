@@ -35,6 +35,12 @@ description = "Summary of demo run."
 other = "Run the demo"
 `
 
+const validSkill = `---
+name: demo
+description: Use when running the demo.
+---
+`
+
 func noop(context.Context, Call) contract.Outcome { return contract.Outcome{} }
 
 // demo returns a valid extension, which each case breaks in one way.
@@ -42,7 +48,16 @@ func demo() Extension {
 	return Extension{
 		Manifest: []byte(validManifest),
 		Locales:  fstest.MapFS{"locales/en.toml": {Data: []byte(validCatalog)}},
+		Skill:    fstest.MapFS{"skill/SKILL.md": {Data: []byte(validSkill)}},
 		Handlers: map[string]Handler{"demo run": noop},
+	}
+}
+
+func TestCheckAcceptsAnExtensionWithoutSkill(t *testing.T) {
+	e := demo()
+	e.Skill = nil
+	if err := Check(e); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -85,6 +100,15 @@ func TestCheckRejectsWhatMainWouldRefuse(t *testing.T) {
 				"locales/fr-CA.toml": {Data: []byte("[\"demo.summary\"]\ndescription = \"d\"\nother = \"Démo\"\n")},
 			}
 		}, "fr-CA.toml lacks demo.run.summary"},
+		{"a skill named after another domain", func(e *Extension) {
+			e.Skill = fstest.MapFS{"skill/SKILL.md": {Data: []byte(strings.Replace(validSkill, "name: demo", "name: other", 1))}}
+		}, `named "other", not after the domain "demo"`},
+		{"a skill without description", func(e *Extension) {
+			e.Skill = fstest.MapFS{"skill/SKILL.md": {Data: []byte("---\nname: demo\n---\n")}}
+		}, "lacks description"},
+		{"a skill without SKILL.md", func(e *Extension) {
+			e.Skill = fstest.MapFS{"SKILL.md": {Data: []byte(validSkill)}}
+		}, "skill/SKILL.md"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

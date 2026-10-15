@@ -112,8 +112,8 @@ func cmdInstall(ts *testscript.TestScript, neg bool, args []string) {
 }
 
 // install puts a Go fixture in the data folder as an external extension:
-// the script ncly-<domain> that runs it, with its manifest and catalogs
-// beside it. The script appends its domain to $WORK/external.log, then runs
+// the script ncly-<domain> that runs it, with its manifest, catalogs, and
+// skill beside it. The script appends its domain to $WORK/external.log, then runs
 // the test binary under the name <domain>-external, so the fixture runs as
 // an external extension. DATA names the folder.
 func install(work string, setenv func(name, value string), domain string, e extension.Extension) error {
@@ -122,6 +122,12 @@ func install(work string, setenv func(name, value string), domain string, e exte
 	locales, err := fs.Sub(e.Locales, "locales")
 	if err == nil {
 		err = os.CopyFS(executable+".locales", locales)
+	}
+	if err == nil && e.Skill != nil {
+		var skill fs.FS
+		if skill, err = fs.Sub(e.Skill, "skill"); err == nil {
+			err = os.CopyFS(executable+".skill", skill)
+		}
 	}
 	if err == nil {
 		err = os.WriteFile(executable+".toml", e.Manifest, 0o644)
