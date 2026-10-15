@@ -15,6 +15,7 @@ import (
 var completionCommand = contract.Command{
 	Path:    []string{"completion"},
 	Summary: "completion.summary",
+	Effects: &contract.Effects{},
 	Examples: []string{
 		`ncly completion zsh > "${fpath[1]}/_ncly"`,
 		`ncly completion bash > ~/.local/share/bash-completion/completions/ncly`,
@@ -30,6 +31,7 @@ var shells = []struct {
 		contract.Command{
 			Path:     []string{"completion", "zsh"},
 			Summary:  "completion.zsh_summary",
+			Effects:  &contract.Effects{},
 			Examples: []string{`ncly completion zsh > "${fpath[1]}/_ncly"`, `source <(ncly completion zsh)`},
 		},
 		func(root *cobra.Command, w io.Writer) error { return root.GenZshCompletion(w) },
@@ -38,6 +40,7 @@ var shells = []struct {
 		contract.Command{
 			Path:     []string{"completion", "bash"},
 			Summary:  "completion.bash_summary",
+			Effects:  &contract.Effects{},
 			Examples: []string{`ncly completion bash > ~/.local/share/bash-completion/completions/ncly`, `source <(ncly completion bash)`},
 		},
 		func(root *cobra.Command, w io.Writer) error { return root.GenBashCompletionV2(w, true) },
@@ -46,6 +49,7 @@ var shells = []struct {
 		contract.Command{
 			Path:     []string{"completion", "fish"},
 			Summary:  "completion.fish_summary",
+			Effects:  &contract.Effects{},
 			Examples: []string{`ncly completion fish > ~/.config/fish/completions/ncly.fish`, `ncly completion fish | source`},
 		},
 		func(root *cobra.Command, w io.Writer) error { return root.GenFishCompletion(w, true) },

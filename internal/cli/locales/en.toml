@@ -110,8 +110,40 @@ description = "Reason inside extension.invalid. {{.File}} is the manifest's name
 other = "{{.File}} gives the command \"{{.Path}}\" the shorthand \"{{.Name}}\", which must be one ASCII letter."
 
 ["extension.flag_taken"]
-description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a flag such as --json or -v."
-other = "{{.File}} gives the command \"{{.Path}}\" the flag {{.Name}}, which a global flag or another of its flags already uses."
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a flag such as --json, --dry-run, or -v. --dry-run and --run-id are flags and stay as is."
+other = "{{.File}} gives the command \"{{.Path}}\" the flag {{.Name}}, which a global flag, --dry-run, --run-id, or another of its flags already uses."
+
+["extension.type"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} the name of one of its arguments or flags, and {{.Value}} the type it declares. string, boolean, integer, and number are type names and stay as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" the type \"{{.Value}}\", and a value is a string, boolean, integer, or number, a switch a boolean."
+
+["extension.required"]
+description = "Reason inside extension.invalid, when a switch or an argument after an optional one is required. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag."
+other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" required, which neither a switch nor an argument after an optional one may be."
+
+["extension.variadic"]
+description = "Reason inside extension.invalid, when a switch or an argument other than the last takes several values. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag."
+other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" take several values, which only the last argument and a flag that takes a value may."
+
+["extension.default"]
+description = "Reason inside extension.invalid, when the default of a flag does not fit it. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the flag."
+other = "{{.File}} gives the flag \"{{.Name}}\" of the command \"{{.Path}}\" a default that does not match its type, or that a required flag or a flag with several values cannot have."
+
+["extension.flag_group"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Value}} the flags of one of its groups, such as --latest, --path. min and max are keys and stay as is."
+other = "{{.File}} gives the command \"{{.Path}}\" the group of flags {{.Value}}, and a group names at least two of the command's own flags, each once, with 0 <= min <= max <= their number and max at least 1."
+
+["extension.bin"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a program name from its requires.bins. requires.bins and programs are keys and stay as is."
+other = "{{.File}} lists \"{{.Name}}\" in requires.bins of the command \"{{.Path}}\", which must name a key of programs once."
+
+["extension.key"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys and keychain stay as is."
+other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain."
+
+["extension.program"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg. programs and requires.bins are keys and stay as is."
+other = "{{.File}} declares the program \"{{.Name}}\" in programs, which must be a file name without / that the requires.bins of a command names."
 
 ["extension.code_prefix"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Prefix}} the start that the extension's codes need, such as HELLO_."

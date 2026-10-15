@@ -59,6 +59,50 @@ summary = "hello.wait.stubborn"
 name = "stubborn-child"
 summary = "hello.wait.stubborn_child"
 
+[[commands]]
+path = "hello pick"
+summary = "hello.pick.summary"
+examples = ["ncly hello pick Ada --mood calm --left", "ncly hello pick Ada --mood calm --right --times 2 --json"]
+effects = { user_writes = true }
+modes = { dry_run = true, recorded = true }
+
+[[commands.args]]
+name = "name"
+summary = "hello.pick.name"
+required = true
+
+[[commands.flags]]
+name = "mood"
+value = "word"
+required = true
+summary = "hello.pick.mood"
+
+[[commands.flags]]
+name = "times"
+value = "n"
+type = "integer"
+default = 1
+summary = "hello.pick.times"
+
+[[commands.flags]]
+name = "tag"
+value = "text"
+variadic = true
+summary = "hello.pick.tag"
+
+[[commands.flags]]
+name = "left"
+summary = "hello.pick.left"
+
+[[commands.flags]]
+name = "right"
+summary = "hello.pick.right"
+
+[[commands.flag_groups]]
+flags = ["left", "right"]
+min = 1
+max = 1
+
 [[errors]]
 code = "HELLO_GRUMPY"
 exit = 1

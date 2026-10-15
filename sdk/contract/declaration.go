@@ -20,10 +20,16 @@ type Command struct {
 	Summary string
 	Args    []Arg
 	Flags   []Flag
+	// FlagGroups bounds how many flags of each group a call may set.
+	FlagGroups []FlagGroup
 	// Examples holds full command lines. Commands are never translated.
 	Examples []string
-	Effects  Effects
+	// Effects holds the effects that the command declares. A nil Effects
+	// declares none, which permits no assumption: the command may have
+	// every effect.
+	Effects  *Effects
 	Modes    Modes
+	Requires Requires
 	Result   Result
 }
 
@@ -43,10 +49,26 @@ const (
 	ResultText   ResultKind = "text"
 )
 
+// Type is the type of the value of an argument or a flag.
+type Type string
+
+const (
+	TypeString  Type = "string"
+	TypeBoolean Type = "boolean"
+	TypeInteger Type = "integer"
+	TypeNumber  Type = "number"
+)
+
+// Types lists the types of values, in the order of the spec.
+var Types = []Type{TypeString, TypeBoolean, TypeInteger, TypeNumber}
+
 // Arg is one positional argument.
 type Arg struct {
 	Name    string
 	Summary string
+	// Type is the type of the value. An empty Type means TypeString.
+	Type     Type
+	Required bool
 	// Values lists the only accepted values, which completion also offers.
 	// An empty list accepts any value.
 	Values []string
@@ -64,10 +86,26 @@ type Flag struct {
 	// Value names the value, such as tag. A flag without a value is a switch.
 	Value string
 	Env   string
+	// Type is the type of the value. An empty Type means TypeBoolean for a
+	// switch and TypeString otherwise.
+	Type     Type
+	Required bool
+	// Variadic takes several values, one per occurrence of the flag.
+	Variadic bool
+	// Values lists the only accepted values. An empty list accepts any value.
+	Values []string
+	// Default is the typed default, or nil when none applies. A switch
+	// defaults to false.
+	Default any
 }
 
-// Effects lists every effect a command can have. A command that declares
-// none changes nothing and calls no network.
+// FlagGroup bounds how many of its flags, by long name, a call may set.
+type FlagGroup struct {
+	Flags    []string
+	Min, Max int
+}
+
+// Effects lists every effect a command can have.
 type Effects struct {
 	UserWrites bool
 	Network    bool
@@ -80,4 +118,71 @@ type Modes struct {
 	DryRun   bool
 	Recorded bool
 	Resume   bool
+}
+
+// Requires names the programs and the services whose keys a command may
+// need.
+type Requires struct {
+	// Bins holds names of programs, each a key of the manifest's programs.
+	Bins []string
+	// Keys holds service names, as Keys in contract.md defines them.
+	Keys []string
+}
+
+// DryRunFlag and RunIDFlag are the flags that a command accepts when its
+// modes set dry_run or recorded, as Global flags in contract.md defines.
+var (
+	DryRunFlag = Flag{Name: "dry-run", Shorthand: "n", Summary: "flag.dry_run", Type: TypeBoolean, Default: false}
+	RunIDFlag  = Flag{Name: "run-id", Summary: "flag.run_id", Value: "id", Type: TypeString}
+)
+
+// ArgType returns the type of an argument's value.
+func (a Arg) ArgType() Type {
+	if a.Type == "" {
+		return TypeString
+	}
+	return a.Type
+}
+
+// FlagType returns the type of a flag's value.
+func (f Flag) FlagType() Type {
+	switch {
+	case f.Type != "":
+		return f.Type
+	case f.Value == "":
+		return TypeBoolean
+	}
+	return TypeString
+}
+
+// FlagDefault returns the typed default of a flag: its declared one, false
+// for a switch without one, and nil otherwise.
+func (f Flag) FlagDefault() any {
+	if f.Default == nil && f.Value == "" {
+		return false
+	}
+	return f.Default
+}
+
+// ModeFlags returns the flags that the modes of a command add after its
+// own: --dry-run for dry_run, then --run-id for recorded.
+func (c Command) ModeFlags() []Flag {
+	var flags []Flag
+	if c.Modes.DryRun {
+		flags = append(flags, DryRunFlag)
+	}
+	if c.Modes.Recorded {
+		flags = append(flags, RunIDFlag)
+	}
+	return flags
+}
+
+// DeclaredEffects returns the effects of a command, every effect when it
+// declares none, as Command descriptions in contract.md permits no
+// assumption.
+func (c Command) DeclaredEffects() Effects {
+	if c.Effects == nil {
+		return Effects{UserWrites: true, Network: true, Paid: true}
+	}
+	return *c.Effects
 }

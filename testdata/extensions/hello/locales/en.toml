@@ -87,3 +87,31 @@ other = "The configuration of hello cannot be read."
 ["hello.program"]
 description = "Error when hello wait could not start its program."
 other = "The program of hello wait could not start."
+
+["hello.pick.summary"]
+description = "Help page: summary of hello pick, which picks a side for someone and writes the file picked."
+other = "Pick a side for someone"
+
+["hello.pick.name"]
+description = "Help page: the name argument of hello pick."
+other = "Name of the person"
+
+["hello.pick.mood"]
+description = "Help page: the --mood flag of hello pick, a required word."
+other = "Mood of the pick"
+
+["hello.pick.times"]
+description = "Help page: the --times flag of hello pick, a whole number."
+other = "How many times to pick"
+
+["hello.pick.tag"]
+description = "Help page: the --tag flag of hello pick, which takes several values."
+other = "Tag to add, once per flag"
+
+["hello.pick.left"]
+description = "Help page: the --left flag of hello pick."
+other = "Pick the left side"
+
+["hello.pick.right"]
+description = "Help page: the --right flag of hello pick."
+other = "Pick the right side"

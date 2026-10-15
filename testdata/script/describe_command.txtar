@@ -1,0 +1,202 @@
+# A command path gives that command's declaration: args, flags, flag_groups, effects,
+# requires, modes, and examples, from core's declarations and from the manifests alone.
+# The shell fixture appends its call to $WORK/ran when it runs, and never may.
+chmod 755 bin/ncly-shop
+env PATH=$WORK/bin:$PATH
+
+# A core command declares its variadic argument and no effect
+exec ncly describe describe --json
+cmp stdout want-describe.json
+
+# An external command gives every field of its manifest, with --dry-run and --run-id after
+# its own flags because its modes set dry_run and recorded, and each program and service
+# as an object with its name
+exec ncly describe shop buy --json
+cmp stdout want-buy.json
+
+# A command that declares no effects may have every effect
+exec ncly describe shop list --json
+cmp stdout want-list.json
+
+# A bundled command gives the same fields from its embedded manifest
+exec ncly-bundled describe hello pick --json
+cmp stdout want-pick.json
+
+# A group still lists concise entries, and the path as one word gives the same detail
+exec ncly describe shop --json
+stdout -count=3 '"path":'
+! stdout '"args"'
+exec ncly describe 'shop buy' --json
+cmp stdout want-buy.json
+
+# Without --json, the detail prints the command's line, and its text comes from the catalogs
+exec ncly describe shop buy
+cmp stdout want-buy.txt
+exec ncly --lang en-XA describe shop buy
+pseudo stdout shop buy
+exec ncly --lang en-XA describe shop buy --json
+stdout '"summary":"⟦'
+! stdout '"summary":"[A-Z]'
+
+! exists ran
+
+-- want-buy.txt --
+shop buy  Buy an item
+-- want-describe.json --
+{"ok":true,"contract_version":1,"commands":[{"path":"describe","summary":"Describe installed commands and their capabilities","source":"core","args":[{"name":"command","summary":"Path of a command or a group, such as completion zsh","type":"string","required":false,"variadic":true,"values":[]}],"flags":[],"flag_groups":[],"effects":{"user_writes":false,"network":false,"paid":false},"requires":{"bins":[],"keys":[]},"modes":{"dry_run":false,"recorded":false,"resume":false},"examples":["ncly describe","ncly describe completion --json","ncly describe 'completion zsh' --json"]}]}
+-- want-buy.json --
+{"ok":true,"contract_version":1,"commands":[{"path":"shop buy","summary":"Buy an item","source":"extension","args":[{"name":"item","summary":"Item to buy","type":"string","required":true,"variadic":false,"values":[]},{"name":"quantity","summary":"How many to buy","type":"integer","required":false,"variadic":false,"values":[]}],"flags":[{"name":"store","shorthand":"s","value":"name","type":"string","required":true,"variadic":false,"values":[],"default":null,"summary":"Store to buy from"},{"name":"budget","shorthand":"","value":"amount","type":"number","required":false,"variadic":false,"values":[],"default":10.5,"summary":"Most to spend"},{"name":"note","shorthand":"","value":"text","type":"string","required":false,"variadic":true,"values":[],"default":null,"summary":"Note for the store, once per flag"},{"name":"cash","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Pay cash"},{"name":"card","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Pay by card"},{"name":"email","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Send the receipt by email"},{"name":"sms","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Send the receipt by text message"},{"name":"bag","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Pack in a bag"},{"name":"box","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Pack in a box"},{"name":"dry-run","shorthand":"n","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Show the planned effects and pending checks without running"},{"name":"run-id","shorthand":"","value":"id","type":"string","required":false,"variadic":false,"values":[],"default":null,"summary":"Name the run, so a repeated call continues it"}],"flag_groups":[{"flags":["cash","card"],"min":1,"max":1},{"flags":["email","sms"],"min":0,"max":1},{"flags":["bag","box"],"min":1,"max":2}],"effects":{"user_writes":true,"network":true,"paid":false},"requires":{"bins":[{"name":"curl"}],"keys":[{"name":"shopapi"}]},"modes":{"dry_run":true,"recorded":true,"resume":false},"examples":["ncly shop buy apple --store north --cash --bag","ncly shop buy apple 3 --store north --card --box --json"]}]}
+-- want-list.json --
+{"ok":true,"contract_version":1,"commands":[{"path":"shop list","summary":"List the stores","source":"extension","args":[],"flags":[],"flag_groups":[],"effects":{"user_writes":true,"network":true,"paid":true},"requires":{"bins":[],"keys":[]},"modes":{"dry_run":false,"recorded":false,"resume":false},"examples":["ncly shop list","ncly shop list --json"]}]}
+-- want-pick.json --
+{"ok":true,"contract_version":1,"commands":[{"path":"hello pick","summary":"Pick a side for someone","source":"bundled","args":[{"name":"name","summary":"Name of the person","type":"string","required":true,"variadic":false,"values":[]}],"flags":[{"name":"mood","shorthand":"","value":"word","type":"string","required":true,"variadic":false,"values":[],"default":null,"summary":"Mood of the pick"},{"name":"times","shorthand":"","value":"n","type":"integer","required":false,"variadic":false,"values":[],"default":1,"summary":"How many times to pick"},{"name":"tag","shorthand":"","value":"text","type":"string","required":false,"variadic":true,"values":[],"default":null,"summary":"Tag to add, once per flag"},{"name":"left","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Pick the left side"},{"name":"right","shorthand":"","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Pick the right side"},{"name":"dry-run","shorthand":"n","value":"","type":"boolean","required":false,"variadic":false,"values":[],"default":false,"summary":"Show the planned effects and pending checks without running"},{"name":"run-id","shorthand":"","value":"id","type":"string","required":false,"variadic":false,"values":[],"default":null,"summary":"Name the run, so a repeated call continues it"}],"flag_groups":[{"flags":["left","right"],"min":1,"max":1}],"effects":{"user_writes":true,"network":false,"paid":false},"requires":{"bins":[],"keys":[]},"modes":{"dry_run":true,"recorded":true,"resume":false},"examples":["ncly hello pick Ada --mood calm --left","ncly hello pick Ada --mood calm --right --times 2 --json"]}]}
+-- bin/ncly-shop --
+#!/bin/sh
+echo "shop $*" >> "$WORK/ran"
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-shop.toml --
+format_version = 1
+contract_version = 1
+domain = "shop"
+
+[[commands]]
+path = "shop"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop list"
+summary = "shop.list.summary"
+examples = ["ncly shop list", "ncly shop list --json"]
+
+[[commands]]
+path = "shop buy"
+summary = "shop.buy.summary"
+examples = ["ncly shop buy apple --store north --cash --bag", "ncly shop buy apple 3 --store north --card --box --json"]
+effects = { user_writes = true, network = true }
+modes = { dry_run = true, recorded = true }
+requires = { bins = ["curl"], keys = ["shopapi"] }
+
+[[commands.args]]
+name = "item"
+summary = "shop.buy.item"
+required = true
+
+[[commands.args]]
+name = "quantity"
+summary = "shop.buy.quantity"
+type = "integer"
+
+[[commands.flags]]
+name = "store"
+shorthand = "s"
+value = "name"
+required = true
+summary = "shop.buy.store"
+
+[[commands.flags]]
+name = "budget"
+value = "amount"
+type = "number"
+default = 10.5
+summary = "shop.buy.budget"
+
+[[commands.flags]]
+name = "note"
+value = "text"
+variadic = true
+summary = "shop.buy.note"
+
+[[commands.flags]]
+name = "cash"
+summary = "shop.buy.cash"
+
+[[commands.flags]]
+name = "card"
+summary = "shop.buy.card"
+
+[[commands.flags]]
+name = "email"
+summary = "shop.buy.email"
+
+[[commands.flags]]
+name = "sms"
+summary = "shop.buy.sms"
+
+[[commands.flags]]
+name = "bag"
+summary = "shop.buy.bag"
+
+[[commands.flags]]
+name = "box"
+summary = "shop.buy.box"
+
+[[commands.flag_groups]]
+flags = ["cash", "card"]
+min = 1
+max = 1
+
+[[commands.flag_groups]]
+flags = ["email", "sms"]
+max = 1
+
+[[commands.flag_groups]]
+flags = ["bag", "box"]
+min = 1
+
+[programs.curl]
+-- bin/ncly-shop.locales/en.toml --
+["shop.summary"]
+description = "Summary of the shop fixture."
+other = "Buy things"
+
+["shop.list.summary"]
+description = "Summary of shop list."
+other = "List the stores"
+
+["shop.buy.summary"]
+description = "Summary of shop buy."
+other = "Buy an item"
+
+["shop.buy.item"]
+description = "The item argument of shop buy."
+other = "Item to buy"
+
+["shop.buy.quantity"]
+description = "The quantity argument of shop buy."
+other = "How many to buy"
+
+["shop.buy.store"]
+description = "The --store flag of shop buy."
+other = "Store to buy from"
+
+["shop.buy.budget"]
+description = "The --budget flag of shop buy."
+other = "Most to spend"
+
+["shop.buy.note"]
+description = "The --note flag of shop buy."
+other = "Note for the store, once per flag"
+
+["shop.buy.cash"]
+description = "The --cash flag of shop buy."
+other = "Pay cash"
+
+["shop.buy.card"]
+description = "The --card flag of shop buy."
+other = "Pay by card"
+
+["shop.buy.email"]
+description = "The --email flag of shop buy."
+other = "Send the receipt by email"
+
+["shop.buy.sms"]
+description = "The --sms flag of shop buy."
+other = "Send the receipt by text message"
+
+["shop.buy.bag"]
+description = "The --bag flag of shop buy."
+other = "Pack in a bag"
+
+["shop.buy.box"]
+description = "The --box flag of shop buy."
+other = "Pack in a box"

@@ -109,6 +109,46 @@ exits 78 ncly catalog --json
 answer stderr EXTENSION_INVALID
 stderr 'lacks the ID \\"catalog.run.summary\\"'
 
+# A manifest rejects a malformed service name in requires.keys, keychain, and a service named twice
+exec sh broken.sh keyform keychain keytwice
+exits 78 ncly keyform --json
+answer stderr EXTENSION_INVALID
+stderr 'lists \\"Deep-gram\\" in requires.keys of the command \\"keyform run\\"'
+exits 78 ncly keychain --json
+stderr 'lists \\"keychain\\" in requires.keys'
+exits 78 ncly keytwice --json
+stderr 'lists \\"deepgram\\" in requires.keys of the command \\"keytwice run\\"'
+
+# A manifest that takes --dry-run, --run-id, or the shorthand of --dry-run as an own flag is invalid
+exec sh broken.sh dryrun runid nshort
+exits 78 ncly dryrun --json
+stderr 'the flag --dry-run, which a global flag'
+exits 78 ncly runid --json
+stderr 'the flag --run-id, which a global flag'
+exits 78 ncly nshort --json
+stderr 'the flag -n, which a global flag'
+
+# Types, requiredness, variadic values, defaults, flag groups, and programs follow their rules
+exec sh broken.sh typebad switchtype required variadic default group bin bintwice program
+exits 78 ncly typebad --json
+stderr 'gives \\"count\\" of the command \\"typebad run\\" the type \\"float\\"'
+exits 78 ncly switchtype --json
+stderr 'gives \\"loud\\" of the command \\"switchtype run\\" the type \\"string\\"'
+exits 78 ncly required --json
+stderr 'makes \\"second\\" of the command \\"required run\\" required'
+exits 78 ncly variadic --json
+stderr 'makes \\"first\\" of the command \\"variadic run\\" take several values'
+exits 78 ncly default --json
+stderr 'gives the flag \\"count\\" of the command \\"default run\\" a default'
+exits 78 ncly group --json
+stderr 'the group of flags --left, --nope'
+exits 78 ncly bin --json
+stderr 'lists \\"ffmpeg\\" in requires.bins of the command \\"bin run\\"'
+exits 78 ncly bintwice --json
+stderr 'lists \\"curl\\" in requires.bins'
+exits 78 ncly program --json
+stderr 'declares the program \\"unused\\" in programs'
+
 # The text of the error comes from the catalog, and the help of a broken extension is the same error
 exits 78 ncly --lang en-XA format
 pseudo stderr format
@@ -279,3 +319,255 @@ summary = "catalog.summary"
 [[commands]]
 path = "catalog run"
 summary = "catalog.run.summary"
+-- broken/keyform.toml --
+format_version = 1
+contract_version = 1
+domain = "keyform"
+
+[[commands]]
+path = "keyform"
+summary = "keyform.summary"
+
+[[commands]]
+path = "keyform run"
+summary = "keyform.summary"
+requires = { keys = ["Deep-gram"] }
+-- broken/keychain.toml --
+format_version = 1
+contract_version = 1
+domain = "keychain"
+
+[[commands]]
+path = "keychain"
+summary = "keychain.summary"
+
+[[commands]]
+path = "keychain run"
+summary = "keychain.summary"
+requires = { keys = ["keychain"] }
+-- broken/keytwice.toml --
+format_version = 1
+contract_version = 1
+domain = "keytwice"
+
+[[commands]]
+path = "keytwice"
+summary = "keytwice.summary"
+
+[[commands]]
+path = "keytwice run"
+summary = "keytwice.summary"
+requires = { keys = ["deepgram", "deepgram"] }
+-- broken/dryrun.toml --
+format_version = 1
+contract_version = 1
+domain = "dryrun"
+
+[[commands]]
+path = "dryrun"
+summary = "dryrun.summary"
+
+[[commands]]
+path = "dryrun run"
+summary = "dryrun.summary"
+
+[[commands.flags]]
+name = "dry-run"
+summary = "dryrun.summary"
+-- broken/runid.toml --
+format_version = 1
+contract_version = 1
+domain = "runid"
+
+[[commands]]
+path = "runid"
+summary = "runid.summary"
+
+[[commands]]
+path = "runid run"
+summary = "runid.summary"
+
+[[commands.flags]]
+name = "run-id"
+value = "id"
+summary = "runid.summary"
+-- broken/nshort.toml --
+format_version = 1
+contract_version = 1
+domain = "nshort"
+
+[[commands]]
+path = "nshort"
+summary = "nshort.summary"
+
+[[commands]]
+path = "nshort run"
+summary = "nshort.summary"
+
+[[commands.flags]]
+name = "number"
+shorthand = "n"
+value = "n"
+summary = "nshort.summary"
+-- broken/typebad.toml --
+format_version = 1
+contract_version = 1
+domain = "typebad"
+
+[[commands]]
+path = "typebad"
+summary = "typebad.summary"
+
+[[commands]]
+path = "typebad run"
+summary = "typebad.summary"
+
+[[commands.flags]]
+name = "count"
+value = "n"
+type = "float"
+summary = "typebad.summary"
+-- broken/switchtype.toml --
+format_version = 1
+contract_version = 1
+domain = "switchtype"
+
+[[commands]]
+path = "switchtype"
+summary = "switchtype.summary"
+
+[[commands]]
+path = "switchtype run"
+summary = "switchtype.summary"
+
+[[commands.flags]]
+name = "loud"
+type = "string"
+summary = "switchtype.summary"
+-- broken/required.toml --
+format_version = 1
+contract_version = 1
+domain = "required"
+
+[[commands]]
+path = "required"
+summary = "required.summary"
+
+[[commands]]
+path = "required run"
+summary = "required.summary"
+
+[[commands.args]]
+name = "first"
+summary = "required.summary"
+
+[[commands.args]]
+name = "second"
+summary = "required.summary"
+required = true
+-- broken/variadic.toml --
+format_version = 1
+contract_version = 1
+domain = "variadic"
+
+[[commands]]
+path = "variadic"
+summary = "variadic.summary"
+
+[[commands]]
+path = "variadic run"
+summary = "variadic.summary"
+
+[[commands.args]]
+name = "first"
+summary = "variadic.summary"
+variadic = true
+
+[[commands.args]]
+name = "second"
+summary = "variadic.summary"
+-- broken/default.toml --
+format_version = 1
+contract_version = 1
+domain = "default"
+
+[[commands]]
+path = "default"
+summary = "default.summary"
+
+[[commands]]
+path = "default run"
+summary = "default.summary"
+
+[[commands.flags]]
+name = "count"
+value = "n"
+type = "integer"
+default = "three"
+summary = "default.summary"
+-- broken/group.toml --
+format_version = 1
+contract_version = 1
+domain = "group"
+
+[[commands]]
+path = "group"
+summary = "group.summary"
+
+[[commands]]
+path = "group run"
+summary = "group.summary"
+
+[[commands.flags]]
+name = "left"
+summary = "group.summary"
+
+[[commands.flag_groups]]
+flags = ["left", "nope"]
+min = 1
+max = 1
+-- broken/bin.toml --
+format_version = 1
+contract_version = 1
+domain = "bin"
+
+[[commands]]
+path = "bin"
+summary = "bin.summary"
+
+[[commands]]
+path = "bin run"
+summary = "bin.summary"
+requires = { bins = ["ffmpeg"] }
+-- broken/bintwice.toml --
+format_version = 1
+contract_version = 1
+domain = "bintwice"
+
+[[commands]]
+path = "bintwice"
+summary = "bintwice.summary"
+
+[[commands]]
+path = "bintwice run"
+summary = "bintwice.summary"
+requires = { bins = ["curl", "curl"] }
+
+[programs.curl]
+-- broken/program.toml --
+format_version = 1
+contract_version = 1
+domain = "program"
+
+[[commands]]
+path = "program"
+summary = "program.summary"
+
+[[commands]]
+path = "program run"
+summary = "program.summary"
+requires = { bins = ["curl"] }
+
+[programs.curl]
+
+[programs.unused]

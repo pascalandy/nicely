@@ -37,6 +37,9 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 		Example: strings.Join(d.Examples, "\n"),
 		Args: func(c *cobra.Command, args []string) error {
 			if variadic || len(args) <= len(d.Args) {
+				if problem := validate(p, c, d, args); problem != nil {
+					return Fail(*problem)
+				}
 				return nil
 			}
 			extra := args[len(d.Args)]
@@ -60,6 +63,9 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 	}
 	for _, f := range d.Flags {
 		addFlag(c.Flags(), text, f)
+	}
+	for _, f := range d.ModeFlags() {
+		addFlag(c.Flags(), p, f)
 	}
 	return c
 }
@@ -121,13 +127,19 @@ func Usage(message, hint string) contract.Problem {
 // valueAnnotation keeps the declared name of a flag's value, such as tag.
 const valueAnnotation = "ncly-value"
 
-// addFlag registers a declared flag with its catalog description.
+// addFlag registers a declared flag with its catalog description. A
+// variadic flag keeps each value, commas included, in the caller's order.
+// The values of a flag are checked against its type after parsing.
 func addFlag(set *pflag.FlagSet, p *i18n.Printer, f contract.Flag) {
-	if f.Value == "" {
+	switch {
+	case f.Value == "":
 		set.BoolP(f.Name, f.Shorthand, false, p.T(f.Summary))
 		return
+	case f.Variadic:
+		set.StringArrayP(f.Name, f.Shorthand, nil, p.T(f.Summary))
+	default:
+		set.StringP(f.Name, f.Shorthand, "", p.T(f.Summary))
 	}
-	set.StringP(f.Name, f.Shorthand, "", p.T(f.Summary))
 	_ = set.SetAnnotation(f.Name, valueAnnotation, []string{f.Value})
 }
 

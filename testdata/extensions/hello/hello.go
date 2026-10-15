@@ -29,6 +29,7 @@ var Extension = extension.Extension{
 		"hello check": check,
 		"hello say":   say,
 		"hello wait":  wait,
+		"hello pick":  pick,
 	},
 }
 
@@ -85,6 +86,19 @@ func say(_ context.Context, call extension.Call) contract.Outcome {
 		return contract.Outcome{Warnings: []contract.Problem{{Code: "HELLO_UNNAMED", Message: call.Printer.T("hello.unnamed"), Hint: "ncly hello say Ada"}}}
 	}
 	return contract.Outcome{}
+}
+
+// pick writes the file picked in the current folder, its execution marker,
+// and answers with the call it received. A dry run writes nothing.
+func pick(_ context.Context, call extension.Call) contract.Outcome {
+	data := map[string]any{"args": call.Args, "flags": call.Flags, "lists": call.Lists}
+	if call.Flags["dry-run"] == "true" {
+		return contract.Outcome{Data: data}
+	}
+	if err := os.WriteFile("picked", []byte(call.Args[0]+"\n"), 0o644); err != nil {
+		return contract.Outcome{Errors: []contract.Problem{{Code: contract.Runtime, Message: call.Printer.T("hello.program"), Hint: "ncly hello pick"}}}
+	}
+	return contract.Outcome{Data: data, Effect: contract.NonRepeatableEffect}
 }
 
 // program writes finished.txt, starts a grandchild in its own process group

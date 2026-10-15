@@ -29,6 +29,14 @@ other = "Add step details on stderr"
 description = "Help page: description of the --version flag."
 other = "Print the version"
 
+["flag.dry_run"]
+description = "Help page and ncly describe: description of the --dry-run flag, which a command that writes or bills accepts."
+other = "Show the planned effects and pending checks without running"
+
+["flag.run_id"]
+description = "Help page and ncly describe: description of the --run-id flag of a recorded command, which names its run."
+other = "Name the run, so a repeated call continues it"
+
 ["usage.unknown_command"]
 description = "Error when a word is not a command. {{.Name}} is the word the user typed."
 other = "Unknown command \"{{.Name}}\"."
@@ -48,6 +56,33 @@ other = "The flag {{.Flag}} needs a value."
 ["usage.invalid_flag_value"]
 description = "Error when a flag gets a value it cannot accept. {{.Flag}} is the flag, {{.Value}} the value typed."
 other = "The flag {{.Flag}} does not accept \"{{.Value}}\"."
+
+["usage.missing_argument"]
+description = "Error when a command lacks a required argument. {{.Name}} is the argument's name, such as name, shown in angle brackets as in the usage line."
+other = "The argument <{{.Name}}> is missing."
+
+["usage.missing_flag"]
+description = "Error when a command lacks a required flag. {{.Flag}} is the flag, such as --path."
+other = "The flag {{.Flag}} is missing."
+
+["usage.invalid_argument_value"]
+description = "Error when an argument's value does not fit its type or its accepted values. {{.Name}} is the argument's name, shown in angle brackets as in the usage line, and {{.Value}} what the user typed."
+other = "The argument <{{.Name}}> does not accept \"{{.Value}}\"."
+
+["usage.flag_group_exactly"]
+description = "Error when a call does not set exactly {{.Count}} of a group of flags. {{.Flags}} lists the flags, such as --latest, --path."
+one = "Give exactly one of {{.Flags}}."
+other = "Give exactly {{.Count}} of {{.Flags}}."
+
+["usage.flag_group_at_least"]
+description = "Error when a call sets fewer than {{.Count}} of a group of flags. {{.Flags}} lists the flags, such as --latest, --path."
+one = "Give at least one of {{.Flags}}."
+other = "Give at least {{.Count}} of {{.Flags}}."
+
+["usage.flag_group_at_most"]
+description = "Error when a call sets more than {{.Count}} of a group of flags. {{.Flags}} lists the flags, such as --latest, --path."
+one = "Give at most one of {{.Flags}}."
+other = "Give at most {{.Count}} of {{.Flags}}."
 
 ["usage.invalid_flag_syntax"]
 description = "Error when an argument looks like a flag but is malformed, such as ---x. {{.Arg}} is the argument."

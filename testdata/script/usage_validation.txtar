@@ -1,0 +1,214 @@
+# Validation reads the declaration before a command runs. A missing required argument or
+# flag, a value that its type rejects, and a call that breaks a flag group each answer
+# USAGE_INVALID, and no execution marker appears: the shell fixture appends its call to
+# $WORK/ran, and the Go fixture's hello pick writes picked. No core command declares such a
+# constraint yet, so ncly proves it on the shell fixture, and ncly-hello, the SDK's entry
+# point run directly, on the Go fixture.
+chmod 755 bin/ncly-shop
+env PATH=$WORK/bin:$PATH
+
+# A required argument, then a required flag
+exits 2 ncly shop buy --store north --cash --bag --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"The argument \\u003citem\\u003e is missing.","hint":"ncly shop buy --help"'
+exits 2 ncly shop buy apple --cash --bag --json
+answer stderr USAGE_INVALID
+stderr 'The flag --store is missing.'
+
+# A value that its type rejects: an integer argument, then a number flag
+exits 2 ncly shop buy apple three --store north --cash --bag --json
+answer stderr USAGE_INVALID
+stderr 'The argument \\u003cquantity\\u003e does not accept \\"three\\".'
+exits 2 ncly shop buy apple --store north --budget 2,5 --cash --bag --json
+answer stderr USAGE_INVALID
+stderr 'The flag --budget does not accept \\"2,5\\".'
+exits 2 ncly shop buy apple --store north --budget NaN --cash --bag --json
+answer stderr USAGE_INVALID
+
+# A flag group of exactly one, at most one, and at least one
+exits 2 ncly shop buy apple --store north --bag --json
+stderr 'Give exactly one of --cash, --card.'
+exits 2 ncly shop buy apple --store north --cash --card --bag --json
+stderr 'Give exactly one of --cash, --card.'
+exits 2 ncly shop buy apple --store north --cash --email --sms --bag --json
+stderr 'Give at most one of --email, --sms.'
+exits 2 ncly shop buy apple --store north --cash --json
+stderr 'Give at least one of --bag, --box.'
+
+# The error block speaks the catalog's text
+exits 2 ncly --lang en-XA shop buy
+pseudo stderr shop buy
+! exists ran
+
+# A valid call starts the fixture, so the checks above are what stopped the others
+exec ncly shop buy apple 3 -s north --budget 2.5 --cash --email --bag --box --json
+grep '^shop buy --store=north --budget=2.5 --cash=true --email=true --bag=true --box=true -- apple 3$' ran
+
+# The Go fixture run directly: a required argument, a required flag, a type, and a group
+exits 2 ncly-hello pick --mood calm --left --json
+answer stderr USAGE_INVALID
+stderr 'The argument \\u003cname\\u003e is missing.'
+exits 2 ncly-hello pick Ada --left --json
+stderr 'The flag --mood is missing.'
+exits 2 ncly-hello pick Ada --mood calm --times 1.5 --left --json
+stderr 'The flag --times does not accept \\"1.5\\".'
+exits 2 ncly-hello pick Ada --mood calm --left --right --json
+stderr 'Give exactly one of --left, --right.'
+! exists picked
+
+# A valid call runs the handler
+exec ncly-hello pick Ada --mood calm --times 2 --left --json
+answer stdout ok
+exists picked
+
+-- bin/ncly-shop --
+#!/bin/sh
+echo "shop $*" >> "$WORK/ran"
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-shop.toml --
+format_version = 1
+contract_version = 1
+domain = "shop"
+
+[[commands]]
+path = "shop"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop list"
+summary = "shop.list.summary"
+examples = ["ncly shop list", "ncly shop list --json"]
+
+[[commands]]
+path = "shop buy"
+summary = "shop.buy.summary"
+examples = ["ncly shop buy apple --store north --cash --bag", "ncly shop buy apple 3 --store north --card --box --json"]
+effects = { user_writes = true, network = true }
+modes = { dry_run = true, recorded = true }
+requires = { bins = ["curl"], keys = ["shopapi"] }
+
+[[commands.args]]
+name = "item"
+summary = "shop.buy.item"
+required = true
+
+[[commands.args]]
+name = "quantity"
+summary = "shop.buy.quantity"
+type = "integer"
+
+[[commands.flags]]
+name = "store"
+shorthand = "s"
+value = "name"
+required = true
+summary = "shop.buy.store"
+
+[[commands.flags]]
+name = "budget"
+value = "amount"
+type = "number"
+default = 10.5
+summary = "shop.buy.budget"
+
+[[commands.flags]]
+name = "note"
+value = "text"
+variadic = true
+summary = "shop.buy.note"
+
+[[commands.flags]]
+name = "cash"
+summary = "shop.buy.cash"
+
+[[commands.flags]]
+name = "card"
+summary = "shop.buy.card"
+
+[[commands.flags]]
+name = "email"
+summary = "shop.buy.email"
+
+[[commands.flags]]
+name = "sms"
+summary = "shop.buy.sms"
+
+[[commands.flags]]
+name = "bag"
+summary = "shop.buy.bag"
+
+[[commands.flags]]
+name = "box"
+summary = "shop.buy.box"
+
+[[commands.flag_groups]]
+flags = ["cash", "card"]
+min = 1
+max = 1
+
+[[commands.flag_groups]]
+flags = ["email", "sms"]
+max = 1
+
+[[commands.flag_groups]]
+flags = ["bag", "box"]
+min = 1
+
+[programs.curl]
+-- bin/ncly-shop.locales/en.toml --
+["shop.summary"]
+description = "Summary of the shop fixture."
+other = "Buy things"
+
+["shop.list.summary"]
+description = "Summary of shop list."
+other = "List the stores"
+
+["shop.buy.summary"]
+description = "Summary of shop buy."
+other = "Buy an item"
+
+["shop.buy.item"]
+description = "The item argument of shop buy."
+other = "Item to buy"
+
+["shop.buy.quantity"]
+description = "The quantity argument of shop buy."
+other = "How many to buy"
+
+["shop.buy.store"]
+description = "The --store flag of shop buy."
+other = "Store to buy from"
+
+["shop.buy.budget"]
+description = "The --budget flag of shop buy."
+other = "Most to spend"
+
+["shop.buy.note"]
+description = "The --note flag of shop buy."
+other = "Note for the store, once per flag"
+
+["shop.buy.cash"]
+description = "The --cash flag of shop buy."
+other = "Pay cash"
+
+["shop.buy.card"]
+description = "The --card flag of shop buy."
+other = "Pay by card"
+
+["shop.buy.email"]
+description = "The --email flag of shop buy."
+other = "Send the receipt by email"
+
+["shop.buy.sms"]
+description = "The --sms flag of shop buy."
+other = "Send the receipt by text message"
+
+["shop.buy.bag"]
+description = "The --bag flag of shop buy."
+other = "Pack in a bag"
+
+["shop.buy.box"]
+description = "The --box flag of shop buy."
+other = "Pack in a box"

@@ -32,7 +32,8 @@ exec ncly describe completion --json
 stdout -count=4 '"path":"completion'
 ! stdout '"path":"describe"'
 exec ncly describe completion zsh --json
-stdout '^\{"ok":true,"contract_version":1,"commands":\[\{"path":"completion zsh","summary":"Print the completion script for zsh","source":"core"\}\]\}$'
+stdout '^\{"ok":true,"contract_version":1,"commands":\[\{"path":"completion zsh","summary":"Print the completion script for zsh","source":"core","args":\[\],'
+stdout -count=1 '"path":'
 cp stdout zsh.json
 exec ncly describe 'completion zsh' --json
 cmp stdout zsh.json

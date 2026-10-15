@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -46,9 +47,12 @@ type Call struct {
 	Path string
 	// Args holds the positional arguments.
 	Args []string
-	// Flags holds each flag that the caller set, by long name. A switch
-	// holds "true" or "false".
-	Flags   map[string]string
+	// Flags holds each flag that the caller set, by long name, except a
+	// variadic one. A switch holds "true" or "false".
+	Flags map[string]string
+	// Lists holds each variadic flag that the caller set, by long name,
+	// with its values in the caller's order.
+	Lists   map[string][]string
 	JSON    bool
 	Mode    contract.Mode
 	Printer *i18n.Printer
@@ -183,14 +187,18 @@ func (l loaded) tree(p *i18n.Printer, selected func(selection) error) *cobra.Com
 			return nil
 		}
 		return func(c *cobra.Command, args []string) error {
-			flags := map[string]string{}
-			for _, f := range d.Flags {
-				if flag := c.Flags().Lookup(f.Name); flag.Changed {
+			flags, lists := map[string]string{}, map[string][]string{}
+			for _, f := range append(slices.Clone(d.Flags), d.ModeFlags()...) {
+				switch flag := c.Flags().Lookup(f.Name); {
+				case !flag.Changed:
+				case f.Variadic:
+					lists[f.Name] = command.FlagValues(flag)
+				default:
 					flags[f.Name] = flag.Value.String()
 				}
 			}
 			path := strings.Join(d.Path, " ")
-			return selected(selection{command: d, call: Call{Path: path, Args: args, Flags: flags}})
+			return selected(selection{command: d, call: Call{Path: path, Args: args, Flags: flags, Lists: lists}})
 		}
 	})
 	return root

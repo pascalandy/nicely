@@ -29,12 +29,16 @@ func (c *call) Error() string { return "call to " + c.extension.domain }
 
 // canonicalArgs passes a validated call as Dispatch in contract.md defines:
 // the path after the domain, each flag that the caller set as one word in
-// the order of the manifest, then -- and the positional arguments.
+// the order of the manifest, one word per value for a variadic flag, then
+// --dry-run and --run-id when the caller set them, then -- and the
+// positional arguments.
 func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string {
 	canonical := slices.Clone(d.Path[1:])
-	for _, f := range d.Flags {
+	for _, f := range append(slices.Clone(d.Flags), d.ModeFlags()...) {
 		if flag := c.Flags().Lookup(f.Name); flag.Changed {
-			canonical = append(canonical, "--"+f.Name+"="+flag.Value.String())
+			for _, value := range command.FlagValues(flag) {
+				canonical = append(canonical, "--"+f.Name+"="+value)
+			}
 		}
 	}
 	return append(append(canonical, "--"), args...)

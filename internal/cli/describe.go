@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/command"
@@ -17,6 +18,7 @@ var describeCommand = contract.Command{
 	Path:    []string{"describe"},
 	Summary: "describe.summary",
 	Args:    []contract.Arg{{Name: "command", Summary: "describe.command", Variadic: true}},
+	Effects: &contract.Effects{},
 	Examples: []string{
 		`ncly describe`,
 		`ncly describe completion --json`,
@@ -31,7 +33,7 @@ const (
 	sourceExtension = "extension"
 )
 
-// entry is the concise description of one command.
+// entry is the concise description of one command, with its declaration.
 type entry struct {
 	Path    string `json:"path"`
 	Summary string `json:"summary"`
@@ -39,11 +41,148 @@ type entry struct {
 	// Skill is present on the entry of an extension's domain alone, where it
 	// holds the folder of the extension's skill, or null as a nil *string.
 	Skill any `json:"skill,omitempty"`
+	// declaration is the command's, whose text text renders. A group only
+	// groups the commands under it, so describe lists them instead of
+	// detailing it.
+	declaration contract.Command
+	text        *i18n.Printer
+	group       bool
 }
 
-// listing is the answer of ncly describe.
+// listing is the answer of ncly describe for no path or a group.
 type listing struct {
 	Commands []entry `json:"commands"`
+}
+
+// commandDetail is the answer of ncly describe for one command.
+type commandDetail struct {
+	Commands []detail `json:"commands"`
+}
+
+// detail is the description of one command, as the detailed entry of ncly
+// describe in core-spec.md defines it.
+type detail struct {
+	entry
+	Args       []argDetail    `json:"args"`
+	Flags      []flagDetail   `json:"flags"`
+	FlagGroups []groupDetail  `json:"flag_groups"`
+	Effects    effectsDetail  `json:"effects"`
+	Requires   requiresDetail `json:"requires"`
+	Modes      modesDetail    `json:"modes"`
+	Examples   []string       `json:"examples"`
+}
+
+type argDetail struct {
+	Name     string `json:"name"`
+	Summary  string `json:"summary"`
+	Type     string `json:"type"`
+	Required bool   `json:"required"`
+	Variadic bool   `json:"variadic"`
+	Values   []any  `json:"values"`
+}
+
+type flagDetail struct {
+	Name      string `json:"name"`
+	Shorthand string `json:"shorthand"`
+	Value     string `json:"value"`
+	Type      string `json:"type"`
+	Required  bool   `json:"required"`
+	Variadic  bool   `json:"variadic"`
+	Values    []any  `json:"values"`
+	Default   any    `json:"default"`
+	Summary   string `json:"summary"`
+}
+
+type groupDetail struct {
+	Flags []string `json:"flags"`
+	Min   int      `json:"min"`
+	Max   int      `json:"max"`
+}
+
+type effectsDetail struct {
+	UserWrites bool `json:"user_writes"`
+	Network    bool `json:"network"`
+	Paid       bool `json:"paid"`
+}
+
+type requiresDetail struct {
+	Bins []named `json:"bins"`
+	Keys []named `json:"keys"`
+}
+
+type named struct {
+	Name string `json:"name"`
+}
+
+type modesDetail struct {
+	DryRun   bool `json:"dry_run"`
+	Recorded bool `json:"recorded"`
+	Resume   bool `json:"resume"`
+}
+
+// detail describes the command of an entry. p renders the text of the
+// flags that its modes add, which the SDK's catalog holds.
+func (e entry) detail(p *i18n.Printer) detail {
+	d := e.declaration
+	out := detail{
+		entry:      e,
+		Args:       []argDetail{},
+		Flags:      []flagDetail{},
+		FlagGroups: []groupDetail{},
+		Effects:    effectsDetail(d.DeclaredEffects()),
+		Requires:   requiresDetail{Bins: names(d.Requires.Bins), Keys: names(d.Requires.Keys)},
+		Modes:      modesDetail(d.Modes),
+		Examples:   append([]string{}, d.Examples...),
+	}
+	for _, a := range d.Args {
+		out.Args = append(out.Args, argDetail{
+			Name: a.Name, Summary: e.text.T(a.Summary), Type: string(a.ArgType()),
+			Required: a.Required, Variadic: a.Variadic, Values: typedValues(a.ArgType(), a.Values),
+		})
+	}
+	flag := func(f contract.Flag, text *i18n.Printer) flagDetail {
+		return flagDetail{
+			Name: f.Name, Shorthand: f.Shorthand, Value: f.Value, Type: string(f.FlagType()),
+			Required: f.Required, Variadic: f.Variadic, Values: typedValues(f.FlagType(), f.Values),
+			Default: f.FlagDefault(), Summary: text.T(f.Summary),
+		}
+	}
+	for _, f := range d.Flags {
+		out.Flags = append(out.Flags, flag(f, e.text))
+	}
+	for _, f := range d.ModeFlags() {
+		out.Flags = append(out.Flags, flag(f, p))
+	}
+	for _, g := range d.FlagGroups {
+		out.FlagGroups = append(out.FlagGroups, groupDetail{Flags: g.Flags, Min: g.Min, Max: g.Max})
+	}
+	return out
+}
+
+func names(list []string) []named {
+	out := []named{}
+	for _, name := range list {
+		out = append(out, named{name})
+	}
+	return out
+}
+
+// typedValues turns accepted values into JSON values of their type.
+func typedValues(t contract.Type, values []string) []any {
+	out := []any{}
+	for _, v := range values {
+		var typed any = v
+		switch t {
+		case contract.TypeBoolean:
+			typed, _ = strconv.ParseBool(v)
+		case contract.TypeInteger:
+			typed, _ = strconv.ParseInt(v, 10, 64)
+		case contract.TypeNumber:
+			typed, _ = strconv.ParseFloat(v, 64)
+		}
+		out = append(out, typed)
+	}
+	return out
 }
 
 // addDescribe adds ncly describe, which reads the declarations of core and
@@ -68,8 +207,15 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 		if len(found) == 0 {
 			return command.Fail(notFound(p, strings.Join(words, " ")))
 		}
+		// The path sorts first, so a path that names a command, not a group,
+		// gets its detail alone.
+		var answer any = listing{found}
+		if len(words) > 0 && !found[0].group && found[0].Path == strings.Join(words, " ") {
+			found = found[:1]
+			answer = commandDetail{[]detail{found[0].detail(p)}}
+		}
 		return &answered{
-			outcome: contract.Outcome{Data: listing{found}},
+			outcome: contract.Outcome{Data: answer},
 			text:    func(w io.Writer) error { return writeEntries(w, found) },
 		}
 	}))
@@ -80,7 +226,10 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 	var all []entry
 	for _, d := range coreCommands() {
-		all = append(all, entry{Path: strings.Join(d.Path, " "), Summary: p.T(d.Summary), Source: sourceCore})
+		all = append(all, entry{
+			Path: strings.Join(d.Path, " "), Summary: p.T(d.Summary), Source: sourceCore,
+			declaration: d, text: p, group: slices.Equal(d.Path, completionCommand.Path),
+		})
 	}
 	for _, e := range extensions {
 		if e.broken != nil {
@@ -88,7 +237,10 @@ func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 		}
 		text := e.catalogs.Printer(lang)
 		for _, d := range e.manifest.Commands {
-			en := entry{Path: strings.Join(d.Path, " "), Summary: text.T(d.Summary), Source: sourceExtension}
+			en := entry{
+				Path: strings.Join(d.Path, " "), Summary: text.T(d.Summary), Source: sourceExtension,
+				declaration: d, text: text, group: !e.manifest.Runs(d),
+			}
 			if e.bundled {
 				en.Source = sourceBundled
 			}
