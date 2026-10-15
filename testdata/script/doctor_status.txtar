@@ -46,6 +46,26 @@ env STATUS=runtime
 exits 78 ncly doctor hello --json
 stdout '\{"id":"hello\.status","component":"hello","status":"fail","code":"EXTENSION_INVALID","message":"The status command of hello failed with exit 1\.",'
 
+# An answer without a checks array, a warning whose code breaks the form of a code, and a
+# failure led by a code that maps to no exit are rejected too
+env STATUS=nochecks
+exits 78 ncly doctor hello --json
+stdout '\{"id":"hello\.status","component":"hello","status":"fail","code":"EXTENSION_INVALID","message":"The status command of hello gave an answer that doctor rejects: it holds no checks array\.",'
+env STATUS=nullchecks
+exits 78 ncly doctor hello --json
+stdout '"message":"The status command of hello gave an answer that doctor rejects: it holds no checks array\.",'
+env STATUS=lowercase
+exits 78 ncly doctor hello --json
+stdout '"message":"The status command of hello gave an answer that doctor rejects: its check 1, hello\.mood, has the status warn with the code \\"HELLO_sleepy\\":'
+env STATUS=unmapped
+exits 78 ncly doctor hello --json
+stdout '"code":"EXTENSION_INVALID","message":"The status command of hello gave an answer that doctor rejects: it failed with OTHER_MISSING, which maps to no exit code of its domain\.",'
+! stdout 'OTHER_MISSING","message'
+
+# --live may reach the network through a status command, so doctor declares that effect
+exec ncly describe doctor --json
+stdout '"effects":\{"user_writes":false,"network":true,"paid":false\}'
+
 # An answer that never comes fails with CHECK_TIMEOUT, and the command dies at the limit
 env STATUS=hang
 exits 78 ncly doctor hello --timeout 1s --json
@@ -88,6 +108,19 @@ config)
 runtime)
   echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"Broke.","hint":"Look."}]}' >&2
   exit 1
+  ;;
+nochecks)
+  echo '{"ok":true,"contract_version":1}'
+  ;;
+nullchecks)
+  echo '{"ok":true,"contract_version":1,"checks":null}'
+  ;;
+lowercase)
+  echo '{"ok":true,"contract_version":1,"checks":[{"id":"hello.mood","component":"hello","status":"warn","code":"HELLO_sleepy","message":"Hello is sleepy.","hint":"Let it rest."}]}'
+  ;;
+unmapped)
+  echo '{"ok":false,"contract_version":1,"errors":[{"code":"OTHER_MISSING","message":"Something else.","hint":"Look."}]}' >&2
+  exit 78
   ;;
 hang)
   echo $$ > "$WORK/status.pid"

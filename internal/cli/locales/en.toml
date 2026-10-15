@@ -213,6 +213,14 @@ other = "its check {{.Index}}, {{.ID}}, has the status {{.Status}} with the code
 description = "Reason inside doctor.status_invalid: a check that warns or fails lacks its hint, or its next is no list of words. {{.Index}} counts the checks from 1, and {{.ID}} is its id. next is a key that stays as is."
 other = "its check {{.Index}}, {{.ID}}, lacks a hint, or its next is no list of words."
 
+["doctor.rule_checks"]
+description = "Reason inside doctor.status_invalid: the report of a status command holds no array under checks, a key that stays as is."
+other = "it holds no checks array."
+
+["doctor.rule_lead"]
+description = "Reason inside doctor.status_invalid: a status command failed with exit 78 under a code that neither core nor its manifest maps to exit 78. {{.Code}} is that code, which stays as is."
+other = "it failed with {{.Code}}, which maps to no exit code of its domain."
+
 ["doctor.rule_verdict"]
 description = "Reason inside doctor.status_invalid: the exit code of a status command disagrees with its checks. {{.Exit}} is the exit code."
 other = "it exited with {{.Exit}}, while a report exits 78 exactly when one of its checks fails."

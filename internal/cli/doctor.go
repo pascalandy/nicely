@@ -11,6 +11,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -38,7 +39,8 @@ var doctorCommand = contract.Command{
 		{Name: "live", Summary: "doctor.live"},
 		{Name: "timeout", Value: "duration", Summary: "doctor.timeout", Default: "30s"},
 	},
-	Effects: &contract.Effects{},
+	// --live reaches the network through the status commands that use it.
+	Effects: &contract.Effects{Network: true},
 	Examples: []string{
 		`ncly doctor`,
 		`ncly doctor core --json`,
@@ -495,8 +497,7 @@ func (pr *prober) status(e *extension) []check {
 		return failed(contract.ExtensionInvalid, pr.p.T("doctor.status_failed", data), pr.p.T("extension.invalid_hint", data), nil)
 	}
 	var reply struct {
-		OK     bool               `json:"ok"`
-		Checks []json.RawMessage  `json:"checks"`
+		Checks json.RawMessage    `json:"checks"`
 		Errors []contract.Problem `json:"errors"`
 	}
 	if err := json.Unmarshal(answer.Line, &reply); err != nil {
@@ -504,14 +505,25 @@ func (pr *prober) status(e *extension) []check {
 	}
 	if len(reply.Errors) > 0 {
 		lead := reply.Errors[0]
+		if exit, mapped := e.manifest.Registry().Exit(lead.Code); !mapped || exit != contract.ExitHuman {
+			return invalid(pr.p.T("doctor.rule_lead", map[string]any{"Code": lead.Code}))
+		}
 		return failed(lead.Code, lead.Message, lead.Hint, lead.Next)
 	}
-	checks, reason := statusChecks(pr.p, e, reply.Checks, result.Exit)
+	var raw []json.RawMessage
+	if json.Unmarshal(reply.Checks, &raw) != nil || raw == nil {
+		return invalid(pr.p.T("doctor.rule_checks"))
+	}
+	checks, reason := statusChecks(pr.p, e, raw, result.Exit)
 	if reason != "" {
 		return invalid(reason)
 	}
 	return checks
 }
+
+// codeForm is the form of every code: uppercase letters, digits, and
+// underscores.
+var codeForm = regexp.MustCompile(`^[A-Z0-9_]+$`)
 
 // statusChecks reads the checks of a status command's report, or names the
 // rule that one of them, or the verdict of the report, breaks: each check
@@ -535,7 +547,8 @@ func statusChecks(p *i18n.Printer, e *extension, raw []json.RawMessage, exit int
 			return nil, p.T("doctor.rule_component", data)
 		case c.Message == "" || !slices.Contains([]string{statusPass, statusWarn, statusFail}, c.Status):
 			return nil, p.T("doctor.rule_shape", data)
-		case c.Status == statusPass && (c.Code != "" || c.Hint != "" || c.Next != nil),
+		case c.Status != statusPass && !codeForm.MatchString(string(c.Code)),
+			c.Status == statusPass && (c.Code != "" || c.Hint != "" || c.Next != nil),
 			c.Status == statusFail && (!isError || code != contract.ExitHuman),
 			c.Status == statusWarn && !registry.IsWarning(c.Code):
 			return nil, p.T("doctor.rule_code", data)
