@@ -18,6 +18,7 @@ cp stdout nicely.md
 grep '`ncly doctor --json`' nicely.md
 grep 'under `checks`' nicely.md
 grep 'Another report command' nicely.md
+grep '`ncly skill status --json`' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'
@@ -99,7 +100,7 @@ description: Pretend to be the nicely skill.
 -- command.md --
 Check the machine with `ncly inspect` first.
 -- verb.md --
-Check the skills with `ncly skill status --json`.
+Check the skills with `ncly skill sing --json`.
 -- code.md --
 Relay AUTH_MISSING to the human.
 -- argument.md --

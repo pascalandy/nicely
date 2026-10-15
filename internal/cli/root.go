@@ -125,7 +125,7 @@ func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension) *cobra
 	root.AddCommand(help)
 	addCompletion(p, root)
 	addDescribe(p, g.Lang, root, extensions)
-	addDoctor(p, root, extensions)
+	addDoctor(p, g, root, extensions)
 	addExtensions(root, p, g, extensions)
 	return root
 }

@@ -164,6 +164,41 @@ stderr 'gives the program \\"curl\\" an empty probe'
 exits 78 ncly proginstall --json
 stderr 'gives the program \\"curl\\" an empty install command for \\"brew\\"'
 
+# Only the status command of its domain sets doctor, as Status command defines it
+exec sh broken.sh dpath dgroup dkind darg dflag dreq dlive dtimeout dgroupflags dwrites dpaid deffects dnetwork dmode
+exits 78 ncly dpath --json
+stderr 'sets doctor on the command \\"dpath run\\"'
+exits 78 ncly dgroup --json
+stderr 'sets doctor on the command \\"dgroup status\\"'
+exits 78 ncly dkind --json
+stderr 'sets doctor on the command \\"dkind status\\"'
+exits 78 ncly darg --json
+stderr 'sets doctor on the command \\"darg status\\"'
+exits 78 ncly dflag --json
+stderr 'sets doctor on the command \\"dflag status\\"'
+exits 78 ncly dreq --json
+stderr 'sets doctor on the command \\"dreq status\\"'
+exits 78 ncly dlive --json
+stderr 'gives the flag \\"live\\" of the command \\"dlive status\\" a default'
+exits 78 ncly dtimeout --json
+stderr 'sets doctor on the command \\"dtimeout status\\"'
+exits 78 ncly dgroupflags --json
+stderr 'sets doctor on the command \\"dgroupflags status\\"'
+exits 78 ncly dwrites --json
+stderr 'sets doctor on the command \\"dwrites status\\"'
+exits 78 ncly dpaid --json
+stderr 'sets doctor on the command \\"dpaid status\\"'
+exits 78 ncly deffects --json
+stderr 'sets doctor on the command \\"deffects status\\"'
+exits 78 ncly dnetwork --json
+stderr 'sets doctor on the command \\"dnetwork status\\"'
+exits 78 ncly dmode --json
+stderr 'sets doctor on the command \\"dmode status\\"'
+# The status command of its domain may set doctor, with live and timeout
+exec sh mkdoctor.sh
+exec ncly dok status --help
+stdout '--live'
+
 # Each config key that a command reads lies under the domain, and appears once
 exec sh broken.sh configkey
 exits 78 ncly configkey --json
@@ -727,6 +762,309 @@ requires = { bins = ["curl"] }
 
 [programs.curl]
 install = { apt = ["sudo", "apt", "install", "curl"], brew = [] }
+-- broken/dpath.toml --
+format_version = 1
+contract_version = 1
+domain = "dpath"
+
+[[commands]]
+path = "dpath"
+summary = "dpath.summary"
+
+[[commands]]
+path = "dpath run"
+summary = "dpath.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+-- broken/dgroup.toml --
+format_version = 1
+contract_version = 1
+domain = "dgroup"
+
+[[commands]]
+path = "dgroup"
+summary = "dgroup.summary"
+
+[[commands]]
+path = "dgroup status"
+summary = "dgroup.summary"
+doctor = true
+effects = {}
+
+[[commands]]
+path = "dgroup status now"
+summary = "dgroup.summary"
+-- broken/dkind.toml --
+format_version = 1
+contract_version = 1
+domain = "dkind"
+
+[[commands]]
+path = "dkind"
+summary = "dkind.summary"
+
+[[commands]]
+path = "dkind status"
+summary = "dkind.summary"
+doctor = true
+effects = {}
+-- broken/darg.toml --
+format_version = 1
+contract_version = 1
+domain = "darg"
+
+[[commands]]
+path = "darg"
+summary = "darg.summary"
+
+[[commands]]
+path = "darg status"
+summary = "darg.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+
+[[commands.args]]
+name = "what"
+summary = "darg.summary"
+-- broken/dflag.toml --
+format_version = 1
+contract_version = 1
+domain = "dflag"
+
+[[commands]]
+path = "dflag"
+summary = "dflag.summary"
+
+[[commands]]
+path = "dflag status"
+summary = "dflag.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+
+[[commands.flags]]
+name = "deep"
+summary = "dflag.summary"
+-- broken/dreq.toml --
+format_version = 1
+contract_version = 1
+domain = "dreq"
+
+[[commands]]
+path = "dreq"
+summary = "dreq.summary"
+
+[[commands]]
+path = "dreq status"
+summary = "dreq.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+
+[[commands.flags]]
+name = "timeout"
+value = "duration"
+required = true
+summary = "dreq.summary"
+-- broken/dlive.toml --
+format_version = 1
+contract_version = 1
+domain = "dlive"
+
+[[commands]]
+path = "dlive"
+summary = "dlive.summary"
+
+[[commands]]
+path = "dlive status"
+summary = "dlive.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+
+[[commands.flags]]
+name = "live"
+default = true
+summary = "dlive.summary"
+-- broken/dtimeout.toml --
+format_version = 1
+contract_version = 1
+domain = "dtimeout"
+
+[[commands]]
+path = "dtimeout"
+summary = "dtimeout.summary"
+
+[[commands]]
+path = "dtimeout status"
+summary = "dtimeout.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+
+[[commands.flags]]
+name = "timeout"
+value = "seconds"
+type = "integer"
+summary = "dtimeout.summary"
+-- broken/dgroupflags.toml --
+format_version = 1
+contract_version = 1
+domain = "dgroupflags"
+
+[[commands]]
+path = "dgroupflags"
+summary = "dgroupflags.summary"
+
+[[commands]]
+path = "dgroupflags status"
+summary = "dgroupflags.summary"
+doctor = true
+effects = {}
+
+[commands.result]
+kind = "report"
+
+[[commands.flags]]
+name = "live"
+summary = "dgroupflags.summary"
+
+[[commands.flags]]
+name = "timeout"
+value = "duration"
+summary = "dgroupflags.summary"
+
+[[commands.flag_groups]]
+flags = ["live", "timeout"]
+max = 1
+-- broken/dwrites.toml --
+format_version = 1
+contract_version = 1
+domain = "dwrites"
+
+[[commands]]
+path = "dwrites"
+summary = "dwrites.summary"
+
+[[commands]]
+path = "dwrites status"
+summary = "dwrites.summary"
+doctor = true
+effects = { user_writes = true }
+
+[commands.result]
+kind = "report"
+-- broken/dpaid.toml --
+format_version = 1
+contract_version = 1
+domain = "dpaid"
+
+[[commands]]
+path = "dpaid"
+summary = "dpaid.summary"
+
+[[commands]]
+path = "dpaid status"
+summary = "dpaid.summary"
+doctor = true
+effects = { paid = true }
+
+[commands.result]
+kind = "report"
+-- broken/deffects.toml --
+format_version = 1
+contract_version = 1
+domain = "deffects"
+
+[[commands]]
+path = "deffects"
+summary = "deffects.summary"
+
+[[commands]]
+path = "deffects status"
+summary = "deffects.summary"
+doctor = true
+
+[commands.result]
+kind = "report"
+-- broken/dnetwork.toml --
+format_version = 1
+contract_version = 1
+domain = "dnetwork"
+
+[[commands]]
+path = "dnetwork"
+summary = "dnetwork.summary"
+
+[[commands]]
+path = "dnetwork status"
+summary = "dnetwork.summary"
+doctor = true
+effects = { network = true }
+
+[commands.result]
+kind = "report"
+-- broken/dmode.toml --
+format_version = 1
+contract_version = 1
+domain = "dmode"
+
+[[commands]]
+path = "dmode"
+summary = "dmode.summary"
+
+[[commands]]
+path = "dmode status"
+summary = "dmode.summary"
+doctor = true
+effects = {}
+modes = { dry_run = true }
+
+[commands.result]
+kind = "report"
+-- mkdoctor.sh --
+sh mkext.sh bin2 dok 'Check dok'
+cat > bin2/ncly-dok.toml <<'TOML'
+format_version = 1
+contract_version = 1
+domain = "dok"
+
+[[commands]]
+path = "dok"
+summary = "dok.summary"
+
+[[commands]]
+path = "dok status"
+summary = "dok.summary"
+doctor = true
+effects = { network = true }
+
+[commands.result]
+kind = "report"
+
+[[commands.flags]]
+name = "live"
+summary = "dok.summary"
+
+[[commands.flags]]
+name = "timeout"
+value = "duration"
+summary = "dok.summary"
+TOML
 -- broken/configkey.toml --
 format_version = 1
 contract_version = 1

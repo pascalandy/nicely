@@ -93,3 +93,43 @@ other = "Fix {{.File}}."
 ["skill.describe_failed"]
 description = "Error RUNTIME of `ncly skill list` and `ncly skill view` when `ncly describe --json`, which gives the skills of the installed extensions, fails or gives an answer that skill cannot read."
 other = "ncly describe --json failed, so the skills of the installed extensions are unknown."
+
+["skill.status.summary"]
+description = "Help page and ncly describe: summary of `ncly skill status`, which checks the folders of [skill] paths, the names of skills, and their SKILL.md files."
+other = "Check the skill folders, names, and files"
+
+["skill.status_pass"]
+description = "Report of `ncly skill status`: the label of a check that passed, before its id, as ncly doctor shows it. A short word, as the label of a warning."
+other = "pass"
+
+["skill.status_warn"]
+description = "Report of `ncly skill status`: the label of a check that found a problem, before its id, as ncly doctor shows it."
+other = "warn"
+
+["skill.sources_pass"]
+description = "Report of `ncly skill status`: message of the skill.sources check when every folder of [skill] paths can be read, or none is set. [skill] paths names the key and stays as is."
+other = "Every folder of [skill] paths can be read."
+
+["skill.names_pass"]
+description = "Report of `ncly skill status`: message of the skill.names check when every skill is named after its folder, or after its extension's domain."
+other = "Every skill is named after its folder or its extension."
+
+["skill.files_pass"]
+description = "Report of `ncly skill status`: message of the skill.files check when every SKILL.md can be read and holds a valid frontmatter. SKILL.md is a file name and stays as is."
+other = "Every SKILL.md is valid."
+
+["skill.name_mismatch"]
+description = "Warning SKILL_NAME_MISMATCH of `ncly skill status`, when a subfolder of [skill] paths is not named after its skill. {{.Path}} is the folder, {{.Name}} the skill's name, and {{.Folder}} the folder's name."
+other = "The skill in {{.Path}} is named {{.Name}}, not {{.Folder}}."
+
+["skill.name_mismatch_hint"]
+description = "Hint under skill.name_mismatch: what the user does next. {{.Path}} is the folder, {{.Name}} the skill's name, {{.Folder}} the folder's name, and {{.File}} the path of its SKILL.md."
+other = "Rename the folder {{.Path}} to {{.Name}}, or the name in {{.File}} to {{.Folder}}."
+
+["skill.domain_mismatch"]
+description = "Warning SKILL_NAME_MISMATCH of `ncly skill status`, when an installed extension's skill is not named after its domain. {{.Domain}} is the domain, {{.Path}} the skill's folder, and {{.Name}} the skill's name."
+other = "The skill of the extension {{.Domain}} in {{.Path}} is named {{.Name}}, not {{.Domain}}."
+
+["skill.domain_mismatch_hint"]
+description = "Hint under skill.domain_mismatch: what the user does next. {{.File}} is the path of the SKILL.md, and {{.Domain}} the extension's domain."
+other = "Rename the skill in {{.File}} to {{.Domain}}."

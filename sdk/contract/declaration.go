@@ -35,6 +35,9 @@ type Command struct {
 	// beneath it.
 	Config []string
 	Result Result
+	// Doctor marks the status command of a domain, which doctor runs to
+	// collect the extension's own checks, from M05.
+	Doctor bool
 }
 
 // Result describes what a command answers.

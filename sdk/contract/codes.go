@@ -130,6 +130,13 @@ func (r Registry) Codes() []Code {
 	return append(codes, r.warnings...)
 }
 
+// Exit returns the exit code that an error code maps to, and whether the
+// registry holds it.
+func (r Registry) Exit(c Code) (ExitCode, bool) { return r.exit(c) }
+
+// IsWarning reports whether c is a warning code of the registry.
+func (r Registry) IsWarning(c Code) bool { return r.isWarning(c) }
+
 func (r Registry) exit(c Code) (ExitCode, bool) {
 	for _, e := range r.errors {
 		if e.code == c {

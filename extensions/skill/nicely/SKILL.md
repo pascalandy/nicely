@@ -16,4 +16,4 @@ description: Use before running any ncly command.
 - `ncly doctor` and each status command marked `doctor` list their findings under `checks`, on stdout. On exit 78, relay the `hint` and `next` of each failed check to the human. Another report command lists its findings under the key that `ncly describe` gives it. `errors` holds only a failure of the command itself
 - An item error describes its item and never permits a retry
 - Give the shell a timeout longer than the command's `--timeout` plus 15 seconds of cleanup
-- Each extension ships a skill named after its domain: `ncly skill view DOMAIN`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill
+- Each extension ships a skill named after its domain: `ncly skill view DOMAIN`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill, and `ncly skill status --json` checks their folders, names, and files

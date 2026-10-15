@@ -42,8 +42,9 @@ var Extension = extension.Extension{
 	Manifest: manifest,
 	Locales:  locales,
 	Handlers: map[string]extension.Handler{
-		"skill list": list,
-		"skill view": view,
+		"skill list":   list,
+		"skill view":   view,
+		"skill status": status,
 	},
 }
 
@@ -126,12 +127,8 @@ func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, 
 	}
 	installed, err := described(ctx)
 	if err != nil {
-		return nil, nil, &contract.Problem{
-			Code:    contract.Runtime,
-			Message: p.T("skill.describe_failed"),
-			Hint:    "ncly describe --json",
-			Next:    []string{"ncly", "describe", "--json"},
-		}
+		problem := describeFailed(p)
+		return nil, nil, &problem
 	}
 	s := &scan{p: p, seen: map[string]bool{}, owner: map[string]*string{}, skills: []Skill{}}
 	if len(folders) == 0 {
@@ -143,19 +140,34 @@ func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, 
 	if fm, err := extension.ParseSkill(nicely); err == nil {
 		s.keep(Skill{Name: fm.Name, Description: fm.Description, Source: sourceBundled, content: string(nicely)})
 	}
-	for _, folder := range installed {
-		s.add(folder, sourceExtension)
+	for _, skill := range installed {
+		s.add(skill.folder, sourceExtension)
 	}
 	slices.SortStableFunc(s.skills, func(a, b Skill) int { return cmp.Compare(a.Name, b.Name) })
 	return s.skills, s.warnings, nil
 }
 
-// described returns the folder of each installed extension's skill, in the
-// order of ncly describe, whose entry of each extension's domain gives it.
+// describeFailed is the failure of a command that could not read the
+// skills of the installed extensions from ncly describe.
+func describeFailed(p *i18n.Printer) contract.Problem {
+	return contract.Problem{
+		Code:    contract.Runtime,
+		Message: p.T("skill.describe_failed"),
+		Hint:    "ncly describe --json",
+		Next:    []string{"ncly", "describe", "--json"},
+	}
+}
+
+// installedSkill is the skill folder of an installed extension, with its
+// domain.
+type installedSkill struct{ domain, folder string }
+
+// described returns the skill of each installed extension, in the order of
+// ncly describe, whose entry of each extension's domain gives its folder.
 // skill never searches for extensions itself, so it reads the skill of the
 // extension that core runs, never one that core hides. NCLY_BIN, which
 // core sets, names ncly, which starts under its own name.
-func described(ctx context.Context) ([]string, error) {
+func described(ctx context.Context) ([]installedSkill, error) {
 	bin := os.Getenv("NCLY_BIN")
 	if bin == "" {
 		return nil, errors.New("NCLY_BIN is not set")
@@ -178,19 +190,20 @@ func described(ctx context.Context) ([]string, error) {
 	var answer struct {
 		OK       bool `json:"ok"`
 		Commands []struct {
+			Path  string  `json:"path"`
 			Skill *string `json:"skill"`
 		} `json:"commands"`
 	}
 	if err := json.Unmarshal(stdout.Bytes(), &answer); err != nil || !answer.OK {
 		return nil, fmt.Errorf("ncly describe gave an answer that skill cannot read: %w", err)
 	}
-	var folders []string
+	var skills []installedSkill
 	for _, c := range answer.Commands {
 		if c.Skill != nil {
-			folders = append(folders, *c.Skill)
+			skills = append(skills, installedSkill{c.Path, *c.Skill})
 		}
 	}
-	return folders, nil
+	return skills, nil
 }
 
 // configured reads the folders of [skill] paths, each resolved from the

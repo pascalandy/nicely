@@ -41,3 +41,24 @@ values_from = { command = "skill list", key = "skills", field = "name" }
 type = "object"
 required = ["name", "path", "source", "content"]
 properties = { name = { type = "string" }, path = { type = ["string", "null"] }, source = { type = "string" }, content = { type = "string" } }
+
+[[commands]]
+path = "skill status"
+summary = "skill.status.summary"
+examples = ["ncly skill status", "ncly skill status --json", "ncly doctor skill"]
+effects = {}
+config = ["skill.paths"]
+doctor = true
+
+[commands.result]
+kind = "report"
+
+[commands.result.schema]
+type = "object"
+required = ["checks"]
+properties = { checks = { type = "array", items = { "$ref" = "#/$defs/check" } } }
+
+[commands.result.schema."$defs".check]
+type = "object"
+required = ["id", "component", "status", "message"]
+properties = { id = { type = "string" }, component = { const = "skill" }, status = { enum = ["pass", "warn"] }, code = { type = "string" }, message = { type = "string" }, hint = { type = "string" } }

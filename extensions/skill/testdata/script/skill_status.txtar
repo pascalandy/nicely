@@ -1,0 +1,109 @@
+# ncly skill status checks the skill sources: each folder of [skill] paths, the name of each
+# skill against its folder or its extension's domain, and each SKILL.md. Each problem is one
+# warn entry, each kind passes once when it finds none, and the report stays ok. ncly doctor
+# skill reports the same checks.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+chmod 755 bin/ncly-hello
+chmod 755 bin/ncly-bye
+env PATH=$WORK/bin:$PATH
+
+# Without a problem, a kind passes once, while the skill of bye, named hi, warns
+cp good.toml $CFG/config.toml
+exec ncly skill status --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"skill\.sources","component":"skill","status":"pass","message":"Every folder of \[skill\] paths can be read\."\},\{"id":"skill\.names","component":"skill","status":"warn","code":"SKILL_NAME_MISMATCH","message":"The skill of the extension bye in '${WORK@R}'/bin/ncly-bye\.skill is named hi, not bye\.","hint":"Rename the skill in '${WORK@R}'/bin/ncly-bye\.skill/SKILL\.md to bye\."\},\{"id":"skill\.files","component":"skill","status":"pass","message":"Every SKILL\.md is valid\."\}\]\}\n\z'
+! stderr .
+
+# A missing folder, a skill named after another folder, and a broken SKILL.md warn
+cp problems.toml $CFG/config.toml
+exec ncly skill status --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"skill\.sources","component":"skill","status":"warn","code":"SKILL_SOURCE_MISSING",[^}]*'${WORK@R}'/missing[^}]*\},\{"id":"skill\.names","component":"skill","status":"warn","code":"SKILL_NAME_MISMATCH","message":"The skill in '${WORK@R}'/skills/wrongdir is named right, not wrongdir\.","hint":"Rename the folder '${WORK@R}'/skills/wrongdir to right, or the name in '${WORK@R}'/skills/wrongdir/SKILL\.md to wrongdir\."\},\{"id":"skill\.names","component":"skill","status":"warn","code":"SKILL_NAME_MISMATCH","message":"The skill of the extension bye in '${WORK@R}'/bin/ncly-bye\.skill is named hi, not bye\.",[^}]*\},\{"id":"skill\.files","component":"skill","status":"warn","code":"SKILL_INVALID",[^}]*'${WORK@R}'/skills/broken/SKILL\.md[^}]*\}\]\}\n\z'
+! stdout 'skills/good'
+! stdout 'ncly-hello'
+cp stdout status.json
+exec ncly describe 'skill status' --json
+cp stdout describe.json
+schema status.json describe.json schema
+
+# ncly doctor skill lists the same checks
+exec ncly doctor skill --json
+cmp stdout status.json
+exec ncly skill status
+stdout '^warn  skill\.names  The skill in '${WORK@R}'/skills/wrongdir is named right, not wrongdir\.$'
+exec ncly --lang en-XA skill status
+pseudo stdout skill.sources skill.names skill.files
+
+# A broken config fails the command itself with CONFIG_INVALID, which doctor lists
+cp broken.toml $CFG/config.toml
+exits 78 ncly skill status --json
+answer stderr CONFIG_INVALID
+exits 78 ncly doctor skill --json
+stdout '"checks":\[\{"id":"skill\.status","component":"skill","status":"fail","code":"CONFIG_INVALID",'
+
+-- good.toml --
+[skill]
+paths = ["~/skills/good-only"]
+-- problems.toml --
+[skill]
+paths = ["~/skills", "~/missing"]
+-- broken.toml --
+[skill]
+paths = "~/skills"
+-- skills/good-only/fine/SKILL.md --
+---
+name: fine
+description: A fine skill.
+---
+-- skills/good/SKILL.md --
+---
+name: good
+description: A good skill.
+---
+-- skills/wrongdir/SKILL.md --
+---
+name: right
+description: Named after another folder.
+---
+-- skills/broken/SKILL.md --
+no frontmatter
+-- bin/ncly-hello --
+#!/bin/sh
+exit 0
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+-- bin/ncly-hello.skill/SKILL.md --
+---
+name: hello
+description: Use hello.
+---
+-- bin/ncly-bye --
+#!/bin/sh
+exit 0
+-- bin/ncly-bye.toml --
+format_version = 1
+contract_version = 1
+domain = "bye"
+
+[[commands]]
+path = "bye"
+summary = "bye.summary"
+-- bin/ncly-bye.locales/en.toml --
+["bye.summary"]
+description = "Summary of the fixture."
+other = "Say goodbye"
+-- bin/ncly-bye.skill/SKILL.md --
+---
+name: hi
+description: Named after another domain.
+---

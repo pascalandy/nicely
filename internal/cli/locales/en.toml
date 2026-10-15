@@ -161,6 +161,10 @@ other = "{{.File}} gives the program \"{{.Name}}\" an empty probe, which must ho
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Name}} a program of its programs table, such as ffmpeg, and {{.Manager}} the name of a package manager, such as brew or pacman, which stays as is."
 other = "{{.File}} gives the program \"{{.Name}}\" an empty install command for \"{{.Manager}}\"."
 
+["extension.doctor"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run, which sets doctor, a key that stays as is, as do report, live, timeout, effects, and the mode names."
+other = "{{.File}} sets doctor on the command \"{{.Path}}\", which must be the status command of its domain: <domain> status, a report without arguments or flag groups, whose only flags are live, a switch that defaults to false, and timeout, a string, neither required nor with values, with effects that neither write nor bill, live when they use the network, and no mode."
+
 ["extension.key"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys and keychain stay as is."
 other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain."
@@ -176,6 +180,42 @@ other = "Check this machine's config, tools, and extensions"
 ["doctor.component"]
 description = "Help page: summary of the component argument of `ncly doctor`, a part that doctor checks, such as core or the domain of an extension."
 other = "The part to check, such as core; all of them when omitted"
+
+["doctor.live"]
+description = "Help page: summary of the --live switch of `ncly doctor`, which adds network checks against free endpoints, passed on to each status command that declares it."
+other = "Add network checks against free endpoints, which never bill"
+
+["doctor.status_invalid"]
+description = "Report of `ncly doctor`: message of the failed <domain>.status check when doctor rejects the answer of an extension's status command. {{.Domain}} is the extension's domain, and {{.Reason}} the rule that the answer breaks, a sentence that ends with a period."
+other = "The status command of {{.Domain}} gave an answer that doctor rejects: {{.Reason}}"
+
+["doctor.status_failed"]
+description = "Report of `ncly doctor`: message of the failed <domain>.status check when an extension's status command failed with an exit code that is neither 0 nor 78. {{.Domain}} is the domain, and {{.Exit}} the exit code."
+other = "The status command of {{.Domain}} failed with exit {{.Exit}}."
+
+["doctor.status_timeout"]
+description = "Report of `ncly doctor`: message of the failed <domain>.status check when an extension's status command had not answered when the time of --timeout ended. {{.Domain}} is the domain, and --timeout a flag that stays as is."
+other = "The status command of {{.Domain}} did not answer within --timeout."
+
+["doctor.rule_shape"]
+description = "Reason inside doctor.status_invalid: a check of a status command's answer is no check object. {{.Index}} counts the checks from 1. id, component, status, message, pass, warn, and fail are keys and values that stay as is."
+other = "its check {{.Index}} is no check of a status command, with a status of pass, warn, or fail, a message, and no key of the extensions component."
+
+["doctor.rule_component"]
+description = "Reason inside doctor.status_invalid: a check of a status command belongs to another component. {{.Index}} counts the checks from 1, {{.ID}} and {{.Component}} are the check's id and component, and {{.Domain}} the extension's domain."
+other = "its check {{.Index}}, {{.ID}} of the component {{.Component}}, must belong to {{.Domain}}, with an id that starts with {{.Domain}} and a dot."
+
+["doctor.rule_code"]
+description = "Reason inside doctor.status_invalid: the code of a check does not fit its status. {{.Index}} counts the checks from 1, {{.ID}} is its id, {{.Status}} its status, pass, warn, or fail, and {{.Code}} its code. The status words stay as is."
+other = "its check {{.Index}}, {{.ID}}, has the status {{.Status}} with the code \"{{.Code}}\": a pass has no code nor hint, a fail has a code that maps to exit 78, and a warn has a warning code."
+
+["doctor.rule_hint"]
+description = "Reason inside doctor.status_invalid: a check that warns or fails lacks its hint, or its next is no list of words. {{.Index}} counts the checks from 1, and {{.ID}} is its id. next is a key that stays as is."
+other = "its check {{.Index}}, {{.ID}}, lacks a hint, or its next is no list of words."
+
+["doctor.rule_verdict"]
+description = "Reason inside doctor.status_invalid: the exit code of a status command disagrees with its checks. {{.Exit}} is the exit code."
+other = "it exited with {{.Exit}}, while a report exits 78 exactly when one of its checks fails."
 
 ["doctor.timeout"]
 description = "Help page: summary of the --timeout flag of `ncly doctor`, which bounds the checks. 30s and the examples are durations that stay as is."

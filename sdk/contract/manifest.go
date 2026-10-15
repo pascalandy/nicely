@@ -187,6 +187,7 @@ type manifestFile struct {
 			Keys []string `toml:"keys"`
 		} `toml:"requires"`
 		Config []string `toml:"config"`
+		Doctor bool     `toml:"doctor"`
 		Result struct {
 			Kind         string         `toml:"kind"`
 			Schema       map[string]any `toml:"schema"`
@@ -239,6 +240,7 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 			Modes:    Modes(raw.Modes),
 			Requires: Requires(raw.Requires),
 			Config:   raw.Config,
+			Doctor:   raw.Doctor,
 			Result:   Result{Kind: ResultKind(raw.Result.Kind), Schema: raw.Result.Schema, DryRunSchema: raw.Result.DryRunSchema},
 		}
 		if c.Result.Kind == "" {
@@ -336,6 +338,9 @@ func (m Manifest) check() error {
 		if err := m.checkConfig(path, c); err != nil {
 			return err
 		}
+		if c.Doctor && !m.IsStatus(c) {
+			return broken("extension.doctor", map[string]any{"Path": path})
+		}
 		if err := checkResult(path, &m.Commands[i]); err != nil {
 			return err
 		}
@@ -425,6 +430,32 @@ func (m Manifest) checkValuesFrom(path string, c Command) error {
 func (m Manifest) Qualifies(c Command) bool {
 	return m.Runs(c) && c.Path[len(c.Path)-1] == "list" && len(c.Args) == 0 &&
 		c.Result.Kind == ResultObject && c.Effects != nil && !c.Effects.UserWrites && !c.Effects.Paid
+}
+
+// IsStatus reports whether a command qualifies as the status command of
+// its domain, as Status command in contract.md defines it: the domain
+// followed by status, which runs, answers a report, takes no argument and
+// no flag group, has live and timeout as its only own flags, neither
+// required nor limited to values, with live a switch that defaults to
+// false and timeout a string, declares effects that neither write nor
+// bill, and live when they use the network, and sets no mode.
+func (m Manifest) IsStatus(c Command) bool {
+	live := false
+	for _, f := range c.Flags {
+		switch {
+		case f.Required || len(f.Values) > 0 || f.Variadic || f.ValuesFrom != nil:
+			return false
+		case f.Name == "live" && f.Value == "" && f.FlagType() == TypeBoolean && (f.Default == nil || f.Default == false):
+			live = true
+		case f.Name == "timeout" && f.Value != "" && f.FlagType() == TypeString:
+		default:
+			return false
+		}
+	}
+	return slices.Equal(c.Path, []string{m.Domain, "status"}) && m.Runs(c) &&
+		c.Result.Kind == ResultReport && len(c.Args) == 0 && len(c.FlagGroups) == 0 &&
+		c.Effects != nil && !c.Effects.UserWrites && !c.Effects.Paid && (!c.Effects.Network || live) &&
+		!c.Modes.DryRun && !c.Modes.Recorded && !c.Modes.Resume
 }
 
 // checkValues applies the rules of types, requiredness, variadic values,

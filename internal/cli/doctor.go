@@ -1,11 +1,14 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"io"
 	"maps"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -31,7 +34,10 @@ var doctorCommand = contract.Command{
 	Result:  contract.Result{Kind: contract.ResultReport, Schema: mustSchema(doctorSchema)},
 	Summary: "doctor.summary",
 	Args:    []contract.Arg{{Name: "component", Summary: "doctor.component"}},
-	Flags:   []contract.Flag{{Name: "timeout", Value: "duration", Summary: "doctor.timeout", Default: "30s"}},
+	Flags: []contract.Flag{
+		{Name: "live", Summary: "doctor.live"},
+		{Name: "timeout", Value: "duration", Summary: "doctor.timeout", Default: "30s"},
+	},
 	Effects: &contract.Effects{},
 	Examples: []string{
 		`ncly doctor`,
@@ -97,19 +103,22 @@ type component struct {
 // one fails, as a report command does. It starts no extension, and runs
 // the version probes one at a time, because the cleanup of the runner
 // reaches every descendant of ncly.
-func addDoctor(p *i18n.Printer, root *cobra.Command, extensions []*extension) {
+func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension) {
 	root.AddCommand(command.Build(p, p, doctorCommand, func(c *cobra.Command, args []string) error {
 		timeout, problem := parseTimeout(p, c.Flag("timeout"))
 		if problem != nil {
 			return command.Fail(*problem)
 		}
-		probes := &prober{p: p, ctx: runner.OnSignal(), deadline: time.Now().Add(timeout)}
+		live, _ := c.Flags().GetBool("live")
+		probes := &prober{p: p, g: g, live: live, ctx: runner.OnSignal(), deadline: time.Now().Add(timeout)}
 		components := []component{
 			{name: "core", checks: func() []check { return coreChecks(p, extensions) }},
 			{name: "extensions", checks: func() []check { return extensionChecks(p, extensions) }},
 		}
 		for _, e := range extensions {
-			components = append(components, component{name: e.domain, checks: func() []check { return probes.programs(e) }, extension: e})
+			components = append(components, component{name: e.domain, checks: func() []check {
+				return append(probes.programs(e), probes.status(e)...)
+			}, extension: e})
 		}
 		if len(args) > 0 {
 			i := slices.IndexFunc(components, func(c component) bool { return c.name == args[0] })
@@ -321,7 +330,7 @@ func extensionChecks(p *i18n.Printer, extensions []*extension) []check {
 func parseTimeout(p *i18n.Printer, flag *pflag.Flag) (time.Duration, *contract.Problem) {
 	value := flag.Value.String()
 	if !flag.Changed {
-		value = doctorCommand.Flags[0].Default.(string)
+		value = doctorCommand.Flags[1].Default.(string)
 	}
 	d, err := time.ParseDuration(value)
 	if seconds, convErr := strconv.ParseUint(value, 10, 31); convErr == nil {
@@ -338,6 +347,8 @@ func parseTimeout(p *i18n.Printer, flag *pflag.Flag) (time.Duration, *contract.P
 // left of --timeout.
 type prober struct {
 	p        *i18n.Printer
+	g        command.Globals
+	live     bool
 	ctx      context.Context
 	deadline time.Time
 	// spent is set once a check ran out of time, so that no other starts.
@@ -412,6 +423,133 @@ func (pr *prober) programs(e *extension) []check {
 		checks = append(checks, c)
 	}
 	return checks
+}
+
+// status runs the status command that an extension's manifest marks with
+// doctor, after its probes, and returns its checks when its whole answer
+// holds, or one <domain>.status check in place of an answer that doctor
+// cannot list, as Status command in contract.md defines.
+func (pr *prober) status(e *extension) []check {
+	i := slices.IndexFunc(e.manifest.Commands, func(d contract.Command) bool { return d.Doctor })
+	if e.broken != nil || i < 0 || pr.signal != nil {
+		return nil
+	}
+	d := e.manifest.Commands[i]
+	data := map[string]any{"Domain": e.domain, "Name": strings.Join(d.Path, " "), "Path": e.path}
+	failed := func(code contract.Code, message, hint string, next []string) []check {
+		return []check{{ID: e.domain + ".status", Component: e.domain, Status: statusFail, Code: code, Message: message, Hint: hint, Next: next}}
+	}
+	timedOut := func(message string) []check {
+		pr.spent = true
+		return failed(contract.CheckTimeout, message, pr.p.T("doctor.timeout_hint"), nil)
+	}
+	invalid := func(reason string) []check {
+		data["Reason"] = reason
+		return failed(contract.ExtensionInvalid, pr.p.T("doctor.status_invalid", data), pr.p.T("extension.invalid_hint", data), nil)
+	}
+	left := time.Until(pr.deadline)
+	if pr.spent || left <= 0 {
+		return timedOut(pr.p.T("doctor.not_started", data))
+	}
+	args := slices.Clone(d.Path[1:])
+	for _, f := range d.Flags {
+		switch {
+		case f.Name == "live" && pr.live:
+			args = append(args, "--live=true")
+		case f.Name == "timeout":
+			args = append(args, "--timeout="+strconv.FormatInt(int64(math.Ceil(left.Seconds())), 10)+"s")
+		}
+	}
+	var stdout bytes.Buffer
+	stderr := &heldLines{dest: io.Discard}
+	program := runner.Program{
+		Path:   e.path,
+		Args:   append(args, "--"),
+		Env:    runner.Environ(os.Environ(), extensionVars(withJSON(pr.g))),
+		Stdout: &stdout,
+		Stderr: stderr,
+		Limit:  left,
+	}
+	if e.bundled {
+		program.Name = executablePrefix + e.domain
+	}
+	result, err := runner.Run(pr.ctx, program)
+	data["Exit"] = result.Exit
+	switch {
+	case err != nil:
+		return invalid(pr.p.T("extension.start_failed", data))
+	case result.Signal != nil:
+		pr.signal = result.Signal
+		return nil
+	case result.TimedOut:
+		return timedOut(pr.p.T("doctor.status_timeout", data))
+	}
+	answer, err := contract.CheckAnswer(e.manifest, contract.ResultReport, contract.Reply{Exit: result.Exit, Stdout: stdout.Bytes(), Last: stderr.finish()})
+	var rule *contract.RuleError
+	switch {
+	case errors.As(err, &rule):
+		return invalid(pr.p.T(rule.Rule, rule.Data))
+	case err != nil:
+		return invalid(pr.p.T("extension.answer_json", data))
+	case result.Exit != int(contract.ExitOK) && result.Exit != int(contract.ExitHuman):
+		return failed(contract.ExtensionInvalid, pr.p.T("doctor.status_failed", data), pr.p.T("extension.invalid_hint", data), nil)
+	}
+	var reply struct {
+		OK     bool               `json:"ok"`
+		Checks []json.RawMessage  `json:"checks"`
+		Errors []contract.Problem `json:"errors"`
+	}
+	if err := json.Unmarshal(answer.Line, &reply); err != nil {
+		return invalid(pr.p.T("extension.answer_json", data))
+	}
+	if len(reply.Errors) > 0 {
+		lead := reply.Errors[0]
+		return failed(lead.Code, lead.Message, lead.Hint, lead.Next)
+	}
+	checks, reason := statusChecks(pr.p, e, reply.Checks, result.Exit)
+	if reason != "" {
+		return invalid(reason)
+	}
+	return checks
+}
+
+// statusChecks reads the checks of a status command's report, or names the
+// rule that one of them, or the verdict of the report, breaks: each check
+// belongs to the domain, a pass holds no code nor hint, a failure's code
+// maps to exit 78 and a warning's is a warning code, each holds a hint,
+// and the exit code is 78 exactly when a check fails.
+func statusChecks(p *i18n.Printer, e *extension, raw []json.RawMessage, exit int) ([]check, string) {
+	registry := e.manifest.Registry()
+	checks := []check{}
+	failed := false
+	for i, r := range raw {
+		var c check
+		data := map[string]any{"Index": i + 1, "Domain": e.domain}
+		if err := json.Unmarshal(r, &c); err != nil || c.extensionKeys != nil {
+			return nil, p.T("doctor.rule_shape", data)
+		}
+		data["ID"], data["Component"], data["Code"], data["Status"] = c.ID, c.Component, c.Code, c.Status
+		code, isError := registry.Exit(c.Code)
+		switch {
+		case c.Component != e.domain || !strings.HasPrefix(c.ID, e.domain+".") || len(c.ID) == len(e.domain)+1:
+			return nil, p.T("doctor.rule_component", data)
+		case c.Message == "" || !slices.Contains([]string{statusPass, statusWarn, statusFail}, c.Status):
+			return nil, p.T("doctor.rule_shape", data)
+		case c.Status == statusPass && (c.Code != "" || c.Hint != "" || c.Next != nil),
+			c.Status == statusFail && (!isError || code != contract.ExitHuman),
+			c.Status == statusWarn && !registry.IsWarning(c.Code):
+			return nil, p.T("doctor.rule_code", data)
+		case c.Status != statusPass && c.Hint == "",
+			c.Next != nil && (len(c.Next) == 0 || slices.Contains(c.Next, "")):
+			return nil, p.T("doctor.rule_hint", data)
+		}
+		failed = failed || c.Status == statusFail
+		checks = append(checks, c)
+	}
+	if failed != (exit == int(contract.ExitHuman)) {
+		return nil, p.T("doctor.rule_verdict", map[string]any{"Exit": exit})
+	}
+	return checks, ""
 }
 
 // writeChecks prints one line per check: its status, its id, and its
