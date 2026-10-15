@@ -6,6 +6,18 @@ other = "Find the skills that teach agents"
 description = "Summary of `ncly skill list`."
 other = "List the skills of every source"
 
+["skill.view.summary"]
+description = "Summary of `ncly skill view`, which prints the SKILL.md of one skill."
+other = "Show the instructions of one skill"
+
+["skill.view.name"]
+description = "Help of `ncly skill view`: the name argument, the name of a skill as `ncly skill list` gives it."
+other = "The name of the skill, as ncly skill list gives it"
+
+["skill.not_found"]
+description = "Error NOT_FOUND of `ncly skill view` when no skill has the name. {{.Name}} is the name that the user gave."
+other = "No skill is named {{.Name}}."
+
 ["skill.config_invalid"]
 description = "Error CONFIG_INVALID of `ncly skill list` when a config file cannot be read or is invalid, with no line number. {{.File}} is the path of the file."
 other = "{{.File}} is not a valid config file."

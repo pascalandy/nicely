@@ -34,6 +34,7 @@ var Extension = extension.Extension{
 	Locales:  locales,
 	Handlers: map[string]extension.Handler{
 		"skill list": list,
+		"skill view": view,
 	},
 }
 
@@ -43,6 +44,8 @@ type Skill struct {
 	Description string  `json:"description"`
 	Path        *string `json:"path"`
 	Source      string  `json:"source"`
+	// content is the SKILL.md, which view prints.
+	content string
 }
 
 // sourceConfig is the source of a skill of a folder of [skill] paths.
@@ -56,12 +59,56 @@ const (
 )
 
 func list(_ context.Context, call extension.Call) contract.Outcome {
+	skills, warnings, problem := gather(call.Printer)
+	if problem != nil {
+		return contract.Outcome{Errors: []contract.Problem{*problem}}
+	}
+	if !call.JSON {
+		write(call.Stdout, skills)
+	}
+	return contract.Outcome{Data: map[string]any{"skills": skills}, Warnings: warnings}
+}
+
+// view prints the SKILL.md of one skill that list returns, after a line
+// that gives its folder, so that the relative paths inside it resolve. It
+// adds none of the warnings of list, which describe other skills.
+func view(_ context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
+	skills, _, problem := gather(p)
+	if problem != nil {
+		return contract.Outcome{Errors: []contract.Problem{*problem}}
+	}
+	name := call.Args[0]
+	i := slices.IndexFunc(skills, func(s Skill) bool { return s.Name == name })
+	if i < 0 {
+		return contract.Outcome{Errors: []contract.Problem{{
+			Code:    contract.NotFound,
+			Message: p.T("skill.not_found", map[string]any{"Name": name}),
+			Hint:    "ncly skill list",
+			Next:    []string{"ncly", "skill", "list"},
+		}}}
+	}
+	s := skills[i]
+	if !call.JSON {
+		if s.Path != nil {
+			_, _ = fmt.Fprintf(call.Stdout, "<!-- skill-dir: %s -->\n", *s.Path)
+		}
+		_, _ = io.WriteString(call.Stdout, s.content)
+		if !strings.HasSuffix(s.content, "\n") {
+			_, _ = io.WriteString(call.Stdout, "\n")
+		}
+	}
+	return contract.Outcome{Data: map[string]any{"name": s.Name, "path": s.Path, "source": s.Source, "content": s.content}}
+}
+
+// gather returns the skills of every source, sorted by name byte by byte,
+// with the warnings of list, or the problem of a broken config.
+func gather(p *i18n.Printer) ([]Skill, []contract.Problem, *contract.Problem) {
 	home, _ := os.UserHomeDir()
 	paths := config.Locate(home, os.LookupEnv)
 	folders, file, problem := configured(p, home, paths)
 	if problem != nil {
-		return contract.Outcome{Errors: []contract.Problem{*problem}}
+		return nil, nil, problem
 	}
 	s := &scan{p: p, seen: map[string]bool{}, owner: map[string]string{}, skills: []Skill{}}
 	if len(folders) == 0 {
@@ -71,10 +118,7 @@ func list(_ context.Context, call extension.Call) contract.Outcome {
 		s.folder(folder, file)
 	}
 	slices.SortStableFunc(s.skills, func(a, b Skill) int { return cmp.Compare(a.Name, b.Name) })
-	if !call.JSON {
-		write(call.Stdout, s.skills)
-	}
-	return contract.Outcome{Data: map[string]any{"skills": s.skills}, Warnings: s.warnings}
+	return s.skills, s.warnings, nil
 }
 
 // configured reads the folders of [skill] paths, each resolved from the
@@ -182,7 +226,7 @@ func (s *scan) add(path string) {
 		return
 	}
 	s.owner[fm.Name] = path
-	s.skills = append(s.skills, Skill{Name: fm.Name, Description: fm.Description, Path: &path, Source: sourceConfig})
+	s.skills = append(s.skills, Skill{Name: fm.Name, Description: fm.Description, Path: &path, Source: sourceConfig, content: string(data)})
 }
 
 // write prints one line per skill: its name, then its description on one

@@ -1,0 +1,103 @@
+# ncly skill view prints the SKILL.md of one skill, after a first line that gives its folder,
+# so that the relative paths inside the skill resolve. --json returns its name, path,
+# source, and content. An unknown name, or a skill that list omits as invalid, answers
+# NOT_FOUND with exit 2 and the next ncly skill list, which crosses core's answer check.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+cp config.toml $CFG/config.toml
+
+# The text view gives the folder, then the file as it is, and writes nothing
+snapshot before
+exec ncly skill view alpha
+cmpenv stdout want-alpha.txt
+! stderr .
+exec ncly skill view alpha --json
+cmpenv stdout want-alpha.json
+! stderr .
+unchanged before
+
+# The answer matches the schema that describe gives, and the help agrees with describe
+cp stdout alpha.json
+exec ncly describe 'skill view' --json
+cp stdout describe.json
+schema alpha.json describe.json schema
+exec ncly skill view --help
+cp stdout help.txt
+agree help.txt describe.json
+
+# view adds none of the warnings of list, and the first of two skills that share a name wins
+exec ncly skill list --json
+stdout '"code":"SKILL_SHADOWED"'
+stdout '"code":"SKILL_INVALID"'
+stdout '"code":"SKILL_SOURCE_MISSING"'
+exec ncly skill view dup --json
+stdout '"path":"'${WORK@R}'/skills/dup-first",'
+! stdout warnings
+
+# An unknown name, or a skill that list omits as invalid, is NOT_FOUND, whose next lists
+# the skills
+exits 2 ncly skill view nope --json
+! stdout .
+answer stderr NOT_FOUND
+stderr '^\{"ok":false,"contract_version":1,"errors":\[\{"code":"NOT_FOUND","message":"No skill is named nope\.","hint":"ncly skill list","next":\["ncly","skill","list"\]\}\]\}$'
+exits 2 ncly skill view broken --json
+answer stderr NOT_FOUND
+exits 2 ncly skill view Alpha --json
+answer stderr NOT_FOUND
+exits 2 ncly skill view nope
+! stdout .
+stderr '^error\[NOT_FOUND\]: No skill is named nope\.$'
+stderr 'ncly skill list'
+exits 2 ncly --lang en-XA skill view nope
+pseudo stderr skill list
+
+# A name is required, and a broken config fails view as it fails list
+exits 2 ncly skill view --json
+answer stderr USAGE_INVALID
+cp broken.toml $CFG/config.toml
+exits 78 ncly skill view alpha --json
+answer stderr CONFIG_INVALID
+
+-- config.toml --
+[skill]
+paths = ["~/gone", "~/skills"]
+-- broken.toml --
+[skill
+-- want-alpha.txt --
+<!-- skill-dir: $WORK/skills/alpha -->
+---
+name: alpha
+description: Use for alpha.
+---
+
+# Alpha
+
+Read [the notes](references/notes.md) "as quoted".
+-- want-alpha.json --
+{"ok":true,"contract_version":1,"content":"---\nname: alpha\ndescription: Use for alpha.\n---\n\n# Alpha\n\nRead [the notes](references/notes.md) \"as quoted\".\n","name":"alpha","path":"$WORK/skills/alpha","source":"config"}
+-- skills/alpha/SKILL.md --
+---
+name: alpha
+description: Use for alpha.
+---
+
+# Alpha
+
+Read [the notes](references/notes.md) "as quoted".
+-- skills/alpha/references/notes.md --
+Notes.
+-- skills/broken/SKILL.md --
+---
+name: broken
+---
+-- skills/dup-first/SKILL.md --
+---
+name: dup
+description: Use the first.
+---
+-- skills/dup-second/SKILL.md --
+---
+name: dup
+description: Use the second.
+---

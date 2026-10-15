@@ -5,7 +5,7 @@ domain = "skill"
 [[commands]]
 path = "skill"
 summary = "skill.summary"
-examples = ["ncly skill list", "ncly skill list --json"]
+examples = ["ncly skill list", "ncly skill view nicely"]
 
 [[commands]]
 path = "skill list"
@@ -23,3 +23,20 @@ properties = { skills = { type = "array", items = { "$ref" = "#/$defs/skill" } }
 type = "object"
 required = ["name", "description", "path", "source"]
 properties = { name = { type = "string" }, description = { type = "string" }, path = { type = ["string", "null"] }, source = { type = "string" } }
+
+[[commands]]
+path = "skill view"
+summary = "skill.view.summary"
+examples = ["ncly skill view nicely", "ncly skill view nicely --json"]
+effects = {}
+config = ["skill.paths"]
+
+[[commands.args]]
+name = "name"
+summary = "skill.view.name"
+required = true
+
+[commands.result.schema]
+type = "object"
+required = ["name", "path", "source", "content"]
+properties = { name = { type = "string" }, path = { type = ["string", "null"] }, source = { type = "string" }, content = { type = "string" } }
