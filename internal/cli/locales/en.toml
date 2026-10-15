@@ -229,6 +229,10 @@ other = "The extension {{.Domain}} failed with exit {{.Exit}}, and its answer ho
 description = "Error when an entry of errors or warnings in an extension's answer lacks the strings code, message, and hint. {{.Domain}} is its domain. errors, warnings, code, message, and hint are keys and stay as is."
 other = "The answer of the extension {{.Domain}} has an error or a warning without the strings code, message, and hint."
 
+["extension.answer_next"]
+description = "Error when an entry of errors or warnings in an extension's answer holds a next that is not a non-empty array of strings. {{.Domain}} is its domain. errors, warnings, and next are keys and stay as is."
+other = "The answer of the extension {{.Domain}} has an error or a warning whose next is not a non-empty array of strings."
+
 ["extension.answer_code"]
 description = "Error when a code in an extension's answer is not uppercase letters, digits, and underscores. {{.Domain}} is its domain, and {{.Code}} the code."
 other = "The answer of the extension {{.Domain}} has the code {{.Code}}, which is not uppercase letters, digits, and underscores."

@@ -235,7 +235,8 @@ func (a *answerParts) decode(keys map[string]json.RawMessage) error {
 }
 
 // problemList reads an array of problems that each hold the strings code,
-// message, and hint. An absent key is an empty list.
+// message, and hint, and, when present, next, a non-empty array of strings.
+// An absent key is an empty list.
 func problemList(raw json.RawMessage) ([]Problem, error) {
 	if raw == nil {
 		return nil, nil
@@ -249,6 +250,9 @@ func problemList(raw json.RawMessage) ([]Problem, error) {
 		var p Problem
 		if !jsonString(entry["code"], (*string)(&p.Code)) || !jsonString(entry["message"], &p.Message) || !jsonString(entry["hint"], &p.Hint) {
 			return nil, errors.New("extension.answer_problem")
+		}
+		if next, present := entry["next"]; present && !jsonWords(next, &p.Next) {
+			return nil, errors.New("extension.answer_next")
 		}
 		list = append(list, p)
 	}
@@ -271,6 +275,22 @@ func jsonBool(raw json.RawMessage) (value, isBool bool) {
 // Unmarshal would read null as "".
 func jsonString(raw json.RawMessage, s *string) bool {
 	return len(raw) > 0 && raw[0] == '"' && json.Unmarshal(raw, s) == nil
+}
+
+// jsonWords reads a raw value that must be a non-empty array of strings.
+// Unmarshal would read null, and a null word, as empty.
+func jsonWords(raw json.RawMessage, words *[]string) bool {
+	var items []json.RawMessage
+	if json.Unmarshal(raw, &items) != nil || len(items) == 0 {
+		return false
+	}
+	*words = make([]string, len(items))
+	for i, item := range items {
+		if !jsonString(item, &(*words)[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 // invalidCode returns the first code that is not uppercase letters, digits,

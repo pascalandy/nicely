@@ -59,6 +59,31 @@ exits 1 ncly hello case nullhint --json
 answer stderr RUNTIME
 stderr 'without the strings code, message, and hint'
 
+# next, when present, is a non-empty array of strings, in an error, a warning, or an item.
+# An extension built on the SDK cannot give any other next
+exits 1 ncly hello case nextempty --json
+answer stderr RUNTIME
+stderr 'has an error or a warning whose next is not a non-empty array of strings'
+exits 1 ncly hello case nextstring --json
+answer stderr RUNTIME
+stderr 'whose next is not a non-empty array of strings'
+exits 1 ncly hello case nextnumber --json
+answer stderr RUNTIME
+stderr 'whose next is not a non-empty array of strings'
+exits 1 ncly hello case nextnullword --json
+answer stderr RUNTIME
+stderr 'whose next is not a non-empty array of strings'
+exits 1 ncly hello case nextnull --json
+answer stderr RUNTIME
+stderr 'whose next is not a non-empty array of strings'
+exits 1 ncly hello case warningnext --json
+! stdout .
+answer stderr RUNTIME
+stderr 'whose next is not a non-empty array of strings'
+exits 1 ncly hello case itemnext --json
+answer stderr RUNTIME
+stderr 'whose next is not a non-empty array of strings'
+
 # A valid answer passes unchanged
 exec ncly hello case success --json
 cmp stdout success.json
@@ -68,6 +93,10 @@ exits 1 ncly hello case grumpy --json
 answer stderr HELLO_GRUMPY
 exits 1 ncly hello case future --json
 answer stderr FUTURE_CODE
+exits 2 ncly hello case next --json
+! stdout .
+answer stderr NOT_FOUND
+cmp stderr want-next.txt
 exec ncly hello case warning --json
 answer stdout ok
 stdout '"code":"HELLO_UNNAMED"'
@@ -148,6 +177,14 @@ case:temporary75) echo "{\"ok\":false,\"contract_version\":1,\"results\":[{\"ok\
 case:exit3) echo "$grumpy" >&2; exit 3 ;;
 case:itemnull) echo "{\"ok\":false,\"contract_version\":1,\"results\":[{\"ok\":null,\"errors\":[$(problem TEMPORARY)]}],\"errors\":[$(problem TEMPORARY)]}" >&2; exit 75 ;;
 case:nullhint) echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m","hint":null}]}' >&2; exit 1 ;;
+case:nextempty) echo '{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"h","next":[]}]}' >&2; exit 2 ;;
+case:nextstring) echo '{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"h","next":"ncly"}]}' >&2; exit 2 ;;
+case:nextnumber) echo '{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"h","next":["ncly",1]}]}' >&2; exit 2 ;;
+case:nextnullword) echo '{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"h","next":["ncly",null]}]}' >&2; exit 2 ;;
+case:nextnull) echo '{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"m","hint":"h","next":null}]}' >&2; exit 2 ;;
+case:warningnext) echo '{"ok":true,"contract_version":1,"warnings":[{"code":"HELLO_UNNAMED","message":"m","hint":"h","next":[]}]}' ;;
+case:itemnext) echo '{"ok":false,"contract_version":1,"results":[{"ok":false,"errors":[{"code":"RUNTIME","message":"m","hint":"h","next":{}}]}],"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}' >&2; exit 1 ;;
+case:next) cat "$WORK/want-next.txt" >&2; exit 2 ;;
 case:success) cat "$WORK/success.json" ;;
 case:artifact) echo done > "$WORK/artifact.txt"; echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\",\"results\":[{\"ok\":true,\"path\":\"/Users/me/out/a.txt\"}],\"warnings\":[$(problem HELLO_UNNAMED)]}" ;;
 case:grumpy) echo "$grumpy" >&2; exit 1 ;;
@@ -218,6 +255,8 @@ other = "Report on greetings"
 ["hello.say.summary"]
 description = "Summary of hello say."
 other = "Say hello as text"
+-- want-next.txt --
+{"ok":false,"contract_version":1,"errors":[{"code":"NOT_FOUND","message":"No such case.","hint":"ncly hello case success","next":["ncly","hello","case","success"]}]}
 -- success.json --
 {"ok":true,"contract_version":1,"greeting":"Hello Ada"}
 -- want-diagnostics.txt --
