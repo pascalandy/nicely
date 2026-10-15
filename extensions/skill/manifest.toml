@@ -35,6 +35,7 @@ config = ["skill.paths"]
 name = "name"
 summary = "skill.view.name"
 required = true
+values_from = { command = "skill list", key = "skills", field = "name" }
 
 [commands.result.schema]
 type = "object"

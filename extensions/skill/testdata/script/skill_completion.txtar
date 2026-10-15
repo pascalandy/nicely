@@ -1,0 +1,38 @@
+# The name argument of skill view declares values_from on skill list, so ncly skill view
+# <Tab> suggests the names that ncly skill list returns, and ncly describe shows it.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+cp config.toml $CFG/config.toml
+
+exec ncly __complete skill view ''
+stdout '^alpha$'
+stdout '^nicely$'
+stdout '^:4$'
+exec ncly __complete skill view n
+stdout '^nicely$'
+! stdout alpha
+exec ncly describe 'skill view' --json
+stdout '"args":\[\{"name":"name",[^]]*"values":\[\],"values_from":\{"command":"skill list","key":"skills","field":"name"\}\}\]'
+
+# values_from only suggests: a name that completion did not offer still reaches view, which
+# answers NOT_FOUND
+exits 2 ncly skill view zzz --json
+answer stderr NOT_FOUND
+
+# When skill list fails, as on a broken config, completion suggests nothing and prints
+# nothing
+cp broken.toml $CFG/config.toml
+exec ncly __complete skill view ''
+stdout '\A:4\n\z'
+
+-- config.toml --
+[skill]
+paths = ["~/skills"]
+-- broken.toml --
+[skill
+-- skills/alpha/SKILL.md --
+---
+name: alpha
+description: Use for alpha.
+---
