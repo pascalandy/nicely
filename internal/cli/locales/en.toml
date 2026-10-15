@@ -205,6 +205,26 @@ other = "{{.File}} holds the unknown key {{.Key}}."
 description = "Report of `ncly doctor`: hint under doctor.unknown_key, what the user does next. {{.Key}} is the key, which stays as is, and {{.File}} the path of the file."
 other = "Remove or rename {{.Key}} in {{.File}}."
 
+["doctor.extension_runs"]
+description = "Report of `ncly doctor`: message of the extensions.<domain> check of an extension that runs. {{.Domain}} is its domain, such as transcript, and {{.Path}} the path of its executable."
+other = "{{.Domain}} runs from {{.Path}}."
+
+["doctor.extension_bundled"]
+description = "Report of `ncly doctor`: message of the extensions.<domain> check of an extension compiled into ncly, which runs. {{.Domain}} is its domain, such as skill."
+other = "{{.Domain}} is bundled with ncly."
+
+["doctor.extension_hidden"]
+description = "Report of `ncly doctor`: message of the extensions.<domain> check of an extension that never runs, because discovery finds another one of the same domain first. {{.Path}} is the path of the hidden executable, and {{.Winner}} the path of the one that runs."
+other = "{{.Path}} never runs, because {{.Winner}} comes first."
+
+["doctor.extension_hidden_by_core"]
+description = "Report of `ncly doctor`: message of the extensions.<domain> check of an executable that never runs, because core keeps its name for one of its own commands. {{.Path}} is the path of the executable, and {{.Domain}} the name, such as describe, which stays as is."
+other = "{{.Path}} never runs, because ncly reserves the name {{.Domain}}."
+
+["doctor.extension_hidden_by_bundled"]
+description = "Report of `ncly doctor`: message of the extensions.<domain> check of an executable that never runs, because ncly bundles an extension of the same domain. {{.Path}} is the path of the executable, and {{.Domain}} the domain, such as skill, which stays as is."
+other = "{{.Path}} never runs, because ncly bundles the extension {{.Domain}}."
+
 ["describe.defaults_used"]
 description = "Warning of `ncly describe` when a config file cannot be read, so the configuration that it reports is the default one. {{.File}} is the path of the file."
 other = "{{.File}} cannot be read, so the configuration shown is the default one."

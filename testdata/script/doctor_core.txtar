@@ -1,7 +1,11 @@
 # ncly doctor reports its checks on stdout, even when one fails. The core component checks
 # the config files. The shell fixture appends its call to $WORK/ran, and doctor never starts it.
 chmod 755 bin/ncly-hello
-env PATH=$WORK/bin:$PATH
+# PATH keeps ncly and the fixtures alone, so the other commands of the test binary are no
+# extensions here
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/bin:$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env CFG=$WORK/.config/nicely
 mkdir $CFG
@@ -9,7 +13,7 @@ mkdir $CFG
 # Without a config file, core.config passes, and doctor exits 0 with its checks on stdout
 exec ncly doctor --json
 answer stdout ok
-stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\}\]\}$'
+stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\},\{"id":"extensions\.'
 ! stderr .
 cp stdout pass.json
 exec ncly describe doctor --json
@@ -17,33 +21,35 @@ stdout '"kind":"report","keys":\["checks"\]'
 cp stdout describe.json
 schema pass.json describe.json schema
 exec ncly doctor core --json
-cmp stdout pass.json
-exec ncly doctor
+stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\}\]\}$'
+exec ncly doctor core
 stdout '\Apass  core\.config  The config files are valid\.\n\z'
 ! stderr .
 
 # An invalid config file is the failed core.config check with CONFIG_INVALID: exit 78, the
-# checks on stdout, a hint that names the file, and no errors
+# checks on stdout, a hint that names the file, and no errors. The independent checks of
+# the extensions component still run
 cp broken.toml $CFG/config.toml
-exits 78 ncly doctor --json
+exits 78 ncly doctor core --json
 stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"core\.config","component":"core","status":"fail","code":"CONFIG_INVALID","message":"'${CFG@R}'/config\.toml has an error on line 2\.","hint":"Fix '${CFG@R}'/config\.toml\."\}\]\}\n\z'
 ! stdout '"errors"'
 ! stderr .
 cp stdout fail.json
 schema fail.json describe.json schema
-exits 78 ncly doctor core --json
-cmp stdout fail.json
-exits 78 ncly doctor
+exits 78 ncly doctor --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"core\.config","component":"core","status":"fail","code":"CONFIG_INVALID",.*\},\{"id":"extensions\.hello","component":"extensions","status":"pass",'
+! stdout '"errors"'
+exits 78 ncly doctor core
 stdout '\Afail  core\.config  '${CFG@R}'/config\.toml has an error on line 2\.\n      hint: Fix '${CFG@R}'/config\.toml\.\n\z'
 ! stderr .
-exits 78 ncly --lang en-XA doctor
+exits 78 ncly --lang en-XA doctor core
 pseudo stdout core.config
 rm $CFG/config.toml
 
 # An unknown component is a failure of doctor itself: NOT_FOUND with exit 2, on stderr
 exits 2 ncly doctor nope --json
 answer stderr NOT_FOUND
-stderr '"message":"Doctor has no component nope\. Its components are: core\.","hint":"ncly doctor","next":\["ncly","doctor"\]'
+stderr '"message":"Doctor has no component nope\. Its components are: core, extensions\.","hint":"ncly doctor","next":\["ncly","doctor"\]'
 ! stdout .
 exits 2 ncly --lang en-XA doctor nope
 pseudo stderr doctor

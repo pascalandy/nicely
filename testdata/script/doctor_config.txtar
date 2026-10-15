@@ -4,14 +4,18 @@
 # after a domain that no installed extension has. A key beneath an unknown one adds no entry,
 # and a warning never fails the report. The shell fixture appends its call to $WORK/ran.
 chmod 755 bin/ncly-hello
-env PATH=$WORK/bin:$PATH
+# PATH keeps ncly and the fixtures alone, so the other commands of the test binary are no
+# extensions here
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/bin:$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env CFG=$WORK/.config/nicely
 mkdir $CFG
 cp shared.toml $CFG/config.toml
 cp local.toml $CFG/config.local.toml
 
-exec ncly doctor --json
+exec ncly doctor core --json
 answer stdout ok
 stdout '"checks":\[\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.toml holds the unknown key colour\.","hint":"Remove or rename colour in '${CFG@R}'/config\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.toml holds the unknown key hello\.volume\.","hint":"Remove or rename hello\.volume in '${CFG@R}'/config\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.toml holds the unknown key describe\.","hint":"Remove or rename describe in '${CFG@R}'/config\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.local\.toml holds the unknown key future\.","hint":"Remove or rename future in '${CFG@R}'/config\.local\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.local\.toml holds the unknown key hello\.extra\.","hint":"Remove or rename hello\.extra in '${CFG@R}'/config\.local\.toml\."\}\]\}$'
 ! stdout 'greeting|away|later|"pass"'
@@ -19,13 +23,13 @@ stdout '"checks":\[\{"id":"core\.config","component":"core","status":"warn","cod
 exec ncly doctor core
 stdout '\Awarn  core\.config  '${CFG@R}'/config\.toml holds the unknown key colour\.\n      hint: Remove or rename colour in '${CFG@R}'/config\.toml\.\n'
 ! stderr .
-exec ncly --lang en-XA doctor
+exec ncly --lang en-XA doctor core
 pseudo stdout core.config colour hello.volume describe future hello.extra
 
 # A known key alone, or an empty table named after a domain that no extension has, passes
 cp known.toml $CFG/config.toml
 rm $CFG/config.local.toml
-exec ncly doctor --json
+exec ncly doctor core --json
 stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\}\]\}$'
 
 ! exists ran

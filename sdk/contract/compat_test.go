@@ -331,3 +331,62 @@ effects = {}
 		t.Errorf("an argument without values_from has %+v", view.Args[1].ValuesFrom)
 	}
 }
+
+func TestAConsumerReadsACheckWithAndWithoutTheKeysOfAnExtension(t *testing.T) {
+	// Checks as ncly doctor gives them, written out: domain, source, and
+	// path appear in an entry of the extensions component alone, path is
+	// null for a bundled extension, and hidden_by only when another one wins.
+	type hiddenBy struct {
+		Source string  `json:"source"`
+		Path   *string `json:"path"`
+	}
+	type check struct {
+		ID       string    `json:"id"`
+		Status   string    `json:"status"`
+		Domain   string    `json:"domain"`
+		Source   string    `json:"source"`
+		Path     *string   `json:"path"`
+		HiddenBy *hiddenBy `json:"hidden_by"`
+	}
+	winner := "/Users/me/.local/share/nicely/extensions/ncly-hello"
+	for _, c := range []struct {
+		line     string
+		want     check
+		hasPath  bool
+		wantPath string
+	}{
+		{`{"id":"core.config","component":"core","status":"pass","message":"m"}`, check{ID: "core.config", Status: "pass"}, false, ""},
+		{`{"id":"extensions.skill","component":"extensions","status":"pass","message":"m","domain":"skill","source":"bundled","path":null}`, check{ID: "extensions.skill", Status: "pass", Domain: "skill", Source: "bundled"}, true, ""},
+		{`{"id":"extensions.hello","component":"extensions","status":"pass","message":"m","domain":"hello","source":"extension","path":"/Users/me/bin/ncly-hello","hidden_by":{"source":"extension","path":"` + winner + `"}}`, check{ID: "extensions.hello", Status: "pass", Domain: "hello", Source: "extension", HiddenBy: &hiddenBy{"extension", &winner}}, true, "/Users/me/bin/ncly-hello"},
+	} {
+		var got check
+		var keys map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(c.line), &got); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal([]byte(c.line), &keys); err != nil {
+			t.Fatal(err)
+		}
+		_, hasPath := keys["path"]
+		path := ""
+		if got.Path != nil {
+			path = *got.Path
+		}
+		sameHidden := (got.HiddenBy == nil) == (c.want.HiddenBy == nil) &&
+			(got.HiddenBy == nil || got.HiddenBy.Source == c.want.HiddenBy.Source && *got.HiddenBy.Path == *c.want.HiddenBy.Path)
+		if got.ID != c.want.ID || got.Status != c.want.Status || got.Domain != c.want.Domain || got.Source != c.want.Source ||
+			hasPath != c.hasPath || path != c.wantPath || !sameHidden {
+			t.Errorf("consumer read %+v from %s", got, c.line)
+		}
+		// A consumer written before the extensions component reads the same check.
+		var older struct {
+			ID        string `json:"id"`
+			Component string `json:"component"`
+			Status    string `json:"status"`
+			Message   string `json:"message"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &older); err != nil || older.ID != c.want.ID || older.Status != "pass" || older.Message != "m" {
+			t.Errorf("older consumer read %+v from %s", older, c.line)
+		}
+	}
+}

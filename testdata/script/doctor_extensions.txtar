@@ -1,0 +1,84 @@
+# The extensions component holds one extensions.<domain> entry for each extension that core
+# finds, with its domain, its source, and its path: a pass for the one that runs, a pass with
+# hidden_by for one that a core command, a bundled extension, or an earlier extension hides,
+# and a fail with EXTENSION_INVALID for an incompatible manifest. Every shell fixture appends
+# its path to $WORK/ran when it runs, and none may run.
+env DATA=$WORK/.local/share/nicely/extensions
+chmod 755 $DATA/ncly-hello
+chmod 755 bin/ncly-hello
+chmod 755 bin/ncly-describe
+chmod 755 bin/ncly-skill
+chmod 755 bin/ncly-auth
+chmod 755 bin/ncly-broken
+chmod 755 bin/ncly-hello.toml
+# PATH keeps ncly and the fixtures alone, so the other commands of the test binary are no
+# extensions here
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/bin:$WORK/nbin
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+
+exits 78 ncly doctor extensions --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"extensions\.auth","component":"extensions","status":"pass","message":"'${WORK@R}'/bin/ncly-auth never runs, because ncly reserves the name auth\.","domain":"auth","source":"extension","path":"'${WORK@R}'/bin/ncly-auth","hidden_by":\{"source":"core","path":null\}\},\{"id":"extensions\.broken","component":"extensions","status":"fail","code":"EXTENSION_INVALID","message":"The extension broken cannot run: ncly-broken\.toml declares the domain \\"other\\" instead of broken\.","hint":"Fix or reinstall the extension at '${WORK@R}'/bin/ncly-broken\.","domain":"broken","source":"extension","path":"'${WORK@R}'/bin/ncly-broken"\},\{"id":"extensions\.describe","component":"extensions","status":"pass","message":"'${WORK@R}'/bin/ncly-describe never runs, because ncly reserves the name describe\.","domain":"describe","source":"extension","path":"'${WORK@R}'/bin/ncly-describe","hidden_by":\{"source":"core","path":null\}\},\{"id":"extensions\.hello","component":"extensions","status":"pass","message":"hello runs from '${DATA@R}'/ncly-hello\.","domain":"hello","source":"extension","path":"'${DATA@R}'/ncly-hello"\},\{"id":"extensions\.hello","component":"extensions","status":"pass","message":"'${WORK@R}'/bin/ncly-hello never runs, because '${DATA@R}'/ncly-hello comes first\.","domain":"hello","source":"extension","path":"'${WORK@R}'/bin/ncly-hello","hidden_by":\{"source":"extension","path":"'${DATA@R}'/ncly-hello"\}\},\{"id":"extensions\.skill","component":"extensions","status":"pass","message":"skill is bundled with ncly\.","domain":"skill","source":"bundled","path":null\},\{"id":"extensions\.skill","component":"extensions","status":"pass","message":"'${WORK@R}'/bin/ncly-skill never runs, because ncly bundles the extension skill\.","domain":"skill","source":"extension","path":"'${WORK@R}'/bin/ncly-skill","hidden_by":\{"source":"bundled","path":null\}\}\]\}\n\z'
+! stderr .
+cp stdout extensions.json
+exec ncly describe doctor --json
+cp stdout describe.json
+schema extensions.json describe.json schema
+
+# The whole report holds the component too, after core's
+exits 78 ncly doctor --json
+stdout '"checks":\[\{"id":"core\.config",.*\},\{"id":"extensions\.auth",'
+
+# Without --json, each entry is one line, with the hint of the failed one under it
+exits 78 ncly doctor extensions
+stdout '^pass  extensions\.hello  hello runs from '${DATA@R}'/ncly-hello\.$'
+stdout '^fail  extensions\.broken  The extension broken cannot run: '
+stdout '^      hint: '
+! stderr .
+exits 78 ncly --lang en-XA doctor extensions
+pseudo stdout extensions.auth extensions.broken extensions.describe extensions.hello extensions.skill
+
+# Without the broken one, the component passes
+rm bin/ncly-broken
+exec ncly doctor extensions --json
+answer stdout ok
+
+! exists ran
+
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+-- bin/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+not a manifest, since this copy never runs
+-- bin/ncly-describe --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-skill --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-auth --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-broken --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-broken.toml --
+format_version = 1
+contract_version = 1
+domain = "other"

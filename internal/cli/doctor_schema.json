@@ -15,7 +15,18 @@
         "code": {"type": "string"},
         "message": {"type": "string"},
         "hint": {"type": "string"},
-        "next": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+        "next": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "domain": {"type": "string"},
+        "source": {"enum": ["bundled", "extension"]},
+        "path": {"type": ["string", "null"]},
+        "hidden_by": {
+          "type": "object",
+          "required": ["source", "path"],
+          "properties": {
+            "source": {"enum": ["core", "bundled", "extension"]},
+            "path": {"type": ["string", "null"]}
+          }
+        }
       }
     }
   }

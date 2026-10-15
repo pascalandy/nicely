@@ -4,7 +4,9 @@ import (
 	_ "embed"
 	"errors"
 	"io"
+	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -48,6 +50,26 @@ type check struct {
 	Message   string        `json:"message"`
 	Hint      string        `json:"hint,omitempty"`
 	Next      []string      `json:"next,omitempty"`
+	// extensionKeys is set in an entry of the extensions component alone.
+	*extensionKeys
+}
+
+// extensionKeys tell which extension an entry of the extensions component
+// describes, and what hides it.
+type extensionKeys struct {
+	Domain string `json:"domain"`
+	Source string `json:"source"`
+	// Path is the executable as discovery found it, or nil for a bundled
+	// extension.
+	Path     *string   `json:"path"`
+	HiddenBy *hiddenBy `json:"hidden_by,omitempty"`
+}
+
+// hiddenBy is what wins over a hidden extension: a core command, a bundled
+// extension, or an earlier extension, with its path.
+type hiddenBy struct {
+	Source string  `json:"source"`
+	Path   *string `json:"path"`
 }
 
 // report is the answer of ncly doctor.
@@ -66,7 +88,10 @@ type component struct {
 // one fails, as a report command does. It never starts an extension.
 func addDoctor(p *i18n.Printer, root *cobra.Command, extensions []*extension) {
 	root.AddCommand(command.Build(p, p, doctorCommand, func(_ *cobra.Command, args []string) error {
-		components := []component{{"core", func() []check { return coreChecks(p, extensions) }}}
+		components := []component{
+			{"core", func() []check { return coreChecks(p, extensions) }},
+			{"extensions", func() []check { return extensionChecks(p, extensions) }},
+		}
 		if len(args) > 0 {
 			i := slices.IndexFunc(components, func(c component) bool { return c.name == args[0] })
 			if i < 0 {
@@ -175,6 +200,87 @@ func declares(m contract.Manifest, key string) bool {
 		}
 	}
 	return false
+}
+
+// extensionChecks describes each extension that discovery finds, in the
+// order of their domains, without starting any: the one that runs, then
+// each one that it hides, in discovery order, and each one that a name
+// reserved by core or a bundled extension hides. extensions holds the
+// bundled ones and the first one found for each other domain.
+func extensionChecks(p *i18n.Printer, extensions []*extension) []check {
+	h := host{dirs: searchPath()}
+	winners := map[string]*extension{}
+	for _, e := range extensions {
+		winners[e.domain] = e
+		if e.bundled {
+			h.bundled = append(h.bundled, e)
+		}
+	}
+	found := map[string][]string{}
+	seen := map[string]bool{}
+	for _, dir := range h.dirs {
+		entries, _ := os.ReadDir(dir)
+		for _, entry := range entries {
+			domain, ok := strings.CutPrefix(entry.Name(), executablePrefix)
+			path := filepath.Join(dir, entry.Name())
+			if ok && contract.IsDomain(domain) && !seen[path] && isExecutable(path) {
+				seen[path] = true
+				found[domain] = append(found[domain], path)
+			}
+		}
+	}
+	domains := slices.Collect(maps.Keys(found))
+	for domain := range winners {
+		if !slices.Contains(domains, domain) {
+			domains = append(domains, domain)
+		}
+	}
+	slices.Sort(domains)
+	var checks []check
+	for _, domain := range domains {
+		entry := func(status, source string, path *string, message string) check {
+			return check{
+				ID: "extensions." + domain, Component: "extensions", Status: status, Message: message,
+				extensionKeys: &extensionKeys{Domain: domain, Source: source, Path: path},
+			}
+		}
+		winner := winners[domain]
+		if winner != nil {
+			source, path := sourceExtension, &winner.path
+			if winner.bundled {
+				source, path = sourceBundled, nil
+			}
+			c := entry(statusPass, source, path, p.T("doctor.extension_runs", map[string]any{"Domain": domain, "Path": winner.path}))
+			if winner.bundled {
+				c.Message = p.T("doctor.extension_bundled", map[string]any{"Domain": domain})
+			}
+			if winner.broken != nil {
+				problem := winner.invalid(p)
+				c.Status, c.Code, c.Message, c.Hint = statusFail, problem.Code, problem.Message, problem.Hint
+			}
+			checks = append(checks, c)
+		}
+		for _, path := range found[domain] {
+			data := map[string]any{"Domain": domain, "Path": path}
+			var c check
+			switch {
+			case winner != nil && winner.bundled:
+				c = entry(statusPass, sourceExtension, &path, p.T("doctor.extension_hidden_by_bundled", data))
+				c.HiddenBy = &hiddenBy{Source: sourceBundled}
+			case winner == nil:
+				c = entry(statusPass, sourceExtension, &path, p.T("doctor.extension_hidden_by_core", data))
+				c.HiddenBy = &hiddenBy{Source: sourceCore}
+			case path == winner.path:
+				continue
+			default:
+				data["Winner"] = winner.path
+				c = entry(statusPass, sourceExtension, &path, p.T("doctor.extension_hidden", data))
+				c.HiddenBy = &hiddenBy{Source: sourceExtension, Path: &winner.path}
+			}
+			checks = append(checks, c)
+		}
+	}
+	return checks
 }
 
 // writeChecks prints one line per check: its status, its id, and its
