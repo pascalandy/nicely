@@ -122,6 +122,7 @@ func TestLoadRejectsAnInvalidFile(t *testing.T) {
 		{"a number that is not finite", "x = nan\n", "", false, 0},
 		{"infinity inside a list", "[a]\nb = [1.5, inf]\n", "", false, 0},
 		{"infinity in a table of an array", "[[a]]\nb = { c = -inf }\n", "", false, 0},
+		{"a number that is not finite under an empty key", "\"\" = nan\n", "", false, 0},
 	}
 	for _, c := range cases {
 		p := files(t, c.shared, c.local)
