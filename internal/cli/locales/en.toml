@@ -158,8 +158,8 @@ description = "Reason inside extension.invalid. {{.File}} is the manifest's name
 other = "{{.File}} lists \"{{.Name}}\" in config of the command \"{{.Path}}\", which must name a key under {{.Domain}} once, as words of lowercase letters, digits, hyphens, and underscores joined by dots."
 
 ["doctor.summary"]
-description = "Help page and ncly describe: summary of `ncly doctor`, which checks the config, the programs, the keys, and the extensions of this machine, and never installs anything."
-other = "Check this machine's config, tools, keys, and extensions"
+description = "Help page and ncly describe: summary of `ncly doctor`, which checks the config, the programs, and the extensions of this machine, and never installs anything."
+other = "Check this machine's config, tools, and extensions"
 
 ["doctor.component"]
 description = "Help page: summary of the component argument of `ncly doctor`, a part that doctor checks, such as core or the domain of an extension."

@@ -84,7 +84,7 @@ completion bash  Print the completion script for bash
 completion fish  Print the completion script for fish
 completion zsh   Print the completion script for zsh
 describe         Describe installed commands and their capabilities
-doctor           Check this machine's config, tools, keys, and extensions
+doctor           Check this machine's config, tools, and extensions
 hello            Greet people
 hello run        Greet someone by name
 skill            Find the skills that teach agents
