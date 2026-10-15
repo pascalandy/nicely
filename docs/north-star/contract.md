@@ -463,6 +463,9 @@ type Call struct {
 
 func Main(e Extension) // runs the extension as this process, then exits with its code
 func Check(e Extension) error
+
+// ParseSkill reads the frontmatter of a SKILL.md: its name and description, both required, from M04
+func ParseSkill(data []byte) (Frontmatter, error)
 ```
 
 `Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. `Main` prints the result by its kind, from the command's `result`:
