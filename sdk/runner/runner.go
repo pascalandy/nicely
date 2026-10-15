@@ -38,6 +38,11 @@ type Program struct {
 	// may read the terminal, as an extension does. Any other program starts
 	// in its own process group.
 	Terminal bool
+	// Limit, when set, bounds the program and the reading of its output, as
+	// completion bounds a list command. At the limit, Run sends SIGKILL to
+	// every descendant of ncly at once, without the cleanup of a signal, and
+	// closes the streams instead of starting the drain limit.
+	Limit time.Duration
 }
 
 // Result is how a program ended.
@@ -49,6 +54,8 @@ type Result struct {
 	// Signal is the signal that ended ctx before the program exited, or nil
 	// when the program exited first.
 	Signal os.Signal
+	// TimedOut reports that the program still ran at its Limit.
+	TimedOut bool
 }
 
 // Cleanup bounds the time that a program and its descendants get to stop
@@ -101,6 +108,13 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		return Result{}, err
 	}
 	copyStdin()
+	var limit <-chan time.Time
+	limitEnds := time.Now().Add(p.Limit)
+	if p.Limit > 0 {
+		timer := time.NewTimer(p.Limit)
+		defer timer.Stop()
+		limit = timer.C
+	}
 	exited := make(chan struct{})
 	var exitedAt time.Time
 	go func() {
@@ -119,6 +133,15 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		case <-time.After(signalSettle):
 		}
 	case <-ctx.Done():
+	case <-limit:
+		// A program that has a limit gets no cleanup: it ends at once, and
+		// so does every descendant that holds its streams.
+		result.TimedOut = true
+		signalTree(syscall.SIGKILL)
+		<-exited
+		drain(streams, time.Now())
+		result.Exit = exitCode(cmd.ProcessState)
+		return result, nil
 	}
 	var cleanupEnds time.Time
 	if ctx.Err() != nil {
@@ -138,8 +161,14 @@ func Run(ctx context.Context, p Program) (Result, error) {
 	}
 	// The drain limit counts from the exit, never from the end of cleanup,
 	// so a descendant that outlives the program cannot write into its
-	// answer once the limit has passed.
-	drain(streams, exitedAt.Add(DrainLimit))
+	// answer once the limit has passed. A program with a limit gets no drain
+	// limit: its own limit bounds the reading, and then ends what still runs.
+	if p.Limit > 0 && result.Signal == nil {
+		drain(streams, limitEnds)
+		signalTree(syscall.SIGKILL)
+	} else {
+		drain(streams, exitedAt.Add(DrainLimit))
+	}
 	stopping.Wait()
 	result.Exit = exitCode(cmd.ProcessState)
 	return result, nil
