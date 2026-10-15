@@ -182,11 +182,13 @@ func LoadValues(p Paths) (Values, error) {
 }
 
 // add sets each value of a table under prefix, replacing what a lower
-// file set at its key, beneath it, or above it.
+// file set at its key, beneath it, or above it. A table merges key by key,
+// so an empty one adds nothing over the keys that a lower file set beneath
+// it, and otherwise is the value of its key, unlike an absent key.
 func (v Values) add(prefix string, table map[string]any, file string) {
 	for key, value := range table {
 		key = prefix + key
-		if sub, isTable := value.(map[string]any); isTable {
+		if sub, isTable := value.(map[string]any); isTable && (len(sub) > 0 || v.beneath(key)) {
 			delete(v, key)
 			v.add(key+".", sub, file)
 			continue
@@ -198,6 +200,16 @@ func (v Values) add(prefix string, table map[string]any, file string) {
 		}
 		v[key] = Value{Key: key, Value: value, Source: file}
 	}
+}
+
+// beneath reports whether a value lies beneath key.
+func (v Values) beneath(key string) bool {
+	for other := range v {
+		if strings.HasPrefix(other, key+".") {
+			return true
+		}
+	}
+	return false
 }
 
 // Under returns the values at key and beneath it, in the order of their

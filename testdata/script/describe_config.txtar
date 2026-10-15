@@ -63,8 +63,28 @@ answer stdout ok
 stdout '\{"key":"shop.limits","value":null,"source":"default"\}'
 stdout '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED","message":"'${CFG@R}'/config\.local\.toml cannot be read, so the configuration shown is the default one\."'
 
+# An empty table, as a header or inline, is the value {} of its file, and adds no key
+# over the keys that a lower file sets beneath it
+rm $CFG/config.local.toml
+cp emptyheader.toml $CFG/config.toml
+exec ncly describe shop buy --json
+stdout '\{"key":"shop.stores","value":\{\},"source":"'${CFG@R}'/config\.toml"\}'
+cp emptyinline.toml $CFG/config.toml
+exec ncly describe shop buy --json
+stdout '\{"key":"shop.stores","value":\{\},"source":"'${CFG@R}'/config\.toml"\}'
+cp shared.toml $CFG/config.toml
+cp emptyheader.toml $CFG/config.local.toml
+exec ncly describe shop buy --json
+stdout '\{"key":"shop.stores.north","value":"1 Main St","source":"'${CFG@R}'/config\.toml"\}'
+! stdout '"value":\{\}'
+
 ! exists ran
 
+-- emptyheader.toml --
+[shop.stores]
+-- emptyinline.toml --
+[shop]
+stores = {}
 -- shared.toml --
 lang = "en"
 
