@@ -441,7 +441,7 @@ A Go extension is one package that exports one `extension.Extension` value, buil
 type Extension struct {
 	Manifest []byte             // manifest.toml
 	Locales  fs.FS              // holds locales/<lang>.toml
-	Skill    fs.FS              // holds SKILL.md and the files it names, from M04
+	Skill    fs.FS              // holds skill/SKILL.md and the files it names, from M04
 	Handlers map[string]Handler // one per command that runs, keyed by path, such as "hello run"
 }
 
