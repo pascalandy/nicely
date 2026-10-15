@@ -153,6 +153,12 @@ stderr 'lists \\"curl\\" in requires.bins'
 exits 78 ncly program --json
 stderr 'declares the program \\"unused\\" in programs'
 
+# Each config key that a command reads lies under the domain, and appears once
+exec sh broken.sh configkey
+exits 78 ncly configkey --json
+answer stderr EXTENSION_INVALID
+stderr 'lists \\"lang\\" in config of the command \\"configkey run\\", which must name a key under configkey once'
+
 # The text of the error comes from the catalog, and the help of a broken extension is the same error
 exits 78 ncly --lang en-XA format
 pseudo stderr format
@@ -611,3 +617,16 @@ requires = { bins = ["curl"] }
 [programs.curl]
 
 [programs.unused]
+-- broken/configkey.toml --
+format_version = 1
+contract_version = 1
+domain = "configkey"
+
+[[commands]]
+path = "configkey"
+summary = "configkey.summary"
+
+[[commands]]
+path = "configkey run"
+summary = "configkey.summary"
+config = ["configkey.paths", "lang"]

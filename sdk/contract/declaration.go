@@ -30,7 +30,11 @@ type Command struct {
 	Effects  *Effects
 	Modes    Modes
 	Requires Requires
-	Result   Result
+	// Config holds the config keys that the command reads, as dotted paths
+	// under its domain, such as agent.profiles, which covers every key
+	// beneath it.
+	Config []string
+	Result Result
 }
 
 // Result describes what a command answers.

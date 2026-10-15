@@ -317,6 +317,7 @@ exit = 1
 | `commands[].args[].values_from`, `commands[].flags[].values_from` | table | Optional, from M04. Where completion finds the values that only an extension knows, such as skill names: `command`, the path of a list command of this extension or of another one, such as `agent profile list` for a profile, `key`, the key of its answer that holds an array of objects, and `field`, the string key of each object to suggest, as [Completion values](#completion-values) defines |
 | `commands[].result` | table | The command's result, the same object as `result` in [ncly describe](core-spec.md#ncly-describe), whose fields join with their first consumer. M01 reads `kind`: `object`, the default, `batch`, `report`, or `text`, which tells core how to check the answer |
 | `commands[].doctor` | boolean | Optional, from M05. `true` marks the domain's status command, which doctor runs to collect the extension's own checks, as [Status command](#status-command) defines |
+| `commands[].config` | array | Optional, from M03. The config keys that the command reads, as dotted paths under its domain, such as `agent.default_profile`. A key covers every key beneath it, so `agent.profiles` covers each profile. [ncly describe](core-spec.md#ncly-describe) reports their values and sources, and doctor checks the extension's table against them from M05, as [Configuration](#configuration) defines |
 | `commands[].requires.bins` | array | From M03. The names of the programs that the command may run, each a key of `programs` |
 | `commands[].requires.keys` | array | From M03. The services whose keys the command may need, each a service name, as [Keys](#keys) defines. `ncly auth status` and `ncly doctor` read them from M06 |
 | `errors` | array | The extension's own error codes, each with `code` and `exit`, in the order that decides which one leads an answer, as [Output](#output) defines |
@@ -339,6 +340,7 @@ A manifest is invalid unless every rule below holds. Core rejects it before work
 - A command that sets `doctor` is a status command that qualifies, as [Status command](#status-command) defines
 - Each key of `programs` is a file name, without `/`, and at least one command names it. Each name in the `requires.bins` of a command is a key of `programs`, and appears once there
 - Each name in the `requires.keys` of a command is a service name, as [Keys](#keys) defines, and appears once there
+- Each key in the `config` of a command starts with the domain, holds at least two words joined by dots, each of lowercase letters, digits, hyphens, and underscores that starts with a letter, and appears once there
 - From M05, a `version` is one or more numbers joined by dots, a `probe` is a non-empty array of strings, and each command of `install` is a non-empty array of strings
 - The `en` catalog holds every catalog ID that the manifest names
 

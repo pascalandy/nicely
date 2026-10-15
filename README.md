@@ -13,7 +13,7 @@ ncly completion bash
 
 Nicely is in early development. [The vision](docs/north-star/vision.md) explains what it is and why, and [the milestones](docs/milestones/) list the work in order.
 
-The current build implements help, the version, shell completion, and `ncly describe`, which lists the installed commands, core's and each extension's, with their summaries, and gives one command's arguments, flags, effects, modes, and requirements. It finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`, shows their help and completion from their manifests, starts them with a call that it has checked against their declared arguments, flags, and flag groups, checks their JSON answer before passing it on, and stops them and their child processes on Ctrl-C. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
+The current build implements help, the version, shell completion, and `ncly describe`, which lists the installed commands, core's and each extension's, with their summaries, and gives one command's arguments, flags, effects, modes, and requirements, with each config value that it reads and where that value comes from. It finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`, shows their help and completion from their manifests, starts them with a call that it has checked against their declared arguments, flags, and flag groups, checks their JSON answer before passing it on, and stops them and their child processes on Ctrl-C. It also establishes the JSON error contract, configuration, and English message catalog. The commands below are planned work.
 
 ## Planned commands
 

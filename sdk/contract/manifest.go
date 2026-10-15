@@ -91,6 +91,7 @@ var (
 	pathWord   = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 	shorthand  = regexp.MustCompile(`^[A-Za-z]$`)
 	codeForm   = regexp.MustCompile(`^[A-Z0-9_]+$`)
+	configWord = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 )
 
 // IsDomain reports whether name can be a domain: lowercase letters and
@@ -141,6 +142,7 @@ type manifestFile struct {
 			Bins []string `toml:"bins"`
 			Keys []string `toml:"keys"`
 		} `toml:"requires"`
+		Config []string `toml:"config"`
 		Result struct {
 			Kind string `toml:"kind"`
 		} `toml:"result"`
@@ -191,6 +193,7 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 			Examples: raw.Examples,
 			Modes:    Modes(raw.Modes),
 			Requires: Requires(raw.Requires),
+			Config:   raw.Config,
 			Result:   Result{Kind: ResultKind(raw.Result.Kind)},
 		}
 		if c.Result.Kind == "" {
@@ -275,6 +278,9 @@ func (m Manifest) check() error {
 			return err
 		}
 		if err := m.checkRequires(path, c); err != nil {
+			return err
+		}
+		if err := m.checkConfig(path, c); err != nil {
 			return err
 		}
 	}
@@ -409,6 +415,22 @@ func (m Manifest) checkPrograms() error {
 		named := slices.ContainsFunc(m.Commands, func(c Command) bool { return slices.Contains(c.Requires.Bins, name) })
 		if name == "" || name == "." || name == ".." || strings.Contains(name, "/") || !named {
 			return broken("extension.program", map[string]any{"Name": name})
+		}
+	}
+	return nil
+}
+
+// checkConfig checks the config keys that one command reads: each is a
+// dotted path of at least two key words under the domain, and appears once.
+func (m Manifest) checkConfig(path string, c Command) error {
+	for i, key := range c.Config {
+		words := strings.Split(key, ".")
+		bad := len(words) < 2 || words[0] != m.Domain || slices.Index(c.Config, key) != i
+		for _, word := range words {
+			bad = bad || !configWord.MatchString(word)
+		}
+		if bad {
+			return broken("extension.config_key", map[string]any{"Path": path, "Name": key, "Domain": m.Domain})
 		}
 	}
 	return nil

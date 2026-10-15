@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/command"
+	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
@@ -69,6 +71,7 @@ type detail struct {
 	Effects    effectsDetail  `json:"effects"`
 	Requires   requiresDetail `json:"requires"`
 	Modes      modesDetail    `json:"modes"`
+	Config     []config.Value `json:"config"`
 	Examples   []string       `json:"examples"`
 }
 
@@ -121,8 +124,10 @@ type modesDetail struct {
 }
 
 // detail describes the command of an entry. p renders the text of the
-// flags that its modes add, which the SDK's catalog holds.
-func (e entry) detail(p *i18n.Printer) detail {
+// flags that its modes add, which the SDK's catalog holds. Its config lists
+// lang, which core resolves for the text of every command, then each key
+// that the command declares, from values.
+func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) detail {
 	d := e.declaration
 	out := detail{
 		entry:      e,
@@ -132,7 +137,11 @@ func (e entry) detail(p *i18n.Printer) detail {
 		Effects:    effectsDetail(d.DeclaredEffects()),
 		Requires:   requiresDetail{Bins: names(d.Requires.Bins), Keys: names(d.Requires.Keys)},
 		Modes:      modesDetail(d.Modes),
+		Config:     []config.Value{lang},
 		Examples:   append([]string{}, d.Examples...),
+	}
+	for _, key := range d.Config {
+		out.Config = append(out.Config, values.Under(key)...)
 	}
 	for _, a := range d.Args {
 		out.Args = append(out.Args, argDetail{
@@ -207,15 +216,23 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 		if len(found) == 0 {
 			return command.Fail(notFound(p, strings.Join(words, " ")))
 		}
+		// Discovery works with the defaults when a config file cannot be
+		// read, and says so.
+		values, err := config.LoadValues(config.Locate(home(), os.LookupEnv))
+		var warnings []contract.Problem
+		if err != nil {
+			values, warnings = nil, []contract.Problem{defaultsUsed(p, err)}
+		}
 		// The path sorts first, so a path that names a command, not a group,
 		// gets its detail alone.
 		var answer any = listing{found}
 		if len(words) > 0 && !found[0].group && found[0].Path == strings.Join(words, " ") {
 			found = found[:1]
-			answer = commandDetail{[]detail{found[0].detail(p)}}
+			lang := config.Lang(c.Flag("lang").Value.String(), os.Getenv, func() config.Values { return values })
+			answer = commandDetail{[]detail{found[0].detail(p, lang, values)}}
 		}
 		return &answered{
-			outcome: contract.Outcome{Data: answer},
+			outcome: contract.Outcome{Data: answer, Warnings: warnings},
 			text:    func(w io.Writer) error { return writeEntries(w, found) },
 		}
 	}))
@@ -311,6 +328,30 @@ func writeEntries(w io.Writer, entries []entry) error {
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
+}
+
+// defaultsUsed warns that discovery used the defaults because a config
+// file cannot be read, naming the file and, when the parser knows it, the
+// line.
+func defaultsUsed(p *i18n.Printer, err error) contract.Problem {
+	file, line := "", 0
+	var invalid *config.InvalidError
+	if errors.As(err, &invalid) {
+		file, line = invalid.File, invalid.Line
+	}
+	data := map[string]any{"File": file, "Line": line}
+	message := p.T("describe.defaults_used", data)
+	if line > 0 {
+		message = p.T("describe.defaults_used_line", data)
+	}
+	return contract.Problem{Code: contract.ConfigDefaultsUsed, Message: message, Hint: p.T("describe.defaults_used_hint", data)}
+}
+
+// home is the home folder, or empty when it is unknown, which leaves the
+// default config files unset.
+func home() string {
+	dir, _ := os.UserHomeDir()
+	return dir
 }
 
 // answered is the outcome of a core command that succeeded, with the text

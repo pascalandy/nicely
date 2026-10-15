@@ -1,0 +1,99 @@
+# A command's detail lists each config key that it reads, with its value and its source:
+# lang, which core resolves for every command, then the keys that an extension's manifest
+# declares under its domain. The shell fixture appends its call to $WORK/ran, and never may.
+chmod 755 bin/ncly-shop
+env PATH=$WORK/bin:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env SHOPAPI_API_KEY=sk-never-shown
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+
+# Without a config file, lang comes from its default, and a declared key that no file sets too
+exec ncly describe describe --json
+stdout '"config":\[\{"key":"lang","value":"en","source":"default"\}\],'
+exec ncly describe shop buy --json
+stdout '"config":\[\{"key":"lang","value":"en","source":"default"\},\{"key":"shop.stores","value":null,"source":"default"\},\{"key":"shop.limits","value":null,"source":"default"\}\],'
+
+# lang names the flag, the variable, the file, or the locale variable that set it
+exec ncly describe describe --json --lang en
+stdout '\{"key":"lang","value":"en","source":"--lang"\}'
+env NCLY_LANG=en-XA
+exec ncly describe describe --json
+stdout '\{"key":"lang","value":"en-XA","source":"NCLY_LANG"\}'
+env NCLY_LANG=
+env LANG=fr_CA.UTF-8
+exec ncly describe describe --json
+stdout '\{"key":"lang","value":"fr_CA.UTF-8","source":"LANG"\}'
+cp shared.toml $CFG/config.toml
+exec ncly describe describe --json
+stdout '\{"key":"lang","value":"en","source":"'${CFG@R}'/config\.toml"\}'
+
+# A table merges key by key, so each key keeps its file, and a list keeps the file that
+# replaced it, even when that list is empty. The fixture's key never reaches the answer
+cp local.toml $CFG/config.local.toml
+exec ncly describe shop buy --json
+stdout '"config":\[\{"key":"lang","value":"en","source":"'${CFG@R}'/config\.toml"\},\{"key":"shop.stores.north","value":"1 Main St","source":"'${CFG@R}'/config\.toml"\},\{"key":"shop.stores.south","value":"2 Side St","source":"'${CFG@R}'/config\.local\.toml"\},\{"key":"shop.limits","value":\[\],"source":"'${CFG@R}'/config\.local\.toml"\}\],'
+! stdout sk-never-shown
+! stdout 'shop.other'
+
+# With an invalid config file, discovery uses the defaults, keeps going, and warns with
+# CONFIG_DEFAULTS_USED, which names the file and its line
+cp broken.toml $CFG/config.local.toml
+exec ncly describe shop buy --json
+answer stdout ok
+stdout '\{"key":"lang","value":"fr_CA.UTF-8","source":"LANG"\},\{"key":"shop.stores","value":null,"source":"default"\}'
+stdout '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED","message":"'${CFG@R}'/config\.local\.toml has an error on line 2, so the configuration shown is the default one\.","hint":"Fix '${CFG@R}'/config\.local\.toml\."\}\]\}$'
+! stderr .
+exec ncly describe --json
+stdout '"warnings":\[\{"code":"CONFIG_DEFAULTS_USED"'
+exec ncly describe shop buy
+stdout '^shop buy  Buy an item$'
+stderr '^warning\[CONFIG_DEFAULTS_USED\]: '
+exec ncly --lang en-XA describe shop buy
+pseudo stderr
+
+! exists ran
+
+-- shared.toml --
+lang = "en"
+
+[shop]
+limits = [1, 2]
+other = "unread"
+
+[shop.stores]
+north = "1 Main St"
+-- local.toml --
+[shop]
+limits = []
+
+[shop.stores]
+south = "2 Side St"
+-- broken.toml --
+[shop]
+limits = [
+-- bin/ncly-shop --
+#!/bin/sh
+echo "shop $*" >> "$WORK/ran"
+-- bin/ncly-shop.toml --
+format_version = 1
+contract_version = 1
+domain = "shop"
+
+[[commands]]
+path = "shop"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop buy"
+summary = "shop.buy.summary"
+examples = ["ncly shop buy", "ncly shop buy --json"]
+config = ["shop.stores", "shop.limits"]
+-- bin/ncly-shop.locales/en.toml --
+["shop.summary"]
+description = "Summary of the shop fixture."
+other = "Buy things"
+
+["shop.buy.summary"]
+description = "Summary of shop buy."
+other = "Buy an item"

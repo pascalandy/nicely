@@ -164,3 +164,61 @@ func TestMergeJoinsTablesAndReplacesLists(t *testing.T) {
 		t.Errorf("merged\n%v\nwant\n%v", shared, want)
 	}
 }
+
+func TestLoadValuesKeepsTheSourceOfEachValue(t *testing.T) {
+	p := files(t,
+		"lang = \"fr-CA\"\n[skill]\npaths = [\"~/a\"]\n[agent.profiles.everyday]\nharness = \"claude\"\neffort = \"medium\"\n[agent.models]\nfast = \"a\"\n",
+		"[skill]\npaths = []\n[agent.profiles.everyday]\neffort = \"high\"\n[agent]\nmodels = \"none\"\n",
+	)
+	got, err := LoadValues(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Values{
+		"lang":                            {"lang", "fr-CA", p.Shared},
+		"skill.paths":                     {"skill.paths", []any{}, p.Local},
+		"agent.profiles.everyday.harness": {"agent.profiles.everyday.harness", "claude", p.Shared},
+		"agent.profiles.everyday.effort":  {"agent.profiles.everyday.effort", "high", p.Local},
+		"agent.models":                    {"agent.models", "none", p.Local},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("LoadValues\n%v\nwant\n%v", got, want)
+	}
+	under := got.Under("agent.profiles")
+	if len(under) != 2 || under[0].Key != "agent.profiles.everyday.effort" || under[1].Key != "agent.profiles.everyday.harness" {
+		t.Errorf("Under(agent.profiles) = %v, want both keys of everyday in order", under)
+	}
+	if unset := got.Under("agent.default_profile"); !reflect.DeepEqual(unset, []Value{{Key: "agent.default_profile", Source: Default}}) {
+		t.Errorf("Under(agent.default_profile) = %v, want the default", unset)
+	}
+	if _, err := LoadValues(files(t, "lang = 1\n", "")); err == nil {
+		t.Error("LoadValues read a value of the wrong type")
+	}
+}
+
+func TestLangNamesItsSource(t *testing.T) {
+	file := Values{"lang": {"lang", "fr-CA", "/Users/me/.config/nicely/config.toml"}}
+	cases := []struct {
+		name  string
+		flag  string
+		env   map[string]string
+		files Values
+		want  Value
+	}{
+		{"the flag wins", "en", map[string]string{"NCLY_LANG": "fr"}, file, Value{"lang", "en", "--lang"}},
+		{"then the variable", "", map[string]string{"NCLY_LANG": "fr", "LANG": "en_US.UTF-8"}, file, Value{"lang", "fr", "NCLY_LANG"}},
+		{"then the files", "", map[string]string{"LANG": "en_US.UTF-8"}, file, file["lang"]},
+		{"then the locale variables in order", "", map[string]string{"LC_MESSAGES": "fr_CA.UTF-8", "LANG": "en_US.UTF-8"}, nil, Value{"lang", "fr_CA.UTF-8", "LC_MESSAGES"}},
+		{"and en by default", "", nil, nil, Value{"lang", "en", Default}},
+	}
+	for _, c := range cases {
+		read := false
+		got := Lang(c.flag, func(name string) string { return c.env[name] }, func() Values { read = true; return c.files })
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%s: Lang = %v, want %v", c.name, got, c.want)
+		}
+		if read && (c.flag != "" || c.env["NCLY_LANG"] != "") {
+			t.Errorf("%s: Lang read the files although a flag or NCLY_LANG sets the language", c.name)
+		}
+	}
+}

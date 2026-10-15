@@ -141,6 +141,22 @@ other = "{{.File}} lists \"{{.Name}}\" in requires.bins of the command \"{{.Path
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys and keychain stay as is."
 other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain."
 
+["extension.config_key"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} a config key that the command declares, such as hello.greeting, and {{.Domain}} the extension's domain, which starts each key. config is a key and stays as is."
+other = "{{.File}} lists \"{{.Name}}\" in config of the command \"{{.Path}}\", which must name a key under {{.Domain}} once, as words of lowercase letters, digits, hyphens, and underscores joined by dots."
+
+["describe.defaults_used"]
+description = "Warning of `ncly describe` when a config file cannot be read, so the configuration that it reports is the default one. {{.File}} is the path of the file."
+other = "{{.File}} cannot be read, so the configuration shown is the default one."
+
+["describe.defaults_used_line"]
+description = "Warning of `ncly describe` when a config file has an error on a known line, so the configuration that it reports is the default one. {{.File}} is the path of the file, and {{.Line}} a line number."
+other = "{{.File}} has an error on line {{.Line}}, so the configuration shown is the default one."
+
+["describe.defaults_used_hint"]
+description = "Hint under describe.defaults_used: what the user does next. {{.File}} is the path of the config file."
+other = "Fix {{.File}}."
+
 ["extension.program"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg. programs and requires.bins are keys and stay as is."
 other = "{{.File}} declares the program \"{{.Name}}\" in programs, which must be a file name without / that the requires.bins of a command names."

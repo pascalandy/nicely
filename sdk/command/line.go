@@ -1,7 +1,6 @@
 package command
 
 import (
-	"cmp"
 	"os"
 	"runtime/debug"
 	"strconv"
@@ -178,21 +177,18 @@ func Resolve(line Line) Globals {
 		NoInput: switchOr("no-input", env("NCLY_NO_INPUT") == "1"),
 		NoColor: switchOr("no-color", env("NO_COLOR") != "" || env("TERM") == "dumb"),
 		Verbose: switchOr("verbose", env("NCLY_VERBOSE") == "1"),
-		Lang:    cmp.Or(line.values["lang"], env("NCLY_LANG")),
 	}
-	if g.Lang == "" {
-		g.Lang = cmp.Or(configLang(), env("LC_ALL"), env("LC_MESSAGES"), env("LANG"))
-	}
+	g.Lang, _ = config.Lang(line.values["lang"], env, ConfigValues).Value.(string)
 	return g
 }
 
-// configLang reads lang from the config files. A load error gives no language,
-// so the help still works with the defaults.
-func configLang() string {
+// ConfigValues reads the values of the config files. A load error gives
+// none, so the help still works with the defaults.
+func ConfigValues() config.Values {
 	home, _ := os.UserHomeDir()
-	cfg, _, err := config.Load(config.Locate(home, os.LookupEnv))
+	values, err := config.LoadValues(config.Locate(home, os.LookupEnv))
 	if err != nil {
-		return ""
+		return nil
 	}
-	return cfg.Lang
+	return values
 }

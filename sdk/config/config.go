@@ -7,10 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -81,12 +84,17 @@ func (e *InvalidError) Error() string { return fmt.Sprintf("%s: %v", e.File, e.E
 
 func (e *InvalidError) Unwrap() error { return e.Err }
 
-// Load reads the shared file, then the local file over it. A missing file is
-// not an error. A table merges key by key across the files, and any other
-// value, such as a list, replaces the one below it. Unknown keys come back
-// for the CONFIG_UNKNOWN_KEY warning, so an older ncly reads a newer config.
-func Load(p Paths) (Config, []Key, error) {
-	merged := map[string]any{}
+// layer is one config file that was read, with its keys.
+type layer struct {
+	file   string
+	values map[string]any
+}
+
+// read reads the shared file, then the local file, and checks each against
+// the keys that this version knows. A missing file is skipped. Unknown keys
+// come back for the CONFIG_UNKNOWN_KEY warning.
+func read(p Paths) ([]layer, []Key, error) {
+	var layers []layer
 	var unknown []Key
 	for _, file := range []string{p.Shared, p.Local} {
 		if file == "" {
@@ -97,29 +105,136 @@ func Load(p Paths) (Config, []Key, error) {
 			continue
 		}
 		if err != nil {
-			return Config{}, nil, &InvalidError{File: file, Err: err}
+			return nil, nil, &InvalidError{File: file, Err: err}
 		}
-		var layer map[string]any
-		if _, err := toml.Decode(string(text), &layer); err != nil {
-			return Config{}, nil, invalid(file, err)
+		var values map[string]any
+		if _, err := toml.Decode(string(text), &values); err != nil {
+			return nil, nil, invalid(file, err)
 		}
 		var typed Config
 		meta, err := toml.Decode(string(text), &typed)
 		if err != nil {
-			return Config{}, nil, invalid(file, err)
+			return nil, nil, invalid(file, err)
 		}
 		for _, key := range meta.Undecoded() {
 			unknown = append(unknown, Key{File: file, Name: key.String()})
 		}
-		merge(merged, layer)
+		layers = append(layers, layer{file: file, values: values})
+	}
+	return layers, unknown, nil
+}
+
+// Load reads the shared file, then the local file over it. A missing file is
+// not an error. A table merges key by key across the files, and any other
+// value, such as a list, replaces the one below it. Unknown keys come back
+// for the CONFIG_UNKNOWN_KEY warning, so an older ncly reads a newer config.
+func Load(p Paths) (Config, []Key, error) {
+	layers, unknown, err := read(p)
+	if err != nil {
+		return Config{}, nil, err
+	}
+	merged := map[string]any{}
+	for _, l := range layers {
+		merge(merged, l.values)
 	}
 	var buf bytes.Buffer
 	if err := toml.NewEncoder(&buf).Encode(merged); err != nil {
 		return Config{}, nil, err
 	}
 	var cfg Config
-	_, err := toml.Decode(buf.String(), &cfg)
+	_, err = toml.Decode(buf.String(), &cfg)
 	return cfg, unknown, err
+}
+
+// Default is the source of a value that no flag, variable, or file sets.
+const Default = "default"
+
+// Value is one resolved value with its source: a flag such as --lang, a
+// variable such as NCLY_LANG, the path of the file that set it, or Default.
+type Value struct {
+	Key    string `json:"key"`
+	Value  any    `json:"value"`
+	Source string `json:"source"`
+}
+
+// Values holds every value of the config files by dotted key, such as
+// skill.paths, each with the file that set it. A table is no value of its
+// own: each of its keys keeps its source.
+type Values map[string]Value
+
+// LoadValues reads the files as Load does, and keeps the source of each
+// value: a table merges key by key, and any other value, an empty list
+// included, keeps the file that replaced the one below it.
+func LoadValues(p Paths) (Values, error) {
+	layers, _, err := read(p)
+	if err != nil {
+		return nil, err
+	}
+	v := Values{}
+	for _, l := range layers {
+		v.add("", l.values, l.file)
+	}
+	return v, nil
+}
+
+// add sets each value of a table under prefix, replacing what a lower
+// file set at its key, beneath it, or above it.
+func (v Values) add(prefix string, table map[string]any, file string) {
+	for key, value := range table {
+		key = prefix + key
+		if sub, isTable := value.(map[string]any); isTable {
+			delete(v, key)
+			v.add(key+".", sub, file)
+			continue
+		}
+		for other := range v {
+			if strings.HasPrefix(other, key+".") || strings.HasPrefix(key, other+".") {
+				delete(v, other)
+			}
+		}
+		v[key] = Value{Key: key, Value: value, Source: file}
+	}
+}
+
+// Under returns the values at key and beneath it, in the order of their
+// keys, or one value of key from Default when no file sets any: a declared
+// key such as agent.profiles covers every key beneath it.
+func (v Values) Under(key string) []Value {
+	var found []Value
+	for _, k := range slices.Sorted(maps.Keys(v)) {
+		if k == key || strings.HasPrefix(k, key+".") {
+			found = append(found, v[k])
+		}
+	}
+	if len(found) == 0 {
+		return []Value{{Key: key, Source: Default}}
+	}
+	return found
+}
+
+// Lang resolves the language with its source, in the order of
+// Configuration in contract.md: the flag, NCLY_LANG, lang in the config
+// files, LC_ALL, LC_MESSAGES, LANG, then en from Default. files reads the
+// config only when no flag or NCLY_LANG sets the language, and returns nil
+// when the files cannot be read.
+func Lang(flag string, getenv func(string) string, files func() Values) Value {
+	if flag != "" {
+		return Value{Key: "lang", Value: flag, Source: "--lang"}
+	}
+	if lang := getenv("NCLY_LANG"); lang != "" {
+		return Value{Key: "lang", Value: lang, Source: "NCLY_LANG"}
+	}
+	if set, found := files()["lang"]; found {
+		if lang, isString := set.Value.(string); isString && lang != "" {
+			return set
+		}
+	}
+	for _, name := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
+		if lang := getenv(name); lang != "" {
+			return Value{Key: "lang", Value: lang, Source: name}
+		}
+	}
+	return Value{Key: "lang", Value: "en", Source: Default}
 }
 
 // merge copies src over dst. Tables merge key by key; other values replace.
