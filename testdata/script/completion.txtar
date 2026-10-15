@@ -129,6 +129,72 @@ stdout '^:4\n\z'
 [bash-completion] stdout '^completion$'
 [bash-completion] ! stdout 'USAGE'
 
+# A value that only an extension knows completes from the list command that values_from
+# names, which core dispatches itself. The fixtures append each call to $WORK/ran
+chmod 755 bin/ncly-shop
+chmod 755 bin/ncly-bonus
+env PATH=$WORK/bin:$PATH
+
+# An argument and a flag that takes a value complete from their values_from, with the values
+# that match the typed prefix
+exec ncly __complete shop buy ap
+stdout '^apple$'
+stdout '^apricot$'
+! stdout banana
+stdout '^:4$'
+exec ncly __complete shop buy --store ''
+stdout '^north$'
+stdout '^south$'
+exec ncly __complete shop buy --store n
+stdout '^north$'
+! stdout south
+grep '^shop item list --$' ran
+
+# A values_from may name the list command of a second fixture. One whose foreign list
+# command is not installed or does not qualify suggests nothing
+exec ncly __complete bonus get --from b
+stdout '\Abanana\n:4\n\z'
+exec ncly __complete bonus get --ghost ''
+stdout '\A:4\n\z'
+exec ncly __complete bonus get --show ''
+stdout '\A:4\n\z'
+! grep 'item show' ran
+
+# values_from never restricts: values that the list does not hold reach the handler
+exec ncly shop buy kiwi --store west --json
+stdout '"args":"buy --store=west -- kiwi"'
+
+# A list command that fails, answers without the key, or gives an object without the field
+# suggests nothing and prints nothing
+env SHOP_MODE=fail
+exec ncly __complete shop buy ''
+stdout '\A:4\n\z'
+env SHOP_MODE=nokey
+exec ncly __complete shop buy ''
+stdout '\A:4\n\z'
+env SHOP_MODE=nofield
+exec ncly __complete shop buy ''
+stdout '\A:4\n\z'
+
+# A list command that outlasts the 2 seconds gets SIGKILL, never SIGTERM, with its
+# descendants, and suggests nothing. The debug log of Cobra names the timeout as the reason
+env SHOP_MODE=slow
+env BASH_COMP_DEBUG_FILE=$WORK/debug.log
+exec ncly __complete shop buy ''
+stdout '\A:4\n\z'
+! exists got-term
+grep 'timeout' debug.log
+gone slow.pid
+env BASH_COMP_DEBUG_FILE=
+
+# A list command whose descendant keeps stdout open still ends completion within the 2
+# seconds, though it answers after one second, and its descendant ends too
+env SHOP_MODE=holder
+exec bash -c 'TIMEFORMAT=%R; { time ncly __complete shop buy "" > holder.out 2>/dev/null; } 2> elapsed.txt'
+exec awk '$1 >= 2.6 { print "took " $1 " seconds"; exit 1 }' elapsed.txt
+grep '^apple$' holder.out
+gone holder.pid
+
 -- broken.toml --
 lang =
 -- tab.sh --
@@ -146,3 +212,113 @@ tab() {
   __start_ncly ncly "${COMP_WORDS[COMP_CWORD]}" "${COMP_WORDS[COMP_CWORD-1]}"
   printf '%s\n' "${COMPREPLY[@]}"
 }
+-- bin/ncly-shop --
+#!/bin/sh
+echo "shop $*" >> "$WORK/ran"
+case "$1 $2" in
+"item list")
+  case "$SHOP_MODE" in
+  fail) echo '{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}' >&2; exit 1 ;;
+  nokey) echo '{"ok":true,"contract_version":1,"other":[]}' ;;
+  nofield) echo '{"ok":true,"contract_version":1,"items":[{"name":"apple"},{"label":"pear"}]}' ;;
+  slow)
+    trap 'echo term > "$WORK/got-term"' TERM
+    echo $$ > "$WORK/slow.pid"
+    sleep 10 &
+    wait ;;
+  holder)
+    sleep 1
+    sh -c 'echo $$ > "$WORK/holder.pid"; exec sleep 10' &
+    echo '{"ok":true,"contract_version":1,"items":[{"name":"apple"}]}' ;;
+  *) echo '{"ok":true,"contract_version":1,"items":[{"name":"apple"},{"name":"apricot"},{"name":"banana"}]}' ;;
+  esac ;;
+"store list") echo '{"ok":true,"contract_version":1,"stores":[{"id":"north"},{"id":"south"}]}' ;;
+"buy "*) printf '{"ok":true,"contract_version":1,"args":"%s"}\n' "$*" ;;
+esac
+-- bin/ncly-shop.toml --
+format_version = 1
+contract_version = 1
+domain = "shop"
+
+[[commands]]
+path = "shop"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop buy"
+summary = "shop.summary"
+
+[[commands.args]]
+name = "item"
+summary = "shop.summary"
+values_from = { command = "shop item list", key = "items", field = "name" }
+
+[[commands.flags]]
+name = "store"
+value = "id"
+summary = "shop.summary"
+values_from = { command = "shop store list", key = "stores", field = "id" }
+
+[[commands]]
+path = "shop item"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop item list"
+summary = "shop.summary"
+effects = { network = true }
+
+[[commands]]
+path = "shop item show"
+summary = "shop.summary"
+effects = {}
+
+[[commands]]
+path = "shop store"
+summary = "shop.summary"
+
+[[commands]]
+path = "shop store list"
+summary = "shop.summary"
+effects = {}
+-- bin/ncly-shop.locales/en.toml --
+["shop.summary"]
+description = "Summary of the shop fixture."
+other = "Buy things"
+-- bin/ncly-bonus --
+#!/bin/sh
+echo "bonus $*" >> "$WORK/ran"
+-- bin/ncly-bonus.toml --
+format_version = 1
+contract_version = 1
+domain = "bonus"
+
+[[commands]]
+path = "bonus"
+summary = "bonus.summary"
+
+[[commands]]
+path = "bonus get"
+summary = "bonus.summary"
+
+[[commands.flags]]
+name = "from"
+value = "item"
+summary = "bonus.summary"
+values_from = { command = "shop item list", key = "items", field = "name" }
+
+[[commands.flags]]
+name = "ghost"
+value = "item"
+summary = "bonus.summary"
+values_from = { command = "ghost item list", key = "items", field = "name" }
+
+[[commands.flags]]
+name = "show"
+value = "item"
+summary = "bonus.summary"
+values_from = { command = "shop item show", key = "items", field = "name" }
+-- bin/ncly-bonus.locales/en.toml --
+["bonus.summary"]
+description = "Summary of the bonus fixture."
+other = "Get a bonus"

@@ -90,6 +90,23 @@ type argDetail struct {
 	Required bool   `json:"required"`
 	Variadic bool   `json:"variadic"`
 	Values   []any  `json:"values"`
+	// ValuesFrom is present only when the declaration has one.
+	ValuesFrom *valuesFromDetail `json:"values_from,omitempty"`
+}
+
+// valuesFromDetail names the list command whose answer completion suggests
+// values from, as Completion values in contract.md defines.
+type valuesFromDetail struct {
+	Command string `json:"command"`
+	Key     string `json:"key"`
+	Field   string `json:"field"`
+}
+
+func describeValuesFrom(v *contract.ValuesFrom) *valuesFromDetail {
+	if v == nil {
+		return nil
+	}
+	return &valuesFromDetail{Command: strings.Join(v.Command, " "), Key: v.Key, Field: v.Field}
 }
 
 type flagDetail struct {
@@ -102,6 +119,8 @@ type flagDetail struct {
 	Values    []any  `json:"values"`
 	Default   any    `json:"default"`
 	Summary   string `json:"summary"`
+	// ValuesFrom is present only when the declaration has one.
+	ValuesFrom *valuesFromDetail `json:"values_from,omitempty"`
 }
 
 type resultDetail struct {
@@ -163,6 +182,7 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 		out.Args = append(out.Args, argDetail{
 			Name: a.Name, Summary: e.text.T(a.Summary), Type: string(a.ArgType()),
 			Required: a.Required, Variadic: a.Variadic, Values: typedValues(a.ArgType(), a.Values),
+			ValuesFrom: describeValuesFrom(a.ValuesFrom),
 		})
 	}
 	flag := func(f contract.Flag, text *i18n.Printer) flagDetail {
@@ -170,6 +190,7 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 			Name: f.Name, Shorthand: f.Shorthand, Value: f.Value, Type: string(f.FlagType()),
 			Required: f.Required, Variadic: f.Variadic, Values: typedValues(f.FlagType(), f.Values),
 			Default: f.FlagDefault(), Summary: text.T(f.Summary),
+			ValuesFrom: describeValuesFrom(f.ValuesFrom),
 		}
 	}
 	for _, f := range d.Flags {

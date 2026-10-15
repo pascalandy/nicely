@@ -67,7 +67,8 @@
         "type": {"$ref": "#/$defs/type"},
         "required": {"type": "boolean"},
         "variadic": {"type": "boolean"},
-        "values": {"type": "array"}
+        "values": {"type": "array"},
+        "values_from": {"$ref": "#/$defs/values_from"}
       }
     },
     "flag": {
@@ -82,8 +83,14 @@
         "variadic": {"type": "boolean"},
         "values": {"type": "array"},
         "default": {"type": ["string", "boolean", "integer", "number", "null"]},
-        "summary": {"type": "string"}
+        "summary": {"type": "string"},
+        "values_from": {"$ref": "#/$defs/values_from"}
       }
+    },
+    "values_from": {
+      "type": "object",
+      "required": ["command", "key", "field"],
+      "properties": {"command": {"type": "string"}, "key": {"type": "string"}, "field": {"type": "string"}}
     },
     "type": {"enum": ["string", "boolean", "integer", "number"]},
     "named": {"type": "object", "required": ["name"], "properties": {"name": {"type": "string"}}},

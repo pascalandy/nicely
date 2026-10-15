@@ -226,5 +226,10 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, lang string, extensions
 			}
 		})
 		domain.GroupID = extensionGroup
+		for _, d := range e.manifest.Commands {
+			addValuesCompletion(root, d, func(from contract.ValuesFrom, prefix string) []cobra.Completion {
+				return completeValues(extensions, lang, from, prefix)
+			})
+		}
 	}
 }
