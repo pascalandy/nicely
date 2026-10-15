@@ -77,7 +77,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - An answer and its exit code always agree; exit 75 alone permits an automatic retry
 - A problem names what went wrong with its code, and may name the next command as words
 - A command declares the services whose keys it may need
-- A grant lets one key reach one extension
+- A grant lets one key reach one extension at one source
 - A report command keeps its report on stdout, even when a check fails
 - Doctor lists the checks of an extension's status command under the extension's component
 - Completion takes the values that only an extension knows from a list command
@@ -136,6 +136,11 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Project note: [Completion values](contract.md#completion-values) defines when completion may run one: never one that writes a user file or bills
 - Grant
   - Def.: the permission, given by a human in a terminal, for one extension to receive one key
+  - Project note: [Grants](contract.md#grants) binds it to the extension's domain and source, the path where discovery found the extension until taps
+- Optional key
+  - Def.: a service that a command declares but runs without, such as a harness key, whose harness then uses its own login
+  - Project note: the `keys` table of a [manifest](contract.md#manifest) marks it, and a missing one never fails `ncly auth status` or `ncly doctor`
+  - Distinct from: a conditional program, which a command needs only for some configs
 - Service
   - Def.: a network service whose key `ncly auth` manages, such as Deepgram, named `deepgram`
   - Project note: [Keys](contract.md#keys) defines its name and the variable of its key, such as `DEEPGRAM_API_KEY`. A command declares its services in the `requires.keys` of its manifest
