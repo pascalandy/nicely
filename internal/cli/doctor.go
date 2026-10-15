@@ -100,6 +100,13 @@ func addDoctor(p *i18n.Printer, root *cobra.Command, extensions []*extension) {
 			components = components[i : i+1]
 		}
 		r := report{Checks: []check{}}
+		// Invalid config fails the report even for another component, whose
+		// independent checks still run.
+		if components[0].name != "core" {
+			if config := coreChecks(p, extensions); config[0].Status == statusFail {
+				r.Checks = append(r.Checks, config[0])
+			}
+		}
 		for _, c := range components {
 			r.Checks = append(r.Checks, c.checks()...)
 		}

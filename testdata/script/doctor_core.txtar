@@ -39,6 +39,9 @@ schema fail.json describe.json schema
 exits 78 ncly doctor --json
 stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"core\.config","component":"core","status":"fail","code":"CONFIG_INVALID",.*\},\{"id":"extensions\.hello","component":"extensions","status":"pass",'
 ! stdout '"errors"'
+# A selected component keeps that failure, before its own checks
+exits 78 ncly doctor extensions --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"core\.config","component":"core","status":"fail","code":"CONFIG_INVALID",[^}]*\},\{"id":"extensions\.hello","component":"extensions","status":"pass",'
 exits 78 ncly doctor core
 stdout '\Afail  core\.config  '${CFG@R}'/config\.toml has an error on line 2\.\n      hint: Fix '${CFG@R}'/config\.toml\.\n\z'
 ! stderr .
