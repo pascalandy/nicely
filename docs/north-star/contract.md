@@ -170,7 +170,7 @@ The set of codes is open: later milestones add core codes, and every extension a
 |---|---|---|---|
 | `USAGE_INVALID` | 2 | Unknown command, bad flag, or a missing value in non-interactive mode | M00 |
 | `CONFIRMATION_REQUIRED` | 2 | A step needs a confirmation in non-interactive mode, and `--force` is absent, or a human declined it in interactive mode | M00 |
-| `CONFIG_INVALID` | 78 | A config file has a syntax error or a value of the wrong type, or cannot be read | M00 |
+| `CONFIG_INVALID` | 78 | A config file, or the grants file of [Grants](#grants), has a syntax error or a value of the wrong type, cannot be read, or holds a `format_version` that this `ncly` does not support | M00 |
 | `EXTENSION_INVALID` | 78 | The extension of the named domain cannot run: its manifest or its `en` catalog is missing, unreadable, or invalid, or speaks another format or contract version. In `ncly doctor`, its status command gave an answer that doctor rejects, or failed with an exit code other than 78, as [Status command](#status-command) defines | M01 |
 | `TERMINAL_REQUIRED` | 78 | A step needs a human at a terminal, such as typing or granting a key | M00 |
 | `RUNTIME` | 1 | Any other failure during work | M00 |
@@ -182,7 +182,7 @@ The set of codes is open: later milestones add core codes, and every extension a
 | `CHECK_TIMEOUT` | 78 | A check of `ncly doctor` did not finish within its `--timeout` | M05 |
 | `AUTH_MISSING` | 78 | A required key is in neither the environment nor the keychain | M06 |
 | `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for an `auth.<service>` check of `ncly doctor` | M06 |
-| `KEY_NOT_GRANTED` | 78 | An extension needs a key that no human granted to it | M08 |
+| `KEY_NOT_GRANTED` | 78 | An extension needs a key that no human granted to it at its source, as [Grants](#grants) defines | M08 |
 | `CAPABILITY_UNSUPPORTED` | 78 | The selected program cannot enforce a required mode or protocol | M09 |
 | `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401 | M13 |
 | `RESUME_UNSAFE` | 1 | A run cannot safely continue because evidence is missing, changed, uncertain, or unsupported | M15 |
@@ -194,6 +194,7 @@ Warnings use codes from this table, and an extension's own warnings start with i
 | `CONFIG_UNKNOWN_KEY` | A config file holds a key that this version of `ncly` does not know | M00 |
 | `CONFIG_DEFAULTS_USED` | Discovery used defaults because a config file could not be read | M03 |
 | `KEYRING_ENV_ONLY` | The OS keychain does not answer, so keys come only from the environment. The `auth.keychain` check of `ncly doctor` warns with it | M06 |
+| `GRANT_UNUSED` | A grant names a service that the extension of its domain no longer declares, or a source that no longer holds that extension. The `auth.grants` check of `ncly doctor` warns with it | M08 |
 
 ## Configuration
 
@@ -210,7 +211,7 @@ A path in a config file is absolute or starts with `~/`, which stands for the ho
 | Shared config | `~/.config/nicely/config.toml` |
 | Local config | `~/.config/nicely/config.local.toml` |
 | Data: taps and extensions | `~/.local/share/nicely/` |
-| State: logs, locks, and run history | `~/.local/state/nicely/` |
+| State: logs, locks, run history, and grants | `~/.local/state/nicely/` |
 | Cache: extracted programs, such as transcript's Python program | `~/.cache/nicely/` |
 
 Each path honors `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_STATE_HOME`, or `XDG_CACHE_HOME` when it holds an absolute path, as the XDG specification asks, and ignores a relative one. macOS uses the same paths as Linux. `NCLY_CONFIG` names another shared config file, and the local config is then read from the same folder.
@@ -322,13 +323,15 @@ exit = 1
 | `commands[].doctor` | boolean | Optional, from M05. `true` marks the domain's status command, which doctor runs to collect the extension's own checks, as [Status command](#status-command) defines |
 | `commands[].config` | array | Optional, from M03. The config keys that the command reads, as dotted paths under its domain, such as `agent.default_profile`. A key covers every key beneath it, so `agent.profiles` covers each profile. [ncly describe](core-spec.md#ncly-describe) reports their values and sources, and doctor checks the extension's table against them from M05, as [Configuration](#configuration) defines |
 | `commands[].requires.bins` | array | From M03. The names of the programs that the command may run, each a key of `programs` |
-| `commands[].requires.keys` | array | From M03. The services whose keys the command may need, each a service name, as [Keys](#keys) defines. `ncly auth status` and `ncly doctor` read them from M06 |
+| `commands[].requires.keys` | array | From M03. The services whose keys the command may need, each a service name, as [Keys](#keys) defines. `ncly auth status` and `ncly doctor` read them from M06, and core passes their granted keys from M08, as [Grants](#grants) defines |
 | `errors` | array | The extension's own error codes, each with `code` and `exit`, in the order that decides which one leads an answer, as [Output](#output) defines |
 | `programs` | table | From M03. One table per program that a command may run, keyed by the name of the executable that core looks for in `PATH`, such as `[programs.ffmpeg]`, so that each program has one definition. M03 reads the names, and M05 the keys below. [Required programs](core-spec.md#required-programs) defines how doctor checks them |
 | `programs.<name>.conditional` | boolean | Optional, from M05. `true` when a command needs the program only for some configs or invocations, such as one harness among several, and no command needs it on every call. Doctor never checks a conditional program |
 | `programs.<name>.version` | string | Optional, from M05. The oldest version that works, as numbers joined by dots, such as `6.0`. Without it, finding the program is enough, and doctor starts no probe |
 | `programs.<name>.probe` | array | Optional, from M05. The arguments that make the program print its version, `["--version"]` by default, such as `["-version"]` for `ffmpeg` |
 | `programs.<name>.install` | table | Optional, from M05. One install command per package manager, each an array of words under the name of its package manager, such as `pacman = ["sudo", "pacman", "-S", "ffmpeg"]`. [Required programs](core-spec.md#required-programs) lists the names that doctor knows |
+| `keys` | table | Optional, from M08. One table per service that needs more than its name, keyed by the service's name, such as `[keys.anthropic]`, as `programs` holds one table per program |
+| `keys.<service>.optional` | boolean | Optional, from M08. `true` when each command that declares the service runs without its key, such as a harness that falls back to its own login, as [Grants](#grants) defines |
 
 A manifest is invalid unless every rule below holds. Core rejects it before work, as [Compatibility](#compatibility) asks of a format version that it does not support:
 
@@ -342,7 +345,7 @@ A manifest is invalid unless every rule below holds. Core rejects it before work
 - Each own code starts with the domain in uppercase and an underscore, such as `HELLO_GRUMPY`, differs from every core code, appears once, and maps to `1`, `2`, or `78`. Exit 75 belongs to `TEMPORARY` alone, because [Retry safety](#retry-safety) judges the whole invocation, and 130 and 143 belong to the signals
 - A command that sets `doctor` is a status command that qualifies, as [Status command](#status-command) defines
 - Each key of `programs` is a file name, without `/`, and at least one command names it. Each name in the `requires.bins` of a command is a key of `programs`, and appears once there
-- Each name in the `requires.keys` of a command is a service name, as [Keys](#keys) defines, and appears once there
+- Each name in the `requires.keys` of a command is a service name, as [Keys](#keys) defines, and appears once there. Each key of `keys` is a service that the `requires.keys` of at least one command names, and its `optional` is a boolean
 - A schema is valid JSON Schema draft 2020-12, declares no other `$schema`, and is a table whose `type` is `object`, and whose top level, once its references are resolved, holds only `type`, `properties`, `required`, `title`, `description`, and `$schema`, which describe the answer's keys. The item of a batch's `results`, when declared, follows the same rule. Each `$ref` in it is local and resolves within it, without a cycle, and it holds no `$id`, `$anchor`, `$dynamicRef`, or `$dynamicAnchor`. A `text` result has no schema, and only a command whose `modes` set `dry_run` has `dry_run_schema`
 - Each key in the `config` of a command starts with the domain, holds at least two words joined by dots, each of lowercase letters, digits, hyphens, and underscores that starts with a letter, and appears once there
 - From M05, a `version` is one or more numbers joined by dots, a `probe` is a non-empty array of strings, and each command of `install` is a non-empty array of strings
@@ -470,7 +473,7 @@ func Check(e Extension) error
 func ParseSkill(data []byte) (Frontmatter, error)
 ```
 
-`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. `Main` prints the result by its kind, from the command's `result`:
+`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. From M08, `Call.Key` takes a service that the command declares and returns its key, or the problem that `NCLY_MISSING_KEYS` names for it, with the hint and `next` of [Grants](#grants), so a handler returns that problem and never builds one. `Main` prints the result by its kind, from the command's `result`:
 
 - `object` and `batch`: in human mode, the handler writes its text to `Stdout`. With `--json`, it writes nothing there, and the SDK prints the answer from the outcome
 - `report`: in human mode, the handler writes its report to `Stdout`. With `--json`, the SDK prints the findings from the outcome's data on stdout, in an answer without `errors`, as [Output](#output) says. In both modes, the handler returns its findings in that data, and sets the outcome's `HumanNeeded` when a finding needs a human, which makes the exit code 78 instead of 0, and `ok` false with `--json`. Core's doctor uses the same outcome from M05
@@ -609,9 +612,25 @@ A new item has `output`, the output folder that will hold its result folder. An 
 
 ## Grants
 
-A key reaches an extension only after a human grants that key to that extension in a terminal, as [D030](decisions/D030-trusted-extensions.md) decides. `--force` never grants a key. Grants stay on one machine, in local state, and bind the key to the extension's domain and source. An extension from another source inherits no grant through its name. An update that declares a new key gets nothing until a human grants it. Core never refuses to start an extension over a key, because only the extension knows whether this invocation needs it: a summary-only resume of transcript needs no Deepgram key. The extension answers `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED` when it lacks a key it needs. Grants are consent and protection against accidental leaks, not isolation.
+A key reaches an extension only after a human grants that key to that extension in a terminal, through [ncly auth](core-spec.md#ncly-auth) `grant`, as [D030](decisions/D030-trusted-extensions.md) and [D058](decisions/D058-grants-by-path.md) decide. `--force` never grants a key. Grants are consent and protection against accidental leaks, not isolation.
 
-In a nested call, such as transcript calling `ncly agent run`, core passes the keys of the inner extension from the keychain, or from the environment that reached it. A key that exists only in the outer shell's environment does not cross an extension that was not granted it, so the harness key of a nested agent run comes from the keychain, or the harness uses its own login. [M08](../milestones/M08-grants.md) settles the grant command and its record here.
+A grant binds a service to an extension's domain and source. The source of an external extension is the absolute path where [Discovery](#discovery) found its executable, without resolving a link, as the `path` of [ncly doctor](core-spec.md#ncly-doctor) reports it: `null` for a bundled extension. [M12](../milestones/M12-taps.md) adds the identity of a tap. An extension from another source inherits no grant through its name, such as another `ncly-transcript` earlier in `PATH`. A new version at the same path keeps its grants, and a key that it declares for the first time reaches it only after a human grants it.
+
+Grants stay on one machine, in `grants.json` in the state folder, such as `~/.local/state/nicely/grants.json`. The file is one JSON object with `format_version`, `1`, and `grants`, an array of objects with `service`, `domain`, `path`, and `granted_at`, an ISO 8601 time, and holds one grant for each service and domain. Core writes it as [Record format](#record-format) writes a record, under the lock `grants.lock` beside it, and revalidates it under that lock. A missing file holds no grant. A file that core cannot read, or that holds another `format_version`, grants nothing, and `ncly auth grant`, `revoke`, and `status` fail with `CONFIG_INVALID`, whose hint names the file.
+
+When core starts a command of an extension, it passes the key of each service that the command's `requires.keys` declares and that a human granted to this extension at its source, from the service's variable or, when the variable is empty, from the keychain, as [Keys](#keys) reads it. It passes no other key. `NCLY_MISSING_KEYS` names each declared service whose key it does not pass, as `<service>=<code>`, separated by commas, in the order of `requires.keys`, such as `deepgram=KEY_NOT_GRANTED`:
+
+- `KEY_NOT_GRANTED` when no human granted the key to this extension at its source
+- `KEYRING_UNAVAILABLE` when the variable is empty and the keychain does not answer
+- `AUTH_MISSING` when neither the variable nor the keychain holds the key
+
+Core leaves `NCLY_MISSING_KEYS` out when it passes every declared key. A dry run, and a [status command](#status-command) without `--live=true`, receive no key, because neither sends a request: core reads no key for them, and `NCLY_MISSING_KEYS` names only the services that no human granted, so a dry run reports a missing grant without a keychain read.
+
+Core never refuses to start an extension over a key, and never asks for a grant when it starts one, because only the extension knows whether this invocation needs the key: a summary-only resume of transcript needs no Deepgram key. The extension answers the code that `NCLY_MISSING_KEYS` names for a key that it needs, with that code's hint and `next`: `ncly auth grant <service> <domain>` for `KEY_NOT_GRANTED`, `ncly auth login <service>` for `AUTH_MISSING`, and, for `KEYRING_UNAVAILABLE`, a hint that names the variable to export and no `next`, as [Keys](#keys) defines. A Go extension gets this problem from the SDK, as [SDK](#sdk) defines.
+
+An optional key, which a manifest marks in its `keys` table, as [Manifest](#manifest) defines, follows the same rules. The command runs without it, such as a harness that uses its own login, so a missing grant, a missing key, and an unavailable keychain never block that fallback, and [ncly auth](core-spec.md#ncly-auth) `status` and [ncly doctor](core-spec.md#ncly-doctor) report it without failing.
+
+In a nested call, such as transcript calling `ncly agent run`, the inner `ncly` applies these rules to the inner extension, with the variables that reached it and the keychain. A key that exists only in the outer shell's environment does not cross an extension that was not granted it, so the harness key of a nested agent run comes from the keychain, or the harness uses its own login.
 
 ## Programs that ncly runs
 
@@ -621,12 +640,10 @@ One program starts outside the program runner. On macOS, go-keyring, which `inte
 
 **Environment.** A program receives the environment of its parent with these changes:
 
-- Each variable named `<NAME>_API_KEY` is the key of a service. An extension receives it only when a human granted that key to it, and core then sets it from the environment or the keychain. An extension passes a key on only to the program that its spec names, such as `DEEPGRAM_API_KEY` to transcript's Python program
+- Each variable named `<NAME>_API_KEY` is the key of a service. An extension receives it only when a human granted that key to it, and core then sets it from the environment or the keychain, and `NCLY_MISSING_KEYS` names each declared key that it does not receive, as [Grants](#grants) defines. An extension passes a key on only to the program that its spec names, such as `DEEPGRAM_API_KEY` to transcript's Python program
 - The variables of the global flags carry their resolved values: `NCLY_JSON`, `NCLY_NO_INPUT`, and `NCLY_VERBOSE` equal `1` when their flag resolves on and are removed otherwise, `NO_COLOR` equals `1` when color resolves off and is removed otherwise, and `NCLY_LANG` holds the requested language tag, as [Text of an extension](#text-of-an-extension) defines. `NCLY_DEBUG` passes unchanged. `NCLY_VERSION` and `NCLY_CONTRACT_VERSION` identify the release and public protocol.
 - `NCLY_BIN` holds the absolute path of the running `ncly`, so that a program calls another domain through the same host, as cargo passes `CARGO` to its subcommands
 - A harness receives `NCLY_AGENT_DEPTH` plus one, as the [agent extension](../../extensions/agent/spec.md#depth-limit) defines
-
-A key may be optional, such as a harness key: the extension receives it when it is granted and present, and otherwise the harness uses its own login. An unavailable keychain for an optional key does not block that fallback.
 
 **Process groups.** The program runner starts each program in its own process group, so a Ctrl-C at the terminal reaches `ncly` alone, and the runner signals the program. A program that may read the terminal stays in the process group of `ncly` instead: an extension, which asks through its forms. A qualifying list command that completion runs, and a status command that doctor runs, never ask, so each gets its own group, as [Completion values](#completion-values) and [Status command](#status-command) define. A process outside the terminal's foreground group stops when it reads the terminal, as [D047](decisions/D047-terminal-process-group.md) explains. A program can therefore receive the same signal more than once, from the terminal, from `ncly`, and from the extension that started it, and it treats a repeat during its cleanup as no new event.
 
