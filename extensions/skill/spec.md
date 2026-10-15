@@ -23,6 +23,7 @@ ncly skill status [--json]
 - `list` returns each skill's `name`, `description`, `path`, and `source`, sorted by name byte by byte, in `skills`, an empty array when no source holds a skill. Without `--json`, it prints one line per skill: its name, then its description. `source` is `config` for a folder of `paths`, `bundled` for the `nicely` skill, and `extension` for an installed extension's skill. M12 adds `tap`, so a reader accepts a value that it does not know. The bundled skill has no folder, so its `path` is `null`.
 - `view` prints the `SKILL.md` of the skill. When the skill has a folder, the first line gives it, so the relative paths inside the skill resolve: `<!-- skill-dir: /Users/me/code/skills/transcript -->`. In interactive mode, Glamour renders the Markdown, from M07.
 - A mode, such as `andy-mode`, is a skill like any other. `view` prints its router, which names its routes.
+- `view` finds the skill as `list` does, and adds none of the warnings of `list`, which describe other skills.
 - An unknown name exits 2 with `NOT_FOUND`, whose `next` is `ncly skill list`.
 - Completion suggests skill names after `ncly skill view`: the `name` argument declares `values_from` on `skill list`, as [Completion values](../../docs/north-star/contract.md#completion-values) defines.
 
