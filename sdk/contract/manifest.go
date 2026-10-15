@@ -343,7 +343,7 @@ func checkValues(path string, c Command) error {
 			return broken("extension.required", data(f.Name))
 		case f.Variadic && f.Value == "":
 			return broken("extension.variadic", data(f.Name))
-		case f.Default != nil && (f.Required || f.Variadic || !typed(f.Default, f.FlagType())):
+		case f.Default != nil && (f.Required || f.Variadic || !typed(f.Default, f.FlagType()) || f.Value == "" && f.Default != false):
 			return broken("extension.default", data(f.Name))
 		}
 	}
