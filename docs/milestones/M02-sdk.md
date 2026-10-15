@@ -15,7 +15,7 @@ The SDK is the Go implementation of the contract between core and its extensions
 - One entry point in `sdk/extension` serves both transports: a bundled extension runs as a child of the same `ncly` binary, as [D051](../north-star/decisions/D051-bundled-child-process.md) decides
 - The SDK reads an extension's own codes from its manifest and its text from its catalogs, beside the SDK's catalog
 - A lint rule forbids `sdk/`, `extensions/`, and the fixture to import `internal/`, so a bundled extension can leave the binary without a rewrite
-- A first-party extension keeps everything it owns in `extensions/<name>/`: `manifest.toml`, `locales/`, `spec.md`, `SKILL.md`, `testdata/script/`, and its code. Its first consumer is `skill` in [M04](M04-skill.md)
+- A first-party extension keeps everything it owns in `extensions/<name>/`: `manifest.toml`, `locales/`, `spec.md`, `skill/` with its `SKILL.md`, as [SDK](../north-star/contract.md#sdk) defines, `testdata/script/`, and its code. Its first consumer is `skill` in [M04](M04-skill.md)
 - The Go fixture extension `hello` lives in `testdata/extensions/hello/`, outside `extensions/`, which is the official tap, and follows the same layout. It mirrors the shell fixture of M01, with an own code, an own warning, and a command that blocks until it is cancelled
 
 ## Cards
