@@ -61,8 +61,24 @@ stdout '"result":\{"kind":"object","keys":\[\],"schema":\{'
 exec ncly bare run --json
 schema stdout bare.json schema
 
+# A batch's schema requires an item's data only when the item succeeded, keeps the
+# constraints of results, and keeps literal values, such as a const that holds $defs
+exec ncly describe bare batch --json
+cp stdout batch.json
+stdout '"keys":\["results"\]'
+stdout '"minItems":1'
+exits 1 ncly bare batch --json
+schema stderr batch.json schema
+! schema empty.json batch.json schema
+
+-- empty.json --
+{"ok":true,"contract_version":1,"results":[]}
 -- bin/ncly-bare --
 #!/bin/sh
+if [ "$1" = batch ]; then
+  echo '{"ok":false,"contract_version":1,"results":[{"ok":true,"value":"a","mark":{"$defs":"literal"}},{"ok":false,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}],"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}' >&2
+  exit 1
+fi
 echo '{"ok":true,"contract_version":1,"anything":[1]}'
 -- bin/ncly-bare.toml --
 format_version = 1
@@ -76,6 +92,25 @@ summary = "bare.summary"
 [[commands]]
 path = "bare run"
 summary = "bare.summary"
+
+[[commands]]
+path = "bare batch"
+summary = "bare.summary"
+
+[commands.result]
+kind = "batch"
+
+[commands.result.schema]
+type = "object"
+
+[commands.result.schema.properties.results]
+type = "array"
+minItems = 1
+
+[commands.result.schema.properties.results.items]
+type = "object"
+required = ["value"]
+properties = { value = { type = "string" }, mark = { const = { "$defs" = "literal" } } }
 -- bin/ncly-bare.locales/en.toml --
 ["bare.summary"]
 description = "Summary of the bare fixture."

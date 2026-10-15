@@ -1,11 +1,15 @@
 package contract
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"maps"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
 // SchemaDialect is the JSON Schema draft of every schema that ncly
@@ -19,71 +23,143 @@ var envelopeKeys = []string{"ok", "contract_version", "errors", "warnings"}
 // ResolveSchema returns a copy of a schema whose references are resolved
 // within it: each $ref, which must be local, such as #/$defs/item, gives
 // way to the schema that it points to, and $defs goes. Keywords beside a
-// $ref still apply, through allOf. A remote reference, $id, $anchor, or
-// $dynamicRef, a reference that points nowhere, and a cycle are errors.
+// $ref still apply, through allOf. Only the keywords that hold schemas are
+// walked, so a literal value, such as a const that holds $defs, stays as
+// it is. A schema that is not valid draft 2020-12, a remote reference,
+// $id, $anchor, $dynamicRef, a reference that points nowhere, a cycle, and
+// a root that resolves to no object are errors.
 func ResolveSchema(schema map[string]any) (map[string]any, error) {
+	if err := compileSchema(schema); err != nil {
+		return nil, err
+	}
 	resolved, err := inline(schema, schema, nil)
 	if err != nil {
 		return nil, err
 	}
-	return resolved.(map[string]any), nil
+	root, isObject := resolved.(map[string]any)
+	if !isObject {
+		return nil, errors.New("schema: the root resolves to no object schema")
+	}
+	return root, nil
 }
 
+// compileSchema checks a schema against draft 2020-12, with a loader that
+// refuses every remote schema.
+func compileSchema(schema map[string]any) error {
+	data, err := json.Marshal(schema)
+	if err != nil {
+		return err
+	}
+	doc, err := jsonschema.UnmarshalJSON(bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	c := jsonschema.NewCompiler()
+	c.DefaultDraft(jsonschema.Draft2020)
+	c.UseLoader(noRemote{})
+	if err := c.AddResource("schema.json", doc); err != nil {
+		return err
+	}
+	_, err = c.Compile("schema.json")
+	return err
+}
+
+// noRemote refuses to load a schema, so that a reference outside the
+// schema fails instead of reaching the network.
+type noRemote struct{}
+
+func (noRemote) Load(url string) (any, error) {
+	return nil, errors.New("schema: no remote schema: " + url)
+}
+
+// Keywords of draft 2020-12 that hold schemas: one schema, a map of
+// schemas, or a list of schemas. Every other keyword holds a literal value.
+var (
+	schemaKeywords = []string{
+		"additionalProperties", "items", "contains", "propertyNames", "if", "then", "else",
+		"not", "unevaluatedItems", "unevaluatedProperties", "contentSchema",
+	}
+	schemaMapKeywords  = []string{"properties", "patternProperties", "dependentSchemas"}
+	schemaListKeywords = []string{"prefixItems", "allOf", "anyOf", "oneOf"}
+)
+
+// inline resolves the references of one schema, an object or a boolean.
 func inline(node any, root map[string]any, seen []string) (any, error) {
-	switch n := node.(type) {
-	case map[string]any:
-		out := map[string]any{}
-		for _, key := range []string{"$id", "$anchor", "$dynamicRef", "$dynamicAnchor"} {
-			if _, found := n[key]; found {
-				return nil, errors.New("schema: " + key + " is not supported")
-			}
+	n, isObject := node.(map[string]any)
+	if !isObject {
+		return node, nil
+	}
+	for _, key := range []string{"$id", "$anchor", "$dynamicRef", "$dynamicAnchor"} {
+		if _, found := n[key]; found {
+			return nil, errors.New("schema: " + key + " is not supported")
 		}
-		for key, value := range n {
-			if key == "$ref" || key == "$defs" {
-				continue
-			}
-			v, err := inline(value, root, seen)
-			if err != nil {
-				return nil, err
-			}
-			out[key] = v
+	}
+	out := map[string]any{}
+	for key, value := range n {
+		var err error
+		switch {
+		case key == "$ref" || key == "$defs":
+			continue
+		case slices.Contains(schemaKeywords, key):
+			value, err = inline(value, root, seen)
+		case slices.Contains(schemaMapKeywords, key):
+			value, err = inlineEach(table(value), root, seen)
+		case slices.Contains(schemaListKeywords, key):
+			value, err = inlineList(list(value), root, seen)
 		}
-		raw, isRef := n["$ref"]
-		if !isRef {
-			return out, nil
-		}
-		ref, isString := raw.(string)
-		if !isString || !strings.HasPrefix(ref, "#") {
-			return nil, errors.New("schema: only a local $ref is supported")
-		}
-		if slices.Contains(seen, ref) {
-			return nil, errors.New("schema: $ref " + ref + " refers to itself")
-		}
-		target, found := pointer(root, ref)
-		if !found {
-			return nil, errors.New("schema: $ref " + ref + " points nowhere")
-		}
-		resolved, err := inline(target, root, append(slices.Clone(seen), ref))
 		if err != nil {
 			return nil, err
 		}
-		if len(out) == 0 {
-			return resolved, nil
-		}
-		out["allOf"] = append([]any{resolved}, list(out["allOf"])...)
-		return out, nil
-	case []any:
-		out := make([]any, len(n))
-		for i, value := range n {
-			v, err := inline(value, root, seen)
-			if err != nil {
-				return nil, err
-			}
-			out[i] = v
-		}
+		out[key] = value
+	}
+	raw, isRef := n["$ref"]
+	if !isRef {
 		return out, nil
 	}
-	return node, nil
+	ref, isString := raw.(string)
+	if !isString || !strings.HasPrefix(ref, "#") {
+		return nil, errors.New("schema: only a local $ref is supported")
+	}
+	if slices.Contains(seen, ref) {
+		return nil, errors.New("schema: $ref " + ref + " refers to itself")
+	}
+	target, found := pointer(root, ref)
+	if !found {
+		return nil, errors.New("schema: $ref " + ref + " points nowhere")
+	}
+	resolved, err := inline(target, root, append(slices.Clone(seen), ref))
+	if err != nil {
+		return nil, err
+	}
+	if len(out) == 0 {
+		return resolved, nil
+	}
+	out["allOf"] = append([]any{resolved}, list(out["allOf"])...)
+	return out, nil
+}
+
+func inlineEach(schemas map[string]any, root map[string]any, seen []string) (any, error) {
+	out := map[string]any{}
+	for name, schema := range schemas {
+		resolved, err := inline(schema, root, seen)
+		if err != nil {
+			return nil, err
+		}
+		out[name] = resolved
+	}
+	return out, nil
+}
+
+func inlineList(schemas []any, root map[string]any, seen []string) (any, error) {
+	out := make([]any, len(schemas))
+	for i, schema := range schemas {
+		resolved, err := inline(schema, root, seen)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = resolved
+	}
+	return out, nil
 }
 
 func list(value any) []any {
@@ -144,10 +220,19 @@ var dataKeywords = []string{"$schema", "title", "description", "type", "properti
 
 // IsDataSchema reports whether a resolved schema can describe the data keys
 // of an answer: an object schema whose top level holds only dataKeywords,
-// so that AnswerSchema drops no constraint.
+// so that AnswerSchema drops no constraint. The item of a batch's results,
+// when declared, follows the same rule.
 func IsDataSchema(schema map[string]any) bool {
 	for key := range schema {
 		if !slices.Contains(dataKeywords, key) {
+			return false
+		}
+	}
+	results, declared := table(schema["properties"])["results"]
+	if declared {
+		r, isObject := results.(map[string]any)
+		item, hasItem := r["items"]
+		if !isObject || hasItem && (table(item) == nil || !IsDataSchema(table(item))) {
 			return false
 		}
 	}
@@ -173,18 +258,7 @@ func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 	properties["warnings"] = problems
 	success := slices.Clone(list(data["required"]))
 	if kind == ResultBatch {
-		results := table(properties["results"])
-		item := table(results["items"])
-		itemProperties := map[string]any{}
-		maps.Copy(itemProperties, table(item["properties"]))
-		itemProperties["ok"] = map[string]any{"type": "boolean"}
-		itemProperties["errors"] = problems
-		itemSchema := map[string]any{}
-		maps.Copy(itemSchema, item)
-		itemSchema["type"] = "object"
-		itemSchema["properties"] = itemProperties
-		itemSchema["required"] = append([]any{"ok"}, list(item["required"])...)
-		properties["results"] = map[string]any{"type": "array", "items": itemSchema}
+		properties["results"] = resultsSchema(table(properties["results"]), problems)
 		if !slices.Contains(success, any("results")) {
 			success = append(success, "results")
 		}
@@ -200,6 +274,28 @@ func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 		schema["then"] = map[string]any{"required": success}
 	}
 	return schema
+}
+
+// resultsSchema wraps the schema of a batch's results, keeping its own
+// constraints, such as minItems. Each item adds ok and errors to the item
+// that the declaration describes, and holds its required keys only when it
+// succeeded.
+func resultsSchema(declared map[string]any, problems map[string]any) map[string]any {
+	item := table(declared["items"])
+	properties := map[string]any{}
+	maps.Copy(properties, table(item["properties"]))
+	properties["ok"] = map[string]any{"type": "boolean"}
+	properties["errors"] = problems
+	itemSchema := map[string]any{"type": "object", "required": []any{"ok"}, "properties": properties}
+	if required := list(item["required"]); len(required) > 0 {
+		itemSchema["if"] = map[string]any{"properties": map[string]any{"ok": map[string]any{"const": true}}}
+		itemSchema["then"] = map[string]any{"required": required}
+	}
+	results := map[string]any{}
+	maps.Copy(results, declared)
+	results["type"] = "array"
+	results["items"] = itemSchema
+	return results
 }
 
 // Keys returns the top-level data keys of a successful answer that data
