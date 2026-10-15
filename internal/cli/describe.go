@@ -41,9 +41,9 @@ type entry struct {
 	// Skill is present on the entry of an extension's domain alone, where it
 	// holds the folder of the extension's skill, or null as a nil *string.
 	Skill any `json:"skill,omitempty"`
-	// declaration is the command's, whose text text renders. A group only
-	// groups the commands under it, so describe lists them instead of
-	// detailing it.
+	// declaration is the command's declaration, whose catalog IDs text
+	// renders. A group only groups the commands under it, so describe lists
+	// them instead of detailing it.
 	declaration contract.Command
 	text        *i18n.Printer
 	group       bool
@@ -225,10 +225,15 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 // the order of their paths: core's, then each valid extension's.
 func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 	var all []entry
-	for _, d := range coreCommands() {
+	core := coreCommands()
+	for _, d := range core {
+		// As in a manifest, a command with children and no arguments groups them.
+		children := slices.ContainsFunc(core, func(other contract.Command) bool {
+			return len(other.Path) > len(d.Path) && slices.Equal(other.Path[:len(d.Path)], d.Path)
+		})
 		all = append(all, entry{
 			Path: strings.Join(d.Path, " "), Summary: p.T(d.Summary), Source: sourceCore,
-			declaration: d, text: p, group: slices.Equal(d.Path, completionCommand.Path),
+			declaration: d, text: p, group: children && len(d.Args) == 0,
 		})
 	}
 	for _, e := range extensions {
