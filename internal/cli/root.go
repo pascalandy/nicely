@@ -125,6 +125,7 @@ func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension) *cobra
 	root.AddCommand(help)
 	addCompletion(p, root)
 	addDescribe(p, g.Lang, root, extensions)
+	addDoctor(p, root, extensions)
 	addExtensions(root, p, g, extensions)
 	return root
 }
@@ -154,13 +155,13 @@ func target(words []string) string {
 }
 
 // neededExtensions finds the extensions that a command line needs: none
-// for a command of core other than describe, the one whose domain it
-// targets, and every one otherwise, for describe, for the root's help, for
-// completion, and for a word that names no command, whose help is the
-// root's.
+// for a command of core other than describe and doctor, the one whose
+// domain it targets, and every one otherwise, for describe, for doctor,
+// for the root's help, for completion, and for a word that names no
+// command, whose help is the root's.
 func neededExtensions(h host, core *cobra.Command, words []string) []*extension {
 	name := target(words)
-	if name != "" && name != describeCommand.Path[0] && !isCompletionRequest(name) {
+	if name != "" && name != describeCommand.Path[0] && name != doctorCommand.Path[0] && !isCompletionRequest(name) {
 		if isCommand(core, name) {
 			return nil
 		}

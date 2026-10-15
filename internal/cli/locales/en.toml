@@ -157,6 +157,54 @@ other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} a config key that the command declares, such as hello.greeting, and {{.Domain}} the extension's domain, which starts each key. config is a key and stays as is."
 other = "{{.File}} lists \"{{.Name}}\" in config of the command \"{{.Path}}\", which must name a key under {{.Domain}} once, as words of lowercase letters, digits, hyphens, and underscores joined by dots."
 
+["doctor.summary"]
+description = "Help page and ncly describe: summary of `ncly doctor`, which checks the config, the programs, the keys, and the extensions of this machine, and never installs anything."
+other = "Check this machine's config, tools, keys, and extensions"
+
+["doctor.component"]
+description = "Help page: summary of the component argument of `ncly doctor`, a part that doctor checks, such as core or the domain of an extension."
+other = "The part to check, such as core; all of them when omitted"
+
+["doctor.no_component"]
+description = "Error of `ncly doctor` when its argument names no component. {{.Component}} is that argument, and {{.Components}} the names of the components, such as core, which stay as is."
+other = "Doctor has no component {{.Component}}. Its components are: {{.Components}}."
+
+["doctor.status_pass"]
+description = "Report of `ncly doctor`: the label of a check that passed, before its id. A short word, as the labels of a warning and of a failure."
+other = "pass"
+
+["doctor.status_warn"]
+description = "Report of `ncly doctor`: the label of a check that found a problem that never fails the report, before its id."
+other = "warn"
+
+["doctor.status_fail"]
+description = "Report of `ncly doctor`: the label of a check that failed and needs a human, before its id."
+other = "fail"
+
+["doctor.config_valid"]
+description = "Report of `ncly doctor`: message of the core.config check when every config file parses and holds only known keys, or when there is none."
+other = "The config files are valid."
+
+["doctor.config_unreadable"]
+description = "Report of `ncly doctor`: message of the failed core.config check when a config file cannot be read. {{.File}} is the path of the file."
+other = "{{.File}} cannot be read."
+
+["doctor.config_invalid_line"]
+description = "Report of `ncly doctor`: message of the failed core.config check when a config file has an error on a known line. {{.File}} is the path of the file, and {{.Line}} a line number."
+other = "{{.File}} has an error on line {{.Line}}."
+
+["doctor.config_invalid_hint"]
+description = "Report of `ncly doctor`: hint of the failed core.config check, what the user does next. {{.File}} is the path of the config file."
+other = "Fix {{.File}}."
+
+["doctor.unknown_key"]
+description = "Report of `ncly doctor`: message of a core.config warning about a config key that neither ncly nor an installed extension knows. {{.File}} is the path of the file, and {{.Key}} the key, such as hello.volume, which stays as is."
+other = "{{.File}} holds the unknown key {{.Key}}."
+
+["doctor.unknown_key_hint"]
+description = "Report of `ncly doctor`: hint under doctor.unknown_key, what the user does next. {{.Key}} is the key, which stays as is, and {{.File}} the path of the file."
+other = "Remove or rename {{.Key}} in {{.File}}."
+
 ["describe.defaults_used"]
 description = "Warning of `ncly describe` when a config file cannot be read, so the configuration that it reports is the default one. {{.File}} is the path of the file."
 other = "{{.File}} cannot be read, so the configuration shown is the default one."

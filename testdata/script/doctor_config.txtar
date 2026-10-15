@@ -1,0 +1,89 @@
+# Each unknown key of a config file is a warn entry of core.config with CONFIG_UNKNOWN_KEY,
+# whose hint names the key and its file, in the shared and in the local config. A key that
+# the manifest of an installed extension declares gets none, and neither does a table named
+# after a domain that no installed extension has. A key beneath an unknown one adds no entry,
+# and a warning never fails the report. The shell fixture appends its call to $WORK/ran.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+cp shared.toml $CFG/config.toml
+cp local.toml $CFG/config.local.toml
+
+exec ncly doctor --json
+answer stdout ok
+stdout '"checks":\[\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.toml holds the unknown key colour\.","hint":"Remove or rename colour in '${CFG@R}'/config\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.toml holds the unknown key hello\.volume\.","hint":"Remove or rename hello\.volume in '${CFG@R}'/config\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.toml holds the unknown key describe\.","hint":"Remove or rename describe in '${CFG@R}'/config\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.local\.toml holds the unknown key future\.","hint":"Remove or rename future in '${CFG@R}'/config\.local\.toml\."\},\{"id":"core\.config","component":"core","status":"warn","code":"CONFIG_UNKNOWN_KEY","message":"'${CFG@R}'/config\.local\.toml holds the unknown key hello\.extra\.","hint":"Remove or rename hello\.extra in '${CFG@R}'/config\.local\.toml\."\}\]\}$'
+! stdout 'greeting|away|later|"pass"'
+! stderr .
+exec ncly doctor core
+stdout '\Awarn  core\.config  '${CFG@R}'/config\.toml holds the unknown key colour\.\n      hint: Remove or rename colour in '${CFG@R}'/config\.toml\.\n'
+! stderr .
+exec ncly --lang en-XA doctor
+pseudo stdout core.config colour hello.volume describe future hello.extra
+
+# A known key alone, or an empty table named after a domain that no extension has, passes
+cp known.toml $CFG/config.toml
+rm $CFG/config.local.toml
+exec ncly doctor --json
+stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\}\]\}$'
+
+! exists ran
+
+-- shared.toml --
+lang = "en"
+colour = "blue"
+
+[hello]
+greeting = "Hi"
+volume = 11
+
+[away]
+anything = 1
+
+[away.deeper]
+setting = true
+
+[describe]
+depth = 2
+-- local.toml --
+future = 1
+
+[hello]
+greeting = "Hey"
+
+[hello.extra]
+depth = 2
+
+[later]
+-- known.toml --
+lang = "en"
+
+[hello]
+greeting = "Hi"
+
+[later]
+-- bin/ncly-hello --
+#!/bin/sh
+echo "hello $*" >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+config = ["hello.greeting"]
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Summary of hello run."
+other = "Greet someone"

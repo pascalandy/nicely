@@ -56,9 +56,9 @@ exits 2 ncly --lang --json nope
 stderr 'Unknown command "nope"'
 
 # A reserved name never reaches the extension registry
-exits 2 ncly doctor --json
+exits 2 ncly tap --json
 answer stderr USAGE_INVALID
-stderr 'doctor'
+stderr 'tap'
 
 # An unknown help topic is a usage error too
 exits 2 ncly help nope --json

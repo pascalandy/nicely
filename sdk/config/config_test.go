@@ -101,9 +101,9 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoadCollectsUnknownKeysPerFile(t *testing.T) {
-	p := files(t, "lang = \"en\"\n[skill]\npaths = [\"~/code/skills\"]\n", "future = 1\n")
+	p := files(t, "lang = \"en\"\n[skill]\npaths = [\"~/code/skills\"]\n", "future = 1\nlater = {}\n")
 	_, unknown, err := Load(p)
-	want := []Key{{p.Shared, "skill"}, {p.Shared, "skill.paths"}, {p.Local, "future"}}
+	want := []Key{{p.Shared, "skill", true}, {p.Shared, "skill.paths", false}, {p.Local, "future", false}, {p.Local, "later", true}}
 	if err != nil || !reflect.DeepEqual(unknown, want) {
 		t.Errorf("unknown keys %v, %v; want %v", unknown, err, want)
 	}

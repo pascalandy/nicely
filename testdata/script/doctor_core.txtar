@@ -1,0 +1,79 @@
+# ncly doctor reports its checks on stdout, even when one fails. The core component checks
+# the config files. The shell fixture appends its call to $WORK/ran, and doctor never starts it.
+chmod 755 bin/ncly-hello
+env PATH=$WORK/bin:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+
+# Without a config file, core.config passes, and doctor exits 0 with its checks on stdout
+exec ncly doctor --json
+answer stdout ok
+stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\}\]\}$'
+! stderr .
+cp stdout pass.json
+exec ncly describe doctor --json
+stdout '"kind":"report","keys":\["checks"\]'
+cp stdout describe.json
+schema pass.json describe.json schema
+exec ncly doctor core --json
+cmp stdout pass.json
+exec ncly doctor
+stdout '\Apass  core\.config  The config files are valid\.\n\z'
+! stderr .
+
+# An invalid config file is the failed core.config check with CONFIG_INVALID: exit 78, the
+# checks on stdout, a hint that names the file, and no errors
+cp broken.toml $CFG/config.toml
+exits 78 ncly doctor --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"core\.config","component":"core","status":"fail","code":"CONFIG_INVALID","message":"'${CFG@R}'/config\.toml has an error on line 2\.","hint":"Fix '${CFG@R}'/config\.toml\."\}\]\}\n\z'
+! stdout '"errors"'
+! stderr .
+cp stdout fail.json
+schema fail.json describe.json schema
+exits 78 ncly doctor core --json
+cmp stdout fail.json
+exits 78 ncly doctor
+stdout '\Afail  core\.config  '${CFG@R}'/config\.toml has an error on line 2\.\n      hint: Fix '${CFG@R}'/config\.toml\.\n\z'
+! stderr .
+exits 78 ncly --lang en-XA doctor
+pseudo stdout core.config
+rm $CFG/config.toml
+
+# An unknown component is a failure of doctor itself: NOT_FOUND with exit 2, on stderr
+exits 2 ncly doctor nope --json
+answer stderr NOT_FOUND
+stderr '"message":"Doctor has no component nope\. Its components are: core\.","hint":"ncly doctor","next":\["ncly","doctor"\]'
+! stdout .
+exits 2 ncly --lang en-XA doctor nope
+pseudo stderr doctor
+
+! exists ran
+
+-- broken.toml --
+[hello]
+greeting = [
+-- bin/ncly-hello --
+#!/bin/sh
+echo "hello $*" >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.run.summary"
+config = ["hello.greeting"]
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.run.summary"]
+description = "Summary of hello run."
+other = "Greet someone"

@@ -68,9 +68,11 @@ type Config struct {
 }
 
 // Key is a key of a config file that this version of ncly does not know.
+// Table is true for a table, such as [skill], whose keys come after it.
 type Key struct {
-	File string
-	Name string
+	File  string
+	Name  string
+	Table bool
 }
 
 // InvalidError reports a config file with a syntax error or a value of the
@@ -121,7 +123,7 @@ func read(p Paths) ([]layer, []Key, error) {
 			return nil, nil, invalid(file, err)
 		}
 		for _, key := range meta.Undecoded() {
-			unknown = append(unknown, Key{File: file, Name: key.String()})
+			unknown = append(unknown, Key{File: file, Name: key.String(), Table: meta.Type(key...) == "Hash"})
 		}
 		layers = append(layers, layer{file: file, values: values})
 	}

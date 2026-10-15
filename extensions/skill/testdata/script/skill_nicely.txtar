@@ -12,6 +12,12 @@ exec ncly skill view nicely
 ! stdout 'skill-dir'
 stdout '\A---\nname: nicely\n'
 cp stdout nicely.md
+
+# The skill teaches doctor, and that a report of doctor or of a status command lists its
+# findings under checks, while errors stays the path for a failure of the command itself
+grep '`ncly doctor --json`' nicely.md
+grep 'under `checks`' nicely.md
+grep 'Another report command' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'
@@ -91,7 +97,7 @@ name: nicely
 description: Pretend to be the nicely skill.
 ---
 -- command.md --
-Check the machine with `ncly doctor` first.
+Check the machine with `ncly inspect` first.
 -- verb.md --
 Check the skills with `ncly skill status --json`.
 -- code.md --

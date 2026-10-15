@@ -70,21 +70,32 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 }
 
 // shipped lists the milestones whose commands core declares.
-var shipped = []string{"M00", "M03"}
+var shipped = []string{"M00", "M03", "M05"}
 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the
 // entries of the command tree that shipped, such as
 // "completion zsh|bash|fish". A word in brackets, such as [command...], is
-// an argument, not a command.
+// an argument, not a command. A bundled extension, the bundled rows of the
+// domain table in architecture.md, declares its own commands.
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	spec, err := specdoc.Block("../../docs/north-star/core-spec.md", "Command tree")
 	if err != nil {
 		t.Fatal(err)
 	}
+	tables, err := specdoc.Tables("../../docs/north-star/architecture.md", "Domains and commands")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var bundled []string
+	for _, row := range tables[0] {
+		if row[2] == "bundled" {
+			bundled = append(bundled, specdoc.Backticked(row[0])...)
+		}
+	}
 	var want []string
 	for _, line := range spec {
 		fields := strings.Fields(strings.TrimLeft(line, "│├└─ "))
-		if len(fields) < 2 || !slices.Contains(shipped, fields[len(fields)-1]) {
+		if len(fields) < 2 || !slices.Contains(shipped, fields[len(fields)-1]) || slices.Contains(bundled, fields[0]) {
 			continue
 		}
 		path := fields[0]

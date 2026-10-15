@@ -70,7 +70,7 @@ cmp stderr broken.json
 
 # Under the pseudo-locale, every word of the list and of the error comes from a catalog
 exec ncly --lang en-XA describe
-pseudo stdout bonjour dire hello run completion bash fish zsh describe skill list view
+pseudo stdout bonjour dire hello run completion bash fish zsh describe doctor skill list view
 exits 2 ncly --lang en-XA describe nope
 pseudo stderr describe
 
@@ -84,6 +84,7 @@ completion bash  Print the completion script for bash
 completion fish  Print the completion script for fish
 completion zsh   Print the completion script for zsh
 describe         Describe installed commands and their capabilities
+doctor           Check this machine's config, tools, keys, and extensions
 hello            Greet people
 hello run        Greet someone by name
 skill            Find the skills that teach agents
