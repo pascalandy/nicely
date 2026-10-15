@@ -194,7 +194,8 @@ exits 78 ncly dnetwork --json
 stderr 'sets doctor on the command \\"dnetwork status\\"'
 exits 78 ncly dmode --json
 stderr 'sets doctor on the command \\"dmode status\\"'
-# The status command of its domain may set doctor, with live and timeout
+# The status command of its domain may set doctor, with live and timeout, even a variadic one,
+# since the one value that doctor passes fits it
 exec sh mkdoctor.sh
 exec ncly dok status --help
 stdout '--live'
@@ -1063,6 +1064,7 @@ summary = "dok.summary"
 [[commands.flags]]
 name = "timeout"
 value = "duration"
+variadic = true
 summary = "dok.summary"
 TOML
 -- broken/configkey.toml --

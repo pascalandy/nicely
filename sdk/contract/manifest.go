@@ -437,13 +437,14 @@ func (m Manifest) Qualifies(c Command) bool {
 // followed by status, which runs, answers a report, takes no argument and
 // no flag group, has live and timeout as its only own flags, neither
 // required nor limited to values, with live a switch that defaults to
-// false and timeout a string, declares effects that neither write nor
-// bill, and live when they use the network, and sets no mode.
+// false and timeout a string, so each call that doctor builds passes
+// validation, declares effects that neither write nor bill, and live when
+// they use the network, and sets no mode.
 func (m Manifest) IsStatus(c Command) bool {
 	live := false
 	for _, f := range c.Flags {
 		switch {
-		case f.Required || len(f.Values) > 0 || f.Variadic || f.ValuesFrom != nil:
+		case f.Required || len(f.Values) > 0:
 			return false
 		case f.Name == "live" && f.Value == "" && f.FlagType() == TypeBoolean && (f.Default == nil || f.Default == false):
 			live = true

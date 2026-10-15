@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -84,7 +85,11 @@ func status(ctx context.Context, call extension.Call) contract.Outcome {
 		}
 		return "", false
 	}
-	for _, folder := range folders {
+	for i, folder := range folders {
+		// A folder that [skill] paths lists twice holds the same problems.
+		if slices.Index(folders, folder) != i {
+			continue
+		}
 		entries, err := os.ReadDir(folder)
 		if err != nil {
 			warn("skill.sources", codeSourceMissing, "skill.source_missing", "skill.source_missing_hint", map[string]any{"Folder": folder, "File": file})

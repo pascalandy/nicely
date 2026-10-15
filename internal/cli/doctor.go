@@ -102,9 +102,9 @@ type component struct {
 }
 
 // addDoctor adds ncly doctor, which reports its checks on stdout even when
-// one fails, as a report command does. It starts no extension, and runs
-// the version probes one at a time, because the cleanup of the runner
-// reaches every descendant of ncly.
+// one fails, as a report command does. It runs the version probes, then
+// each status command, one at a time, because the cleanup of the runner
+// reaches every descendant of ncly, and starts no other program.
 func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension) {
 	root.AddCommand(command.Build(p, p, doctorCommand, func(c *cobra.Command, args []string) error {
 		timeout, problem := parseTimeout(p, c.Flag("timeout"))

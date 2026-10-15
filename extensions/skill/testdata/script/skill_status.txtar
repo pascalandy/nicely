@@ -15,7 +15,8 @@ exec ncly skill status --json
 stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"skill\.sources","component":"skill","status":"pass","message":"Every folder of \[skill\] paths can be read\."\},\{"id":"skill\.names","component":"skill","status":"warn","code":"SKILL_NAME_MISMATCH","message":"The skill of the extension bye in '${WORK@R}'/bin/ncly-bye\.skill is named hi, not bye\.","hint":"Rename the skill in '${WORK@R}'/bin/ncly-bye\.skill/SKILL\.md to bye\."\},\{"id":"skill\.files","component":"skill","status":"pass","message":"Every SKILL\.md is valid\."\}\]\}\n\z'
 ! stderr .
 
-# A missing folder, a skill named after another folder, and a broken SKILL.md warn
+# A missing folder, a skill named after another folder, and a broken SKILL.md warn, once even
+# when [skill] paths lists a folder twice
 cp problems.toml $CFG/config.toml
 exec ncly skill status --json
 stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"skill\.sources","component":"skill","status":"warn","code":"SKILL_SOURCE_MISSING",[^}]*'${WORK@R}'/missing[^}]*\},\{"id":"skill\.names","component":"skill","status":"warn","code":"SKILL_NAME_MISMATCH","message":"The skill in '${WORK@R}'/skills/wrongdir is named right, not wrongdir\.","hint":"Rename the folder '${WORK@R}'/skills/wrongdir to right, or the name in '${WORK@R}'/skills/wrongdir/SKILL\.md to wrongdir\."\},\{"id":"skill\.names","component":"skill","status":"warn","code":"SKILL_NAME_MISMATCH","message":"The skill of the extension bye in '${WORK@R}'/bin/ncly-bye\.skill is named hi, not bye\.",[^}]*\},\{"id":"skill\.files","component":"skill","status":"warn","code":"SKILL_INVALID",[^}]*'${WORK@R}'/skills/broken/SKILL\.md[^}]*\}\]\}\n\z'
@@ -46,7 +47,7 @@ stdout '"checks":\[\{"id":"skill\.status","component":"skill","status":"fail","c
 paths = ["~/skills/good-only"]
 -- problems.toml --
 [skill]
-paths = ["~/skills", "~/missing"]
+paths = ["~/skills", "~/missing", "~/skills"]
 -- broken.toml --
 [skill]
 paths = "~/skills"
