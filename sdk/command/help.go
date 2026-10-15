@@ -44,7 +44,11 @@ func HelpFunc(p *i18n.Printer, noColor bool) func(*cobra.Command, []string) {
 		}
 		for _, s := range sections {
 			if len(s.Entries) > 0 {
-				page.Usage = c.CommandPath() + " <command> [flags]"
+				// A group's usage names its commands, while a command that
+				// runs keeps its own, which its declaration gives.
+				if c.Annotations[runsAnnotation] == "" {
+					page.Usage = c.CommandPath() + " <command> [flags]"
+				}
 				page.Sections = append(page.Sections, s)
 			}
 		}

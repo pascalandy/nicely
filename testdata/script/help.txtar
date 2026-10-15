@@ -137,6 +137,15 @@ stdout '^Effects: changes your files\. Preview them with --dry-run\.$'
 exec ncly-bundled describe hello pick --json
 agree page.txt stdout
 
+# A command with arguments and children runs, so its usage line is its own, not a group's
+chmod 755 bin/ncly-probe
+exec ncly probe run --help
+cp stdout page.txt
+stdout '^  ncly probe run <target> --mode <name> \[flags\]$'
+stdout '^  fast: +Probe fast$'
+exec ncly describe probe run --json
+agree page.txt stdout
+
 # Under the pseudo-locale, every word of the page comes from a catalog, and the page still agrees
 exec ncly --lang en-XA shop buy --help
 cp stdout page.txt
@@ -295,3 +304,43 @@ other = "Pack in a bag"
 ["shop.buy.box"]
 description = "The --box flag of shop buy."
 other = "Pack in a box"
+-- bin/ncly-probe --
+#!/bin/sh
+echo "probe $*" >> "$WORK/ran"
+-- bin/ncly-probe.toml --
+format_version = 1
+contract_version = 1
+domain = "probe"
+
+[[commands]]
+path = "probe"
+summary = "probe.summary"
+
+[[commands]]
+path = "probe run"
+summary = "probe.summary"
+examples = ["ncly probe run host-a --mode quick", "ncly probe run fast"]
+effects = {}
+
+[[commands.args]]
+name = "target"
+summary = "probe.summary"
+required = true
+
+[[commands.flags]]
+name = "mode"
+value = "name"
+required = true
+summary = "probe.summary"
+
+[[commands]]
+path = "probe run fast"
+summary = "probe.fast"
+-- bin/ncly-probe.locales/en.toml --
+["probe.summary"]
+description = "Summary of the probe fixture."
+other = "Probe a host"
+
+["probe.fast"]
+description = "Summary of probe run fast."
+other = "Probe fast"

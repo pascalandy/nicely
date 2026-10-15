@@ -58,6 +58,7 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 		c.RunE = func(c *cobra.Command, _ []string) error { return c.Help() }
 	} else {
 		c.Annotations = effectAnnotations(d)
+		c.Annotations[runsAnnotation] = "true"
 	}
 	for _, f := range d.Flags {
 		addFlag(c.Flags(), text, f)
@@ -120,8 +121,12 @@ func usage(d contract.Command) string {
 
 // effectsAnnotation keeps the effects of a command that runs, which its
 // help names in one line: user_writes, network, and paid, then dry_run when
-// it supports --dry-run.
-const effectsAnnotation = "ncly-effects"
+// it supports --dry-run. runsAnnotation marks a command that runs, whose
+// usage stays its own even when it has children.
+const (
+	effectsAnnotation = "ncly-effects"
+	runsAnnotation    = "ncly-runs"
+)
 
 func effectAnnotations(d contract.Command) map[string]string {
 	e := d.DeclaredEffects()
@@ -135,7 +140,7 @@ func effectAnnotations(d contract.Command) map[string]string {
 		}
 	}
 	if len(effects) == 0 {
-		return nil
+		return map[string]string{}
 	}
 	if d.Modes.DryRun {
 		effects = append(effects, "dry_run")
