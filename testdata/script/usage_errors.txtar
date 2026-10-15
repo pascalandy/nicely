@@ -3,7 +3,7 @@ exits 2 ncly nope --json
 ! stdout .
 answer stderr USAGE_INVALID
 stderr '"message":"Unknown command \\"nope\\"."'
-stderr '"hint":"ncly --help"'
+stderr '"hint":"ncly --help","next":\["ncly","--help"\]'
 
 # --json works before the bad argument too
 exits 2 ncly --json nope
@@ -24,7 +24,7 @@ exits 2 ncly --unknown-flag --json
 ! stdout .
 answer stderr USAGE_INVALID
 stderr '--unknown-flag'
-stderr '"hint":"ncly --help"'
+stderr '"hint":"ncly --help","next":\["ncly","--help"\]'
 
 # An unknown shorthand names its letter
 exits 2 ncly -z --json

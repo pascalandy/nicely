@@ -41,11 +41,11 @@ stdout 'fish'
 # An unknown shell or an extra word is a usage error that points to the right help
 exits 2 ncly completion tcsh --json
 answer stderr USAGE_INVALID
-stderr '"hint":"ncly completion --help"'
+stderr '"hint":"ncly completion --help","next":\["ncly","completion","--help"\]'
 exits 2 ncly completion zsh extra --json
 answer stderr USAGE_INVALID
 stderr '"message":"Unexpected argument \\"extra\\"."'
-stderr '"hint":"ncly completion zsh --help"'
+stderr '"hint":"ncly completion zsh --help","next":\["ncly","completion","zsh","--help"\]'
 exits 2 ncly help completion tcsh --json
 answer stderr USAGE_INVALID
 

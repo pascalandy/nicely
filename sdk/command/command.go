@@ -43,11 +43,7 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 			if c.HasSubCommands() {
 				return Fail(UnknownCommand(p, c, extra))
 			}
-			return Fail(contract.Problem{
-				Code:    contract.UsageInvalid,
-				Message: p.T("usage.unexpected_argument", map[string]any{"Arg": extra}),
-				Hint:    c.CommandPath() + " --help",
-			})
+			return Fail(HelpUsage(c, p.T("usage.unexpected_argument", map[string]any{"Arg": extra})))
 		},
 		RunE: run,
 		// Beyond its declared arguments, a command takes no word, so the
@@ -108,11 +104,18 @@ func AddGlobalFlags(root *cobra.Command, p *i18n.Printer) {
 
 // UnknownCommand reports a word that names no command under c.
 func UnknownCommand(p *i18n.Printer, c *cobra.Command, word string) contract.Problem {
-	return contract.Problem{
-		Code:    contract.UsageInvalid,
-		Message: p.T("usage.unknown_command", map[string]any{"Name": word}),
-		Hint:    c.CommandPath() + " --help",
-	}
+	return HelpUsage(c, p.T("usage.unknown_command", map[string]any{"Name": word}))
+}
+
+// HelpUsage reports USAGE_INVALID with the help of c as its hint.
+func HelpUsage(c *cobra.Command, message string) contract.Problem {
+	return Usage(message, c.CommandPath()+" --help")
+}
+
+// Usage reports USAGE_INVALID whose hint is a command that runs as is, so
+// the same command is its next, as Output in contract.md asks.
+func Usage(message, hint string) contract.Problem {
+	return contract.Problem{Code: contract.UsageInvalid, Message: message, Hint: hint, Next: strings.Fields(hint)}
 }
 
 // valueAnnotation keeps the declared name of a flag's value, such as tag.
@@ -130,7 +133,7 @@ func addFlag(set *pflag.FlagSet, p *i18n.Printer, f contract.Flag) {
 
 // flagProblem turns a parser error into USAGE_INVALID with catalog text.
 func flagProblem(p *i18n.Printer, c *cobra.Command, err error) contract.Problem {
-	problem := contract.Problem{Code: contract.UsageInvalid, Hint: c.CommandPath() + " --help"}
+	problem := HelpUsage(c, "")
 	var (
 		notExist *pflag.NotExistError
 		required *pflag.ValueRequiredError

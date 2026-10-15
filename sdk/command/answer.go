@@ -107,7 +107,7 @@ func Finish(p *i18n.Printer, g Globals, codes contract.Registry, out *Output, er
 	}
 	var failed *Failure
 	if !errors.As(err, &failed) {
-		failed = Fail(contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid"), Hint: hint})
+		failed = Fail(Usage(p.T("usage.invalid"), hint))
 	}
 	return Report(p, g, codes, failed.Outcome, stdout, stderr)
 }
