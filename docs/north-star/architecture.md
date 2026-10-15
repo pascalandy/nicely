@@ -58,7 +58,7 @@ Each part has one owner: one package and one spec section.
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
 | 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/`, from M02 | [SDK](contract.md#sdk) |
-| 2 | Command line | Declarations turned into commands, global flags, help pages, and answers printed | `sdk/command/` | [Command descriptions](contract.md#command-descriptions), [Output](contract.md#output) |
+| 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract.md#command-descriptions), [Output](contract.md#output) |
 | 2 | Program runner | Child environment, process groups, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/`, from M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs), [Required programs](core-spec.md#required-programs) |
 | 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/`, from M10 | [Operations](contract.md#operations) |
 | 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract.md#configuration) |

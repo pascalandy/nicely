@@ -81,7 +81,9 @@ Interactive mode applies when stdin and stdout are terminals, `--no-input` and `
 | A step needs a confirmation and `--force` is absent | Asks for confirmation. Any answer but yes changes nothing and exits 2 with `CONFIRMATION_REQUIRED` | Exit 2, `CONFIRMATION_REQUIRED`, and a hint that adds `--force` |
 | A step only a human can do, such as typing or granting a key | Asks | Exit 78, `TERMINAL_REQUIRED`, and a hint that names the command to run in a terminal |
 
-After an interactive run that used a form, `ncly` prints the equivalent command on stderr, after the line `Next time:`. The command itself is never translated.
+The form for missing values asks before any other step, then the command runs as if the call had held those values. It asks for each required argument and each required flag that the call lacks, and, for a flag group whose `min` the call does not reach, which flag of the group to set, then that flag's value. A value whose declaration lists `values` is a choice among them. Any other value is a text field that suggests what [completion](#completion-values) would suggest and accepts any other value, as completion does, and a variadic value asks for one value. Core asks for the missing values of an extension's command from its manifest, before it starts the extension, so every extension gets the form without code of its own. Ctrl-C at a form exits 130 with `INTERRUPTED` before the command does anything.
+
+After an interactive run that used this form, `ncly` prints the equivalent command on stderr, after the line `Next time:`: the call with the values from the form, quoted for a POSIX shell. The command itself is never translated. The masked field of a key and a confirmation fill no missing value, so neither prints this line, and the line never holds a key or `--force`.
 
 ## Output
 
