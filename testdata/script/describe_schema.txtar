@@ -67,7 +67,8 @@ schema stdout bare.json schema
 ! schema noerror.json bare.json schema
 
 # A batch's schema requires an item's data only when the item succeeded, keeps the
-# constraints of results, and keeps literal values, such as a const that holds $defs
+# constraints of results, keeps literal values, such as a const that holds $defs, and
+# allows no failed item in a success
 exec ncly describe bare batch --json
 cp stdout batch.json
 stdout '"keys":\["results"\]'
@@ -76,6 +77,8 @@ exits 1 ncly bare batch --json
 schema stderr batch.json schema
 ! schema empty.json batch.json schema
 ! schema baditem.json batch.json schema
+schema okbatch.json batch.json schema
+! schema okfailed.json batch.json schema
 
 # A batch's dry run answers plan instead of results, so its schema needs no results
 exec ncly bare batch --dry-run --json
@@ -94,6 +97,10 @@ stdout '"count":\{"minimum":0,"type":"integer"\}'
 {"ok":true,"contract_version":1,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}
 -- noerror.json --
 {"ok":false,"contract_version":1,"errors":[]}
+-- okbatch.json --
+{"ok":true,"contract_version":1,"results":[{"ok":true,"value":"a"}]}
+-- okfailed.json --
+{"ok":true,"contract_version":1,"results":[{"ok":false,"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}]}
 -- baditem.json --
 {"ok":false,"contract_version":1,"results":[{"ok":false}],"errors":[{"code":"RUNTIME","message":"m","hint":"h"}]}
 -- bin/ncly-bare --

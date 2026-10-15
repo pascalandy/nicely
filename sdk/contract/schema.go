@@ -254,9 +254,10 @@ func IsDataSchema(schema map[string]any) bool {
 // data keys data describes, or nil for a text result. The envelope adds ok,
 // contract_version, errors, warnings, and, for a batch, results, whose items
 // add ok and errors to the item that data's results describes. A success
-// holds the keys that data requires and no error, and a failure other than
-// a report's holds at least one error. Unknown keys stay allowed, as
-// Compatibility asks. A nil data describes no key.
+// holds the keys that data requires and no error, nor a failed item for a
+// batch, and a failure other than a report's holds at least one error.
+// Unknown keys stay allowed, as Compatibility asks. A nil data describes no
+// key.
 func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 	if kind == ResultText {
 		return nil
@@ -268,11 +269,11 @@ func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 	properties["contract_version"] = map[string]any{"const": Version}
 	properties["errors"] = problems
 	properties["warnings"] = problems
-	success := slices.Clone(list(data["required"]))
+	required := slices.Clone(list(data["required"]))
 	if kind == ResultBatch {
 		properties["results"] = resultsSchema(table(properties["results"]), problems)
-		if !slices.Contains(success, any("results")) {
-			success = append(success, "results")
+		if !slices.Contains(required, any("results")) {
+			required = append(required, "results")
 		}
 	}
 	schema := map[string]any{
@@ -281,16 +282,21 @@ func AnswerSchema(kind ResultKind, data map[string]any) map[string]any {
 		"required":   []any{"ok", "contract_version"},
 		"properties": properties,
 	}
-	verdict(schema, success, kind != ResultReport)
+	success := verdict(schema, required, kind != ResultReport)
+	if kind == ResultBatch {
+		success["results"] = map[string]any{"items": map[string]any{"properties": map[string]any{"ok": map[string]any{"const": true}}}}
+	}
 	return schema
 }
 
 // verdict ties a schema to ok, as Answer check does: a success holds the
 // required keys and no error, and, when failureErrors is set, a failure
 // holds at least one error. A report's failure may list its findings
-// instead.
-func verdict(schema map[string]any, required []any, failureErrors bool) {
-	success := map[string]any{"properties": map[string]any{"errors": map[string]any{"maxItems": 0}}}
+// instead. It returns the properties that a success fits, so that a batch
+// can add that none of its items failed.
+func verdict(schema map[string]any, required []any, failureErrors bool) map[string]any {
+	properties := map[string]any{"errors": map[string]any{"maxItems": 0}}
+	success := map[string]any{"properties": properties}
 	if len(required) > 0 {
 		success["required"] = required
 	}
@@ -299,6 +305,7 @@ func verdict(schema map[string]any, required []any, failureErrors bool) {
 	if failureErrors {
 		schema["else"] = map[string]any{"required": []any{"errors"}, "properties": map[string]any{"errors": map[string]any{"minItems": 1}}}
 	}
+	return properties
 }
 
 // resultsSchema wraps the schema of a batch's results, keeping its own
