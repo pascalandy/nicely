@@ -31,7 +31,7 @@ Each extension ships a skill named after its domain: ncly skill view DOMAIN. The
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M04-T1 | Skill list | agent | — | done |
-| M04-T2 | Skill view | agent | M04-T1 | todo |
+| M04-T2 | Skill view | agent | M04-T1 | done |
 | M04-T3 | Skills from extensions | agent | M04-T2 | todo |
 | M04-T4 | The nicely skill | agent | M04-T2 | todo |
 | M04-T5 | Skill name completion | agent | M04-T2 | todo |
