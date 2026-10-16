@@ -151,7 +151,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Non-interactive mode
   - Def.: every case outside interactive mode. A missing value fails instead of opening a form
 - Plain prompt
-  - Def.: a one-line question in the terminal, such as the key prompt without echo of `ncly auth login` or a `y/N` confirmation
+  - Def.: a question in the terminal that the human answers by typing, such as the key prompt without echo of `ncly auth login` or a `[y/N]` confirmation, whose look [Modes](contract.md#modes) describes
   - Project note: [ncly auth](core-spec.md#ncly-auth) defines it. [M07](../milestones/M07-forms.md) replaces the key prompt with a masked field, and styles the confirmation, which stays a prompt, as [D059](decisions/D059-no-buttons.md) decides
   - Distinct from: a form, which the shared tui package builds and [Modes](contract.md#modes) describes
 
