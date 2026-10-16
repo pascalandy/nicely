@@ -24,6 +24,10 @@ The docs form layers like the code: the glossary fixes the words, the vision and
 6. A diagram is Mermaid source inside the doc that it explains, so GitHub, Obsidian, and agents all read it.
 7. `just test` checks every link and heading, the decision index, and the length of each file read every session. Fix a problem in the commit that causes it.
 
+## Write clear technical English
+
+Use the writing rules of ASD-STE100 Simplified Technical English, Issue 9 (January 15, 2025), when you write English prose. In procedures, give one instruction per sentence and use the imperative form. Limit procedural sentences to 20 words. In descriptive text, give each sentence one topic and limit it to 25 words. Use one term for each concept throughout the docs. Keep command syntax and code identifiers exact. Check the controlled dictionary before you claim formal STE compliance.
+
 ## Wait for Pascal's review before a merge
 
 Open each pull request ready for review, then stop. Merge only after Pascal has reviewed the pull request and says "merge", even when a plan, a milestone, or an earlier answer lets you merge. The project is new, and Pascal prefers to go slower so that he reviews the code.
