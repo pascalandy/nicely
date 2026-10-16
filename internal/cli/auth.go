@@ -80,7 +80,11 @@ func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions
 		k := keychain.New(b, interactive(g, c.OutOrStdout()))
 		r, err := authStatus(ctx, p, k, declaredServices(extensions))
 		if err != nil {
-			return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx))}, text: func(io.Writer) error { return nil }}
+			// The signal also reaches the program that the keychain call
+			// may have started, which the call leaves running.
+			signal := runner.SignalOf(ctx)
+			runner.Stop(signal)
+			return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(signal)}, text: func(io.Writer) error { return nil }}
 		}
 		failed := slices.ContainsFunc(r.Services, func(s serviceEntry) bool { return s.Code != "" })
 		return &answered{
@@ -122,12 +126,8 @@ func declaredServices(extensions []*extension) []string {
 // service its verdict. It returns the error of ctx when a signal ends it.
 func authStatus(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, services []string) (statusReport, error) {
 	r := statusReport{Keychain: "available", Services: []serviceEntry{}}
-	available, err := k.Available(ctx)
-	if err != nil {
+	if _, err := k.Available(ctx); err != nil {
 		return r, err
-	}
-	if !available {
-		r.Keychain = "unavailable"
 	}
 	for _, s := range services {
 		entry, err := serviceVerdict(ctx, p, k, s)
@@ -135,6 +135,11 @@ func authStatus(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, serv
 			return r, err
 		}
 		r.Services = append(r.Services, entry)
+	}
+	// A read can find the keychain unavailable after it answered the first
+	// question, so the report gives its state after the last read.
+	if available, _ := k.Available(ctx); !available {
+		r.Keychain = "unavailable"
 	}
 	return r, nil
 }

@@ -462,11 +462,11 @@ description = "Help page and ncly describe: summary of `ncly auth status`, which
 other = "List the keys that extensions need, and where each one comes from"
 
 ["auth.keychain_available"]
-description = "ncly auth status, human text: the line of the OS keychain, which answered the check. It follows the word keychain in the first column."
+description = "ncly auth status, human text: the line of the OS keychain, which answered every call of the command. It follows the word keychain in the first column."
 other = "The keychain answers."
 
 ["auth.keychain_unavailable"]
-description = "ncly auth status, human text: the line of the OS keychain, which did not answer the check, so keys come only from environment variables. It follows the word keychain in the first column."
+description = "ncly auth status, human text: the line of the OS keychain, which refused a call of the command or did not answer it in time, so keys come only from environment variables. It follows the word keychain in the first column."
 other = "The keychain does not answer, so keys come only from the environment."
 
 ["auth.from_env"]

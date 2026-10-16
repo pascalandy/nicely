@@ -8,6 +8,7 @@ env DATA=$WORK/.local/share/nicely/extensions
 # PATH keeps ncly alone, so the other commands of the test binary are no extensions here
 mkdir nbin
 exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+exec sh -c 'ln -s "$(command -v exitcode)" nbin/exitcode'
 env PATH=$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
@@ -79,6 +80,31 @@ stdout '"keychain":"unavailable","services":\[\{"service":"deepgram","configured
 stdout '\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE",'
 grep -count=1 '"call":"get"' test-keychain.jsonl
 grep -count=1 '"account":"keychain"' test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=
+
+# A keychain that answers its check, then refuses a read, counts as unavailable: the report
+# gives its state after the last read
+cp seed.jsonl test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=probe-only
+exits 78 ncly auth status --json
+stdout '"keychain":"unavailable","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE",'
+stdout '\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE",'
+grep -count=2 '"call":"get"' test-keychain.jsonl
+exits 78 ncly auth status
+stdout '\Akeychain  The keychain does not answer, so keys come only from the environment\.\n'
+
+# A signal during a keychain call reaches the program that the call started, as go-keyring
+# starts security on macOS, and status exits 143 with TERMINATED once that program ends
+env NCLY_TEST_KEYCHAIN=child
+exec exitcode exit.txt ncly auth status --json &
+waitfile keychain-child.pid
+term
+wait
+grep '^143$' exit.txt
+! stdout .
+answer stderr TERMINATED
+gone keychain-child.pid
+grep '^TERM$' keychain-child.sig
 env NCLY_TEST_KEYCHAIN=
 
 # The services of an invalid manifest never appear
