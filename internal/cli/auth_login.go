@@ -114,18 +114,14 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 			return stopped(ctx)
 		}
 		if stored && !force {
-			hint := strings.Join(append(call, "--force"), " ")
-			if !human {
-				return command.Fail(contract.Problem{Code: contract.ConfirmationRequired, Message: p.T("auth.replace_required", data), Hint: hint})
+			question := confirmation{
+				question: p.T("auth.replace_question", data),
+				required: p.T("auth.replace_required", data),
+				declined: p.T("auth.replace_declined", data),
+				hint:     strings.Join(append(call, "--force"), " "),
 			}
-			yes, err := confirm(ctx, os.Stdin, out, p.T("auth.replace_question", data), yesWords(p.T("auth.yes")))
-			switch {
-			case ctx.Err() != nil:
-				return stopped(ctx)
-			case err != nil:
+			if err := question.ask(ctx, p, human, out); err != nil {
 				return err
-			case !yes:
-				return command.Fail(contract.Problem{Code: contract.ConfirmationRequired, Message: p.T("auth.replace_declined", data), Hint: hint})
 			}
 		}
 		var key string
@@ -145,11 +141,7 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 			return command.Fail(contract.Problem{Code: contract.UsageInvalid, Message: p.T("auth.empty_key", data), Hint: hint})
 		}
 		if err := k.Store(ctx, service, key); err != nil {
-			unknown := writeUnknown(p, service, declaredServices(extensions), "auth.store_unknown")
-			if errors.Is(err, keychain.ErrWriteUnknown) {
-				return command.Fail(unknown)
-			}
-			return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx)), Errors: []contract.Problem{unknown}}, text: func(io.Writer) error { return nil }}
+			return failedWrite(ctx, err, writeUnknown(p, service, declaredServices(extensions), "auth.store_unknown"))
 		}
 		return &answered{
 			outcome: contract.Outcome{Data: changed{Service: service, Action: "login"}},
@@ -193,6 +185,44 @@ func plannedChange(p *i18n.Printer, service, action string) *answered {
 			return err
 		},
 	}
+}
+
+// confirmation is the confirmation that a change to a stored key needs,
+// until the confirmation form of M07: CONFIRMATION_REQUIRED with required
+// and the hint without a terminal, and the y/N question in one, where any
+// answer but yes keeps the key, with declined.
+type confirmation struct {
+	question, required, declined, hint string
+}
+
+// ask returns nil once the human said yes, and the answer of the command
+// otherwise.
+func (c confirmation) ask(ctx context.Context, p *i18n.Printer, human bool, out io.Writer) error {
+	problem := contract.Problem{Code: contract.ConfirmationRequired, Message: c.required, Hint: c.hint}
+	if !human {
+		return command.Fail(problem)
+	}
+	yes, err := confirm(ctx, os.Stdin, out, c.question, yesWords(p.T("auth.yes")))
+	switch {
+	case ctx.Err() != nil:
+		return stopped(ctx)
+	case err != nil:
+		return err
+	case !yes:
+		problem.Message = c.declined
+		return command.Fail(problem)
+	}
+	return nil
+}
+
+// failedWrite answers a write of the keychain that failed with unknown,
+// the RUNTIME of an unknown effect, or with the signal that ended it, whose
+// effect stays unknown too.
+func failedWrite(ctx context.Context, err error, unknown contract.Problem) error {
+	if errors.Is(err, keychain.ErrWriteUnknown) {
+		return command.Fail(unknown)
+	}
+	return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx)), Errors: []contract.Problem{unknown}}, text: func(io.Writer) error { return nil }}
 }
 
 // writeUnknown is the RUNTIME of a write whose effect is unknown. For a
