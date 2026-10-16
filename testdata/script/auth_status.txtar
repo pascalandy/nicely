@@ -105,6 +105,13 @@ grep '^143$' exit.txt
 answer stderr TERMINATED
 gone keychain-child.pid
 grep '^TERM$' keychain-child.sig
+
+# A Ctrl-C at the terminal reaches the keychain's program and ncly together, so the call can
+# fail before ncly sees its own copy: status still exits 130 with INTERRUPTED
+env NCLY_TEST_KEYCHAIN=interrupt
+exits 130 ncly auth status --json
+! stdout .
+answer stderr INTERRUPTED
 env NCLY_TEST_KEYCHAIN=
 
 # The services of an invalid manifest never appear

@@ -110,6 +110,8 @@ func (k *Keychain) Read(ctx context.Context, account string) (string, bool, erro
 		switch {
 		case errors.Is(a.err, ErrNotFound):
 			return "", false, nil
+		case a.err != nil && stoppedMeanwhile(ctx):
+			return "", false, ctx.Err()
 		case a.err != nil:
 			k.unavailable = true
 			return "", false, ErrUnavailable
@@ -120,5 +122,23 @@ func (k *Keychain) Read(ctx context.Context, account string) (string, bool, erro
 		return "", false, ErrUnavailable
 	case <-ctx.Done():
 		return "", false, ctx.Err()
+	}
+}
+
+// signalSettle is how long a call that failed waits for a signal that ncly
+// received at the same time. A Ctrl-C at the terminal reaches the program
+// that go-keyring starts, such as security, and ncly together, so that
+// program may fail before ncly sees its own copy, which the Go runtime
+// delivers within a millisecond. The program runner waits the same way.
+const signalSettle = 25 * time.Millisecond
+
+// stoppedMeanwhile reports whether ctx ends within signalSettle of a call
+// that failed, so that the call answers the signal rather than its failure.
+func stoppedMeanwhile(ctx context.Context) bool {
+	select {
+	case <-ctx.Done():
+		return true
+	case <-time.After(signalSettle):
+		return false
 	}
 }
