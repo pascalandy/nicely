@@ -46,7 +46,7 @@ A card that changes the steps or the end state of a feature updates its file fir
 just verify cleanup "$run"
 ```
 
-`cleanup` removes `$run/scratch/` and `$run/build/`, and keeps `$run/evidence/`. It refuses a folder that `start` did not create. Run it after a failed run too, so no scratch folder stays. Done when it lists the evidence files and `$run/scratch` is gone.
+`cleanup` removes `$run/scratch/` and `$run/build/`, and keeps `$run/evidence/`. It refuses a folder that `start` did not create. When the run prepared the `auth` feature, it first logs the fake key out of the real keychain with `ncly auth logout`, then checks with `ncly auth status` that the key is gone, both in `$run/evidence/cleanup.txt`. When the key may remain, it keeps the scratch folder and exits 1, so a second cleanup can try again. Run it after a failed run too, so no scratch folder and no fake key stay. Done when it lists the evidence files and `$run/scratch` is gone.
 
 ## Evidence
 

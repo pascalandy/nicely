@@ -137,6 +137,17 @@ func (k *Keychain) Store(ctx context.Context, account, key string) error {
 	return k.write(ctx, func() error { return k.backend.Set(Service, account, key) })
 }
 
+// Remove deletes the entry of an account, as Store writes one. An entry
+// that is already gone counts as removed.
+func (k *Keychain) Remove(ctx context.Context, account string) error {
+	return k.write(ctx, func() error {
+		if err := k.backend.Delete(Service, account); !errors.Is(err, ErrNotFound) {
+			return err
+		}
+		return nil
+	})
+}
+
 func (k *Keychain) write(ctx context.Context, call func() error) error {
 	done := make(chan error, 1)
 	go func() { done <- call() }()

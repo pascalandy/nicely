@@ -1,0 +1,127 @@
+# ncly auth logout removes the key of a service from the keychain. It checks the name first,
+# then asks the keychain, and a service without a stored key exits 2 with NOT_FOUND before
+# any confirmation. It never changes the environment. The test keychain is the file
+# $HOME/test-keychain.jsonl, and pty runs a command on a pseudo-terminal.
+env DATA=$WORK/.local/share/nicely/extensions
+chmod 755 $DATA/ncly-hello
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env OPENAI_API_KEY=
+cp seed.jsonl test-keychain.jsonl
+
+# With --force, logout removes the key and answers action and service, after which status no
+# longer finds it
+exec ncly auth logout deepgram --force --json
+stdout '\A\{"ok":true,"contract_version":1,"action":"logout","service":"deepgram"\}\n\z'
+! stderr .
+grep -count=1 '"call":"delete","account":"deepgram"\}' test-keychain.jsonl
+cp stdout $TMPDIR/logout.json
+exec ncly describe 'auth logout' --json
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/logout.json $TMPDIR/describe.json schema
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING",'
+
+# A service without a stored key exits 2 with NOT_FOUND before any confirmation, with the
+# next ncly auth status, and a hint that names the variable when the variable holds a key
+cp test-keychain.jsonl $TMPDIR/before.jsonl
+exits 2 ncly auth logout deepgram --json
+answer stderr NOT_FOUND
+stderr '"hint":"ncly auth status","next":\["ncly","auth","status"\]'
+env DEEPGRAM_API_KEY=dg-from-env
+exits 2 ncly auth logout deepgram --json
+answer stderr NOT_FOUND
+stderr '"hint":"The key of deepgram comes from DEEPGRAM_API_KEY, which ncly auth logout never changes: unset it in your shell\.","next":\["ncly","auth","status"\]'
+! stderr dg-from-env
+env DEEPGRAM_API_KEY=
+exits 2 pty nothing.txt ncly auth logout deepgram
+! stdout 'y/N'
+stderr '^error\[NOT_FOUND\]'
+
+# Without a terminal and without --force, a removal needs a confirmation and keeps the key
+exits 2 ncly auth logout openai --json
+answer stderr CONFIRMATION_REQUIRED
+stderr '"hint":"ncly auth logout openai --force"'
+! stderr '"next"'
+! grep '"call":"delete","account":"openai"' test-keychain.jsonl
+
+# In a terminal, a declined prompt keeps the key, and a confirmed one removes it
+exits 2 pty decline.txt ncly auth logout openai
+stdout '\ARemove the key of openai from the keychain\? \[y/N\] n\n\z'
+stderr '^error\[CONFIRMATION_REQUIRED\]: The key of openai stays in the keychain\.$'
+stderr '^echo on$'
+! grep '"call":"delete","account":"openai"' test-keychain.jsonl
+exec pty accept.txt ncly auth logout openai
+stdout 'y/N\] y\nRemoved the key of openai from the keychain\.\n\z'
+grep -count=1 '"call":"delete","account":"openai"\}' test-keychain.jsonl
+
+# An unavailable keychain exits 78 with KEYRING_UNAVAILABLE, whose hint asks to unlock it
+env NCLY_TEST_KEYCHAIN=unavailable
+exits 78 ncly auth logout mistral --force --json
+answer stderr KEYRING_UNAVAILABLE
+stderr '"hint":"Unlock the keychain, then try again\."'
+! stderr '"next"'
+
+# A name that is no service name exits 2 with USAGE_INVALID before any other step
+env NCLY_TEST_KEYCHAIN=hang
+cp test-keychain.jsonl $TMPDIR/before.jsonl
+exits 2 ncly auth logout keychain --force --json
+answer stderr USAGE_INVALID
+cmp test-keychain.jsonl $TMPDIR/before.jsonl
+
+# A removal that gets no answer exits 1 with RUNTIME and the next ncly auth status once the
+# shortened limit passes, after which status, in a new process, no longer finds the key
+env NCLY_TEST_KEYCHAIN=
+exec sh -c 'echo dg-again | ncly auth login deepgram --stdin --json'
+env NCLY_TEST_KEYCHAIN=write-hang
+exits 1 ncly auth logout deepgram --force --json
+answer stderr RUNTIME
+stderr '"hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
+env NCLY_TEST_KEYCHAIN=
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING",'
+
+# For a service that no installed extension declares, the hint names Nicely's entry instead
+env NCLY_TEST_KEYCHAIN=write-hang
+exits 1 ncly auth logout mistral --force --json
+answer stderr RUNTIME
+stderr '"hint":"Look for the account mistral of the service nicely in the OS keychain\."\}'
+env NCLY_TEST_KEYCHAIN=
+
+# Under the pseudo-locale, every word comes from the catalog
+exec ncly --lang en-XA auth logout --help
+pseudo stdout auth logout deepgram service force
+exits 2 ncly --lang en-XA auth logout openai
+pseudo stderr auth status
+exits 2 ncly --lang en-XA auth logout keychain
+pseudo stderr keychain auth status
+
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-stored"}
+{"call":"set","account":"openai","key":"sk-stored"}
+{"call":"set","account":"mistral","key":"ms-stored"}
+-- nothing.txt --
+-- decline.txt --
+Remove the key of openai from the keychain? [y/N] 	n
+-- accept.txt --
+Remove the key of openai from the keychain? [y/N] 	y
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"

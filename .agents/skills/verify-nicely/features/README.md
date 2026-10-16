@@ -35,4 +35,4 @@ Each feature file starts with an H1 title and one paragraph about what the user 
 ## Features
 
 - `hello.md` covers the Go fixture installed as an external extension: discovery, help, answers, errors, reports, describe, its skill, and doctor
-- `auth.md` covers `ncly auth` against the real keychain, with a test service and a fake key: status and login
+- `auth.md` covers `ncly auth` against the real keychain, with a test service and a fake key: status, login, logout, and the cleanup of the fake key

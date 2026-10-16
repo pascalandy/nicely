@@ -15,7 +15,7 @@ cmp stdout want-list.txt
 # The same list in JSON: path, summary, and source, and skill on an extension's domain alone
 exec ncly describe --json
 answer stdout ok
-stdout '^\{"ok":true,"contract_version":1,"commands":\[\{"path":"auth","summary":"Manage the keys that extensions need","source":"core"\},\{"path":"auth login","summary":"Store the key of a service in the keychain","source":"core"\},\{"path":"auth status","summary":"List the keys that extensions need, and where each one comes from","source":"core"\},\{"path":"bonjour","summary":"Say hello in French","source":"extension","skill":null\},\{"path":"bonjour dire",'
+stdout '^\{"ok":true,"contract_version":1,"commands":\[\{"path":"auth","summary":"Manage the keys that extensions need","source":"core"\},\{"path":"auth login","summary":"Store the key of a service in the keychain","source":"core"\},\{"path":"auth logout","summary":"Remove the key of a service from the keychain","source":"core"\},\{"path":"auth status","summary":"List the keys that extensions need, and where each one comes from","source":"core"\},\{"path":"bonjour","summary":"Say hello in French","source":"extension","skill":null\},\{"path":"bonjour dire",'
 stdout '\{"path":"completion","summary":"Print shell completion scripts","source":"core"\}'
 stdout '\{"path":"completion zsh","summary":"Print the completion script for zsh","source":"core"\}'
 stdout '\{"path":"describe","summary":"Describe installed commands and their capabilities","source":"core"\}'
@@ -70,7 +70,7 @@ cmp stderr broken.json
 
 # Under the pseudo-locale, every word of the list and of the error comes from a catalog
 exec ncly --lang en-XA describe
-pseudo stdout auth login bonjour dire hello run completion bash fish zsh describe doctor skill list status view
+pseudo stdout auth login logout bonjour dire hello run completion bash fish zsh describe doctor skill list status view
 exits 2 ncly --lang en-XA describe nope
 pseudo stderr describe
 
@@ -79,6 +79,7 @@ pseudo stderr describe
 -- want-list.txt --
 auth             Manage the keys that extensions need
 auth login       Store the key of a service in the keychain
+auth logout      Remove the key of a service from the keychain
 auth status      List the keys that extensions need, and where each one comes from
 bonjour          Say hello in French
 bonjour dire     Say it out loud

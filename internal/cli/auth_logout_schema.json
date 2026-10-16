@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "required": ["service", "action"],
+  "properties": {
+    "service": {"type": "string"},
+    "action": {"enum": ["logout"]}
+  }
+}

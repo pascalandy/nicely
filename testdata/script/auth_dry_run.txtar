@@ -1,6 +1,6 @@
-# A dry run of ncly auth login shares the name check of execution, then needs neither a
-# terminal nor --stdin, reads no stdin, asks the keychain nothing, prompts for nothing, and
-# changes no file or key: auth.keychain stays a pending check. The test keychain is the file
+# A dry run of ncly auth login or logout shares the name check of execution, then needs
+# neither a terminal nor --stdin, reads no stdin, asks the keychain nothing, prompts for
+# nothing, and changes no file or key: auth.keychain stays a pending check. The test keychain is the file
 # $HOME/test-keychain.jsonl, which snapshot sees, and its call log stays as seeded.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
@@ -56,10 +56,38 @@ exec ncly --lang en-XA auth login deepgram --dry-run
 pseudo stdout deepgram auth.keychain
 unchanged before
 
+# A dry run of logout, without --force and without a terminal, removes nothing and asks the
+# keychain nothing, even when it never answers
+exec ncly auth logout deepgram --dry-run --json
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\{"id":"auth\.keychain","message":"Whether the keychain answers, and whether it holds a key for deepgram to remove\."\}\],"plan":\[\{"key":"deepgram","action":"logout","effects":\{"user_writes":true,"network":false,"paid":false\}\}\]\}\n\z'
+! stderr .
+cp stdout $TMPDIR/dry-logout.json
+exec ncly describe 'auth logout' --json
+stdout '"modes":\{"dry_run":true,'
+cp stdout $TMPDIR/describe-logout.json
+schema $TMPDIR/dry-logout.json $TMPDIR/describe-logout.json dry_run_schema
+env NCLY_TEST_KEYCHAIN=hang
+exec ncly auth logout deepgram --force --dry-run --json
+stdout '"action":"logout"'
+exec ncly auth logout mistral -n
+cmp stdout plan-logout.txt
+env NCLY_TEST_KEYCHAIN=
+exits 2 ncly auth logout keychain --dry-run --json
+answer stderr USAGE_INVALID
+exec ncly auth logout --help
+stdout '^  -n, --dry-run  '
+exec ncly --lang en-XA auth logout deepgram --dry-run
+pseudo stdout deepgram auth.keychain
+unchanged before
+cmp test-keychain.jsonl seed.jsonl
+
 -- seed.jsonl --
 {"call":"set","account":"deepgram","key":"dg-stored"}
 -- key.txt --
 dg-unread
+-- plan-logout.txt --
+Would remove the key of mistral from the keychain.
+pending  auth.keychain  Whether the keychain answers, and whether it holds a key for mistral to remove.
 -- plan.txt --
 Would store a key for deepgram in the keychain.
 pending  auth.keychain  Whether the keychain answers, and whether it already holds a key for deepgram that a replacement must confirm.

@@ -216,9 +216,39 @@ quote() {
 	done
 }
 
+# logout_fake_key logs the fake key of the auth feature out of the real
+# keychain, then checks that status no longer finds it. Both calls go to the
+# transcript evidence/cleanup.txt. It fails when the key may remain.
+logout_fake_key() {
+	local run="$1" code=0 answer
+	# The key must come from the keychain, never from the caller's variable.
+	unset VERIFYNICELY_API_KEY
+	step "$run" cleanup auth logout "$test_service" --force --json >/dev/null || code=$?
+	# 0 removed the key, and 2 found none to remove, as NOT_FOUND says.
+	if [[ "$code" != 0 && "$code" != 2 ]]; then
+		log "ncly auth logout $test_service exited with $code: see $run/evidence/cleanup.txt"
+		return 1
+	fi
+	answer="$(step "$run" cleanup auth status --json)" || true
+	case "$answer" in
+	*"{\"service\":\"$test_service\",\"configured\":false,\"source\":\"none\""*) ;;
+	*)
+		log "ncly auth status still finds a key for $test_service, or no keychain answers: see $run/evidence/cleanup.txt"
+		return 1
+		;;
+	esac
+	log "logged the fake key of $test_service out of the keychain"
+}
+
 cleanup() {
 	local run
 	run="$(run_folder "${1:-}")"
+	# The auth feature leaves its fake key in the real keychain, after a failed
+	# run too. The scratch folder stays until the key is gone, so that a later
+	# cleanup can try again.
+	if [[ -f "$run/auth-prepared" && -d "$run/scratch" ]]; then
+		logout_fake_key "$run" || die "kept the scratch folder of $run: run cleanup again once the keychain answers"
+	fi
 	rm -rf "$run/scratch" "$run/build"
 	[[ ! -e "$run/scratch" && ! -e "$run/build" ]] || die "could not remove the scratch folder of $run"
 	log "removed the scratch folder; the evidence stays in $run/evidence"
