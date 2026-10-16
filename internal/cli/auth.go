@@ -73,7 +73,7 @@ type serviceEntry struct {
 }
 
 // addAuth adds ncly auth: status, which reports the keys that the installed
-// extensions declare, and login. b is the keychain's backend.
+// extensions declare, login, and logout. b is the keychain's backend.
 func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension, b keychain.Backend) {
 	group := command.Build(p, p, authCommand, nil)
 	group.AddCommand(command.Build(p, p, authStatusCommand, func(c *cobra.Command, _ []string) error {
@@ -90,6 +90,7 @@ func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions
 		}
 	}))
 	addAuthLogin(p, g, group, extensions, b)
+	addAuthLogout(p, g, group, extensions, b)
 	root.AddCommand(group)
 }
 
@@ -199,4 +200,22 @@ func writeServices(w io.Writer, p *i18n.Printer, r statusReport) error {
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
+}
+
+// serviceCompletion completes the service argument of login and logout with
+// the services that the manifests that discovery finds declare, as status
+// lists them, without asking the keychain or starting an extension.
+func serviceCompletion(extensions []*extension) cobra.CompletionFunc {
+	return func(_ *cobra.Command, args []string, toComplete string) ([]cobra.Completion, cobra.ShellCompDirective) {
+		if len(args) > 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+		var services []cobra.Completion
+		for _, s := range declaredServices(extensions) {
+			if strings.HasPrefix(s, toComplete) {
+				services = append(services, s)
+			}
+		}
+		return services, cobra.ShellCompDirectiveNoFileComp
+	}
 }

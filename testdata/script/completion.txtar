@@ -221,6 +221,64 @@ exec awk '$1 >= 2.6 { print "took " $1 " seconds"; exit 1 }' elapsed.txt
 grep '^apple$' holder.out
 gone holder.pid
 
+# The service of auth login and auth logout completes from the services that the manifests
+# declare, as auth status lists them, without asking the keychain or starting an extension.
+# The services of an invalid manifest never appear
+chmod 755 bin/ncly-keys
+chmod 755 bin/ncly-broken
+exec ncly __complete auth login ''
+stdout '\Adeepgram\ndropbox\nopenai\n:4\n\z'
+exec ncly __complete auth login d
+stdout '\Adeepgram\ndropbox\n:4\n\z'
+exec ncly __complete auth logout o
+stdout '\Aopenai\n:4\n\z'
+exec ncly __complete auth logout deepgram ''
+stdout '\A:4\n\z'
+! stdout zoom
+! exists test-keychain.jsonl
+! grep 'keys|broken' ran
+
+-- bin/ncly-keys --
+#!/bin/sh
+echo "keys $*" >> "$WORK/ran"
+-- bin/ncly-keys.toml --
+format_version = 1
+contract_version = 1
+domain = "keys"
+
+[[commands]]
+path = "keys"
+summary = "keys.summary"
+
+[[commands]]
+path = "keys pull"
+summary = "keys.summary"
+requires = { keys = ["openai", "deepgram"] }
+
+[[commands]]
+path = "keys push"
+summary = "keys.summary"
+requires = { keys = ["dropbox", "deepgram"] }
+-- bin/ncly-keys.locales/en.toml --
+["keys.summary"]
+description = "Summary of the keys fixture."
+other = "Use some keys"
+-- bin/ncly-broken --
+#!/bin/sh
+echo "broken $*" >> "$WORK/ran"
+-- bin/ncly-broken.toml --
+format_version = 1
+contract_version = 1
+domain = "other"
+
+[[commands]]
+path = "other"
+summary = "other.summary"
+requires = { keys = ["zoom"] }
+-- bin/ncly-broken.locales/en.toml --
+["other.summary"]
+description = "Summary of the broken fixture."
+other = "Break things"
 -- broken.toml --
 lang =
 -- tab.sh --

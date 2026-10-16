@@ -362,7 +362,7 @@ func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 // discovery lists. help only prints the help of another command, so it is
 // left out, as ncly --help leaves it out.
 func coreCommands() []contract.Command {
-	commands := []contract.Command{completionCommand, describeCommand, doctorCommand, authCommand, authStatusCommand, authLoginCommand}
+	commands := []contract.Command{completionCommand, describeCommand, doctorCommand, authCommand, authStatusCommand, authLoginCommand, authLogoutCommand}
 	for _, s := range shells {
 		commands = append(commands, s.command)
 	}

@@ -584,3 +584,55 @@ other = "Whether the keychain answers, and whether it already holds a key for {{
 ["auth.pending"]
 description = "ncly auth --dry-run, human text: one check that only the real run makes. {{.ID}} is its id, such as auth.keychain, and {{.Message}} what it checks."
 other = "pending  {{.ID}}  {{.Message}}"
+
+["auth.logout.summary"]
+description = "Help page and ncly describe: summary of `ncly auth logout`, which removes the key of a service from the OS keychain."
+other = "Remove the key of a service from the keychain"
+
+["auth.logout.force"]
+description = "Help page: the --force flag of `ncly auth logout`, which removes the key without asking for a confirmation."
+other = "Remove the key without asking"
+
+["auth.logout_unavailable"]
+description = "Message of KEYRING_UNAVAILABLE in ncly auth logout: the OS keychain does not answer, so the key cannot be removed. {{.Service}} is the service."
+other = "The keychain does not answer, so the key of {{.Service}} cannot be removed."
+
+["auth.logout_unavailable_hint"]
+description = "Hint of KEYRING_UNAVAILABLE in ncly auth logout: the human unlocks the OS keychain, then runs the command again."
+other = "Unlock the keychain, then try again."
+
+["auth.logout_none"]
+description = "Message of NOT_FOUND in ncly auth logout: the OS keychain holds no key for the service, so nothing is removed. {{.Service}} is the service."
+other = "The keychain holds no key for {{.Service}}."
+
+["auth.logout_env_hint"]
+description = "Hint of NOT_FOUND in ncly auth logout when the key of the service comes from its environment variable, which logout never changes. {{.Service}} is the service, and {{.Variable}} the variable, such as DEEPGRAM_API_KEY."
+other = "The key of {{.Service}} comes from {{.Variable}}, which ncly auth logout never changes: unset it in your shell."
+
+["auth.remove_required"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth logout without a terminal: removing the key needs a confirmation, which only --force gives there. {{.Service}} is the service."
+other = "Removing the key of {{.Service}} from the keychain needs a confirmation."
+
+["auth.remove_question"]
+description = "Prompt of `ncly auth logout` in a terminal. Only an answer among the words of auth.yes removes the key. Keep [y/N] and the final space. {{.Service}} is the service."
+other = "Remove the key of {{.Service}} from the keychain? [y/N] "
+
+["auth.remove_declined"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth logout, after the human answered no: the key stays in the OS keychain. {{.Service}} is the service."
+other = "The key of {{.Service}} stays in the keychain."
+
+["auth.remove_unknown"]
+description = "Message of RUNTIME in ncly auth logout: the OS keychain failed, or did not answer in time, while it removed the key, so the key may still go after ncly answers. {{.Service}} is the service."
+other = "The keychain did not confirm that it removed the key of {{.Service}}, and it may still remove it."
+
+["auth.removed"]
+description = "ncly auth logout, human text: the key of a service is no longer in the OS keychain. {{.Service}} is the service."
+other = "Removed the key of {{.Service}} from the keychain."
+
+["auth.planned_logout"]
+description = "ncly auth logout --dry-run, human text: the change that the command would make. {{.Service}} is the service."
+other = "Would remove the key of {{.Service}} from the keychain."
+
+["auth.pending_logout"]
+description = "ncly auth logout --dry-run: the message of the pending check auth.keychain, which only the real run makes, because a dry run asks the OS keychain nothing. {{.Service}} is the service."
+other = "Whether the keychain answers, and whether it holds a key for {{.Service}} to remove."

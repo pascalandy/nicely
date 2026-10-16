@@ -42,7 +42,8 @@ var authLoginCommand = contract.Command{
 	},
 }
 
-// forceFlag answers yes to the confirmation of a replacement.
+// forceFlag answers yes to the confirmation of a replacement, and of a
+// removal for logout.
 var forceFlag = contract.Flag{Name: "force", Shorthand: "f", Summary: "auth.force"}
 
 // changed is the answer of a login or a logout that succeeded: never a key.
@@ -81,7 +82,7 @@ type pendingItem struct {
 // asks the keychain before it reads a key or asks for a confirmation, so a
 // human never types a key that cannot be stored.
 func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, extensions []*extension, b keychain.Backend) {
-	group.AddCommand(command.Build(p, p, authLoginCommand, func(c *cobra.Command, args []string) error {
+	c := command.Build(p, p, authLoginCommand, func(c *cobra.Command, args []string) error {
 		service := args[0]
 		if problem := badService(p, service); problem != nil {
 			return command.Fail(*problem)
@@ -150,7 +151,9 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 				return err
 			},
 		}
-	}))
+	})
+	c.ValidArgsFunction = serviceCompletion(extensions)
+	group.AddCommand(c)
 }
 
 // badService refuses a name that is no service name, keychain included,
