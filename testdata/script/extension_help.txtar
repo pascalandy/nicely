@@ -43,7 +43,7 @@ stdout '^hello\t'
 
 # Under the pseudo-locale, every word of the fixture's text comes from its catalog
 exec ncly --lang en-XA --help
-pseudo stdout completion describe doctor help hello bonjour skill
+pseudo stdout auth completion describe doctor help hello bonjour skill
 exec ncly --lang en-XA hello --help
 pseudo stdout hello run check
 exec ncly --lang en-XA hello run --help

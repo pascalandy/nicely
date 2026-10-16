@@ -1,0 +1,161 @@
+# ncly auth status lists, once each and in name order, the services that the commands of
+# installed extensions declare, and where each key comes from: its variable first, then the
+# keychain. It asks the keychain once whether it answers, then reads only the entry of a
+# service whose variable is empty. The test keychain is the file $HOME/test-keychain.jsonl,
+# which logs each call on its own line. Two commands of the shell fixture declare deepgram,
+# a third openai, and the fixture appends to $WORK/ran when it runs, which it never may.
+env DATA=$WORK/.local/share/nicely/extensions
+# PATH keeps ncly alone, so the other commands of the test binary are no extensions here
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/nbin
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env OPENAI_API_KEY=
+
+# No declared service answers an empty services, after one question to the keychain
+exec ncly auth status --json
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"available","services":\[\]\}\n\z'
+! stderr .
+grep -count=1 '^\{"call":"get","account":"keychain"\}$' test-keychain.jsonl
+grep -count=1 '^\{' test-keychain.jsonl
+cp stdout empty.json
+exec ncly describe 'auth status' --json
+cp stdout describe.json
+schema empty.json describe.json schema
+
+# A key from its variable leaves its keychain entry unread, and a key from the keychain
+chmod 755 $DATA/ncly-hello
+cp seed.jsonl test-keychain.jsonl
+env DEEPGRAM_API_KEY=dg-from-env
+exec ncly auth status --json
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":true,"source":"env"\},\{"service":"openai","configured":true,"source":"keychain"\}\]\}\n\z'
+! stderr .
+cp stdout found.json
+schema found.json describe.json schema
+grep -count=1 '"call":"get","account":"keychain"' test-keychain.jsonl
+grep -count=1 '"call":"get","account":"openai"' test-keychain.jsonl
+! grep '"call":"get","account":"deepgram"' test-keychain.jsonl
+exec ncly auth status
+cmp stdout found.txt
+! stderr .
+
+# A key in neither fails the report with AUTH_MISSING and exit 78, on stdout, without errors
+env DEEPGRAM_API_KEY=
+exits 78 ncly auth status --json
+stdout '\A\{"ok":false,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\},\{"service":"openai","configured":true,"source":"keychain"\}\]\}\n\z'
+! stdout '"errors"'
+! stderr .
+cp stdout missing.json
+schema missing.json describe.json schema
+exits 78 ncly auth status
+cmp stdout missing.txt
+! stderr .
+
+# An unavailable keychain with every key in the environment stays ok
+env NCLY_TEST_KEYCHAIN=unavailable
+env DEEPGRAM_API_KEY=dg-from-env
+env OPENAI_API_KEY=oa-from-env
+exec ncly auth status --json
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env"\},\{"service":"openai","configured":true,"source":"env"\}\]\}\n\z'
+! stderr .
+
+# An unavailable keychain with an empty variable fails with KEYRING_UNAVAILABLE, whose hint
+# names the variable, and no next
+env OPENAI_API_KEY=
+exits 78 ncly auth status --json
+stdout '\A\{"ok":false,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env"\},\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE","message":"The keychain does not answer, and OPENAI_API_KEY is empty\.","hint":"Export OPENAI_API_KEY, or unlock the keychain\."\}\]\}\n\z'
+! stdout '"next"'
+cp stdout unavailable.json
+schema unavailable.json describe.json schema
+
+# A keychain that never answers counts as unavailable after the shortened limit, and status
+# asks it once
+cp seed.jsonl test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=hang
+env DEEPGRAM_API_KEY=
+exits 78 ncly auth status --json
+stdout '"keychain":"unavailable","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE",'
+stdout '\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE",'
+grep -count=1 '"call":"get"' test-keychain.jsonl
+grep -count=1 '"account":"keychain"' test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=
+
+# The services of an invalid manifest never appear
+chmod 755 $DATA/ncly-broken
+env DEEPGRAM_API_KEY=dg-from-env
+exec ncly auth status --json
+stdout '"services":\[\{"service":"deepgram",[^]]*\{"service":"openai",[^]]*\]\}\n\z'
+! stdout zoom
+
+# No key appears on stdout or stderr, under the pseudo-locale either
+exec ncly --lang en-XA auth status
+pseudo stdout keychain deepgram openai
+! stderr .
+env DEEPGRAM_API_KEY=
+exits 78 ncly --lang en-XA auth status
+pseudo stdout keychain deepgram openai auth login
+exec ncly --lang en-XA auth --help
+pseudo stdout auth status
+exits 78 ncly auth status --json
+! stdout 'dg-from-env|oa-from-env|sk-from-keychain'
+
+! exists ran
+
+-- seed.jsonl --
+{"call":"set","account":"openai","key":"sk-from-keychain"}
+-- found.txt --
+keychain  The keychain answers.
+deepgram  The key comes from DEEPGRAM_API_KEY.
+openai    The key comes from the keychain.
+-- missing.txt --
+keychain  The keychain answers.
+deepgram  No key for deepgram in DEEPGRAM_API_KEY or the keychain.
+          hint: ncly auth login deepgram
+openai    The key comes from the keychain.
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["deepgram"] }
+
+[[commands]]
+path = "hello sing"
+summary = "hello.summary"
+requires = { keys = ["openai"] }
+
+[[commands]]
+path = "hello say"
+summary = "hello.summary"
+requires = { keys = ["deepgram"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+-- .local/share/nicely/extensions/ncly-broken --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-broken.toml --
+format_version = 1
+contract_version = 1
+domain = "other"
+
+[[commands]]
+path = "other"
+summary = "other.summary"
+requires = { keys = ["zoom"] }
+-- .local/share/nicely/extensions/ncly-broken.locales/en.toml --
+["other.summary"]
+description = "Summary of the broken fixture."
+other = "Break things"
