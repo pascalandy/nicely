@@ -9,6 +9,9 @@
 #   verify.sh step <run> <feature> <ncly args...>
 #                                       run ncly in the run's scratch folder and
 #                                       record the call in the feature's transcript
+#   verify.sh tmux <run> <feature> <ncly args...>
+#                                       run ncly on a terminal inside tmux, whose
+#                                       server does not answer, and record it the same way
 #   verify.sh quote <run> [<feature>]   print transcripts with placeholders for home paths
 #   verify.sh cleanup <run>             remove the scratch folder, keep the evidence
 set -Eeuo pipefail
@@ -26,10 +29,10 @@ log() { echo "verify-nicely: $*" >&2; }
 # usage prints the commands of the header: on stdout for help, on stderr with exit 2 otherwise.
 usage() {
 	if [[ "${1:-}" == help ]]; then
-		sed -n '6,13p' "$0" | sed 's/^# \{0,1\}//'
+		sed -n '6,16p' "$0" | sed 's/^# \{0,1\}//'
 		exit 0
 	fi
-	sed -n '6,13p' "$0" | sed 's/^# \{0,1\}//' >&2
+	sed -n '6,16p' "$0" | sed 's/^# \{0,1\}//' >&2
 	exit 2
 }
 
@@ -188,6 +191,87 @@ step() {
 	return "$code"
 }
 
+# The private tmux servers of tmux_step, which stop_servers resumes and kills.
+pane_server="" stuck_server="" pane_socket="" stuck_socket="" stuck_pid=""
+
+# stop_servers resumes the held server, kills both, and removes their socket
+# files, which tmux leaves behind. It runs on every exit of tmux_step.
+stop_servers() {
+	[[ -z "$stuck_pid" ]] || kill -CONT "$stuck_pid" 2>/dev/null || true
+	[[ -z "$pane_server" ]] || tmux -L "$pane_server" kill-server 2>/dev/null || true
+	[[ -z "$stuck_server" ]] || tmux -L "$stuck_server" kill-server 2>/dev/null || true
+	[[ -z "$pane_socket" ]] || rm -f "$pane_socket"
+	[[ -z "$stuck_socket" ]] || rm -f "$stuck_socket"
+}
+
+# tmux_step runs ncly in a pane of a private tmux server, so that its stdin and
+# stdout are a terminal, with TMUX naming a second private server that SIGSTOP
+# holds, so that a call to tmux would wait. A program that asks tmux about
+# colors as it loads, as Lip Gloss v2.0.6 does, then never answers. It records
+# what the pane shows and the exit code, or that no exit came within the limit,
+# and exits 1 then. Both servers live under their own -L socket names, and
+# stop_servers resumes and kills them on exit, Ctrl-C and SIGTERM included, so
+# the user's tmux sessions stay untouched.
+tmux_step() {
+	local run feature transcript work code="" limit=5 start
+	run="$(run_folder "${1:-}")"
+	check_feature "${2:-}"
+	feature="$2"
+	shift 2
+	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
+	command -v tmux >/dev/null || die "tmux is missing: install it, such as with brew install tmux"
+	transcript="$run/evidence/$feature.txt"
+	work="$run/scratch/tmux"
+	# The caller's own tmux stays out of both servers.
+	unset TMUX
+	rm -rf "$work"
+	mkdir -p "$work"
+	trap stop_servers EXIT
+	trap 'exit 130' INT
+	trap 'exit 143' TERM
+	pane_server="nicely-verify-${run##*/}"
+	stuck_server="$pane_server-stuck"
+	tmux -L "$stuck_server" -f /dev/null new-session -d -s stuck
+	stuck_socket="$(tmux -L "$stuck_server" display-message -p '#{socket_path}')"
+	stuck_pid="$(tmux -L "$stuck_server" display-message -p '#{pid}')"
+	# The pane waits for the file go, runs ncly, writes its exit code, then
+	# stays open until kill-server, so the capture holds only what ncly showed.
+	# shellcheck disable=SC2016 # the pane's sh expands these
+	tmux -L "$pane_server" -f /dev/null new-session -d -s verify -x 200 -y 50 /bin/sh -c '
+		while [ ! -e "$1" ]; do sleep 0.1; done
+		code=$2 tmux=$3
+		shift 3
+		TMUX=$tmux "$@"
+		echo "$?" >"$code"
+		exec sleep 3600' sh "$work/go" "$work/code" "$stuck_socket,$stuck_pid,0" "$run/scratch/bin/ncly" "$@"
+	pane_socket="$(tmux -L "$pane_server" display-message -p '#{socket_path}')"
+	kill -STOP "$stuck_pid"
+	start=$SECONDS
+	: >"$work/go"
+	# SECONDS counts whole seconds, so the wait lasts between limit and limit + 1 seconds.
+	while [[ ! -s "$work/code" ]] && ((SECONDS - start <= limit)); do sleep 0.1; done
+	[[ ! -s "$work/code" ]] || code="$(cat "$work/code")"
+	# -S - reaches the lines that scrolled into the history; the trailing blank lines go.
+	tmux -L "$pane_server" capture-pane -p -J -S - -E - -t verify |
+		awk 'NF { for (; blank > 0; blank--) print ""; print; next } { blank++ }' >"$work/shown" ||
+		die "could not read the pane of tmux"
+	if ! {
+		printf '$ ncly'
+		printf ' %q' "$@"
+		printf '\n--- terminal, inside tmux whose server does not answer\n'
+		cat "$work/shown" || exit 1
+		if [[ -n "$code" ]]; then
+			printf -- '--- exit %s, before the limit of %ss\n\n' "$code" "$limit"
+		else
+			printf -- '--- no exit within the limit of %ss\n\n' "$limit"
+		fi
+	} | tee -a "$transcript"; then
+		die "could not record the call in $transcript: what the pane showed stays in $work/shown"
+	fi
+	[[ -n "$code" ]] || return 1
+	return "$code"
+}
+
 quote() {
 	local run file
 	run="$(run_folder "${1:-}")"
@@ -268,6 +352,7 @@ case "$command" in
 start) start ;;
 prepare) prepare "$@" ;;
 step) step "$@" ;;
+tmux) tmux_step "$@" ;;
 quote) quote "$@" ;;
 cleanup) cleanup "$@" ;;
 -h | --help | help) usage help ;;

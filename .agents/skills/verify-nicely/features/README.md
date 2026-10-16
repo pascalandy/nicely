@@ -6,7 +6,7 @@ This folder is the maintained source for verifying what a user of `ncly` sees. R
 
 - A run from `just verify`, whose folder `$run` holds `scratch/bin/ncly`
 - The Doctor step of [SKILL.md](../SKILL.md#doctor) passed for this run
-- Each command runs through `just verify step "$run" <feature> <ncly args...>`, from the root of the checkout
+- Each command runs through `just verify step "$run" <feature> <ncly args...>`, or `just verify tmux` for a terminal inside tmux, from the root of the checkout
 
 ## Driving conventions
 
@@ -18,7 +18,7 @@ This folder is the maintained source for verifying what a user of `ncly` sees. R
 
 ## Proof and skip reporting
 
-- A proof quotes the call, its stdout, its stderr, and its exit code, from `just verify quote`, which holds only the `ncly` calls of `step`. Report the output of `prepare` and of a check outside `ncly`, such as `grep`, beside the quote
+- A proof quotes the call, its stdout, its stderr, and its exit code, from `just verify quote`, which holds only the `ncly` calls of `step` and `tmux`. Report the output of `prepare` and of a check outside `ncly`, such as `grep`, beside the quote
 - A write is proved by a second command that reads its result
 - Report an unreachable step with the command that failed and the precondition that it lacked
 - Never report a step as verified through another entry point than the one it names
@@ -36,3 +36,4 @@ Each feature file starts with an H1 title and one paragraph about what the user 
 
 - `hello.md` covers the Go fixture installed as an external extension: discovery, help, answers, errors, reports, describe, its skill, and doctor
 - `auth.md` covers `ncly auth` against the real keychain, with a test service and a fake key: status, login, logout, doctor, and the cleanup of the fake key
+- `terminal.md` covers `ncly` on a real terminal inside tmux, whose server does not answer: the version and the root help answer at once
