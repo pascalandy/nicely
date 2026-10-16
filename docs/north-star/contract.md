@@ -558,11 +558,11 @@ The domain defines when its validated preparation creates the initial record, be
 |---|---|
 | `running` | The initial record, each explicit resume attempt, and each repeated call that runs the steps again |
 | `completed` | Every planned step has verified completion |
-| `failed` | Execution ends with a known error and no unknown step |
-| `interrupted` | Ctrl-C or SIGTERM stops execution, preserving each step's evidence |
-| `unknown` | Execution ends without a signal and at least one step has an unresolved effect |
+| `failed` | Execution ends without a signal, with a known error and no unknown step |
+| `interrupted` | Ctrl-C or SIGTERM stops execution and no step has an unresolved effect, preserving each step's evidence |
+| `unknown` | Execution ends, with or without a signal, and at least one step has an unresolved effect |
 
-Abrupt death can leave `running` with no lock owner. Inspection preserves that saved status and reports `active: false`; it never invents completion or marks untouched pending steps unknown. Resume decides from the step evidence.
+`unknown` outranks `interrupted`, because the first question after a stop is whether an effect may have happened, such as a paid request that may have billed. A signal still exits 130 or 143, as [Exit codes](#exit-codes) defines, whatever the saved status. Abrupt death can leave `running` with no lock owner. Inspection preserves that saved status and reports `active: false`; it never invents completion or marks untouched pending steps unknown. Resume decides from the step evidence.
 
 Each extension reuses these keys where they fit and defines its own `inputs`, `resolved`, and evidence in its spec. Core reads records to list, show, and hand over a resume, without interpreting an extension's evidence, and without a workflow engine. Compatibility governs any later format change.
 
