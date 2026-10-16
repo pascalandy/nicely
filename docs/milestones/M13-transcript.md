@@ -24,6 +24,7 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 - Whether two URLs of the same video count once, as the transcript CLI does by video ID, with a warning that names the duplicates, or fail with `USAGE_INVALID`, as the spec says today of a URL given twice
 - Which files the program writes besides the three transcripts, such as its metadata, and when, so that resume treats them as known files
 - Which programs the download path needs from an empty cache besides `uv` and Python, such as `ffmpeg` and a JavaScript runtime that the `yt-dlp` README lists, so that transcript's manifest declares them in `programs`, and `ncly doctor transcript` checks them, as [Required programs](../north-star/core-spec.md#required-programs) defines
+- How a resume proves that a reserved result folder belongs to its run, such as with a receipt inside it that names the run. Go records the candidate path under the output resource lock before it creates the folder, as [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies) says, so after a crash another run can create that folder first, and a resume would then write into it
 
 ## Cards
 

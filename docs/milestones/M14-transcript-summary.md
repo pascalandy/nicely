@@ -16,6 +16,7 @@ Transcript composes with the `agent` extension through the CLI, the same way an 
 Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.
 
 - Which fields of the agent's answer transcript records beside the child run ID that its intent already holds, such as the harness version as a tool
+- Whether the summary step recovers its child `ncly agent run` by reading the child's record and verifying its answer artifact, instead of calling the child again after that read, which [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume) does today. A record deleted between that read and the repeated call starts a new paid run, as [Run IDs](../north-star/contract.md#run-ids) defines
 
 ## Cards
 
