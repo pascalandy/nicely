@@ -17,7 +17,7 @@ The first form needs Huh, so M07-T2 brings, ahead of it, the route around the `t
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M07-T1 | Pick the looks | Pascal | — | todo |
+| M07-T1 | Pick the looks | Pascal | — | done |
 | M07-T2 | Lip Gloss route | agent | — | done |
 | M07-T3 | Login form and confirmation | agent | M07-T1, M07-T2 | todo |
 | M07-T4 | Styled reports and skill view | agent | M07-T1, M07-T2 | todo |
@@ -43,7 +43,7 @@ In interactive mode, `ncly auth login` asks for the key in a masked field, and a
 
 ### M07-T4 Styled reports and skill view
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Output](../north-star/contract.md#output)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [ncly auth](../north-star/core-spec.md#ncly-auth), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Output](../north-star/contract.md#output)
 - **Proves:** `testdata/script/styles.txtar`
 
 `skill list`, `auth status`, and the doctor report use the picked styles on a terminal, and plain text elsewhere. `skill view` renders its Markdown through Glamour in interactive mode.
