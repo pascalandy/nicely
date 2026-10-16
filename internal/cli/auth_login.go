@@ -102,7 +102,7 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 		case fromStdin && term.IsTerminal(int(os.Stdin.Fd())):
 			return command.Fail(command.Usage(p.T("auth.stdin_terminal", data), strings.Join(call[:4], " ")))
 		case !fromStdin && !human:
-			return command.Fail(contract.Problem{Code: contract.TerminalRequired, Message: p.T("auth.terminal_required", data), Hint: p.T("auth.terminal_required_hint", data)})
+			return command.Fail(contract.Problem{Code: contract.TerminalRequired, Message: p.T("auth.terminal_required", data), Hint: p.T("auth.terminal_required_hint", data), Next: call})
 		}
 		ctx := runner.OnSignal()
 		k := keychain.New(b, human)
@@ -222,7 +222,9 @@ func failedWrite(ctx context.Context, err error, unknown contract.Problem) error
 	if errors.Is(err, keychain.ErrWriteUnknown) {
 		return command.Fail(unknown)
 	}
-	return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx)), Errors: []contract.Problem{unknown}}, text: func(io.Writer) error { return nil }}
+	a := stopped(ctx)
+	a.outcome.Errors = []contract.Problem{unknown}
+	return a
 }
 
 // writeUnknown is the RUNTIME of a write whose effect is unknown. For a
