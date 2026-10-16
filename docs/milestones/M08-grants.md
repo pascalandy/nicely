@@ -29,6 +29,7 @@ The scenarios declare services in the manifests of the shell fixture of M01 and 
 - **Proves:** `testdata/script/grant.txtar`, `testdata/script/auth_dry_run.txtar`, `testdata/script/completion.txtar`
 
 Add `auth grant` and `auth revoke` to core in `internal/cli`, with the grants file of [Grants](../north-star/contract.md#grants). `grant` stores the path where discovery found the extension, so the file needs no new format when M08-T3 compares sources. Until then, a grant of a service to a domain that already holds one answers `unchanged`. Both declarations set `dry_run` in `modes`. Completion suggests the declared services after `grant` and `revoke`, as M06-T4 does for `login`, then the domains whose extension declares that service after `grant`, and the domains that hold a grant of it after `revoke`.
+Add durable writes and locks to `sdk/platform/` for the grants file.
 
 Under `pty`, `grant.txtar` covers a confirmed grant, which the grants file then holds with the fixture's path, a declined one, which exits 2 with `CONFIRMATION_REQUIRED` and changes nothing, a grant that exists, which answers `unchanged` without a prompt, and Ctrl-C at the prompt, which exits 130 and changes nothing. It also covers:
 
