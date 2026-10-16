@@ -42,6 +42,7 @@ const (
 
 	ConfigUnknownKey   Code = "CONFIG_UNKNOWN_KEY"
 	ConfigDefaultsUsed Code = "CONFIG_DEFAULTS_USED"
+	KeyringEnvOnly     Code = "KEYRING_ENV_ONLY"
 )
 
 type codeExit struct {
@@ -68,7 +69,7 @@ var errorCodes = []codeExit{
 	{Temporary, ExitTemporary},
 }
 
-var warningCodes = []Code{ConfigUnknownKey, ConfigDefaultsUsed}
+var warningCodes = []Code{ConfigUnknownKey, ConfigDefaultsUsed, KeyringEnvOnly}
 
 // Known reports whether e is one of the exit codes of the contract.
 func (e ExitCode) Known() bool {

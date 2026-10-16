@@ -636,3 +636,15 @@ other = "Would remove the key of {{.Service}} from the keychain."
 ["auth.pending_logout"]
 description = "ncly auth logout --dry-run: the message of the pending check auth.keychain, which only the real run makes, because a dry run asks the OS keychain nothing. {{.Service}} is the service."
 other = "Whether the keychain answers, and whether it holds a key for {{.Service}} to remove."
+
+["doctor.keyring_env_only_hint"]
+description = "Report of `ncly doctor`: hint of the warning KEYRING_ENV_ONLY of auth.keychain. The human unlocks the OS keychain, or exports the environment variable of each key, whose name is the service in uppercase followed by _API_KEY, such as DEEPGRAM_API_KEY, which stays as is."
+other = "Unlock the keychain, or export the variable of each key, such as DEEPGRAM_API_KEY."
+
+["doctor.keychain_timeout"]
+description = "Report of `ncly doctor`: message of the check auth.keychain, which failed because the OS keychain did not answer before the time of --timeout ended. --timeout stays as is."
+other = "The keychain did not answer within --timeout."
+
+["doctor.key_timeout"]
+description = "Report of `ncly doctor`: message of the check of one service's key, which failed because the OS keychain did not answer its read before the time of --timeout ended. {{.Service}} is the service, such as deepgram."
+other = "The keychain did not answer within --timeout for the key of {{.Service}}."

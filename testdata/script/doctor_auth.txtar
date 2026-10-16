@@ -1,0 +1,125 @@
+# The auth component of ncly doctor checks the keychain, then each service that the manifests
+# declare, with the verdict that ncly auth status gives it. Doctor runs it last, after every
+# other check, and lists it after core. The test keychain is the file
+# $HOME/test-keychain.jsonl. The shell fixture requires the program plain and the keys of
+# deepgram and openai, and appends to $WORK/ran when it runs, which it never may.
+chmod 755 bin/plain
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/bin:$WORK/nbin
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env OPENAI_API_KEY=
+
+# With no declared service, the component holds auth.keychain alone
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\}\]\}\n\z'
+! stderr .
+cp stdout $TMPDIR/alone.json
+exec ncly describe doctor --json
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/alone.json $TMPDIR/describe.json schema
+
+# A key from the variable and one from the keychain pass, with messages that name the source
+# and never the key
+chmod 755 bin/ncly-hello
+cp seed.jsonl test-keychain.jsonl
+env DEEPGRAM_API_KEY=dg-from-env
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"auth\.deepgram","component":"auth","status":"pass","message":"The key comes from DEEPGRAM_API_KEY\."\},\{"id":"auth\.openai","component":"auth","status":"pass","message":"The key comes from the keychain\."\}\]\}\n\z'
+! stdout 'dg-from-env|sk-from-keychain'
+exec ncly doctor auth
+cmp stdout pass.txt
+
+# A missing key fails with AUTH_MISSING, its hint, and the next ncly auth login, with exit 78,
+# the checks on stdout, and no errors
+env DEEPGRAM_API_KEY=
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\}'
+! stdout '"errors"'
+! stderr .
+cp stdout $TMPDIR/missing.json
+schema $TMPDIR/missing.json $TMPDIR/describe.json schema
+
+# Doctor and ncly auth status give each service the same verdict
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\},\{"service":"openai","configured":true,"source":"keychain"\}'
+
+# An unavailable keychain with every key in the environment warns with KEYRING_ENV_ONLY and
+# exits 0, and with an empty variable the service fails with KEYRING_UNAVAILABLE and no next
+env NCLY_TEST_KEYCHAIN=unavailable
+env DEEPGRAM_API_KEY=dg-from-env
+env OPENAI_API_KEY=oa-from-env
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY","message":"The keychain does not answer, so keys come only from the environment\.","hint":"Unlock the keychain, or export the variable of each key, such as DEEPGRAM_API_KEY\."\},\{"id":"auth\.deepgram",[^]]*"status":"pass"[^]]*\{"id":"auth\.openai",[^]]*"status":"pass"'
+! stdout '"next"'
+env OPENAI_API_KEY=
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.openai","component":"auth","status":"fail","code":"KEYRING_UNAVAILABLE","message":"The keychain does not answer, and OPENAI_API_KEY is empty\.","hint":"Export OPENAI_API_KEY, or unlock the keychain\."\}\]\}\n\z'
+env NCLY_TEST_KEYCHAIN=
+
+# A keychain that never answers warns once its shortened limit passes within a longer
+# --timeout, and doctor asks it nothing more
+cp seed.jsonl test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=hang
+env OPENAI_API_KEY=oa-from-env
+exec ncly doctor --timeout 6s --json
+stdout '\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY",'
+grep -count=1 '"call":"get"' test-keychain.jsonl
+
+# With a --timeout shorter than that limit, the checks of the fixture's component still
+# pass, because doctor runs auth last, and only the auth checks fail with CHECK_TIMEOUT
+cp seed.jsonl test-keychain.jsonl
+exits 78 ncly doctor --timeout 1 --json
+stdout '\{"id":"auth\.keychain","component":"auth","status":"fail","code":"CHECK_TIMEOUT","message":"The keychain did not answer within --timeout\.","hint":"Run ncly doctor again with a longer --timeout\."\}'
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"CHECK_TIMEOUT",'
+stdout '\{"id":"auth\.openai","component":"auth","status":"fail","code":"CHECK_TIMEOUT",'
+stdout '\{"id":"hello\.plain","component":"hello","status":"pass",'
+! stdout '"component":"(core|extensions|hello)","status":"fail"'
+grep -count=1 '"call":"get"' test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=
+
+# Without a component, doctor lists the auth checks after core and before the extensions
+exec ncly doctor --json
+stdout '"checks":\[\{"id":"core\.config",[^}]*\},\{"id":"auth\.keychain",[^}]*\},\{"id":"auth\.deepgram",[^}]*\},\{"id":"auth\.openai",[^}]*\},\{"id":"extensions\.hello",'
+
+# Under the pseudo-locale, every word comes from the catalog
+exec ncly --lang en-XA doctor auth
+pseudo stdout auth.keychain auth.deepgram auth.openai DEEPGRAM_API_KEY
+env DEEPGRAM_API_KEY=
+exits 78 ncly --lang en-XA doctor auth
+pseudo stdout auth.keychain auth.deepgram auth.openai auth login deepgram
+
+! exists ran
+
+-- seed.jsonl --
+{"call":"set","account":"openai","key":"sk-from-keychain"}
+-- pass.txt --
+pass  auth.keychain  The keychain answers.
+pass  auth.deepgram  The key comes from DEEPGRAM_API_KEY.
+pass  auth.openai  The key comes from the keychain.
+-- bin/plain --
+#!/bin/sh
+exit 0
+-- bin/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { bins = ["plain"], keys = ["openai", "deepgram"] }
+
+[programs.plain]
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
