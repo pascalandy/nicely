@@ -136,15 +136,21 @@ step() {
 	err="$run/scratch/step.err"
 	code=0
 	"$run/scratch/bin/ncly" "$@" >"$out" 2>"$err" || code=$?
-	{
+	# A caller may run step where errexit is off, as cleanup does, and the
+	# condition turns it off in the group too, so each read fails the group
+	# itself. A call that the transcript misses stops here, and its outputs
+	# stay in scratch.
+	if ! {
 		printf '$ ncly'
 		printf ' %q' "$@"
 		printf '\n--- stdout\n'
-		cat "$out"
+		cat "$out" || exit 1
 		printf -- '--- stderr\n'
-		cat "$err"
+		cat "$err" || exit 1
 		printf -- '--- exit %s\n\n' "$code"
-	} | tee -a "$transcript"
+	} | tee -a "$transcript"; then
+		die "could not record the call in $transcript: its outputs stay in $out and $err"
+	fi
 	rm -f "$out" "$err"
 	return "$code"
 }
