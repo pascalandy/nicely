@@ -29,12 +29,12 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 
 ### M10-T1 Records and agent run
 
-- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Operations](../north-star/contract.md#operations), [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Retry safety](../north-star/contract.md#retry-safety)
+- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Operations](../north-star/contract.md#operations), [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Run IDs](../north-star/contract.md#run-ids), [Retry safety](../north-star/contract.md#retry-safety)
 - **Proves:** `extensions/agent/testdata/script/agent_run.txtar`, `extensions/agent/testdata/script/agent_run_record.txtar`, `testdata/script/record_retry_safety.txtar`
 
 `ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer, which it also saves as the step's artifact in `runs/<run-id>/`. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
 
-With `--run-id`, the caller's ID reaches `ncly-agent` through dispatch and names its record, `runs/<id>.json`. The same call again returns the saved answer, and the counted stub harness runs once. The same ID with another task is `USAGE_INVALID`, the ID of a run that did not complete is `RESUME_UNSAFE`, and both start no harness.
+With `--run-id`, the caller's ID reaches `ncly-agent` through dispatch and names its record, `runs/<id>.json`. The same call again returns the saved answer, and the counted stub harness runs once. The same ID with another task is `USAGE_INVALID`, the ID of a run that did not complete is `RESUME_UNSAFE`, and both start no harness. Two calls with one new ID at the same time start one harness: while the first holds the run lock, the second exits 75 with `TEMPORARY`. A record file that cannot be parsed makes the same call answer `RESUME_UNSAFE`, and no harness starts.
 
 The step declares the `paid` effect. The SDK writes every step transition and derives retry safety from the declared effects, so `ncly-agent` never reports an effect level of its own. A fixture extension with a `repeatable` step, then a `paid` one, proves the derivation: a temporary failure exits 75 while the paid step is `pending`, and 1 once that step has left `pending`, even as `failed`.
 

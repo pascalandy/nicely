@@ -65,10 +65,10 @@ Each part has one owner: one package and one spec section.
 | 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract.md#configuration) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
 | 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `sdk/contract/` | [contract.md](contract.md) |
-| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/`, from M01 | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/`: the process tree from M01, durable writes and locks from M08, and the trash from M12 | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 | 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/`, from M06 | [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 
-A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, and records with `ncly agent run` in M10.
+A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, durable writes and locks with the grants file in M08, and records with `ncly agent run` in M10.
 
 The other folders:
 

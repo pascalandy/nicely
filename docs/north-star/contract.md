@@ -188,8 +188,8 @@ The set of codes is open: later milestones add core codes, and every extension a
 | `KEYRING_UNAVAILABLE` | 78 | The OS keychain does not answer when a command needs it: to read a key missing from the environment, for `ncly auth`, or for an `auth.<service>` check of `ncly doctor` | M06 |
 | `KEY_NOT_GRANTED` | 78 | An extension needs a key that no human granted to it at its source, as [Grants](#grants) defines | M08 |
 | `CAPABILITY_UNSUPPORTED` | 78 | The selected program cannot enforce a required mode or protocol | M09 |
+| `RESUME_UNSAFE` | 1 | A run cannot safely continue because evidence is missing, changed, uncertain, or unsupported | M10 |
 | `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401 | M13 |
-| `RESUME_UNSAFE` | 1 | A run cannot safely continue because evidence is missing, changed, uncertain, or unsupported | M15 |
 
 Warnings use codes from this table, and an extension's own warnings start with its domain, such as `SKILL_SHADOWED`.
 
@@ -520,7 +520,9 @@ Each run has one record, `runs/<run_id>.json` in the state directory, such as `~
 
 The platform helper uses the durable flush supported by the system. On macOS, it also uses `F_FULLFSYNC` after syncing metadata, because [Apple's fsync documentation](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html) distinguishes an ordinary sync from flushing the drive cache. A failed required flush stops the operation. Persistence relies on the filesystem and device honoring these operations; Nicely cannot promise survival of arbitrary hardware failure.
 
-The execution process holds the run lock until it exits. A new operation that consumes a source run holds that source's lock while it verifies the source's evidence and records what it will use, then releases it before its first effect, so a long new operation never blocks the source. The operating system releases each lock when its owner dies. Lock files may remain; their existence alone does not establish ownership. Before recording a step as completed, the domain independently verifies its artifacts and syncs their files and containing directories.
+The execution process takes the run lock before it reads the record, and holds it until it exits. It waits at most 250 milliseconds for a lock that another process holds, then decides every case of [Run IDs](#run-ids), including a missing record, on a read made while it holds the lock. A record file that cannot be read or parsed counts as an unsupported version, never as an absent record, so it never starts a second paid run. A new operation that consumes a source run holds that source's lock while it verifies the source's evidence and records what it will use, then releases it before its first effect, so a long new operation never blocks the source. Inspection and dry run try the run lock without waiting and without creating its file, and release it at once, so they never make an execution see the run as busy.
+
+The operating system releases each lock when its owner dies. Each lock in the state folder, such as `runs/<run_id>.lock` or `grants.lock`, is its own file, which nobody deletes: once a lock file is deleted, a new process can create and lock another file under the same name while an earlier process still holds the deleted one, and both own the lock. A lock file's existence alone therefore does not establish ownership. Before recording a step as completed, the domain independently verifies its artifacts and syncs their files and containing directories.
 
 `run_id` is the ID that the caller chose or one that the SDK generated, as [Run IDs](#run-ids) defines, such as `20261007-214501-3f9a2c`. Readers never parse it. A run's temporary directory sits in the system temporary directory, carries the run ID in its name, and is removed when the run ends, including after Ctrl-C or SIGTERM.
 
@@ -577,14 +579,13 @@ Nicely has no background worker or scheduler. A record makes work inspectable af
 
 A recorded command accepts `--run-id <id>`, so that its caller knows the run's ID before the run starts, as [D052](decisions/D052-caller-run-ids.md) decides. Without it, the SDK generates one. An ID holds 1 to 64 lowercase letters, digits, and hyphens, and starts with a letter or a digit. Any other value is `USAGE_INVALID`.
 
-A call whose ID no record holds starts a new run under that ID. A call whose ID a record holds starts no new run. Before any effect, it takes the first case that applies:
+A call takes the run lock of its ID before it reads the record, as [Record format](#record-format) defines. When another process still holds the run after that short wait, the call exits 75 with `TEMPORARY` and a `run view` hint, as for `ncly run resume`, and starts nothing. Otherwise it decides on a read of the record made while it holds the lock. A call whose ID no record holds starts a new run under that ID. A call whose ID a record holds starts no new run. Before any effect, it takes the first case that applies:
 
-1. The record's format version is unsupported: `RESUME_UNSAFE`
+1. The record's format version is unsupported, or its file cannot be read or parsed: `RESUME_UNSAFE`
 2. The record's command path, `inputs`, or ordered item keys differ from those that the call prepares: `USAGE_INVALID`, because the ID names another call
-3. Another process holds the run: exit 75 with `TEMPORARY` and a `run view` hint, as for `ncly run resume`
-4. The run completed: its verified saved result, without running a step again
-5. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
-6. Otherwise: `RESUME_UNSAFE`, with the artifacts still available
+3. The run completed: its verified saved result, without running a step again
+4. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
+5. Otherwise: `RESUME_UNSAFE`, with the artifacts still available
 
 A repeated call with the same ID therefore never repeats an effect that the record does not prove safe, and a dry run with it describes what the call would do, as `ncly run resume --dry-run` does. After lost output, a caller that chose the ID reads the run with `ncly run view <id>`, or makes the same call again, and needs no search with `ncly run list`.
 
