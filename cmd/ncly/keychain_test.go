@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -20,8 +21,12 @@ import (
 // changes how it answers:
 //
 //   - unavailable refuses every call at once
+//   - probe-only answers the check of the keychain, then refuses every other
+//     call, as a keychain that locks meanwhile
 //   - hang never answers
 //   - write-hang answers every read, then applies a write and never answers it
+//   - child starts a child program at each call, as go-keyring starts
+//     security on macOS, and refuses the call once that program ends
 type testKeychain struct{}
 
 // callRecord is one line of the test keychain.
@@ -29,7 +34,8 @@ type callRecord struct {
 	Call    string `json:"call"`
 	Account string `json:"account"`
 	Key     string `json:"key,omitempty"`
-	// Refused marks a call that changed nothing, under unavailable.
+	// Refused marks a call that changed nothing, under unavailable and
+	// probe-only.
 	Refused bool `json:"refused,omitempty"`
 }
 
@@ -46,10 +52,11 @@ func useTestKeychain() {
 func (testKeychain) file() string { return filepath.Join(os.Getenv("HOME"), "test-keychain.jsonl") }
 
 // record appends the call, then answers as NCLY_TEST_KEYCHAIN asks: it
-// returns errRefused, blocks forever, or returns nil to go on.
+// returns errRefused, blocks forever, waits for its child, or returns nil
+// to go on.
 func (k testKeychain) record(c callRecord, write bool) error {
 	mode := os.Getenv("NCLY_TEST_KEYCHAIN")
-	c.Refused = mode == "unavailable"
+	c.Refused = mode == "unavailable" || (mode == "probe-only" && c.Account != "keychain")
 	line, err := json.Marshal(c)
 	if err != nil {
 		return err
@@ -65,12 +72,38 @@ func (k testKeychain) record(c callRecord, write bool) error {
 	switch {
 	case err != nil:
 		return err
-	case mode == "unavailable":
+	case c.Refused:
 		return errRefused
 	case mode == "hang" || (mode == "write-hang" && write):
 		select {}
+	case mode == "child":
+		return runChild()
 	}
 	return nil
+}
+
+// childProgram is the child of a call under child. It writes its process
+// ID to keychain-child.pid once it is ready for a signal, and the name of
+// the signal that ends it to keychain-child.sig. It ends on its own after a
+// minute, so a failed scenario leaves nothing running.
+const childProgram = `
+trap 'echo TERM > "$1.sig"; exit 143' TERM
+trap 'echo INT > "$1.sig"; exit 130' INT
+echo $$ > "$1.tmp"
+mv "$1.tmp" "$1.pid"
+n=600
+while [ $n -gt 0 ]; do sleep 0.1; n=$((n - 1)); done
+`
+
+// runChild runs childProgram in the process group of ncly, without the
+// program runner, as go-keyring runs security, and refuses the call once
+// the program ends.
+func runChild() error {
+	cmd := exec.Command("/bin/sh", "-c", childProgram, "sh", filepath.Join(os.Getenv("HOME"), "keychain-child"))
+	// A scenario's PATH may hold ncly alone.
+	cmd.Env = append(os.Environ(), "PATH=/usr/bin:/bin")
+	_ = cmd.Run()
+	return errRefused
 }
 
 // entries replays the calls that took effect.

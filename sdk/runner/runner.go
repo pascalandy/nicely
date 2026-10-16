@@ -198,6 +198,17 @@ func stopDescendants(cleanupEnds time.Time) {
 	}
 }
 
+// Stop sends sig to every descendant of ncly, then waits until none runs,
+// and sends SIGKILL to those that still run once cleanup ends, as
+// Cancellation in contract.md defines. It reaches a program that starts
+// outside Run, such as the security program that go-keyring starts on
+// macOS, so a command that a signal ends while it waits for one calls it.
+func Stop(sig os.Signal) {
+	cleanupEnds := time.Now().Add(Cleanup)
+	signalTree(sig)
+	stopDescendants(cleanupEnds)
+}
+
 // feed connects r to what the program reads: a file as it is, and
 // otherwise a pipe, and returns the function that starts filling that pipe
 // from r once the program has started. Run never waits for that copy,
