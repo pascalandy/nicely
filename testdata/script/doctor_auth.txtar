@@ -6,6 +6,7 @@
 chmod 755 bin/plain
 mkdir nbin
 exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+exec sh -c 'ln -s "$(command -v exitcode)" nbin/exitcode'
 env PATH=$WORK/bin:$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
@@ -77,6 +78,31 @@ stdout '\{"id":"auth\.openai","component":"auth","status":"fail","code":"CHECK_T
 stdout '\{"id":"hello\.plain","component":"hello","status":"pass",'
 ! stdout '"component":"(core|extensions|hello)","status":"fail"'
 grep -count=1 '"call":"get"' test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=
+
+# A keychain that answers its check, then refuses a read, warns with KEYRING_ENV_ONLY:
+# auth.keychain gives the keychain's state after the last read
+cp seed.jsonl test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=probe-only
+env OPENAI_API_KEY=
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY",'
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"pass",'
+stdout '\{"id":"auth\.openai","component":"auth","status":"fail","code":"KEYRING_UNAVAILABLE",'
+grep -count=2 '"call":"get"' test-keychain.jsonl
+
+# A signal during a keychain call reaches the program that the call started, as go-keyring
+# starts security on macOS, and doctor exits 143 with TERMINATED once that program ends
+env NCLY_TEST_KEYCHAIN=child
+exec exitcode exit.txt ncly doctor auth --json &
+waitfile keychain-child.pid
+term
+wait
+grep '^143$' exit.txt
+! stdout .
+answer stderr TERMINATED
+gone keychain-child.pid
+grep '^TERM$' keychain-child.sig
 env NCLY_TEST_KEYCHAIN=
 
 # Without a component, doctor lists the auth checks after core and before the extensions
