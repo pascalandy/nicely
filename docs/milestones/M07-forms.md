@@ -1,6 +1,6 @@
 # M07 Forms
 
-Status: ready
+Status: active
 Version: v0.7.0
 
 ## Demo
@@ -18,7 +18,7 @@ The first form needs Huh, so it brings the route around the `tmux info` call tha
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M07-T1 | Pick the looks | Pascal | — | todo |
-| M07-T2 | Lip Gloss route | agent | — | todo |
+| M07-T2 | Lip Gloss route | agent | — | done |
 | M07-T3 | Login form and confirmation | agent | M07-T1, M07-T2 | todo |
 | M07-T4 | Styled reports and skill view | agent | M07-T1, M07-T2 | todo |
 | M07-T5 | Form for missing values | agent | M07-T3 | todo |

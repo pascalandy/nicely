@@ -1,21 +1,27 @@
-[!linux] skip 'the script command of util-linux gives the pseudo-terminal'
-[!exec:script] skip 'needs script for a pseudo-terminal'
-
-# Inside tmux, ncly never asks tmux about colors, so a stuck tmux server cannot block it.
+# Inside tmux, ncly asks neither tmux nor the terminal anything as it loads, so
+# a stuck tmux server cannot block it. ncly loads Huh, a Bubbles spinner, and
+# Glamour, and the Lip Gloss under them detects the terminal only on its
+# first print, through the fork that go.mod names.
 # The tmux stub logs its call and sleeps, so a call shows as tmux.log and a slow test.
+# pty prints what the terminal showed, so a query written to the terminal shows too.
 chmod 755 bin/tmux
 env PATH=$WORK/bin:$PATH
 env TMUX=/tmp/tmux-test/default,1,0
 env TERM=xterm-256color
-exec script -qec 'ncly --no-color --version' /dev/null
+exec pty none.txt ncly --no-color --version
 stdout 'ncly v'
+! stdout '\x1b'
 ! exists tmux.log
-exec script -qec 'ncly --help' /dev/null
+exec pty none.txt ncly --help
 ! exists tmux.log
 
-# On a terminal, the help keeps its styles
+# On a terminal, the help keeps its styles, and its only escape sequences are
+# those styles: no query, such as the one for the background color.
 stdout '\x1b\[1mUSAGE'
+! stdout '\x1b[^\[]'
+! stdout '\x1b\[[0-9;]*[^0-9;m]'
 
+-- none.txt --
 -- bin/tmux --
 #!/bin/sh
 echo "$@" >> "$WORK/tmux.log"
