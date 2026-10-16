@@ -28,7 +28,8 @@ var authCommand = contract.Command{
 	Effects: &contract.Effects{},
 	Examples: []string{
 		`ncly auth status`,
-		`ncly auth status --json`,
+		`ncly auth login deepgram`,
+		`<command that prints the key> | ncly auth login deepgram --stdin`,
 	},
 }
 
@@ -71,8 +72,8 @@ type serviceEntry struct {
 	found string
 }
 
-// addAuth adds ncly auth, whose status command reports the keys that the
-// installed extensions declare. b is the keychain's backend.
+// addAuth adds ncly auth: status, which reports the keys that the installed
+// extensions declare, and login. b is the keychain's backend.
 func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension, b keychain.Backend) {
 	group := command.Build(p, p, authCommand, nil)
 	group.AddCommand(command.Build(p, p, authStatusCommand, func(c *cobra.Command, _ []string) error {
@@ -80,11 +81,7 @@ func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions
 		k := keychain.New(b, interactive(g, c.OutOrStdout()))
 		r, err := authStatus(ctx, p, k, declaredServices(extensions))
 		if err != nil {
-			// The signal also reaches the program that the keychain call
-			// may have started, which the call leaves running.
-			signal := runner.SignalOf(ctx)
-			runner.Stop(signal)
-			return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(signal)}, text: func(io.Writer) error { return nil }}
+			return stopped(ctx)
 		}
 		failed := slices.ContainsFunc(r.Services, func(s serviceEntry) bool { return s.Code != "" })
 		return &answered{
@@ -92,6 +89,7 @@ func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions
 			text:    func(w io.Writer) error { return writeServices(w, p, r) },
 		}
 	}))
+	addAuthLogin(p, g, group, extensions, b)
 	root.AddCommand(group)
 }
 

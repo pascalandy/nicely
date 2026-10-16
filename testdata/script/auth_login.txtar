@@ -1,0 +1,178 @@
+# ncly auth login stores the key of a service in the keychain and never shows or answers
+# the key. It checks the name first, then asks the keychain before it reads a key or asks for
+# a confirmation. The test keychain is the file $HOME/test-keychain.jsonl. pty runs a command
+# on a pseudo-terminal, types each answer of its script once the prompt shows, prints what
+# the terminal showed, and says on stderr whether the command left echo on.
+env DATA=$WORK/.local/share/nicely/extensions
+chmod 755 $DATA/ncly-hello
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+
+# With --stdin, login stores the key without the spaces and the line ending around it, and
+# answers service and action, never the key
+stdin padded.txt
+exec ncly auth login deepgram --stdin --json
+stdout '\A\{"ok":true,"contract_version":1,"action":"login","service":"deepgram"\}\n\z'
+! stderr .
+grep -count=1 '"call":"set","account":"deepgram","key":"dg-padded"\}' test-keychain.jsonl
+cp stdout $TMPDIR/login.json
+exec ncly describe 'auth login' --json
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/login.json $TMPDIR/describe.json schema
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":true,"source":"keychain"\}'
+
+# A replacement without a terminal keeps the old key and exits 2 with CONFIRMATION_REQUIRED,
+# whose hint adds --force, and replaces it with --force, from the final newline of echo
+stdin padded.txt
+exits 2 ncly auth login deepgram --stdin --json
+answer stderr CONFIRMATION_REQUIRED
+stderr '"hint":"ncly auth login deepgram --stdin --force"'
+! stderr '"next"'
+grep -count=1 '"call":"set"' test-keychain.jsonl
+exec sh -c 'echo dg-echoed | ncly auth login deepgram --stdin --force --json'
+stdout '"action":"login","service":"deepgram"'
+grep -count=1 '"call":"set","account":"deepgram","key":"dg-echoed"\}' test-keychain.jsonl
+exec sh -c 'echo dg-echoed | ncly auth login deepgram --stdin --force'
+stdout '\AStored the key of deepgram in the keychain\.\n\z'
+! stdout dg-echoed
+
+# An empty or blank input stores nothing and exits 2 with USAGE_INVALID
+stdin blank.txt
+exits 2 ncly auth login openai --stdin --json
+answer stderr USAGE_INVALID
+stdin empty.txt
+exits 2 ncly auth login openai --stdin --json
+answer stderr USAGE_INVALID
+! grep '"account":"openai","key"' test-keychain.jsonl
+
+# --stdin with a terminal on stdin exits 2 with USAGE_INVALID, before the keychain
+cp test-keychain.jsonl $TMPDIR/before.jsonl
+ttyin -stdin late.txt
+exits 2 ncly auth login openai --stdin --json
+answer stderr USAGE_INVALID
+cmp test-keychain.jsonl $TMPDIR/before.jsonl
+
+# Without a terminal and without --stdin, login gives TERMINAL_REQUIRED with its hint, even
+# with an unavailable keychain, which it never asks
+exits 78 ncly auth login openai --json
+answer stderr TERMINAL_REQUIRED
+stderr '"hint":"Run `ncly auth login openai` in a terminal"'
+env NCLY_TEST_KEYCHAIN=unavailable
+exits 78 ncly auth login openai --json
+answer stderr TERMINAL_REQUIRED
+cmp test-keychain.jsonl $TMPDIR/before.jsonl
+
+# An unavailable keychain with --stdin gives KEYRING_UNAVAILABLE, whose hint names the variable
+stdin padded.txt
+exits 78 ncly auth login openai --stdin --json
+answer stderr KEYRING_UNAVAILABLE
+stderr '"hint":"Export OPENAI_API_KEY instead, or unlock the keychain and try again\."'
+! stderr '"next"'
+
+# A name that is no service name exits 2 with USAGE_INVALID before any other step, so a
+# keychain that never answers changes nothing
+env NCLY_TEST_KEYCHAIN=hang
+cp test-keychain.jsonl $TMPDIR/before.jsonl
+exits 2 ncly auth login keychain --json
+answer stderr USAGE_INVALID
+stderr '"message":"keychain is no service name: '
+exits 2 ncly auth login Deep-Gram --stdin --json
+answer stderr USAGE_INVALID
+cmp test-keychain.jsonl $TMPDIR/before.jsonl
+
+# A write that gets no answer exits 1 with RUNTIME and the next ncly auth status once the
+# shortened limit passes, after which status, in a new process, finds the key
+env NCLY_TEST_KEYCHAIN=write-hang
+stdin late.txt
+exits 1 ncly auth login deepgram --stdin --force --json
+answer stderr RUNTIME
+stderr '"hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
+! stderr dg-late
+env NCLY_TEST_KEYCHAIN=
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":true,"source":"keychain"\}'
+grep '"call":"set","account":"deepgram","key":"dg-late"\}' test-keychain.jsonl
+
+# For a service that no installed extension declares, the hint names Nicely's entry in the
+# keychain instead, because status does not list the service
+env NCLY_TEST_KEYCHAIN=write-hang
+stdin late.txt
+exits 1 ncly auth login zoom --stdin --json
+answer stderr RUNTIME
+stderr '"hint":"Look for the account zoom of the service nicely in the OS keychain\."\}'
+env NCLY_TEST_KEYCHAIN=
+
+# In a terminal, the key prompt turns echo off, so the typed key never shows, while the
+# keychain holds it
+exec pty type-key.txt ncly auth login openai
+stdout '\AKey for openai: \nStored the key of openai in the keychain\.\n\z'
+! stdout sk-typed
+stderr '\Aecho on\n\z'
+grep -count=1 '"call":"set","account":"openai","key":"sk-typed"\}' test-keychain.jsonl
+
+# A declined replacement keeps the old key and exits 2 with CONFIRMATION_REQUIRED, before
+# any key prompt, and a confirmed one replaces it
+exits 2 pty decline.txt ncly auth login openai
+stdout '\AThe keychain already holds a key for openai\. Replace it\? \[y/N\] n\n\z'
+stderr '^error\[CONFIRMATION_REQUIRED\]: The key of openai stays as it was\.$'
+stderr '^echo on$'
+grep -count=1 '"call":"set","account":"openai"' test-keychain.jsonl
+exec pty accept.txt ncly auth login openai
+stdout 'Replace it\? \[y/N\] y\nKey for openai: \nStored the key of openai in the keychain\.\n\z'
+! stdout sk-second
+grep -count=1 '"call":"set","account":"openai","key":"sk-second"\}' test-keychain.jsonl
+
+# Ctrl-C at the key prompt exits 130 with INTERRUPTED and leaves echo on
+exits 130 pty interrupt.txt ncly auth login mistral
+stderr '^error\[INTERRUPTED\]'
+stderr '^echo on$'
+! grep '"account":"mistral","key"' test-keychain.jsonl
+
+# Under the pseudo-locale, every word comes from the catalog
+exec ncly --lang en-XA auth login --help
+pseudo stdout auth login deepgram service stdin
+exits 78 ncly --lang en-XA auth login openai
+pseudo stderr auth login openai
+exec pty pseudo-key.txt ncly --lang en-XA auth login openai --force
+pseudo stdout openai
+
+-- padded.txt --
+  dg-padded  
+-- blank.txt --
+   
+
+-- empty.txt --
+-- late.txt --
+dg-late
+-- type-key.txt --
+Key for openai: 	sk-typed
+-- pseudo-key.txt --
+openai: 	sk-pseudo
+-- decline.txt --
+Replace it? [y/N] 	n
+-- accept.txt --
+Replace it? [y/N] 	y
+Key for openai: 	sk-second
+-- interrupt.txt --
+Key for mistral: 	^C
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"

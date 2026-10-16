@@ -488,3 +488,99 @@ other = "The keychain does not answer, and {{.Variable}} is empty."
 ["auth.keyring_unavailable_hint"]
 description = "Hint of KEYRING_UNAVAILABLE in ncly auth status: the action that fixes it, either exporting the environment variable of the key, such as DEEPGRAM_API_KEY, or unlocking the OS keychain. {{.Variable}} is the variable."
 other = "Export {{.Variable}}, or unlock the keychain."
+
+["auth.login.summary"]
+description = "Help page and ncly describe: summary of `ncly auth login`, which stores the key of a service in the OS keychain."
+other = "Store the key of a service in the keychain"
+
+["auth.service"]
+description = "Help page: the service argument of `ncly auth login` and `ncly auth logout`, the name of the service whose key changes."
+other = "Service of the key, such as deepgram"
+
+["auth.login.stdin"]
+description = "Help page: the --stdin flag of `ncly auth login`, which reads the key from stdin, to its end, instead of a prompt."
+other = "Read the key from stdin, to its end"
+
+["auth.force"]
+description = "Help page: the --force flag of `ncly auth login`, which replaces a stored key without asking for a confirmation."
+other = "Replace a stored key without asking"
+
+["auth.key_prompt"]
+description = "Prompt of `ncly auth login` in a terminal, before the human types the key, which never shows. {{.Service}} is the service, such as deepgram. Keep the colon and the final space."
+other = "Key for {{.Service}}: "
+
+["auth.replace_question"]
+description = "Prompt of `ncly auth login` in a terminal, when the OS keychain already holds a key for the service. Only an answer among the words of auth.yes replaces the key. Keep [y/N] and the final space. {{.Service}} is the service."
+other = "The keychain already holds a key for {{.Service}}. Replace it? [y/N] "
+
+["auth.yes"]
+description = "The answers that confirm a y/N prompt of `ncly auth`, separated by commas, in lowercase. Any other answer means no. Include the letter that the prompt shows in [y/N]."
+other = "y, yes"
+
+["auth.stored"]
+description = "ncly auth login, human text: the key of a service is now in the OS keychain. {{.Service}} is the service; the key itself never appears."
+other = "Stored the key of {{.Service}} in the keychain."
+
+["auth.invalid_service"]
+description = "Message of USAGE_INVALID in ncly auth: the argument is no service name. {{.Service}} is what the human gave."
+other = "{{.Service}} is no service name: a service name is lowercase letters and digits that start with a letter, other than keychain."
+
+["auth.terminal_required"]
+description = "Message of TERMINAL_REQUIRED in ncly auth login: without a terminal and without --stdin, nothing can ask for the key."
+other = "ncly auth login asks for the key in a terminal, or reads it from stdin with --stdin."
+
+["auth.terminal_required_hint"]
+description = "Hint of TERMINAL_REQUIRED in ncly auth login: the human runs the command in a terminal, where it asks for the key. {{.Command}} is the command, such as ncly auth login deepgram, which stays untranslated."
+other = "Run `{{.Command}}` in a terminal"
+
+["auth.stdin_terminal"]
+description = "Message of USAGE_INVALID in ncly auth login: --stdin reads the key from a pipe, but stdin is a terminal, where the key would show as the human types it."
+other = "--stdin reads the key from a pipe, but stdin is a terminal, where the key would show."
+
+["auth.login_unavailable"]
+description = "Message of KEYRING_UNAVAILABLE in ncly auth login: the OS keychain does not answer, so the key cannot be stored. {{.Service}} is the service."
+other = "The keychain does not answer, so the key of {{.Service}} cannot be stored."
+
+["auth.login_unavailable_hint"]
+description = "Hint of KEYRING_UNAVAILABLE in ncly auth login: the human exports the key's environment variable instead, such as DEEPGRAM_API_KEY, or unlocks the OS keychain. {{.Variable}} is the variable."
+other = "Export {{.Variable}} instead, or unlock the keychain and try again."
+
+["auth.replace_required"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth login without a terminal: the OS keychain already holds a key for the service, and only --force replaces it. {{.Service}} is the service."
+other = "The keychain already holds a key for {{.Service}}, and replacing it needs a confirmation."
+
+["auth.replace_declined"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth login, after the human answered no to replacing the key: the stored key stays. {{.Service}} is the service."
+other = "The key of {{.Service}} stays as it was."
+
+["auth.empty_key"]
+description = "Message of USAGE_INVALID in ncly auth login: the key is empty once the whitespace around it is removed, so nothing was stored. {{.Service}} is the service."
+other = "The key for {{.Service}} is empty, so nothing was stored."
+
+["auth.empty_key_hint"]
+description = "Hint of USAGE_INVALID in ncly auth login for an empty key. {{.Command}} is the command, such as ncly auth login deepgram --stdin, which stays untranslated."
+other = "Give the key itself to {{.Command}}."
+
+["auth.store_unknown"]
+description = "Message of RUNTIME in ncly auth login: the OS keychain failed, or did not answer in time, while it stored the key, so the key may still change after ncly answers. {{.Service}} is the service."
+other = "The keychain did not confirm that it stored the key of {{.Service}}, and it may still store it."
+
+["auth.write_unknown_hint"]
+description = "Hint of RUNTIME in ncly auth login or logout when the effect of the keychain's write is unknown: ncly auth status shows where the key of the service comes from now. {{.Service}} is the service."
+other = "Check the key of {{.Service}} with ncly auth status."
+
+["auth.write_unknown_entry_hint"]
+description = "Hint of RUNTIME in ncly auth login or logout for a service that no installed extension declares, which ncly auth status does not list: the human looks at Nicely's entry in the OS keychain. {{.Service}} is the account, and {{.Keychain}} the keychain service, nicely."
+other = "Look for the account {{.Service}} of the service {{.Keychain}} in the OS keychain."
+
+["auth.planned_login"]
+description = "ncly auth login --dry-run, human text: the change that the command would make. {{.Service}} is the service."
+other = "Would store a key for {{.Service}} in the keychain."
+
+["auth.pending_login"]
+description = "ncly auth login --dry-run: the message of the pending check auth.keychain, which only the real run makes, because a dry run asks the OS keychain nothing. {{.Service}} is the service."
+other = "Whether the keychain answers, and whether it already holds a key for {{.Service}} that a replacement must confirm."
+
+["auth.pending"]
+description = "ncly auth --dry-run, human text: one check that only the real run makes. {{.ID}} is its id, such as auth.keychain, and {{.Message}} what it checks."
+other = "pending  {{.ID}}  {{.Message}}"
