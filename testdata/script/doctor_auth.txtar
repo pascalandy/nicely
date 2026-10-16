@@ -110,6 +110,16 @@ env NCLY_TEST_KEYCHAIN=interrupt
 exits 130 ncly doctor auth --json
 ! stdout .
 answer stderr INTERRUPTED
+
+# A keychain that refuses the check before --timeout passes keeps that answer, even when the
+# deadline passes while doctor waits for a signal that could have come with the refusal. The
+# checks of the keys then find the deadline passed
+env NCLY_TEST_KEYCHAIN=unavailable
+env DEEPGRAM_API_KEY=dg-from-env
+env OPENAI_API_KEY=oa-from-env
+exits 78 ncly doctor auth --timeout 20ms --json
+stdout '\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY",'
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"CHECK_TIMEOUT",'
 env NCLY_TEST_KEYCHAIN=
 
 # Without a component, doctor lists the auth checks after core and before the extensions

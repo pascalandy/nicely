@@ -176,12 +176,14 @@ func (k *Keychain) write(ctx context.Context, call func() error) error {
 // delivers within a millisecond. The program runner waits the same way.
 const signalSettle = 25 * time.Millisecond
 
-// stoppedMeanwhile reports whether ctx ends within signalSettle of a call
-// that failed, so that the call answers the signal rather than its failure.
+// stoppedMeanwhile reports whether a signal ends ctx within signalSettle of
+// a call that failed, so that the call answers the signal rather than its
+// failure. A deadline that passes meanwhile, such as the --timeout of
+// doctor, changes nothing, because the keychain answered before it.
 func stoppedMeanwhile(ctx context.Context) bool {
 	select {
 	case <-ctx.Done():
-		return true
+		return errors.Is(ctx.Err(), context.Canceled)
 	case <-time.After(signalSettle):
 		return false
 	}
