@@ -57,6 +57,8 @@ A shell fixture command records the names of the key variables that it receives,
 
 The scenario runs once under the pseudo-locale.
 
+The `auth` feature of verify-nicely uses a runnable `verifykeys` fixture. It declares `verifynicely`, reports only a SHA-256 of the key it receives, and answers `KEY_NOT_GRANTED` without a grant. Extend the feature to exercise a grant and a missing grant with a fake key. Never print the key.
+
 ### M08-T3 Source identity
 
 - **Read:** [Grants](../north-star/contract.md#grants), [Discovery](../north-star/contract.md#discovery), [ncly auth](../north-star/core-spec.md#ncly-auth)
