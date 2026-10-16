@@ -103,6 +103,13 @@ grep '^143$' exit.txt
 answer stderr TERMINATED
 gone keychain-child.pid
 grep '^TERM$' keychain-child.sig
+
+# A Ctrl-C at the terminal can end the keychain's program before ncly sees its own copy:
+# doctor still exits 130 with INTERRUPTED
+env NCLY_TEST_KEYCHAIN=interrupt
+exits 130 ncly doctor auth --json
+! stdout .
+answer stderr INTERRUPTED
 env NCLY_TEST_KEYCHAIN=
 
 # Without a component, doctor lists the auth checks after core and before the extensions
