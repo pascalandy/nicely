@@ -57,7 +57,7 @@ A shell fixture command records the names of the key variables that it receives,
 
 The scenario runs once under the pseudo-locale.
 
-The `auth` feature of verify-nicely uses a runnable `verifykeys` fixture. It declares `verifynicely`, reports only a SHA-256 of the key it receives, and answers `KEY_NOT_GRANTED` without a grant. Extend the feature to exercise a grant and a missing grant with a fake key. Never print the key.
+Make the `verifykeys` fixture of verify-nicely runnable. It declares `verifynicely` and reports a SHA-256 digest instead of the key. When `NCLY_MISSING_KEYS` names the service, it answers `KEY_NOT_GRANTED`. Extend the `auth` feature to run the fixture before and after granting its fake key. Add a recorded PTY step that sends the confirmation for `ncly auth grant verifynicely verifykeys` to this scratch fixture. `just verify step` has no terminal, and `grant` takes no `--force`. Never print the key.
 
 ### M08-T3 Source identity
 
@@ -77,6 +77,8 @@ Bind each grant to its source, as [Grants](../north-star/contract.md#grants) def
 - **Proves:** `testdata/script/grant_status.txtar`, `testdata/script/doctor_status.txtar`, `sdk/contract/compat_test.go`
 
 Each entry of `ncly auth status` adds `grants`, and `status` and the `auth.<service>` check of doctor fail with `KEY_NOT_GRANTED` when an extension that needs the key lacks a grant, as [ncly auth](../north-star/core-spec.md#ncly-auth) defines. Add the `auth.grants` check to doctor in `internal/cli`, register the warning `GRANT_UNUSED` in `sdk/contract`, and add a consumer case in `compat_test.go` that reads an entry of `services` with and without `grants`.
+
+Update the `auth` feature's status and doctor checks for the required `verifynicely` key before and after its grant. With a stored key and no grant, both report `KEY_NOT_GRANTED`.
 
 `grant_status.txtar` covers a key with every grant, a key without the grant of one of two extensions that declare it, a missing key without its grant, which reports `AUTH_MISSING` alone, a grant whose service the fixture no longer declares and one whose path no longer holds the fixture, each a `GRANT_UNUSED` entry, and an unreadable grants file, which fails `status` and the `auth.grants` check with `CONFIG_INVALID`. It compares the verdict of each service in `status` and in doctor, and runs once under the pseudo-locale.
 
