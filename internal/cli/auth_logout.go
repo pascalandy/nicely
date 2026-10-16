@@ -64,26 +64,18 @@ func addAuthLogout(p *i18n.Printer, g command.Globals, group *cobra.Command, ext
 			return command.Fail(contract.Problem{Code: contract.NotFound, Message: p.T("auth.logout_none", data), Hint: hint, Next: []string{"ncly", "auth", "status"}})
 		}
 		if !force {
-			hint := strings.Join([]string{"ncly", "auth", "logout", service, "--force"}, " ")
-			if !human {
-				return command.Fail(contract.Problem{Code: contract.ConfirmationRequired, Message: p.T("auth.remove_required", data), Hint: hint})
+			question := confirmation{
+				question: p.T("auth.remove_question", data),
+				required: p.T("auth.remove_required", data),
+				declined: p.T("auth.remove_declined", data),
+				hint:     strings.Join([]string{"ncly", "auth", "logout", service, "--force"}, " "),
 			}
-			yes, err := confirm(ctx, os.Stdin, out, p.T("auth.remove_question", data), yesWords(p.T("auth.yes")))
-			switch {
-			case ctx.Err() != nil:
-				return stopped(ctx)
-			case err != nil:
+			if err := question.ask(ctx, p, human, out); err != nil {
 				return err
-			case !yes:
-				return command.Fail(contract.Problem{Code: contract.ConfirmationRequired, Message: p.T("auth.remove_declined", data), Hint: hint})
 			}
 		}
 		if err := k.Remove(ctx, service); err != nil {
-			unknown := writeUnknown(p, service, declaredServices(extensions), "auth.remove_unknown")
-			if errors.Is(err, keychain.ErrWriteUnknown) {
-				return command.Fail(unknown)
-			}
-			return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx)), Errors: []contract.Problem{unknown}}, text: func(io.Writer) error { return nil }}
+			return failedWrite(ctx, err, writeUnknown(p, service, declaredServices(extensions), "auth.remove_unknown"))
 		}
 		return &answered{
 			outcome: contract.Outcome{Data: changed{Service: service, Action: "logout"}},
