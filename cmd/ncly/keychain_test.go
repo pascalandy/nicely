@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/pascalandy/nicely/internal/keychain"
@@ -24,9 +26,15 @@ import (
 //   - probe-only answers the check of the keychain, then refuses every other
 //     call, as a keychain that locks meanwhile
 //   - hang never answers
-//   - write-hang answers every read, then applies a write and never answers it
 //   - child starts a child program at each call, as go-keyring starts
 //     security on macOS, and refuses the call once that program ends
+//   - interrupt sends ncly SIGINT at each call and refuses the call at once,
+//     as security fails when a Ctrl-C at the terminal reaches it and ncly
+//     together
+//
+// write-<mode>, such as write-hang, answers every read and applies <mode> to
+// the writes alone. A write that <mode> does not refuse takes effect, so
+// write-hang applies a write and never answers it.
 type testKeychain struct{}
 
 // callRecord is one line of the test keychain.
@@ -56,6 +64,12 @@ func (testKeychain) file() string { return filepath.Join(os.Getenv("HOME"), "tes
 // to go on.
 func (k testKeychain) record(c callRecord, write bool) error {
 	mode := os.Getenv("NCLY_TEST_KEYCHAIN")
+	if writes, writesOnly := strings.CutPrefix(mode, "write-"); writesOnly {
+		mode = ""
+		if write {
+			mode = writes
+		}
+	}
 	c.Refused = mode == "unavailable" || (mode == "probe-only" && c.Account != "keychain")
 	line, err := json.Marshal(c)
 	if err != nil {
@@ -74,10 +88,17 @@ func (k testKeychain) record(c callRecord, write bool) error {
 		return err
 	case c.Refused:
 		return errRefused
-	case mode == "hang" || (mode == "write-hang" && write):
+	case mode == "hang":
 		select {}
 	case mode == "child":
 		return runChild()
+	case mode == "interrupt":
+		// The signal reaches ncly as the call fails, so the failure comes
+		// first, as when a Ctrl-C ends security before ncly sees its copy.
+		if err := syscall.Kill(os.Getpid(), syscall.SIGINT); err != nil {
+			return err
+		}
+		return errRefused
 	}
 	return nil
 }
