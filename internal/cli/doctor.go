@@ -18,6 +18,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -94,18 +95,23 @@ type report struct {
 
 // component is a part of the machine that doctor checks, under the name
 // that the component argument gives it. extension is set for the
-// component of an installed extension.
+// component of an installed extension. last marks the component that runs
+// after every other, auth, whose questions to the keychain never cost a
+// check that already finished. It changes when the component runs, not
+// where the report lists it.
 type component struct {
 	name      string
 	checks    func() []check
 	extension *extension
+	last      bool
 }
 
 // addDoctor adds ncly doctor, which reports its checks on stdout even when
 // one fails, as a report command does. It runs the version probes, then
 // each status command, one at a time, because the cleanup of the runner
-// reaches every descendant of ncly, and starts no other program.
-func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension) {
+// reaches every descendant of ncly, and starts no other program. Its auth
+// component asks the keychain through b last.
+func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension, b keychain.Backend) {
 	root.AddCommand(command.Build(p, p, doctorCommand, func(c *cobra.Command, args []string) error {
 		timeout, problem := parseTimeout(p, c.Flag("timeout"))
 		if problem != nil {
@@ -113,8 +119,10 @@ func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensio
 		}
 		live, _ := c.Flags().GetBool("live")
 		probes := &prober{p: p, g: g, live: live, ctx: runner.OnSignal(), deadline: time.Now().Add(timeout)}
+		k := keychain.New(b, interactive(g, c.OutOrStdout()))
 		components := []component{
 			{name: "core", checks: func() []check { return coreChecks(p, extensions) }},
+			{name: "auth", checks: func() []check { return probes.auth(extensions, k) }, last: true},
 			{name: "extensions", checks: func() []check { return extensionChecks(p, extensions) }},
 		}
 		for _, e := range extensions {
@@ -140,8 +148,17 @@ func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensio
 				r.Checks = append(r.Checks, config[0])
 			}
 		}
-		for _, c := range components {
-			r.Checks = append(r.Checks, c.checks()...)
+		found := make([][]check, len(components))
+		var order []int
+		for _, last := range []bool{false, true} {
+			for i, c := range components {
+				if c.last == last {
+					order = append(order, i)
+				}
+			}
+		}
+		for _, i := range order {
+			found[i] = components[i].checks()
 			// A signal that arrives while no probe runs ends doctor too.
 			if probes.signal == nil && probes.ctx.Err() != nil {
 				probes.signal = runner.SignalOf(probes.ctx)
@@ -149,6 +166,9 @@ func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensio
 			if probes.signal != nil {
 				return &answered{outcome: contract.Outcome{Signal: contract.StopSignal(probes.signal)}, text: func(io.Writer) error { return nil }}
 			}
+		}
+		for _, checks := range found {
+			r.Checks = append(r.Checks, checks...)
 		}
 		failed := slices.ContainsFunc(r.Checks, func(c check) bool { return c.Status == statusFail })
 		return &answered{

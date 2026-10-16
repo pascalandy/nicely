@@ -32,7 +32,7 @@ just verify step "$run" doctor --version
 just verify step "$run" doctor doctor
 ```
 
-`step <run> <feature> <ncly args...>` runs the wrapper with those arguments and the caller's stdin, prints the call, its stdout, its stderr, and its exit code, appends them to `$run/evidence/<feature>.txt`, and exits with the code of `ncly`. When it cannot write that transcript, it exits 1 and leaves the outputs of the call in `$run/scratch/`. Done when `--version` prints `ncly v<version>-<commit>`, where `<commit>` is the first line of `$run/evidence/commit.txt`, followed by `+dirty` when its second line says `dirty`, and `ncly doctor` exits 0 with a `pass` line for `extensions.hello` whose path lies under `<run>/scratch/home`. When doctor fails, stop and report its output: a feature driven on a broken build proves nothing.
+`step <run> <feature> <ncly args...>` runs the wrapper with those arguments and the caller's stdin, prints the call, its stdout, its stderr, and its exit code, appends them to `$run/evidence/<feature>.txt`, and exits with the code of `ncly`. When it cannot write that transcript, it exits 1 and leaves the outputs of the call in `$run/scratch/`. Done when `--version` prints `ncly v<version>-<commit>`, where `<commit>` is the first line of `$run/evidence/commit.txt`, followed by `+dirty` when its second line says `dirty`, and `ncly doctor` exits 0 with a `pass` line for `extensions.hello` whose path lies under `<run>/scratch/home`, and an `auth.keychain` line: a `pass` when the keychain answers, or a `warn` with `KEYRING_ENV_ONLY` when it does not. When doctor fails, stop and report its output: a feature driven on a broken build proves nothing.
 
 ## Drive
 

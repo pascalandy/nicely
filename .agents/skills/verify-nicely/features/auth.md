@@ -13,6 +13,7 @@
 - `auth-replace` refuses to replace the stored key without `--force`
 - `auth-logout-dry-run` plans the logout without asking the keychain anything
 - `auth-logout` refuses to remove the key without `--force`, removes it with `--force`, and answers `NOT_FOUND` once it is gone
+- `auth-doctor` gives the test service the verdict of `ncly auth status` in the `auth` component of `ncly doctor`
 - `auth-cleanup` logs the fake key out during the cleanup, after a failed run too, and checks that it is gone
 
 ## How to get to it (user POV)
@@ -21,6 +22,7 @@
 - `ncly auth status --json`
 - `ncly auth login <service> --stdin`, `--force`, and `--dry-run`
 - `ncly auth logout <service>`, `--force`, and `--dry-run`
+- `ncly doctor auth`, and `ncly doctor` without a component
 - `just verify cleanup "$run"`, which logs the fake key out
 
 ## Driving it with verify.sh
@@ -39,12 +41,14 @@ Preconditions:
 - **Login dry run.** Run `just verify step "$run" auth auth login verifynicely --dry-run --json`. Exit 0, and stdout holds `"dry_run":true`, the plan `{"key":"verifynicely","action":"login","effects":{"user_writes":true,"network":false,"paid":false}}`, and the pending check `auth.keychain`.
 - **Login.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"action":"login","service":"verifynicely"}`.
 - **Key from the keychain.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"verifynicely","configured":true,"source":"keychain"}]}`.
+- **Doctor with the key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth doctor auth --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"checks":[{"id":"auth.keychain","component":"auth","status":"pass","message":"The keychain answers."},{"id":"auth.verifynicely","component":"auth","status":"pass","message":"The key comes from the keychain."}]}`.
 - **Replacement.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --json`. Exit 2, and stderr ends with an answer whose first error is `CONFIRMATION_REQUIRED`, with the hint `ncly auth login verifynicely --stdin --force`.
 - **Login as text.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force`. Exit 0, and stdout is `Stored the key of verifynicely in the keychain.`
 - **Logout dry run.** Run `just verify step "$run" auth auth logout verifynicely --dry-run --json`. Exit 0, and stdout holds `"dry_run":true`, the plan `{"key":"verifynicely","action":"logout","effects":{"user_writes":true,"network":false,"paid":false}}`, and the pending check `auth.keychain`.
 - **Logout without --force.** Run `just verify step "$run" auth auth logout verifynicely --json`. Exit 2, and stderr ends with an answer whose first error is `CONFIRMATION_REQUIRED`, with the hint `ncly auth logout verifynicely --force` and the same command in `next`.
 - **Logout.** Run `just verify step "$run" auth auth logout verifynicely --force --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"action":"logout","service":"verifynicely"}`.
 - **Key gone.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Exit 78, and the entry of `verifynicely` has `"source":"none"` and `"code":"AUTH_MISSING"`.
+- **Doctor without the key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth doctor --json`. Exit 78, stderr is empty, and stdout lists `core.config`, then `auth.keychain` as a `pass`, then `{"id":"auth.verifynicely","component":"auth","status":"fail","code":"AUTH_MISSING", ...}` with the hint and `next` of the status entry, then the `extensions` checks, each a `pass`.
 - **Nothing to remove.** Run `just verify step "$run" auth auth logout verifynicely --force --json`. Exit 2, and stderr ends with an answer whose first error is `NOT_FOUND`, with the hint and `next` `ncly auth status`.
 - **Login for the cleanup.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force --json`. Exit 0, so the cleanup has a key to log out.
 - **Proof.** Run `grep -c "$fake" "$run/evidence/auth.txt"` after the steps. It prints `0` and exits 1, grep's code for no match: no transcript holds the fake key.
