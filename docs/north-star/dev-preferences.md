@@ -26,7 +26,7 @@ The docs form layers like the code: the glossary fixes the words, the vision and
 
 ## Write clear technical English
 
-Use the writing rules of ASD-STE100 Simplified Technical English, Issue 9 (January 15, 2025), when you write English prose. In procedures, give one instruction per sentence and use the imperative form. Limit procedural sentences to 20 words. In descriptive text, give each sentence one topic and limit it to 25 words. Use one term for each concept throughout the docs. Keep command syntax and code identifiers exact. Check the controlled dictionary before you claim formal STE compliance.
+Use these writing practices from ASD-STE100 Simplified Technical English, Issue 9 (January 15, 2025), for English prose. In procedures, give one instruction per sentence and use the imperative form. Limit procedural sentences to 20 words. In descriptive text, give each sentence one topic and limit it to 25 words. Keep command syntax and code identifiers exact.
 
 ## Wait for Pascal's review before a merge
 
