@@ -78,7 +78,8 @@ install_hello() {
 }
 
 # write_wrapper writes the scratch folder's ncly, which sets HOME, the XDG
-# folders, and PATH, then runs the built ncly.
+# folders, and PATH, unsets NCLY_CONFIG, which would point the config
+# elsewhere, then runs the built ncly.
 write_wrapper() {
 	local wrapper="$1" binary="$2" home="$3" path="$4"
 	cat >"$wrapper" <<EOF
@@ -91,6 +92,7 @@ XDG_STATE_HOME='$home/.local/state'
 XDG_CACHE_HOME='$home/.cache'
 PATH='$path'
 export HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME PATH
+unset NCLY_CONFIG
 exec '$binary' "\$@"
 EOF
 	chmod +x "$wrapper"
