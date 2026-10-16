@@ -144,7 +144,7 @@ Exit 75 is a promise that the same invocation is safe to repeat. It requires all
 
 Apply this rule to the whole invocation, including successful batch items and writes that happened before a lock failed. A free operation is not necessarily safe to repeat. Unknown effects, non-repeatable writes, and any started paid request exclude 75. Such runtime failures exit 1 and retain evidence for inspection or an explicit resume. Signals retain 130 and 143.
 
-In a recorded operation, the record settles conditions 2 and 3 for the steps that this invocation started: exit 75 requires every step whose intent this invocation persisted to declare the `none` or `repeatable` effect, as [Record format](#record-format) defines. Such a step counts even when it then failed, because it may have made part of its effect, such as a reserved result folder before a refused upload. A step that an earlier attempt completed, and that this invocation only reuses, does not count, because a repeat reuses it again.
+In a recorded operation, the record settles conditions 2 and 3 for the steps that this invocation started: exit 75 requires every step whose intent this invocation persisted to declare the `none` or `repeatable` effect, as [Record format](#record-format) defines. Such a step counts even when it then failed, because it may have made part of its effect, such as a reserved result folder before a refused upload. A step that an earlier attempt completed, and that this invocation only reuses, does not count, because a repeat reuses it again. The same call with the same `--run-id` after exit 75 therefore continues the run or runs it again, as [Run IDs](#run-ids) defines.
 
 An idempotence claim includes destinations, configuration, external actions, and the result of a second invocation. Merely obtaining the same final file contents does not prove that no duplicate action occurred. Each writing command states what a repeated invocation does.
 
@@ -534,7 +534,7 @@ The operating system releases each lock when its owner dies. Each lock in the st
 | `status` | string | `running`, `completed`, `failed`, `interrupted`, or `unknown` |
 | `started_at`, `updated_at` | string | UTC times in RFC 3339, such as `2026-10-07T21:45:01Z` |
 | `ncly_version` | string | The release that last wrote the record |
-| `attempts` | integer | The number of executions: 1, plus one per resume |
+| `attempts` | integer | The number of executions: 1, plus one per resume or repeated call that runs a step again |
 | `inputs` | object | What the call states, as non-secret values and fingerprints, under keys that the domain defines. A call with the same run ID compares them |
 | `resolved` | object | The non-secret values that preparation picked from the config or the machine, such as a resolved profile, under keys that the domain defines. No call compares them to decide whether it is the same call, and every later attempt reads them from the record |
 | `tools` | object | The version of each program that the run used, keyed by program name |
@@ -545,7 +545,7 @@ Each item has `key`, a string that names the item, such as its URL, `output_dir`
 | Key | Type | Meaning |
 |---|---|---|
 | `id` | string | The step name that the domain defines, such as `transcribe` |
-| `effect` | string | The strongest effect that the step can make, which the domain declares in the initial record and never changes: `none`; `repeatable`, harmless to repeat or covered by a demonstrated idempotent operation; `non_repeatable`, which a repeat would duplicate or conflict with; or `paid`, a request that may bill |
+| `effect` | string | The strongest effect that the step can make, which the domain declares in the initial record and never changes: `none`; `repeatable`, harmless to repeat or covered by a demonstrated idempotent operation; `non_repeatable`, which a repeat would duplicate or conflict with; or `paid`, a request that may bill. Each value is more cautious than the one before it |
 | `status` | string | `pending`, `completed`, `failed`, or `unknown` |
 | `started_at`, `finished_at` | string or null | UTC times, `null` until the step starts or ends |
 | `artifacts` | array | One object per verified output, with `path`, `size_bytes`, and `sha256` |
@@ -556,7 +556,7 @@ The domain defines when its validated preparation creates the initial record, be
 
 | Status | When written |
 |---|---|
-| `running` | The initial record and each explicit resume attempt |
+| `running` | The initial record, each explicit resume attempt, and each repeated call that runs the steps again |
 | `completed` | Every planned step has verified completion |
 | `failed` | Execution ends with a known error and no unknown step |
 | `interrupted` | Ctrl-C or SIGTERM stops execution, preserving each step's evidence |
@@ -570,7 +570,7 @@ Each extension reuses these keys where they fit and defines its own `inputs`, `r
 
 Inspection is read-only and reports saved evidence, not an assumption that a process marked running is still alive. Resume checks that no execution still owns the run, validates the record version, and verifies the saved inputs, relevant configuration, tool compatibility, and artifacts. Resume reads `resolved` from the record instead of picking its values again, so the relevant configuration excludes them, such as the profile.
 
-A supported resume reuses verified completed steps and continues only steps whose execution is known to be safe. It records each attempt under the same run ID. Changed or missing evidence returns `RESUME_UNSAFE` with an explanation and the artifacts still available. In a batch, a refusal that concerns one item, such as its unknown summary, fails that item in `results` with `RESUME_UNSAFE`, while the other items continue, and a changed input of the whole run refuses the whole resume. `--force` does not override uncertainty or make a non-repeatable effect safe.
+A supported resume reuses verified completed steps and continues only steps whose execution is known to be safe. A step that it runs again takes the more cautious of the effect that the record declares and the effect that the command declares now, and a step that the command no longer declares never runs again, as [pi-durable](https://github.com/earendil-works/pi/blob/4dd2b149d155d7369de16ea4dc77c84e9f5ffb24/packages/durable/docs/spec.md#L3385-L3388) decides for its tools. It records each attempt under the same run ID. Changed or missing evidence returns `RESUME_UNSAFE` with an explanation and the artifacts still available. In a batch, a refusal that concerns one item, such as its unknown summary, fails that item in `results` with `RESUME_UNSAFE`, while the other items continue, and a changed input of the whole run refuses the whole resume. `--force` does not override uncertainty or make a non-repeatable effect safe.
 
 For example, a saved transcript and a summary that was never started permit a resume of the summary alone. An unanswered paid summary request is unknown and is not sent again automatically. A domain may resolve an unknown step from complete, independently verified local artifacts, from the record of a child run that the step's intent names, or from a reliable external lookup. This establishes a reusable result; it never authorizes redispatch of an unresolved request. Otherwise the user must inspect the evidence and explicitly choose any new operation that might repeat a charge.
 
@@ -586,7 +586,8 @@ A call takes the run lock of its ID before it reads the record, as [Record forma
 2. The record's command path, `inputs`, or ordered item keys differ from what the call states: `USAGE_INVALID`, because the ID names another call. An item key that preparation picked, such as the meeting folder that `--latest` selects, comes from the record and is not compared
 3. The run completed: its verified saved result, without the rest of preparation and without running a step again
 4. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
-5. Otherwise: `RESUME_UNSAFE`, with the artifacts still available
+5. Every step whose intent the run persisted declares `none` or `repeatable`, both in the record and in the command's current declaration: the call runs every step again under the same ID. It increments `attempts` and writes `running` before the first step
+6. Otherwise: `RESUME_UNSAFE`, with the artifacts still available, including when the current declaration of such a step is missing or more cautious than the recorded one
 
 A repeated call with the same ID therefore never repeats an effect that the record does not prove safe, and a dry run with it describes what the call would do, as `ncly run resume --dry-run` does. After lost output, a caller that chose the ID reads the run with `ncly run view <id>`, or makes the same call again, and needs no search with `ncly run list`.
 
