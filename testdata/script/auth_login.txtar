@@ -118,6 +118,15 @@ stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram wit
 ! stderr dg-late
 gone keychain-child.pid
 grep '^INT$' keychain-child.sig
+
+# A Ctrl-C at the terminal reaches the write's program and ncly together, so the write can
+# fail before ncly sees its own copy: login still exits 130 with INTERRUPTED, then the RUNTIME
+# of the unknown effect
+env NCLY_TEST_KEYCHAIN=write-interrupt
+stdin late.txt
+exits 130 ncly auth login deepgram --stdin --force --json
+answer stderr INTERRUPTED
+stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
 env NCLY_TEST_KEYCHAIN=
 
 # In a terminal, the key prompt turns echo off, so the typed key never shows, while the
