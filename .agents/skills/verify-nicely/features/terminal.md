@@ -22,7 +22,7 @@ Preconditions:
 `just verify tmux "$run" <feature> <ncly args...>` runs the call through the wrapper, like `step`, but on a terminal: in a pane of the private server `nicely-verify-<run>`, with `TMUX` naming the private server `nicely-verify-<run>-stuck`, which it holds with SIGSTOP during the call. The pane runs `ncly` with only `TERM`, which tmux sets, and `TMUX`, beside what the wrapper sets, because a variable of the caller, such as `NO_COLOR=1`, which agents set, can skip the detection that asks tmux, so any caller proves the end state. It records what the pane showed and the exit code in the transcript, or `no exit within the limit of 5s`, and then exits 1. It resumes and kills both servers on every exit.
 
 - **Version.** Run `just verify tmux "$run" terminal --version`. Exit 0, the terminal shows `ncly v<version>-<commit>`, as in the Doctor step, and the transcript ends with `--- exit 0, before the limit of 5s`.
-- **Help.** Run `just verify tmux "$run" terminal --help`. Exit 0, the terminal shows the root help, from `Curated CLI toolbox for humans and AI agents.` to its `FLAGS`, and the transcript ends with `--- exit 0, before the limit of 5s`.
+- **Help.** Run `just verify tmux "$run" terminal --help`. Exit 0, the terminal shows the whole root help, from `Curated CLI toolbox for humans and AI agents.` through its `FLAGS` and `EXAMPLES`, and the transcript ends with `--- exit 0, before the limit of 5s`.
 - **Servers gone.** After both calls, run `tmux -L "nicely-verify-${run##*/}" ls` and `tmux -L "nicely-verify-${run##*/}-stuck" ls`. Each exits 1 with `error connecting to` its socket, `No such file or directory`, because the step removes the socket files too: report both beside the quote.
 
 ## Gotchas
