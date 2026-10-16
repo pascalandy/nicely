@@ -102,7 +102,7 @@ The transcript domain defines these `inputs` keys, which hold what the call stat
 | Key | Type | Meaning |
 |---|---|---|
 | `source` | string | `youtube` or `zoom` |
-| `output` | string or null | `transcript run` only. The absolute folder that `--output` gives, or the current folder when neither `--output` nor the config names one. `null` when the config names it |
+| `output` | string or null | `transcript run` only. The absolute folder that `--output` gives, or `null` without it, because the config then picks the folder, or the current folder when it names none |
 | `recording` | string or null | `transcript run zoom` only. The value of `--path`, a folder name as given or a full path made absolute, or `null` for `--latest` |
 | `summary` | boolean | `transcript run` only. `false` for `--no-summary` |
 | `prompt` | string or null | The prompt name that `--prompt` gives, or `null` without it |
