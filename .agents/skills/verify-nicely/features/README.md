@@ -14,11 +14,11 @@ This folder is the maintained source for verifying what a user of `ncly` sees. R
 - Copy each command as it is written, flags and quotes included
 - Read machine values from `--json` answers, and human text from the run without `--json`
 - Check the exit code of every step against the one the feature names: a report that finds a problem exits 78, and that is its expected result
-- Read stdout, stderr, and the exit code of a step from its transcript. On a nonzero exit, `just` adds its own `error: Recipe` line on the terminal, which is not the stderr of `ncly`
+- Read stdout, stderr, and the exit code of a step from its transcript. A `tmux` call records what the terminal showed instead, stdout and stderr together. On a nonzero exit, `just` adds its own `error: Recipe` line on the terminal, which is not the stderr of `ncly`
 
 ## Proof and skip reporting
 
-- A proof quotes the call, its stdout, its stderr, and its exit code, from `just verify quote`, which holds only the `ncly` calls of `step` and `tmux`. Report the output of `prepare` and of a check outside `ncly`, such as `grep`, beside the quote
+- A proof quotes the call, its stdout, its stderr, or for a `tmux` call what the terminal showed, and its exit code, from `just verify quote`, which holds only the `ncly` calls of `step` and `tmux`. Report the output of `prepare` and of a check outside `ncly`, such as `grep`, beside the quote
 - A write is proved by a second command that reads its result
 - Report an unreachable step with the command that failed and the precondition that it lacked
 - Never report a step as verified through another entry point than the one it names
