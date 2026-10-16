@@ -232,10 +232,13 @@ logout_fake_key() {
 		return 1
 		;;
 	esac
-	answer="$(step "$run" cleanup auth status --json)" || true
-	# Only a keychain that answers without the key proves that it is gone.
-	case "$answer" in
-	*'"keychain":"available"'*"{\"service\":\"$test_service\",\"configured\":false,\"source\":\"none\",\"code\":\"AUTH_MISSING\""*) ;;
+	code=0
+	answer="$(step "$run" cleanup auth status --json)" || code=$?
+	# Only a keychain that answers without the key proves that it is gone:
+	# exit 78 with AUTH_MISSING. Another code, such as the 1 of a step that
+	# could not record the call, proves nothing.
+	case "$code:$answer" in
+	78:*'"keychain":"available"'*"{\"service\":\"$test_service\",\"configured\":false,\"source\":\"none\",\"code\":\"AUTH_MISSING\""*) ;;
 	*)
 		log "ncly auth status still finds a key for $test_service, or no keychain answers: see $run/evidence/cleanup.txt"
 		return 1
