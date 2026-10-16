@@ -72,6 +72,12 @@ check-layers *branches:
     done
     exit "$status"
 
+# Build ncly into a scratch folder for the verify-nicely skill, or run one of its steps
+[group('checks')]
+[positional-arguments]
+verify *args:
+    @bash .agents/skills/verify-nicely/scripts/verify.sh "$@"
+
 # Run the Go tests, the testscript scenarios, and the release script checks
 [group('checks')]
 test *args:

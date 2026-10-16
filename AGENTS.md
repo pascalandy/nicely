@@ -27,6 +27,7 @@ Each file answers one question. Read a file when its row says so, and add to it 
 | Why does a rule exist? | [decisions/](docs/north-star/decisions/README.md) | A rule blocks your card | A rule is chosen, changed, or replaced |
 | How does Pascal want changes made? | [dev-preferences.md](docs/north-star/dev-preferences.md) | Every session | Pascal states a new preference |
 | What is the plan? | [docs/milestones/](docs/milestones/) | `just next` names a milestone | Planning work. Any other idea goes to M99 |
+| How does an agent prove a card on the real `ncly`? | [verify-nicely](.agents/skills/verify-nicely/SKILL.md) | The Verify step of your card | A card changes the steps or the end state of a feature, or adds one |
 
 ## Work on a card
 
@@ -40,8 +41,9 @@ Copy this checklist into the pull request and tick each step when its condition 
 - [ ] 3. Code: those scenarios pass
 - [ ] 4. Text: each new user-facing string is a catalog entry with a description
 - [ ] 5. Checks: `just check` passes
-- [ ] 6. Docs: the card is done in its milestone, README.md shows any change a user sees, and a skill teaches any command you add: the extension's skill, or the `nicely` skill for a core command
-- [ ] 7. Sign off: `just signoff` passes
+- [ ] 6. Verify: an agent that did not write the change follows `.agents/skills/verify-nicely/SKILL.md` on each feature that the card affects, and the pull request quotes its evidence
+- [ ] 7. Docs: the card is done in its milestone, README.md shows any change a user sees, and a skill teaches any command you add: the extension's skill, or the `nicely` skill for a core command
+- [ ] 8. Sign off: `just signoff` passes
 ```
 
 1. **Spec first.** Write the section before code: in contract.md or core-spec.md for core, or in `extensions/<name>/spec.md` for an extension. When a source that the section cites has changed, such as a harness version, fix the spec first. Done when a reader can call the command from the spec alone.
@@ -49,8 +51,9 @@ Copy this checklist into the pull request and tick each step when its condition 
 3. **Code.** Follow [Code](#code). Done when the scenario passes.
 4. **Text.** Give each catalog entry an ID and a description of where the text appears, so a translator picks the right sense.
 5. **Checks.** When `just check` fails, fix the cause and rerun. After three failed attempts on the same check, stop and report what you tried. For a stack, `just check-layers` runs `just check` on each layer as origin holds it, bottom to top, and keeps one log per layer. Pass the branches bottom to top when the checkout is not on a branch of the stack.
-6. **Docs.** In the milestone's cards table, set the card's status to `done`. The milestone becomes `active` with its first done card and `done` with its last, and `just test` rejects any other combination. Update README.md when a user would see the change. Add a line for a new command to the skill that teaches its domain, or to the `nicely` skill for a core command.
-7. **Sign off.** `just signoff` reruns the checks, then calls `gh signoff`. Always sign off through the recipe, because a bare `gh signoff` posts a green status without running anything.
+6. **Verify.** When the card changes the steps or the end state of a feature in `.agents/skills/verify-nicely/features/`, or adds one, the implementer first updates or adds its file. Then an agent that did not write the change follows the skill on each feature that the card affects. It runs on a small model of the other family than the implementer's, at effort `xhigh`, in the same checkout, so it sees uncommitted changes. The pull request quotes the lines of its evidence that prove each end state, with home paths replaced by placeholders. A card that reaches nothing the scenarios replace, such as the real keychain, a real terminal, a harness, `uv`, or a paid service, marks the step `n/a`. Done when the quoted evidence proves the end state of each feature that the card affects.
+7. **Docs.** In the milestone's cards table, set the card's status to `done`. The milestone becomes `active` with its first done card and `done` with its last, and `just test` rejects any other combination. Update README.md when a user would see the change. Add a line for a new command to the skill that teaches its domain, or to the `nicely` skill for a core command.
+8. **Sign off.** `just signoff` reruns the checks, then calls `gh signoff`. Always sign off through the recipe, because a bare `gh signoff` posts a green status without running anything.
 
 ## Make a milestone ready
 

@@ -1,6 +1,6 @@
 # M06 Auth
 
-Status: ready
+Status: active
 Version: v0.6.0
 
 ## Demo
@@ -21,7 +21,7 @@ The scenarios declare services in the manifest of the shell fixture of M01.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M06-T1 | Verification skill | agent | — | todo |
+| M06-T1 | Verification skill | agent | — | done |
 | M06-T2 | Keychain and status | agent | M06-T1 | todo |
 | M06-T3 | Login | agent | M06-T2 | todo |
 | M06-T4 | Logout and service completion | agent | M06-T3 | todo |
@@ -30,7 +30,7 @@ The scenarios declare services in the manifest of the shell fixture of M01.
 ### M06-T1 Verification skill
 
 - **Read:** [Work on a card](../../AGENTS.md#work-on-a-card), [Discovery](../north-star/contract.md#discovery), [ncly doctor](../north-star/core-spec.md#ncly-doctor)
-- **Proves:** the run, quoted in the pull request, of an agent that did not write the change, which builds `ncly`, runs `ncly doctor`, drives the `hello` feature end to end, cleans up, and finds its evidence after the cleanup
+- **Proves:** `.agents/skills/verify-nicely/SKILL.md` and `.agents/skills/verify-nicely/features/hello.md`, through the run, quoted in the pull request, of an agent that did not write the change, which builds the binary, runs doctor, drives the hello feature end to end, cleans up, and finds its evidence after the cleanup
 
 Add the project skill `.agents/skills/verify-nicely/` with the `create-verification-skill` skill, so an agent runs the real `ncly` the way a user does. The skill covers:
 
