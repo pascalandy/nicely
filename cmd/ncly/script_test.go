@@ -20,6 +20,7 @@ func TestMain(m *testing.M) {
 		"closedpipe": closedPipe,
 		"exitcode":   exitCode,
 		"pgroup":     pgroup,
+		"pty":        ptyRun,
 		// codes lists the registry of sdk/contract, one code per line,
 		// because no command of ncly lists its codes.
 		"codes":          printCodes,

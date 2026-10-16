@@ -42,6 +42,11 @@ var ErrNotFound = keyring.ErrNotFound
 // refused it, so the command counts it unavailable for every later key.
 var ErrUnavailable = errors.New("the keychain is unavailable")
 
+// ErrWriteUnknown means that a write failed or got no answer within its
+// limit. Its effect is unknown, because the keychain may still store or
+// remove the key after ncly answers.
+var ErrWriteUnknown = errors.New("the keychain did not confirm the write")
+
 // System is the OS keychain, through go-keyring. On macOS, go-keyring starts
 // /usr/bin/security itself, outside the program runner, as Programs that
 // ncly runs in contract.md allows.
@@ -122,6 +127,31 @@ func (k *Keychain) Read(ctx context.Context, account string) (string, bool, erro
 		return "", false, ErrUnavailable
 	case <-ctx.Done():
 		return "", false, ctx.Err()
+	}
+}
+
+// Store writes the key of an account. It returns ErrWriteUnknown when the
+// write fails or gets no answer within the limit, and the error of ctx when
+// ctx ends first, whose effect stays unknown too.
+func (k *Keychain) Store(ctx context.Context, account, key string) error {
+	return k.write(ctx, func() error { return k.backend.Set(Service, account, key) })
+}
+
+func (k *Keychain) write(ctx context.Context, call func() error) error {
+	done := make(chan error, 1)
+	go func() { done <- call() }()
+	timer := time.NewTimer(k.limit)
+	defer timer.Stop()
+	select {
+	case err := <-done:
+		if err != nil {
+			return ErrWriteUnknown
+		}
+		return nil
+	case <-timer.C:
+		return ErrWriteUnknown
+	case <-ctx.Done():
+		return ctx.Err()
 	}
 }
 

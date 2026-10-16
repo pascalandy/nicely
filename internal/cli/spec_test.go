@@ -70,11 +70,11 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 }
 
 // shipped lists the milestones whose commands core declares, and pending
-// the commands of a shipped milestone whose card is still open: login in
-// M06-T3 and logout in M06-T4.
+// the commands of a shipped milestone whose card is still open: logout in
+// M06-T4.
 var (
 	shipped = []string{"M00", "M03", "M05", "M06"}
-	pending = []string{"auth login", "auth logout"}
+	pending = []string{"auth logout"}
 )
 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the

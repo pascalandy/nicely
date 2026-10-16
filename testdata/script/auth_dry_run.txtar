@@ -1,0 +1,65 @@
+# A dry run of ncly auth login shares the name check of execution, then needs neither a
+# terminal nor --stdin, reads no stdin, asks the keychain nothing, prompts for nothing, and
+# changes no file or key: auth.keychain stays a pending check. The test keychain is the file
+# $HOME/test-keychain.jsonl, which snapshot sees, and its call log stays as seeded.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+cp seed.jsonl test-keychain.jsonl
+snapshot before
+
+# Without a terminal and without --stdin, over a stored key that a replacement would confirm
+exec ncly auth login deepgram --dry-run --json
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\{"id":"auth\.keychain","message":"Whether the keychain answers, and whether it already holds a key for deepgram that a replacement must confirm\."\}\],"plan":\[\{"key":"deepgram","action":"login","effects":\{"user_writes":true,"network":false,"paid":false\}\}\]\}\n\z'
+! stderr .
+cp stdout $TMPDIR/dry.json
+exec ncly describe 'auth login' --json
+stdout '"modes":\{"dry_run":true,'
+stdout '\{"name":"dry-run","shorthand":"n",'
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/dry.json $TMPDIR/describe.json dry_run_schema
+unchanged before
+cmp test-keychain.jsonl seed.jsonl
+
+# With --stdin, the key on stdin stays unread, from a pipe and from a terminal
+stdin key.txt
+exec ncly auth login deepgram --stdin --dry-run --json
+stdout '"dry_run":true'
+ttyin -stdin key.txt
+exec ncly auth login deepgram --stdin --force --dry-run --json
+stdout '"dry_run":true'
+! stdout dg-unread
+unchanged before
+
+# A keychain that never answers changes nothing, because the dry run never asks it
+env NCLY_TEST_KEYCHAIN=hang
+exec ncly auth login deepgram --dry-run --json
+stdout '"pending_checks":\[\{"id":"auth\.keychain"'
+cmp test-keychain.jsonl seed.jsonl
+env NCLY_TEST_KEYCHAIN=
+
+# Without --json, the plan and the pending check are text
+exec ncly auth login deepgram --dry-run
+cmp stdout plan.txt
+! stderr .
+
+# An invalid service name still exits 2 with USAGE_INVALID
+exits 2 ncly auth login keychain --dry-run --json
+answer stderr USAGE_INVALID
+exits 2 ncly auth login Deep-Gram -n --json
+answer stderr USAGE_INVALID
+unchanged before
+
+# The help shows --dry-run, and every word comes from the catalog
+exec ncly auth login --help
+stdout '^  -n, --dry-run  '
+exec ncly --lang en-XA auth login deepgram --dry-run
+pseudo stdout deepgram auth.keychain
+unchanged before
+
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-stored"}
+-- key.txt --
+dg-unread
+-- plan.txt --
+Would store a key for deepgram in the keychain.
+pending  auth.keychain  Whether the keychain answers, and whether it already holds a key for deepgram that a replacement must confirm.
