@@ -32,7 +32,7 @@ Preconditions:
 - The fake key of this run: `fake=verify-nicely-fake-$(date +%s)`
 
 - **Fixture.** Run `just verify prepare "$run" auth`. Exit 0, and stderr names the service `verifynicely` and its variable `VERIFYNICELY_API_KEY`.
-- **Help.** Run `just verify step "$run" auth auth --help`. Exit 0, and `COMMANDS` lists `login` and `status`.
+- **Help.** Run `just verify step "$run" auth auth --help`. Exit 0, and `COMMANDS` lists `login`, `logout`, and `status`.
 - **Missing key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Without the fake key of an earlier run, exit 78, stderr is empty, and stdout is one line with `"ok":false`, `"keychain":"available"`, and the one entry `{"service":"verifynicely","configured":false,"source":"none","code":"AUTH_MISSING", ...}`, whose `hint` is `ncly auth login verifynicely` and whose `next` is `["ncly","auth","login","verifynicely"]`. With it, exit 0 and the entry `{"service":"verifynicely","configured":true,"source":"keychain"}`: report which one you saw.
 - **Missing key as text.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status`. The first line is `keychain      The keychain answers.`. Without the fake key of an earlier run, exit 78, and the line of `verifynicely` says `No key for verifynicely in VERIFYNICELY_API_KEY or the keychain.`, with `hint: ncly auth login verifynicely` under it. With it, exit 0, and the line says `The key comes from the keychain.`
 - **Key from the variable.** Run `VERIFYNICELY_API_KEY="$fake" just verify step "$run" auth auth status --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"verifynicely","configured":true,"source":"env"}]}`.
