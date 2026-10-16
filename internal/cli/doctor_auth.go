@@ -27,21 +27,26 @@ func (pr *prober) auth(extensions []*extension, k *keychain.Keychain) []check {
 	notStarted := func(id, name string) check {
 		return timedOut(id, pr.p.T("doctor.not_started", map[string]any{"Name": name}))
 	}
-	var checks []check
+	// stop ends doctor on a signal, which also reaches the program that a
+	// keychain call may have started, which the call leaves running.
+	stop := func() []check {
+		pr.signal = runner.SignalOf(pr.ctx)
+		runner.Stop(pr.signal)
+		return nil
+	}
+	checks := []check{{}}
+	answered := false
 	if pr.spent || time.Until(pr.deadline) <= 0 {
-		checks = append(checks, notStarted("auth.keychain", "keychain"))
+		checks[0] = notStarted("auth.keychain", "keychain")
 	} else {
-		available, err := k.Available(ctx)
+		_, err := k.Available(ctx)
 		switch {
 		case pr.ctx.Err() != nil:
-			pr.signal = runner.SignalOf(pr.ctx)
-			return checks
+			return stop()
 		case err != nil:
-			checks = append(checks, timedOut("auth.keychain", pr.p.T("doctor.keychain_timeout")))
-		case available:
-			checks = append(checks, check{ID: "auth.keychain", Component: "auth", Status: statusPass, Message: pr.p.T("auth.keychain_available")})
+			checks[0] = timedOut("auth.keychain", pr.p.T("doctor.keychain_timeout"))
 		default:
-			checks = append(checks, check{ID: "auth.keychain", Component: "auth", Status: statusWarn, Code: contract.KeyringEnvOnly, Message: pr.p.T("auth.keychain_unavailable"), Hint: pr.p.T("doctor.keyring_env_only_hint")})
+			answered = true
 		}
 	}
 	for _, s := range declaredServices(extensions) {
@@ -53,14 +58,21 @@ func (pr *prober) auth(extensions []*extension, k *keychain.Keychain) []check {
 		entry, err := serviceVerdict(ctx, pr.p, k, s)
 		switch {
 		case pr.ctx.Err() != nil:
-			pr.signal = runner.SignalOf(pr.ctx)
-			return checks
+			return stop()
 		case err != nil:
 			checks = append(checks, timedOut(id, pr.p.T("doctor.key_timeout", map[string]any{"Service": s})))
 		case entry.Code == "":
 			checks = append(checks, check{ID: id, Component: "auth", Status: statusPass, Message: entry.found})
 		default:
 			checks = append(checks, check{ID: id, Component: "auth", Status: statusFail, Code: entry.Code, Message: entry.Message, Hint: entry.Hint, Next: entry.Next})
+		}
+	}
+	// A read can find the keychain unavailable after it answered the first
+	// question, so auth.keychain gives its state after the last read.
+	if answered {
+		checks[0] = check{ID: "auth.keychain", Component: "auth", Status: statusPass, Message: pr.p.T("auth.keychain_available")}
+		if available, _ := k.Available(ctx); !available {
+			checks[0] = check{ID: "auth.keychain", Component: "auth", Status: statusWarn, Code: contract.KeyringEnvOnly, Message: pr.p.T("auth.keychain_unavailable"), Hint: pr.p.T("doctor.keyring_env_only_hint")}
 		}
 	}
 	return checks
