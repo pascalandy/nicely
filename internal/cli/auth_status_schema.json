@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "required": ["keychain", "services"],
+  "properties": {
+    "keychain": {"enum": ["available", "unavailable"]},
+    "services": {"type": "array", "items": {"$ref": "#/$defs/service"}}
+  },
+  "$defs": {
+    "service": {
+      "type": "object",
+      "required": ["service", "configured", "source"],
+      "properties": {
+        "service": {"type": "string"},
+        "configured": {"type": "boolean"},
+        "source": {"enum": ["env", "keychain", "none"]},
+        "code": {"type": "string"},
+        "message": {"type": "string"},
+        "hint": {"type": "string"},
+        "next": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+      }
+    }
+  }
+}

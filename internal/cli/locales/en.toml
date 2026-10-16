@@ -452,3 +452,39 @@ other = "The extension {{.Domain}} exited with {{.Exit}} led by {{.Code}} after 
 ["extension.answer_temporary"]
 description = "Error when an extension exited with 75 while an error of its answer is not TEMPORARY. {{.Domain}} is its domain, and {{.Code}} the other code. TEMPORARY is a code and stays as is."
 other = "The extension {{.Domain}} exited with 75, but its answer holds {{.Code}}, and exit 75 needs every error to be TEMPORARY."
+
+["auth.summary"]
+description = "Help page and ncly describe: summary of `ncly auth`, the group of commands that store the keys of extensions in the OS keychain and report where each key comes from."
+other = "Manage the keys that extensions need"
+
+["auth.status.summary"]
+description = "Help page and ncly describe: summary of `ncly auth status`, which lists the services that installed extensions declare and where the key of each one comes from, without printing any key."
+other = "List the keys that extensions need, and where each one comes from"
+
+["auth.keychain_available"]
+description = "ncly auth status, human text: the line of the OS keychain, which answered the check. It follows the word keychain in the first column."
+other = "The keychain answers."
+
+["auth.keychain_unavailable"]
+description = "ncly auth status, human text: the line of the OS keychain, which did not answer the check, so keys come only from environment variables. It follows the word keychain in the first column."
+other = "The keychain does not answer, so keys come only from the environment."
+
+["auth.from_env"]
+description = "ncly auth status, human text: the key of a service comes from its environment variable, such as DEEPGRAM_API_KEY. It follows the service name in the first column. {{.Variable}} is the variable, and the key itself never appears."
+other = "The key comes from {{.Variable}}."
+
+["auth.from_keychain"]
+description = "ncly auth status, human text: the key of a service comes from the OS keychain. It follows the service name in the first column, and the key itself never appears."
+other = "The key comes from the keychain."
+
+["auth.missing"]
+description = "Message of AUTH_MISSING in ncly auth status: neither the environment variable nor the OS keychain holds the key of a service. {{.Service}} is the service, such as deepgram, and {{.Variable}} its variable, such as DEEPGRAM_API_KEY."
+other = "No key for {{.Service}} in {{.Variable}} or the keychain."
+
+["auth.keyring_unavailable"]
+description = "Message of KEYRING_UNAVAILABLE in ncly auth status: the OS keychain does not answer, and the environment variable of a service is empty, so its key cannot be read. {{.Variable}} is the variable, such as DEEPGRAM_API_KEY."
+other = "The keychain does not answer, and {{.Variable}} is empty."
+
+["auth.keyring_unavailable_hint"]
+description = "Hint of KEYRING_UNAVAILABLE in ncly auth status: the action that fixes it, either exporting the environment variable of the key, such as DEEPGRAM_API_KEY, or unlocking the OS keychain. {{.Variable}} is the variable."
+other = "Export {{.Variable}}, or unlock the keychain."

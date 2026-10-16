@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/contract"
 	sdkextension "github.com/pascalandy/nicely/sdk/extension"
@@ -41,8 +42,9 @@ var reservedNames = []string{
 }
 
 // Main runs ncly with args, without the program name, and returns its exit
-// code. bundled lists the extensions compiled into ncly.
-func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.File) int {
+// code. bundled lists the extensions compiled into ncly, and keys is the
+// keychain's backend.
+func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend, stdout, stderr *os.File) int {
 	// Go ends the process with SIGPIPE when the reader of stdout is gone,
 	// before ncly can report the lost output. Asking for the signal turns
 	// that write into an EPIPE error instead. signal.Ignore would do the
@@ -55,14 +57,14 @@ func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.Fi
 	// comes from the catalogs, so the tree is built again once the language
 	// is known.
 	en := catalogs.Printer("en")
-	core := newRoot(en, command.Globals{}, nil)
+	core := newRoot(en, command.Globals{}, nil, keys)
 	cmd, _, _ := core.Find(args)
 	extensions := neededExtensions(newHost(bundled), core, command.Scan(cmd, args).Words)
-	cmd, _, _ = newRoot(en, command.Globals{}, extensions).Find(args)
+	cmd, _, _ = newRoot(en, command.Globals{}, extensions, keys).Find(args)
 	line := command.Scan(cmd, args)
 	g := command.Resolve(line)
 	p := catalogs.Printer(g.Lang)
-	root := newRoot(p, g, extensions)
+	root := newRoot(p, g, extensions, keys)
 	out := command.NewOutput(stdout)
 	root.SetArgs(args)
 	root.SetOut(out)
@@ -109,8 +111,8 @@ func Main(args []string, bundled []sdkextension.Extension, stdout, stderr *os.Fi
 
 // newRoot builds the command tree, with the commands of each valid
 // extension in the language that g requests. Completion passes g on to the
-// list commands that it runs.
-func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension) *cobra.Command {
+// list commands that it runs. keys is the keychain's backend.
+func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension, keys keychain.Backend) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "ncly",
 		Short:         p.T(rootCommand.Summary),
@@ -126,6 +128,7 @@ func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension) *cobra
 	addCompletion(p, root)
 	addDescribe(p, g.Lang, root, extensions)
 	addDoctor(p, g, root, extensions)
+	addAuth(p, g, root, extensions, keys)
 	addExtensions(root, p, g, extensions)
 	return root
 }
@@ -155,13 +158,14 @@ func target(words []string) string {
 }
 
 // neededExtensions finds the extensions that a command line needs: none
-// for a command of core other than describe and doctor, the one whose
-// domain it targets, and every one otherwise, for describe, for doctor,
-// for the root's help, for completion, and for a word that names no
-// command, whose help is the root's.
+// for a command of core other than describe, doctor, and auth, the one
+// whose domain it targets, and every one otherwise, for describe, for
+// doctor, for auth, whose services the manifests declare, for the root's
+// help, for completion, and for a word that names no command, whose help
+// is the root's.
 func neededExtensions(h host, core *cobra.Command, words []string) []*extension {
 	name := target(words)
-	if name != "" && name != describeCommand.Path[0] && name != doctorCommand.Path[0] && !isCompletionRequest(name) {
+	if name != "" && name != describeCommand.Path[0] && name != doctorCommand.Path[0] && name != authCommand.Path[0] && !isCompletionRequest(name) {
 		if isCommand(core, name) {
 			return nil
 		}

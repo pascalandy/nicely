@@ -19,6 +19,9 @@ grep '`ncly doctor --json`' nicely.md
 grep 'under `checks`' nicely.md
 grep 'Another report command' nicely.md
 grep '`ncly skill status --json`' nicely.md
+# The skill teaches auth status, whose report lists its findings under services
+grep '`ncly auth status --json`' nicely.md
+grep 'under `services`' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'
@@ -102,7 +105,7 @@ Check the machine with `ncly inspect` first.
 -- verb.md --
 Check the skills with `ncly skill sing --json`.
 -- code.md --
-Relay AUTH_MISSING to the human.
+Relay KEY_NOT_GRANTED to the human.
 -- argument.md --
 Read one with `ncly skill view transcript`, or `ncly describe skill view --json`, on every ncly call. Set `NCLY_JSON=1` and branch on NOT_FOUND.
 -- long.md --

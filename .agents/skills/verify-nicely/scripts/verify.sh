@@ -4,6 +4,8 @@
 # tools share.
 #
 #   verify.sh start                     build ncly, prepare a run, print its folder
+#   verify.sh prepare <run> auth [--mac-keychain]
+#                                       install the fixture that declares the test service
 #   verify.sh step <run> <feature> <ncly args...>
 #                                       run ncly in the run's scratch folder and
 #                                       record the call in the feature's transcript
@@ -24,10 +26,10 @@ log() { echo "verify-nicely: $*" >&2; }
 # usage prints the commands of the header: on stdout for help, on stderr with exit 2 otherwise.
 usage() {
 	if [[ "${1:-}" == help ]]; then
-		sed -n '6,11p' "$0" | sed 's/^# \{0,1\}//'
+		sed -n '6,13p' "$0" | sed 's/^# \{0,1\}//'
 		exit 0
 	fi
-	sed -n '6,11p' "$0" | sed 's/^# \{0,1\}//' >&2
+	sed -n '6,13p' "$0" | sed 's/^# \{0,1\}//' >&2
 	exit 2
 }
 
@@ -124,6 +126,37 @@ start() {
 	printf '%s\n' "$run"
 }
 
+# test_service is the service of the auth feature, whose key is a fake one.
+test_service="verifynicely"
+
+# prepare installs the fixture of a feature beside hello. The auth fixture is
+# the extension verifykeys, whose one command declares the test service, so
+# that ncly auth reads that service's entry in the real keychain. It never runs.
+prepare() {
+	local run extensions
+	run="$(run_folder "${1:-}")"
+	[[ "${2:-}" == auth ]] || die "only the auth feature has a fixture"
+	if [[ "$(uname -s)" == Darwin && "${3:-}" != --mac-keychain ]]; then
+		die "on macOS, the keychain may ask for a password, so only a human runs the auth feature there, with --mac-keychain"
+	fi
+	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
+	extensions="$run/scratch/home/.local/share/nicely/extensions"
+	printf '%s\n' '#!/bin/sh' \
+		"echo '{\"ok\":false,\"contract_version\":1,\"errors\":[{\"code\":\"RUNTIME\",\"message\":\"verifykeys only declares a service.\",\"hint\":\"ncly auth status\"}]}' >&2" \
+		'exit 1' >"$extensions/ncly-verifykeys"
+	chmod +x "$extensions/ncly-verifykeys"
+	printf '%s\n' 'format_version = 1' 'contract_version = 1' 'domain = "verifykeys"' '' \
+		'[[commands]]' 'path = "verifykeys"' 'summary = "verifykeys.summary"' \
+		'examples = ["ncly auth status", "ncly auth status --json"]' \
+		"requires = { keys = [\"$test_service\"] }" >"$extensions/ncly-verifykeys.toml"
+	mkdir -p "$extensions/ncly-verifykeys.locales"
+	printf '%s\n' '["verifykeys.summary"]' \
+		'description = "Help page: summary of the verify-nicely fixture, which declares a test service."' \
+		'other = "Declare the test service of verify-nicely"' >"$extensions/ncly-verifykeys.locales/en.toml"
+	: >"$run/auth-prepared"
+	log "verifykeys declares the service $test_service, whose variable is VERIFYNICELY_API_KEY"
+}
+
 step() {
 	local run feature transcript out err code
 	run="$(run_folder "${1:-}")"
@@ -190,6 +223,7 @@ command="${1:-start}"
 [[ $# -gt 0 ]] && shift
 case "$command" in
 start) start ;;
+prepare) prepare "$@" ;;
 step) step "$@" ;;
 quote) quote "$@" ;;
 cleanup) cleanup "$@" ;;

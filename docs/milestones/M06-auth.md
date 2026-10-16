@@ -22,7 +22,7 @@ The scenarios declare services in the manifest of the shell fixture of M01.
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M06-T1 | Verification skill | agent | — | done |
-| M06-T2 | Keychain and status | agent | M06-T1 | todo |
+| M06-T2 | Keychain and status | agent | M06-T1 | done |
 | M06-T3 | Login | agent | M06-T2 | todo |
 | M06-T4 | Logout and service completion | agent | M06-T3 | todo |
 | M06-T5 | Doctor auth | agent | M06-T2 | todo |

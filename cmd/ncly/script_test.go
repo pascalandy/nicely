@@ -37,6 +37,7 @@ func TestMain(m *testing.M) {
 
 func testBundled() {
 	shortCleanup()
+	useTestKeychain()
 	os.Exit(run([]extension.Extension{hello.Extension}))
 }
 
@@ -44,9 +45,10 @@ func testBundled() {
 // domain. The setup of a fixture's scenarios installs it in the data folder.
 var fixtures = map[string]extension.Extension{"hello": hello.Extension}
 
-// testNcly runs ncly with a short cleanup.
+// testNcly runs ncly with a short cleanup and the test keychain.
 func testNcly() {
 	shortCleanup()
+	useTestKeychain()
 	main()
 }
 
