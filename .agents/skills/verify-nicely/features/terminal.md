@@ -28,5 +28,6 @@ Preconditions:
 ## Gotchas
 
 - A healthy tmux server answers `tmux info` at once, so only the held server tells a build that asks tmux at load apart: `no exit within the limit of 5s` means `ncly` waited on tmux, and the feature fails
+- The step stops with exit 1 when tmux lies in a folder that holds an `ncly-<domain>` file, which the wrapper leaves out of PATH, because `ncly` could not reach tmux and any build would pass. Report it as unreachable, with that message
 - The pane shows text without styles, because `capture-pane` drops them. `terminal.txtar` proves the styles on a terminal
 - Never point `tmux -L` at another name, and never send SIGSTOP to another tmux server: the two private servers are the only ones the run may touch

@@ -220,6 +220,11 @@ tmux_step() {
 	shift 2
 	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
 	command -v tmux >/dev/null || die "tmux is missing: install it, such as with brew install tmux"
+	# The wrapper's PATH leaves out each folder that holds an ncly extension.
+	# When it leaves tmux out too, ncly cannot reach tmux, and any build would
+	# pass, so the step stops.
+	(PATH="$(sed -n "s/^PATH='\(.*\)'\$/\1/p" "$run/scratch/bin/ncly")" && command -v tmux >/dev/null) ||
+		die "tmux lies in a folder that the wrapper leaves out of PATH, because it holds an ncly extension: ncly could not reach tmux"
 	transcript="$run/evidence/$feature.txt"
 	work="$run/scratch/tmux"
 	# The caller's own tmux stays out of both servers.
