@@ -144,10 +144,13 @@ func (k *Keychain) write(ctx context.Context, call func() error) error {
 	defer timer.Stop()
 	select {
 	case err := <-done:
-		if err != nil {
-			return ErrWriteUnknown
+		switch {
+		case err == nil:
+			return nil
+		case stoppedMeanwhile(ctx):
+			return ctx.Err()
 		}
-		return nil
+		return ErrWriteUnknown
 	case <-timer.C:
 		return ErrWriteUnknown
 	case <-ctx.Done():
