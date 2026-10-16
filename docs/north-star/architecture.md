@@ -57,22 +57,22 @@ Each part has one owner: one package and one spec section.
 | 4 | Each extension | Its domain's preparation, business steps, result verification, resume evidence, catalog, and skill | `extensions/<name>/` | Its `spec.md` |
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
-| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/`, from M02 | [SDK](contract.md#sdk) |
+| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/` | [SDK](contract.md#sdk) |
 | 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract.md#command-descriptions), [Output](contract.md#output) |
-| 2 | Program runner | Child environment, process groups, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/`, from M01 | [Programs that ncly runs](contract.md#programs-that-ncly-runs), [Required programs](core-spec.md#required-programs) |
-| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/`, from M10 | [Operations](contract.md#operations) |
+| 2 | Program runner | Child environment, process groups, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract.md#programs-that-ncly-runs), [Required programs](core-spec.md#required-programs) |
+| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/` | [Operations](contract.md#operations) |
 | 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract.md#configuration) |
 | 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract.md#configuration) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
 | 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `sdk/contract/` | [contract.md](contract.md) |
-| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/`: the process tree from M01, durable writes and locks from M08, and the trash from M12 | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
-| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/`, from M06 | [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/` | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/` | [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
 
-A later shared service starts in `sdk/`, such as run records in M10. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. M00 fixed these responsibilities and the contract. Each implementation arrives with its first consumer: the host and the program runner in M01, the SDK in M02, durable writes and locks with the grants file in M08, and records with `ncly agent run` in M10.
+A later shared service starts in `sdk/`. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. [The milestones](../milestones/) record when each implementation arrives.
 
 The other folders:
 
-- `cmd/ncly/`: the entry point, which passes core the bundled extensions in an explicit list and, from M06, the keychain's backend, and runs one of those extensions when started under its name
+- `cmd/ncly/`: the entry point. It passes core an explicit list of bundled extensions and the keychain backend. When started under an extension's name, it runs that extension
 - `internal/specdoc/`: reads the tables of the north-star docs for the tests that compare code and spec
 - `testdata/script/`: core's testscript scenarios. An extension keeps its own in `extensions/<name>/testdata/script/`, and the test binary of `cmd/ncly` runs both
 - `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` and `just test` name it
@@ -80,18 +80,18 @@ The other folders:
 
 ## Domains and commands
 
-| Command | What it does | Kind | Milestone |
-|---|---|---|---|
-| `completion` | Prints shell completion scripts | core | M00 |
-| `describe` | Describes installed commands and their capabilities | core | M03 |
-| `doctor` | Checks tools, keys, extensions, and components | core | M05 |
-| `auth` | Stores keys and grants them to extensions | core | M06, grants in M08 |
-| `run` | Lists, inspects, and explicitly resumes recorded operations | core | M10, resume in M15 |
-| `tap` | Adds and syncs repositories of skills and extensions | core | M12 |
-| `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled | M04, status in M05 |
-| `agent` | Runs a task through a harness and a profile | external | M09 to M11 |
-| `transcript` | Transcribes YouTube and Zoom audio, then summarizes it | external | M13 to M16 |
-| `markdown`, `video`, `image` | Everyday tasks that need no configuration | external | M18 to M20, after the inventory of M17 |
-| `docs` | Gathers project docs into one private site | external | M21 |
+| Command | What it does | Kind |
+|---|---|---|
+| `completion` | Prints shell completion scripts | core |
+| `describe` | Describes installed commands and their capabilities | core |
+| `doctor` | Checks tools, keys, extensions, and components | core |
+| `auth` | Stores keys and grants them to extensions | core |
+| `run` | Lists, inspects, and explicitly resumes recorded operations | core |
+| `tap` | Adds and syncs repositories of skills and extensions | core |
+| `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled |
+| `agent` | Runs a task through a harness and a profile | external |
+| `transcript` | Transcribes YouTube and Zoom audio, then summarizes it | external |
+| `markdown`, `video`, `image` | Everyday tasks that need no configuration | external |
+| `docs` | Gathers project docs into one private site | external |
 
 [Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key. First impressions come from the everyday domains.
