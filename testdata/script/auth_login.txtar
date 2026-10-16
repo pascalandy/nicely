@@ -57,7 +57,7 @@ cmp test-keychain.jsonl $TMPDIR/before.jsonl
 # with an unavailable keychain, which it never asks
 exits 78 ncly auth login openai --json
 answer stderr TERMINAL_REQUIRED
-stderr '"hint":"Run `ncly auth login openai` in a terminal"'
+stderr '"hint":"Run `ncly auth login openai` in a terminal","next":\["ncly","auth","login","openai"\]'
 env NCLY_TEST_KEYCHAIN=unavailable
 exits 78 ncly auth login openai --json
 answer stderr TERMINAL_REQUIRED
@@ -101,6 +101,23 @@ stdin late.txt
 exits 1 ncly auth login zoom --stdin --json
 answer stderr RUNTIME
 stderr '"hint":"Look for the account zoom of the service nicely in the OS keychain\."\}'
+env NCLY_TEST_KEYCHAIN=
+
+# Ctrl-C during a write reaches the program that the write started, as go-keyring starts
+# security on macOS, and once that program ends, login exits 130 with INTERRUPTED, then the
+# RUNTIME of the unknown effect
+env NCLY_TEST_KEYCHAIN=write-child
+stdin late.txt
+exec exitcode exit.txt ncly auth login deepgram --stdin --force --json &
+waitfile keychain-child.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
+! stderr dg-late
+gone keychain-child.pid
+grep '^INT$' keychain-child.sig
 env NCLY_TEST_KEYCHAIN=
 
 # In a terminal, the key prompt turns echo off, so the typed key never shows, while the
