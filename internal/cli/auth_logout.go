@@ -64,11 +64,13 @@ func addAuthLogout(p *i18n.Printer, g command.Globals, group *cobra.Command, ext
 			return command.Fail(contract.Problem{Code: contract.NotFound, Message: p.T("auth.logout_none", data), Hint: hint, Next: []string{"ncly", "auth", "status"}})
 		}
 		if !force {
+			forced := []string{"ncly", "auth", "logout", service, "--force"}
 			question := confirmation{
 				question: p.T("auth.remove_question", data),
 				required: p.T("auth.remove_required", data),
 				declined: p.T("auth.remove_declined", data),
-				hint:     strings.Join([]string{"ncly", "auth", "logout", service, "--force"}, " "),
+				hint:     strings.Join(forced, " "),
+				next:     forced,
 			}
 			if err := question.ask(ctx, p, human, out); err != nil {
 				return err

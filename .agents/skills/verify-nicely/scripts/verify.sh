@@ -223,15 +223,19 @@ logout_fake_key() {
 	local run="$1" code=0 answer
 	# The key must come from the keychain, never from the caller's variable.
 	unset VERIFYNICELY_API_KEY
-	step "$run" cleanup auth logout "$test_service" --force --json >/dev/null || code=$?
-	# 0 removed the key, and 2 found none to remove, as NOT_FOUND says.
-	if [[ "$code" != 0 && "$code" != 2 ]]; then
+	answer="$(step "$run" cleanup auth logout "$test_service" --force --json)" || code=$?
+	# 0 removed the key, and 2 with NOT_FOUND found none to remove.
+	case "$code:$answer" in
+	0:* | 2:*'"errors":[{"code":"NOT_FOUND"'*) ;;
+	*)
 		log "ncly auth logout $test_service exited with $code: see $run/evidence/cleanup.txt"
 		return 1
-	fi
+		;;
+	esac
 	answer="$(step "$run" cleanup auth status --json)" || true
+	# Only a keychain that answers without the key proves that it is gone.
 	case "$answer" in
-	*"{\"service\":\"$test_service\",\"configured\":false,\"source\":\"none\""*) ;;
+	*'"keychain":"available"'*"{\"service\":\"$test_service\",\"configured\":false,\"source\":\"none\",\"code\":\"AUTH_MISSING\""*) ;;
 	*)
 		log "ncly auth status still finds a key for $test_service, or no keychain answers: see $run/evidence/cleanup.txt"
 		return 1

@@ -41,8 +41,7 @@ stderr '^error\[NOT_FOUND\]'
 # Without a terminal and without --force, a removal needs a confirmation and keeps the key
 exits 2 ncly auth logout openai --json
 answer stderr CONFIRMATION_REQUIRED
-stderr '"hint":"ncly auth logout openai --force"'
-! stderr '"next"'
+stderr '"hint":"ncly auth logout openai --force","next":\["ncly","auth","logout","openai","--force"\]'
 ! grep '"call":"delete","account":"openai"' test-keychain.jsonl
 
 # In a terminal, a declined prompt keeps the key, and a confirmed one removes it
@@ -86,6 +85,22 @@ env NCLY_TEST_KEYCHAIN=write-hang
 exits 1 ncly auth logout mistral --force --json
 answer stderr RUNTIME
 stderr '"hint":"Look for the account mistral of the service nicely in the OS keychain\."\}'
+env NCLY_TEST_KEYCHAIN=
+
+# SIGTERM during a removal reaches the program that the removal started, as go-keyring starts
+# security on macOS, and once that program ends, logout exits 143 with TERMINATED, then the
+# RUNTIME of the unknown effect
+exec sh -c 'echo dg-again | ncly auth login deepgram --stdin --json'
+env NCLY_TEST_KEYCHAIN=write-child
+exec exitcode exit.txt ncly auth logout deepgram --force --json &
+waitfile keychain-child.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
+gone keychain-child.pid
+grep '^TERM$' keychain-child.sig
 env NCLY_TEST_KEYCHAIN=
 
 # Under the pseudo-locale, every word comes from the catalog
