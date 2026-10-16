@@ -16,7 +16,18 @@ Collect the tools on Pascal's machines:
 - macOS: `brew leaves`, and by frequency of use in zsh: `LC_ALL=C sed 's/^: [0-9]*:[0-9]*;//' ~/.zsh_history | awk '{print $1}' | sort | uniq -c | sort -rn | head -50`
 - Omarchy: `pacman -Qe`, and by frequency of use in bash: `awk '{print $1}' ~/.bash_history | sort | uniq -c | sort -rn | head -50`
 
-The table has one row per task, because a tool's name says little about the work: the task, the command or recipe that does it today, its usual inputs, its expected result, the friction it causes, the domain that would carry it, where it goes, which is a first-party extension, Pascal's private tap, or drop, and one line of reason. Recipes in `justfile`s and Pascal's skills show tasks that shell history hides behind `just` or `uv`.
+The table has one row per task. A tool's name does not explain the work. Include these columns, in order:
+
+- Task
+- Command or recipe used today
+- Usual inputs
+- Expected result
+- Current friction
+- Proposed domain
+- Destination: a first-party extension, Pascal's private tap, or drop
+- One-line reason for the proposed destination
+
+Recipes in `justfile`s and Pascal's skills show tasks that shell history hides behind `just` or `uv`.
 
 ### Conventions for the everyday domains
 
