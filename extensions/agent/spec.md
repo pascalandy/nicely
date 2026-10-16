@@ -55,6 +55,8 @@ effort = "high"
 | `model` | A model ID that the harness accepts |
 | `effort` | A reasoning effort that the harness accepts |
 
+Without `--json`, `profile list` prints one line per profile, in aligned columns: its name, its harness, its model, as `<provider>/<model>` when the profile names a provider, its effort, and `default`, in green, for the profile of `default_profile`.
+
 `--profile <name>` picks a profile, and `default_profile` applies without it. An unknown profile exits 2 with `NOT_FOUND`. Without `--profile` and without `default_profile`, no profile applies, and each command that runs an agent states what it does then.
 
 A profile with an effort that its harness rejects, or with a `provider` for `claude`, is `CONFIG_INVALID` when that profile is selected. Syntax errors and values of the wrong declared type still fail as Configuration defines. An unused profile's semantic constraint blocks no other command.

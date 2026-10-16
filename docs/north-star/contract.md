@@ -85,9 +85,13 @@ The form for missing values asks before any other step, then the command runs as
 
 After an interactive run that used this form, `ncly` prints the equivalent command on stderr, after the line `Next time:`: the call with the values from the form, quoted for a POSIX shell. The command itself is never translated. The masked field of a key and a confirmation fill no missing value, so neither prints this line, and the line never holds a key or `--force`.
 
+From [M07](../milestones/M07-forms.md), these screens take the looks that Pascal picked, on stderr. A form uses Huh's Base16 theme, with its option and help styles tuned for a light terminal: a thick bar at the left groups each field with its title, in cyan, its description, in bright black, and its suggestion, and the cursor is yellow. Without color, `>` alone marks the chosen value. The masked field of a key is a password field of the same form, which shows one `*` per typed character. A confirmation is a prompt, never a button, as [D059](decisions/D059-no-buttons.md) decides: `?` and the question, the facts that the answer rests on as labeled lines under it, such as the new and the old path of a grant, then `[y/N]`, which ends the question's line when no fact follows. The human types the answer, which stays on screen under its question.
+
 ## Output
 
 stdout carries data. stderr carries progress, warnings, and errors. Without `--json`, human output uses styles, such as bold headings and colored labels, and `--no-color` turns them off. Deciding whether to style reads only the environment and the stream, and never queries the terminal or tmux. Styles appear only on a terminal, unless `CLICOLOR_FORCE=1` asks for them in a pipe. `NO_COLOR` and `TERM=dumb` turn them off even then.
+
+Styles change only the weight and the color of the text, as [D060](decisions/D060-style-the-plain-text.md) decides, so the output on a terminal, without its escape codes, equals the output in a pipe. They use the 16 ANSI colors, which the terminal's theme sets, and a word or a mark always carries the meaning that a color shows, such as `fail` or a `●` that a legend explains. `ncly` never wraps a line itself, so a path or a command copies whole, and the terminal wraps a long line. The Markdown that [ncly skill view](../../extensions/skill/spec.md#ncly-skill) renders in interactive mode is the one exception. A form, a prompt, and a spinner appear only in interactive mode, so no pipe gets them.
 
 With `--json`, every answer is one JSON object on one line, never a bare array. `ok` is `true` or `false` and agrees with the exit code. `contract_version` is the integer version of this public protocol, initially `1`. `--help`, `--version`, and `ncly completion` print text and ignore `--json`.
 
