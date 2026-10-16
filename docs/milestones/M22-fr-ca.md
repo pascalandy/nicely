@@ -38,7 +38,6 @@ stderr '"next":\["ncly","auth","login","deepgram"\]'
 | M22-T1 | Translate core | agent | — | todo |
 | M22-T2 | Translate the first-party extensions | agent | M22-T1 | todo |
 | M22-T3 | Formats and README | agent | M22-T1 | todo |
-| M22-T4 | Review the tone | Pascal | M22-T1, M22-T2 | todo |
 
 ### M22-T1 Translate core
 
@@ -61,6 +60,6 @@ A complete `fr-CA` catalog for each first-party extension. The agent contract st
 
 A unit test covers the French plural and number rules, because no single command shows them all. README.md says in one line that the interface speaks Canadian French and how to select it.
 
-### M22-T4 Review the tone
+## After this milestone
 
-Pascal reviews the tone of every new entry, and an agent applies his changes.
+Pascal reviews the tone of every new `fr-CA` entry. An agent applies any changes he requests.
