@@ -71,6 +71,7 @@ Settle each one in a new `ncly tap` section of [core-spec.md](../north-star/core
 - **Proves:** `testdata/script/tap_sync.txtar`, `testdata/script/tap_remove.txtar`
 
 `sync` publishes each destination under its lock, preserves local edits as conflicts, and survives a repeated or interrupted sync. `remove` moves the clone to the trash.
+Add the trash helper to `sdk/platform/` for tap removal.
 
 ### M12-T3 Extensions and skills from taps
 

@@ -55,7 +55,7 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 - The rendering engine for `serve`. The hub stays plain Markdown, so Obsidian opens it as a vault. Mintlify's local preview is the first candidate, but it needs Node, so weigh it against an engine that a stranger can run with nothing but `ncly` installed
 - The scenarios: include a project and then exclude it, remove a source file, edit a generated destination, and interrupt publication before navigation is updated
 - Whether `ncly docs search <text> --json` lets an agent find a passage across projects, with its project, path, heading, and a bounded excerpt, so that docs serve agents as well as the browser
-- Should `sync` publish docs, navigation, and any search index as one generation instead of replacing each project and navigation separately? If yes, replace the publication rule above
+- Should `sync` publish the whole hub as one generation? The generation includes docs, navigation, and any search index. This would replace per-project publication and keep the previous hub whole after an interrupted sync. It would remove an excluded project from every surface at once. If yes, replace the per-project Scope rule
 
 ## Cards
 
