@@ -164,6 +164,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Record support persists a step's intent before an effect that cannot safely be repeated, and derives retry safety from the effects that the steps declare
 - Resume continues a run record after checking its evidence, and never repeats an unknown effect
 - A run ID names one run; a call with a run ID that a record holds continues that run instead of starting another
+- A run record keeps what the call states as inputs, and what preparation picked as resolved values; a call with the same run ID compares only the inputs
 - Dry run and execution share one preparation
 
 ### Definitions
@@ -177,6 +178,10 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Run ID
   - Def.: the identifier of one run, chosen by the caller with `--run-id`, or generated
   - Project note: [Run IDs](contract.md#run-ids) defines what a call with an existing run ID does
+- Resolved value
+  - Def.: a value that preparation picked for a run from the config or the machine, such as its profile
+  - Project note: a run record keeps it under `resolved`, and every later attempt reads it from there, as [Records and evidence](contract.md#records-and-evidence) defines
+  - Distinct from: an input, which the call states, and which a call with the same run ID compares
 - Effect
   - Def.: what an operation does outside Nicely's cache and state and the run's temporary files, such as a user write, network access, or a paid request
   - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract.md#record-format) lists
