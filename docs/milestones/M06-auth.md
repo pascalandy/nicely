@@ -5,7 +5,7 @@ Version: v0.6.0
 
 ## Demo
 
-With an extension that declares the `deepgram` service, `ncly auth login deepgram --stdin` stores its key in the keychain, and `ncly auth status` and `ncly doctor auth` report that the key comes from the keychain, and `verify-nicely` repeats the login with a test service on the real keychain of Omarchy.
+With an extension that declares the `deepgram` service, `ncly auth login deepgram --stdin` stores its key in the keychain, and `ncly auth status` and `ncly doctor auth` report that the key comes from the keychain.
 
 ## Scope
 
@@ -15,7 +15,7 @@ The keychain lives in `internal/keychain`, at layer 0 of the [code map](../north
 
 The scenarios declare services in the manifest of the shell fixture of M01.
 
-`auth` is also the first command that reaches a real system that the scenarios replace, the keychain. M06-T1 therefore adds `verify-nicely`, the skill that drives the real `ncly`, before the `auth` cards. Each later card adds its feature to the skill's map. The `auth` feature logs a test service in and out of the real keychain, and never touches the key of a real service.
+`auth` is also the first command that reaches a real system that the scenarios replace, the keychain. M06-T1 therefore adds `verify-nicely`, the skill that drives the real `ncly`, before the `auth` cards, and each `auth` card extends the skill's `auth` feature, with only the commands that exist by then. That feature declares a test service in a manifest that the skill's script writes beside `hello`, and logs in a fake key, which is no human's key, with `--stdin` and `--force`. It checks that `ncly auth status` reports the key from the keychain. From M06-T4 on, cleanup logs the key out, even after a failed run, and checks that it is gone. Until then, the fake key stays in the keychain under the test service. The feature never touches the key of a real service.
 
 ## Cards
 
@@ -29,18 +29,17 @@ The scenarios declare services in the manifest of the shell fixture of M01.
 
 ### M06-T1 Verification skill
 
-- **Read:** [Work on a card](../../AGENTS.md#work-on-a-card), [Discovery](../north-star/contract.md#discovery), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [D015](../north-star/decisions/D015-macos-and-linux.md)
-- **Proves:** the run, quoted in the pull request, of an agent that did not write the change, which builds `ncly`, runs `ncly doctor`, drives one feature of the map end to end, cleans up, and finds its evidence after the cleanup
+- **Read:** [Work on a card](../../AGENTS.md#work-on-a-card), [Discovery](../north-star/contract.md#discovery), [ncly doctor](../north-star/core-spec.md#ncly-doctor)
+- **Proves:** the run, quoted in the pull request, of an agent that did not write the change, which builds `ncly`, runs `ncly doctor`, drives the `hello` feature end to end, cleans up, and finds its evidence after the cleanup
 
-Scenarios prove each command in a sandbox, with the test keychain and stubs for harnesses and paid services. They cannot prove the real keychain, a real terminal, or a real harness. Add the project skill `.agents/skills/verify-nicely/` with the `create-verification-skill` skill, so an agent runs the real `ncly` the way a user does. The skill covers:
+Add the project skill `.agents/skills/verify-nicely/` with the `create-verification-skill` skill, so an agent runs the real `ncly` the way a user does. The skill covers:
 
-- **Launch:** a new recipe, `just verify`, runs the skill's script. The script builds `ncly` into a temporary folder, points `HOME` and the XDG folders at a scratch folder, and installs the Go fixture `hello` there as an external extension, with its manifest, catalogs, and skill beside it. It runs on macOS and on Linux, as D015 requires
+- **Launch:** a new recipe, `just verify`, runs the skill's script. The script builds `ncly` into a temporary folder, points `HOME` and the XDG folders at a scratch folder, and installs the Go fixture `hello` there as an external extension, with its manifest, catalogs, and skill beside it. It also writes an `ncly` wrapper there that sets this environment, so each later command reaches only the scratch folder. The script runs on macOS and on Linux
 - **Doctor:** `ncly --version` names the build, and `ncly doctor` passes
-- **Drive:** `features/` holds one file per feature, for `describe`, `skill`, `doctor`, `completion`, and the extension host through `hello`. Each file names the commands that reach the feature and the end state that proves it
-- **Evidence:** the transcripts go to a folder outside the checkout, which the cleanup keeps, and the pull request quotes them
-- **Who runs it:** an agent that did not write the change, on a small model of the other family, at effort `xhigh`. GPT-6-Luna verifies the work of a Claude model, and Claude Haiku 5.5 verifies the work of a Codex model. The agent shares the implementer's checkout, so it sees uncommitted changes. The implementer updates the feature files first. Before a run that bills or writes to a real keychain, the implementer asks Pascal and passes the consent on, because a delegate cannot ask
+- **Drive:** `features/` holds one file per feature. This card seeds the `hello` feature, which runs the installed fixture as a user would, and which the `auth` feature builds on. Each file names the commands that reach the feature and the end state that proves it
+- **Evidence:** the transcripts go to a folder outside the checkout, which the cleanup keeps. The pull request quotes the lines that prove the end state, with home paths replaced by placeholders
 
-In [Work on a card](../../AGENTS.md#work-on-a-card), add step 6, Verify, between Checks and Docs, in the checklist and in the numbered steps below it. Its line says that an agent that did not write the change runs `verify-nicely` on the feature files that the card updated, and that its evidence is in the pull request. A card that changes nothing a user sees marks the step `n/a`. Add the skill to the table of [Find what you need](../../AGENTS.md#find-what-you-need).
+In [Work on a card](../../AGENTS.md#work-on-a-card), add step 6, Verify, between Checks and Docs, in the checklist and in the numbered steps below it. Its line says that an agent that did not write the change follows `.agents/skills/verify-nicely/SKILL.md` on each feature that the card affects, and that the pull request quotes its evidence. Its paragraph adds three rules. The implementer first adds or updates a feature file when the card changes its steps or its end state. The verifier runs on a small model of the other family than the implementer's, at effort `xhigh`, in the same checkout, so it sees uncommitted changes. A card that reaches nothing the scenarios replace, such as the real keychain, a real terminal, a harness, `uv`, or a paid service, marks the step `n/a`. Add the skill to the table of [Find what you need](../../AGENTS.md#find-what-you-need).
 
 ### M06-T2 Keychain and status
 
@@ -110,4 +109,4 @@ Add the `auth` component to `ncly doctor` in `internal/cli`, built on the verdic
 
 These steps wait on Pascal and block no card. Pascal decides when.
 
-- Pascal runs `verify-nicely` on the `auth` features on his Mac, where the macOS keychain may ask for his password
+- Pascal runs the `auth` feature of `verify-nicely` on his Mac, where the macOS keychain may ask for his password
