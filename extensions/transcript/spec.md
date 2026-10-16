@@ -90,25 +90,35 @@ Each transcription item has `transcribe`, then `summarize` unless skipped. Both 
 
 - `transcribe` turns `unknown` before result-folder reservation and upload, as the protocol below requires. A download failure before intent leaves it `pending` with a saved problem. After acknowledgement, it turns `failed` only when transport failed before any audio was sent or Deepgram returned a 4xx refusal. Any 5xx status and any transport timeout or lost connection after sending audio leave it `unknown`. The transport disables automatic upload retries, including SDK retries; one acknowledgement permits at most one request
 - `summarize` turns `unknown` before `ncly agent run` starts, and its intent records the child run ID that transcript chose for that call, as [Run IDs](../../docs/north-star/contract.md#run-ids) defines. Each attempt of the step chooses a new child ID. The step turns `failed` only when the attempt's first call, under its new child ID, exits 2 or 78, because the agent extension exits with those codes only before its harness starts. Any other end without a saved summary leaves the step `unknown`, because the harness may already have billed
-- The record keeps the `inputs` that the table below lists. It keeps as tools the program and `yt-dlp` versions that the `intent` reports, and the harness version that the agent run reports
+- The record keeps the `inputs` and the `resolved` values that the tables below list. It keeps as tools the program and `yt-dlp` versions that the `intent` reports, and the harness version that the agent run reports
 - Resume takes the URL, selected Zoom folder, and absolute output folder from the record. It never selects `--latest` again. It rereads the prompt and refuses a changed fingerprint. For Zoom, it verifies the recorded audio and compares the program's `audio` in `plan` and `intent` before acknowledgement. Resume uses the recorded profile without resolving it again; `summary run --profile` changes it. Only programs needed by `run` steps require a current version check, so a summary-only resume needs no `uv` or Deepgram key. A version above its minimum does not block resume; below it returns `PREREQ_MISSING`. Unsupported record or protocol versions return `RESUME_UNSAFE`
 - Resume verifies the recorded inputs and artifacts, reuses completed steps, and runs pending or failed ones. For an unknown transcription only, the complete recorded artifact set of `raw_transcript.txt`, `raw_sentences.txt`, and `raw_transcript.json` may establish local completion after a lost final message. Go independently verifies every path, size, hash, and usable transcript format. Dry run plans reuse without rewriting the record; explicit resume persists the reconciled completion without another upload
 - For an unknown summary, resume first reads the child's run with `ncly run view <child-run-id> --json`, and only an existing record permits repeating the agent call with the recorded child run ID, as [Run IDs](../../docs/north-star/contract.md#run-ids) defines. A completed child returns its saved answer, which transcript verifies and publishes as the summary without a new request. A child run that another process holds keeps the summary `unknown` and fails the item with `TEMPORARY`, whose `next` is `ncly run view <child-run-id>`, and a later resume repeats the check. A missing child record, or any other answer of the repeated call, including exit 2 or 78, keeps it `unknown` with `RESUME_UNSAFE`
 - An unanswered transcription without that complete evidence, a summary refused as above, a changed input or artifact, or an unexpected file at a path that resume would write returns `RESUME_UNSAFE`, retaining the available artifacts. Such a refusal fails its item and lets the other items continue, while a changed prompt refuses the whole run. `--force` overrides none of these refusals. The existence of an unrecorded file alone never proves paid completion
 - A summary refused with `RESUME_UNSAFE` names `ncly transcript summary run <source-run-id> --key <item key>` in its hint and its `next`, so that the new operation covers that item alone. An `unknown` `transcribe` step names `ncly run view <run-id>`, because a new transcription may bill Deepgram again
 
-The transcript domain defines these `inputs` keys:
+The transcript domain defines these `inputs` keys, which hold what the call states, as [Records and evidence](../../docs/north-star/contract.md#records-and-evidence) defines. A call with the same run ID compares them, and the item keys that it states: the URLs of a YouTube run, and the keys of a summary run, which `--key` selects or which default to every item of the source run. The meeting folder of a Zoom run is an item key that preparation picked, so it comes from the record and is not compared:
 
 | Key | Type | Meaning |
 |---|---|---|
 | `source` | string | `youtube` or `zoom` |
-| `output` | string | The absolute output folder |
+| `output` | string or null | `transcript run` only. The absolute folder that `--output` gives, or the current folder when neither `--output` nor the config names one. `null` when the config names it |
+| `recording` | string or null | `transcript run zoom` only. The value of `--path`, a folder name as given or a full path made absolute, or `null` for `--latest` |
+| `summary` | boolean | `transcript run` only. `false` for `--no-summary` |
+| `prompt` | string or null | The prompt name that `--prompt` gives, or `null` without it |
+| `profile` | string or null | The profile name that `--profile` gives, or `null` without it |
+| `source_run` | string | `summary run` only. The run ID of the source run |
+
+It defines these `resolved` keys, which hold what preparation picked from the config or the machine. No call compares them to decide whether it is the same call, and every later attempt reads them from the record:
+
+| Key | Type | Meaning |
+|---|---|---|
+| `output` | string | `transcript run` only. The absolute output folder that the run uses |
 | `audio` | object | `transcript run zoom` only. The `path`, `size_bytes`, and `sha256` of the first `*.m4a` of the meeting folder in name order, selected once by Python. A folder without one is `NOT_FOUND` |
 | `prompt` | object or null | The prompt `name` and the `sha256` of its text, or `null` when the summary is skipped |
 | `profile` | object or null | The resolved profile: `name`, or `null` when it has none, `harness`, `provider`, a key omitted when there is none, `model`, and `effort`. `null` when the summary is skipped |
-| `source_run` | string | `summary run` only. The run ID of the source run |
 
-A Zoom run records this:
+A Zoom run of `ncly transcript run zoom --latest --output /Users/me/meetings --profile everyday` records this:
 
 ```json
 {
@@ -122,6 +132,13 @@ A Zoom run records this:
   "attempts": 1,
   "inputs": {
     "source": "zoom",
+    "output": "/Users/me/meetings",
+    "recording": null,
+    "summary": true,
+    "prompt": null,
+    "profile": "everyday"
+  },
+  "resolved": {
     "output": "/Users/me/meetings",
     "audio": {"path": "/Users/me/Documents/Zoom/2026-05-03 14.46.55 Weekly sync/audio1.m4a", "size_bytes": 48213504, "sha256": "<sha256>"},
     "prompt": {"name": "short_summary", "sha256": "<sha256>"},
@@ -159,7 +176,7 @@ An item is eligible when its transcription is completed or locally reconciles fr
 
 The new record holds each selected item in source order, with one `summarize` step. An eligible item's step starts `pending`, and its evidence holds the transcript that it summarizes: the source run ID, and the path, size, and `sha256` of each transcript artifact. The record has no `transcribe` step, because this run transcribed nothing. An ineligible item's step is `failed`, with its `RESUME_UNSAFE` problem and its source `output_dir`, possibly `null`, and never becomes executable in this operation. Resume reproduces its saved error while continuing eligible pending or failed summaries; including the rejected item later requires a new operation.
 
-The new record keeps `source_run` for provenance and its own resolved prompt and profile. It copies no transcript content or source audio dependency.
+The new record keeps `source_run` in its `inputs` for provenance, and its own resolved prompt and profile in its `resolved`. It copies no transcript content or source audio dependency.
 
 When a new record is created, normal execution returns `run_id`, `source_run`, and `results` with the transcript item shape. Each summary goes to the recorded result folder as `<prompt-name>-<new-run-id>.md`, preserving source artifacts. `run resume` supports this record: it verifies the transcript that each step's evidence names, and continues eligible pending or failed summaries without transcribing again. An unknown summary resolves through its child agent run, as in Steps and resume, and a `RESUME_UNSAFE` refusal hints `ncly transcript summary run <source-run-id> --key <item key>`. This new operation may bill and starts only on an explicit call.
 

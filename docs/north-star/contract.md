@@ -504,7 +504,7 @@ The SDK's record support owns run IDs, durable records, step transitions, and re
 
 ### Records and evidence
 
-A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps the non-secret input fingerprints, resolved profile and relevant tool versions needed to check a resume. A call with the same run ID compares the record's `inputs` and the ordered keys of its items, such as the URLs of a transcription, as [Run IDs](#run-ids) defines. Together they hold every input that can change what a completed run produces, so the domain fingerprints each file or text input, such as a task, rather than keeping its path alone. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
+A run record contains its format version, `run_id`, command path, status, step outcomes, and artifact references. It also keeps what the call states under `inputs`, the values that preparation picked from the config or the machine under `resolved`, such as a resolved profile, and the relevant tool versions needed to check a resume. A call with the same run ID compares what it states with the record's `inputs` and with the ordered keys of the items that it names, such as the URLs of a transcription, as [Run IDs](#run-ids) defines. A file or a text, such as a task, counts by its fingerprint rather than by its path alone, and a folder, given or defaulted to the current one, counts by its absolute path. Presentation flags, such as `--json`, and a timeout override are not part of `inputs`. No call compares `resolved` to decide whether it is the same call, and every later attempt reads it from the record instead of picking again, though a resume may still verify it, such as a prompt's fingerprint. Together, `inputs`, the item keys, and `resolved` hold every value that can change what a completed run produces, and each domain's spec lists its own. Keep only information needed to explain or continue the operation. Full task bodies, transcripts, raw environment dumps, and keys are not copied into the record.
 
 Every effect of a recorded operation happens inside a step. Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
 
@@ -535,7 +535,8 @@ The operating system releases each lock when its owner dies. Each lock in the st
 | `started_at`, `updated_at` | string | UTC times in RFC 3339, such as `2026-10-07T21:45:01Z` |
 | `ncly_version` | string | The release that last wrote the record |
 | `attempts` | integer | The number of executions: 1, plus one per resume |
-| `inputs` | object | The non-secret inputs and their fingerprints, under keys that the domain defines |
+| `inputs` | object | What the call states, as non-secret values and fingerprints, under keys that the domain defines. A call with the same run ID compares them |
+| `resolved` | object | The non-secret values that preparation picked from the config or the machine, such as a resolved profile, under keys that the domain defines. No call compares them to decide whether it is the same call, and every later attempt reads them from the record |
 | `tools` | object | The version of each program that the run used, keyed by program name |
 | `items` | array | One object per input item, in input order. A command with one input has one item |
 
@@ -563,11 +564,11 @@ The domain defines when its validated preparation creates the initial record, be
 
 Abrupt death can leave `running` with no lock owner. Inspection preserves that saved status and reports `active: false`; it never invents completion or marks untouched pending steps unknown. Resume decides from the step evidence.
 
-Each extension reuses these keys where they fit and defines its own `inputs` and evidence in its spec. Core reads records to list, show, and hand over a resume, without interpreting an extension's evidence, and without a workflow engine. Compatibility governs any later format change.
+Each extension reuses these keys where they fit and defines its own `inputs`, `resolved`, and evidence in its spec. Core reads records to list, show, and hand over a resume, without interpreting an extension's evidence, and without a workflow engine. Compatibility governs any later format change.
 
 ### Inspection and explicit resume
 
-Inspection is read-only and reports saved evidence, not an assumption that a process marked running is still alive. Resume checks that no execution still owns the run, validates the record version, and verifies the saved inputs, relevant configuration, tool compatibility, and artifacts. For `ncly run resume`, the relevant configuration excludes the profile, because resume uses the profile that the run recorded.
+Inspection is read-only and reports saved evidence, not an assumption that a process marked running is still alive. Resume checks that no execution still owns the run, validates the record version, and verifies the saved inputs, relevant configuration, tool compatibility, and artifacts. Resume reads `resolved` from the record instead of picking its values again, so the relevant configuration excludes them, such as the profile.
 
 A supported resume reuses verified completed steps and continues only steps whose execution is known to be safe. It records each attempt under the same run ID. Changed or missing evidence returns `RESUME_UNSAFE` with an explanation and the artifacts still available. In a batch, a refusal that concerns one item, such as its unknown summary, fails that item in `results` with `RESUME_UNSAFE`, while the other items continue, and a changed input of the whole run refuses the whole resume. `--force` does not override uncertainty or make a non-repeatable effect safe.
 
@@ -582,8 +583,8 @@ A recorded command accepts `--run-id <id>`, so that its caller knows the run's I
 A call takes the run lock of its ID before it reads the record, as [Record format](#record-format) defines. When another process still holds the run after that short wait, the call exits 75 with `TEMPORARY` and a `run view` hint, as for `ncly run resume`, and starts nothing. Otherwise it decides on a read of the record made while it holds the lock. A call whose ID no record holds starts a new run under that ID. A call whose ID a record holds starts no new run. Before any effect, it takes the first case that applies:
 
 1. The record's format version is unsupported, or its file cannot be read or parsed: `RESUME_UNSAFE`
-2. The record's command path, `inputs`, or ordered item keys differ from those that the call prepares: `USAGE_INVALID`, because the ID names another call
-3. The run completed: its verified saved result, without running a step again
+2. The record's command path, `inputs`, or ordered item keys differ from what the call states: `USAGE_INVALID`, because the ID names another call. An item key that preparation picked, such as the meeting folder that `--latest` selects, comes from the record and is not compared
+3. The run completed: its verified saved result, without the rest of preparation and without running a step again
 4. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
 5. Otherwise: `RESUME_UNSAFE`, with the artifacts still available
 
