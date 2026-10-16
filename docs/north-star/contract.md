@@ -545,7 +545,7 @@ Each item has `key`, a string that names the item, such as its URL, `output_dir`
 | Key | Type | Meaning |
 |---|---|---|
 | `id` | string | The step name that the domain defines, such as `transcribe` |
-| `effect` | string | The strongest effect that the step can make, which the domain declares in the initial record and never changes: `none`; `repeatable`, harmless to repeat or covered by a demonstrated idempotent operation; `non_repeatable`, which a repeat would duplicate or conflict with; or `paid`, a request that may bill. Each value is more cautious than the one before it |
+| `effect` | string | The strongest effect that the step can make, which the domain declares in the initial record: `none`; `repeatable`, harmless to repeat or covered by a demonstrated idempotent operation; `non_repeatable`, which a repeat would duplicate or conflict with; or `paid`, a request that may bill. Each value is more cautious than the one before it. Before an attempt persists the step's intent, record support raises the value to the command's current declaration when that one is more cautious, and nothing ever lowers it |
 | `status` | string | `pending`, `completed`, `failed`, or `unknown` |
 | `started_at`, `finished_at` | string or null | UTC times, `null` until the step starts or ends |
 | `artifacts` | array | One object per verified output, with `path`, `size_bytes`, and `sha256` |
