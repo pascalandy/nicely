@@ -193,15 +193,17 @@ func plannedChange(p *i18n.Printer, service, action string) *answered {
 // confirmation is the confirmation that a change to a stored key needs,
 // until the confirmation form of M07: CONFIRMATION_REQUIRED with required
 // and the hint without a terminal, and the y/N question in one, where any
-// answer but yes keeps the key, with declined.
+// answer but yes keeps the key, with declined. next holds the hint's words
+// when the hint's command runs as is.
 type confirmation struct {
 	question, required, declined, hint string
+	next                               []string
 }
 
 // ask returns nil once the human said yes, and the answer of the command
 // otherwise.
 func (c confirmation) ask(ctx context.Context, p *i18n.Printer, human bool, out io.Writer) error {
-	problem := contract.Problem{Code: contract.ConfirmationRequired, Message: c.required, Hint: c.hint}
+	problem := contract.Problem{Code: contract.ConfirmationRequired, Message: c.required, Hint: c.hint, Next: c.next}
 	if !human {
 		return command.Fail(problem)
 	}
