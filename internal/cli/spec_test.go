@@ -69,12 +69,8 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 	return keys
 }
 
-// shipped lists the milestones whose commands core declares, and pending
-// the commands of a shipped milestone whose card is still open.
-var (
-	shipped = []string{"M00", "M03", "M05", "M06"}
-	pending = []string{}
-)
+// shipped lists the milestones whose commands core declares.
+var shipped = []string{"M00", "M03", "M05", "M06"}
 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the
 // entries of the command tree that shipped, such as
@@ -109,9 +105,7 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 				continue
 			}
 			for word := range strings.SplitSeq(words, "|") {
-				if !slices.Contains(pending, path+" "+word) {
-					want = append(want, path+" "+word)
-				}
+				want = append(want, path+" "+word)
 			}
 		}
 	}
