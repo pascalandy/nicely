@@ -236,11 +236,14 @@ tmux_step() {
 	stuck_pid="$(tmux -L "$stuck_server" display-message -p '#{pid}')"
 	# The pane waits for the file go, runs ncly, writes its exit code, then
 	# stays open until kill-server, so the capture holds only what ncly showed.
+	# The pane drops the caller's color variables, such as the NO_COLOR=1 that
+	# agents set, because they skip the detection that asks tmux.
 	# shellcheck disable=SC2016 # the pane's sh expands these
 	tmux -L "$pane_server" -f /dev/null new-session -d -s verify -x 200 -y 50 /bin/sh -c '
 		while [ ! -e "$1" ]; do sleep 0.1; done
 		code=$2 tmux=$3
 		shift 3
+		unset NO_COLOR CLICOLOR CLICOLOR_FORCE COLORTERM
 		TMUX=$tmux "$@"
 		echo "$?" >"$code"
 		exec sleep 3600' sh "$work/go" "$work/code" "$stuck_socket,$stuck_pid,0" "$run/scratch/bin/ncly" "$@"

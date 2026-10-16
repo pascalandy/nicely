@@ -19,7 +19,7 @@ Preconditions:
 - A new run from `just verify`, whose Doctor step passed
 - `tmux -V` answers. The run needs no tmux session of its own
 
-`just verify tmux "$run" <feature> <ncly args...>` runs the call through the wrapper, like `step`, but on a terminal: in a pane of the private server `nicely-verify-<run>`, with `TMUX` naming the private server `nicely-verify-<run>-stuck`, which it holds with SIGSTOP during the call. It records what the pane showed and the exit code in the transcript, or `no exit within the limit of 5s`, and then exits 1. It resumes and kills both servers on every exit.
+`just verify tmux "$run" <feature> <ncly args...>` runs the call through the wrapper, like `step`, but on a terminal: in a pane of the private server `nicely-verify-<run>`, with `TMUX` naming the private server `nicely-verify-<run>-stuck`, which it holds with SIGSTOP during the call. The pane runs `ncly` without the caller's `NO_COLOR`, `CLICOLOR`, `CLICOLOR_FORCE`, and `COLORTERM`, because they skip the detection that asks tmux, so an agent that sets `NO_COLOR=1` still proves the end state. It records what the pane showed and the exit code in the transcript, or `no exit within the limit of 5s`, and then exits 1. It resumes and kills both servers on every exit.
 
 - **Version.** Run `just verify tmux "$run" terminal --version`. Exit 0, the terminal shows `ncly v<version>-<commit>`, as in the Doctor step, and the transcript ends with `--- exit 0, before the limit of 5s`.
 - **Help.** Run `just verify tmux "$run" terminal --help`. Exit 0, the terminal shows the root help, from `Curated CLI toolbox for humans and AI agents.` to its `FLAGS`, and the transcript ends with `--- exit 0, before the limit of 5s`.
