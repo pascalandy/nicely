@@ -508,6 +508,8 @@ A run record contains its format version, `run_id`, command path, status, step o
 
 Every effect of a recorded operation happens inside a step. Persist an intent before an effect that cannot safely be repeated, and persist completion only after checking its result. If the process dies between those writes, the effect is unknown until evidence resolves it. A missing response is never proof that nothing happened. If the record cannot be written, stop before starting the next effect.
 
+A successful answer, first or repeated, comes from the committed record and the artifacts that it references, and prints only after the completion write, so a caller never sees a success that the record does not hold. Its presentation follows the flags of the call that prints it, such as `--json`. A step's `evidence` keeps any value of the answer that neither the record nor its artifacts hold, such as a duration, so a repeated call answers what the first call answered.
+
 Records distinguish `running`, `completed`, `failed`, `interrupted`, and `unknown`. A step distinguishes `pending`, `completed`, `failed`, and `unknown`. Pending means its effect has not started; preparation may have failed. A completed step names the evidence needed to reuse it, such as an artifact path and content fingerprint. The domain may leave an in-flight effect as unknown until it has a verified result.
 
 Keep records under the XDG state directory and give every run its own temporary directory. Write each record atomically under a lock. Lock shared destinations or configuration at the point of mutation and revalidate while holding the lock. A conflict follows Retry safety, including effects already completed elsewhere in the run.
@@ -550,7 +552,7 @@ Each item has `key`, a string that names the item, such as its URL, `output_dir`
 | `started_at`, `finished_at` | string or null | UTC times, `null` until the step starts or ends |
 | `artifacts` | array | One object per verified output, with `path`, `size_bytes`, and `sha256` |
 | `error` | object or null | The latest unsuccessful attempt's `code`, `message`, and `hint`, as in the public problem object. A preparation failure can leave the step `pending` with an error. An untouched pending or completed step has `null` |
-| `evidence` | object, optional | Data beyond `artifacts` that the domain needs to reuse the step, with its own `format_version`. A step without such data omits the key |
+| `evidence` | object, optional | Data beyond `artifacts` that the domain needs to reuse the step or to answer again, with its own `format_version`. A step without such data omits the key |
 
 The domain defines when its validated preparation creates the initial record, before its first user-side mutation or paid dispatch. It starts with pending steps and status `running`. A run's saved status follows this table:
 
@@ -584,7 +586,7 @@ A call takes the run lock of its ID before it reads the record, as [Record forma
 
 1. The record's format version is unsupported, or its file cannot be read or parsed: `RESUME_UNSAFE`
 2. The record's command path, `inputs`, or ordered item keys differ from what the call states: `USAGE_INVALID`, because the ID names another call. An item key that preparation picked, such as the meeting folder that `--latest` selects, comes from the record and is not compared
-3. The run completed: its verified saved result, without the rest of preparation and without running a step again
+3. The run completed: its verified saved result, as [Records and evidence](#records-and-evidence) builds it, without the rest of preparation and without running a step again
 4. The command supports resume: it continues the run, as [Inspection and explicit resume](#inspection-and-explicit-resume) defines
 5. Every step whose intent the run persisted declares `none` or `repeatable`, both in the record and in the command's current declaration: the call runs every step again under the same ID. It increments `attempts` and writes `running` before the first step
 6. Otherwise: `RESUME_UNSAFE`, with the artifacts still available, including when the current declaration of such a step is missing or more cautious than the recorded one
