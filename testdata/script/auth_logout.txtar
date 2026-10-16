@@ -101,6 +101,15 @@ answer stderr TERMINATED
 stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
 gone keychain-child.pid
 grep '^TERM$' keychain-child.sig
+
+# A Ctrl-C at the terminal can end the removal's program before ncly sees its own copy:
+# logout still exits 130 with INTERRUPTED, then the RUNTIME of the unknown effect
+env NCLY_TEST_KEYCHAIN=
+exec sh -c 'echo dg-again | ncly auth login deepgram --stdin --force --json'
+env NCLY_TEST_KEYCHAIN=write-interrupt
+exits 130 ncly auth logout deepgram --force --json
+answer stderr INTERRUPTED
+stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
 env NCLY_TEST_KEYCHAIN=
 
 # Under the pseudo-locale, every word comes from the catalog
