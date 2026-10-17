@@ -1,6 +1,6 @@
 # auth
 
-`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, and says whether its key comes from its environment variable or from the OS keychain, without printing any key. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. It never touches the key of a real service.
+`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, and says whether its key comes from its environment variable or from the OS keychain, without printing any key. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. It never touches the key of a real service.
 
 ## Sub-features
 
@@ -13,6 +13,7 @@
 - `auth-replace` refuses to replace the stored key without `--force`
 - `auth-logout-dry-run` plans the logout without asking the keychain anything
 - `auth-logout` refuses to remove the key without `--force`, removes it with `--force`, and answers `NOT_FOUND` once it is gone
+- `auth-terminal` asks for the key in the masked field on a real terminal, never shows it, and erases the field once answered. A declined replacement keeps the key, Ctrl-C at the field stores nothing, and a confirmed logout removes the key
 - `auth-doctor` gives the test service the verdict of `ncly auth status` in the `auth` component of `ncly doctor`
 - `auth-cleanup` logs the fake key out during the cleanup, after a failed run too, and checks that it is gone
 
@@ -22,6 +23,7 @@
 - `ncly auth status --json`
 - `ncly auth login <service> --stdin`, `--force`, and `--dry-run`
 - `ncly auth logout <service>`, `--force`, and `--dry-run`
+- `ncly auth login <service>` and `ncly auth logout <service>` in a terminal, through `just verify tmux`
 - `ncly doctor auth`, and `ncly doctor` without a component
 - `just verify cleanup "$run"`, which logs the fake key out
 
@@ -30,6 +32,7 @@
 Preconditions:
 
 - A new run from `just verify`, whose Doctor step passed, on Linux. On macOS, only Pascal runs this feature, because the keychain may ask for his password
+- `tmux -V` answers, for the steps in a terminal, as [terminal.md](terminal.md) describes `just verify tmux`
 - The keychain may hold the fake key of an earlier run under `verifynicely`, left by a release without logout or by a cleanup that could not finish
 - The fake key of this run: `fake=verify-nicely-fake-$(date +%s)`
 
@@ -48,15 +51,21 @@ Preconditions:
 - **Logout without --force.** Run `just verify step "$run" auth auth logout verifynicely --json`. Exit 2, and stderr ends with an answer whose first error is `CONFIRMATION_REQUIRED`, with the hint `ncly auth logout verifynicely --force` and the same command in `next`.
 - **Logout.** Run `just verify step "$run" auth auth logout verifynicely --force --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"action":"logout","service":"verifynicely"}`.
 - **Key gone.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Exit 78, and the entry of `verifynicely` has `"source":"none"` and `"code":"AUTH_MISSING"`.
+- **Login in a terminal.** Run `just verify tmux "$run" auth --answer 'verifynicely key' "$fake" auth login verifynicely`. Exit 0. Before Enter, the terminal shows the masked field: `┃ verifynicely key`, `┃ It goes to the keychain and never shows.`, `┃ > ` followed by one `*` per character of the fake key, and `enter submit`. After Enter, the field is gone, and the terminal shows only `Stored the key of verifynicely in the keychain.`, with no `Next time:` line.
+- **Key from the terminal.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"verifynicely","configured":true,"source":"keychain"}]}`.
+- **Replacement in a terminal.** Run `just verify tmux "$run" auth --answer '[y/N]' n auth login verifynicely`. Exit 2. The terminal shows `? The keychain already holds a key for verifynicely. Replace it? [y/N] n`, then `error[CONFIRMATION_REQUIRED]: The key of verifynicely stays as it was.`, and no masked field.
+- **Ctrl-C at the field.** Run `just verify tmux "$run" auth --answer 'verifynicely key' '^C' auth login verifynicely --force`. Exit 130. The terminal shows only `error[INTERRUPTED]: Stopped by Ctrl-C. Finished work is kept.` and its hint, because the field erased itself.
+- **Logout in a terminal.** Run `just verify tmux "$run" auth --answer '[y/N]' y auth logout verifynicely`. Exit 0. The terminal shows `? Remove the key of verifynicely from the keychain? [y/N] y`, then `Removed the key of verifynicely from the keychain.`
 - **Doctor without the key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth doctor --json`. Exit 78, stderr is empty, and stdout lists `core.config`, then `auth.keychain` as a `pass`, then `{"id":"auth.verifynicely","component":"auth","status":"fail","code":"AUTH_MISSING", ...}` with the hint and `next` of the status entry, then the `extensions` checks, each a `pass`.
 - **Nothing to remove.** Run `just verify step "$run" auth auth logout verifynicely --force --json`. Exit 2, and stderr ends with an answer whose first error is `NOT_FOUND`, with the hint and `next` `ncly auth status`.
 - **Login for the cleanup.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force --json`. Exit 0, so the cleanup has a key to log out.
-- **Proof.** Run `grep -c "$fake" "$run/evidence/auth.txt"` after the steps. It prints `0` and exits 1, grep's code for no match: no transcript holds the fake key.
+- **Proof.** Run `grep -c "$fake" "$run/evidence/auth.txt"` after the steps. It prints `0` and exits 1, grep's code for no match: no transcript holds the fake key, not even the one that the terminal steps typed.
 - **Cleanup.** Run `just verify cleanup "$run"`, as SKILL.md says. Exit 0, stderr says `logged the fake key of verifynicely out of the keychain`, and `$run/evidence/cleanup.txt` holds an `ncly auth logout verifynicely --force --json` that exits 0, then an `ncly auth status --json` with `"keychain":"available"`, whose entry of `verifynicely` has `"source":"none"` and `"code":"AUTH_MISSING"`.
 
 ## Gotchas
 
 - Set `VERIFYNICELY_API_KEY` on the step itself, as written: the wrapper passes the caller's environment to `ncly`, so a value left in the shell changes the result of every later step
+- Quote each `--answer` as written: the shell would expand the brackets of `[y/N]` otherwise
 - `"keychain":"unavailable"` on Linux means that no Secret Service answers, such as gnome-keyring outside a desktop session: report it, because the steps that expect `available` then fail with `KEYRING_UNAVAILABLE`
 - `prepare` refuses to run on macOS without `--mac-keychain`, which only a human passes
 - The cleanup logs the fake key out after a failed run too. When it cannot, because the keychain does not answer, it keeps the scratch folder and exits 1: run `just verify cleanup "$run"` again once the keychain answers, and report it if it still fails
