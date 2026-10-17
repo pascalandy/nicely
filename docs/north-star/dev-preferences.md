@@ -33,7 +33,7 @@ Use these writing practices from ASD-STE100 Simplified Technical English, Issue 
 The `fleet` skill names Pascal's machines. The mini is the agents' Mac and stays on. The mbp is Pascal's laptop, and it is often offline.
 
 1. Run each check that needs macOS on the mini, through the `fleet` skill.
-2. Use the mbp only when the mini cannot run the check.
+2. If the mini lacks Nicely or a needed tool, or is offline, use the mbp.
 3. In the report, name the machine. When you used the mbp, give the reason.
 
 ## Merge on the brigade's rule or Pascal's word
