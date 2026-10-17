@@ -35,7 +35,7 @@ Preconditions:
 - **Own error.** Run `just verify step "$run" hello hello run --grumpy`. Exit 1, stdout is empty, and stderr starts with `error[HELLO_GRUMPY]: Not today.`
 - **Failed report.** Run `just verify step "$run" hello hello check --json`. Exit 78, and stdout is `{"ok":false,"contract_version":1,"checks":[{"id":"hello.mood","status":"fail"}]}`.
 - **Describe.** Run `just verify step "$run" hello describe hello run --json`. Exit 0, and the one entry of `commands` has the path `hello run` and the source `extension`.
-- **Skill.** Run `just verify step "$run" hello skill view hello`. Exit 0, and its first line names the skill folder `<run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, followed by the skill `hello`.
+- **Skill.** Run `just verify step "$run" hello skill view hello`. Exit 0, and its first line names the skill folder `<run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, followed by the file of the skill `hello` as it is, frontmatter and Markdown included, because only a terminal renders it.
 - **Skill in a terminal.** Run `just verify tmux "$run" hello skill view hello`. Exit 0. The terminal shows `folder  <run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, an empty line, `HELLO`, then the sentence of the skill, indented by two spaces, without its backticks. It shows no `---` and no `name: hello`, because the view removes the frontmatter. tmux drops the styles, which `styles.txtar` proves.
 - **Proof.** Run `just verify step "$run" hello doctor extensions --json`. Exit 0, and the check `extensions.hello` is a `pass` with the source `extension` and the path `<run>/scratch/home/.local/share/nicely/extensions/ncly-hello`.
 
