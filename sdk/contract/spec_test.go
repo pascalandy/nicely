@@ -11,8 +11,12 @@ import (
 
 const contractDoc = "../../docs/north-star/contract.md"
 
-// shipped lists the milestones whose codes the registry holds.
-var shipped = []string{"M00", "M01", "M03", "M05", "M06"}
+// shipped lists the milestones whose error codes the registry holds, and
+// shippedWarnings those whose warning codes it holds.
+var (
+	shipped         = []string{"M00", "M01", "M03", "M05", "M06", "M08"}
+	shippedWarnings = []string{"M00", "M01", "M03", "M05", "M06"}
+)
 
 func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 	tables, err := specdoc.Tables(contractDoc, "Error codes")
@@ -36,12 +40,12 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 
 	var warnings []Code
 	for _, row := range tables[1] {
-		if slices.Contains(shipped, row[2]) {
+		if slices.Contains(shippedWarnings, row[2]) {
 			warnings = append(warnings, Code(specdoc.Backticked(row[0])[0]))
 		}
 	}
 	if !slices.Equal(warnings, warningCodes) {
-		t.Errorf("contract.md lists the warning codes %v up to %s, the registry holds %v", warnings, shipped[len(shipped)-1], warningCodes)
+		t.Errorf("contract.md lists the warning codes %v up to %s, the registry holds %v", warnings, shippedWarnings[len(shippedWarnings)-1], warningCodes)
 	}
 }
 

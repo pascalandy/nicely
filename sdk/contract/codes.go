@@ -39,6 +39,7 @@ const (
 	CheckTimeout         Code = "CHECK_TIMEOUT"
 	KeyringUnavailable   Code = "KEYRING_UNAVAILABLE"
 	AuthMissing          Code = "AUTH_MISSING"
+	KeyNotGranted        Code = "KEY_NOT_GRANTED"
 
 	ConfigUnknownKey   Code = "CONFIG_UNKNOWN_KEY"
 	ConfigDefaultsUsed Code = "CONFIG_DEFAULTS_USED"
@@ -63,6 +64,7 @@ var errorCodes = []codeExit{
 	{CheckTimeout, ExitHuman},
 	{KeyringUnavailable, ExitHuman},
 	{AuthMissing, ExitHuman},
+	{KeyNotGranted, ExitHuman},
 	{UsageInvalid, ExitUsage},
 	{ConfirmationRequired, ExitUsage},
 	{NotFound, ExitUsage},
