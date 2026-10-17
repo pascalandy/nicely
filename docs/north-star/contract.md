@@ -392,7 +392,7 @@ That command qualifies only when every condition below holds:
 
 Core checks these conditions on the command's own declaration each time it completes, and [Manifest](#manifest) applies the same check to a command of the manifest that names it, so its author finds out before any Tab.
 
-Core dispatches that command itself, through the extension that its discovery found, as [Dispatch](#dispatch) defines: with the canonical arguments, the environment of [Programs that ncly runs](#programs-that-ncly-runs) with `NCLY_JSON=1`, and the [Answer check](#answer-check). The program that starts is therefore the one whose declaration core checked. Unlike an ordinary dispatch, the command runs in its own process group, because with `NCLY_JSON=1` it never asks, and core forwards none of its output.
+Core dispatches that command itself, through the extension that its discovery found, as [Dispatch](#dispatch) defines: with the canonical arguments, the environment of [Programs that ncly runs](#programs-that-ncly-runs) with `NCLY_JSON=1`, and the [Answer check](#answer-check). The program that starts is therefore the one whose declaration core checked. Unlike an ordinary dispatch, the command runs in its own process group, because with `NCLY_JSON=1` it never asks, and core forwards none of its output. Core reads no key for it, as for a dry run, so a Tab never waits on the keychain: `NCLY_MISSING_KEYS` names only the services that no human granted, as [Grants](#grants) defines.
 
 Core gives the command 2 seconds, which bound the reading of its output too. At the limit, core sends SIGKILL to the command and its descendants at once, without the 15 seconds of cleanup, and closes its pipes instead of starting the drain limit, because a command that qualifies neither writes a user file nor sends a paid request, and a Tab must not wait. Ctrl-C or SIGTERM during completion ends the command and its descendants the same way, at once, and then `ncly` with 130 or 143.
 
@@ -476,6 +476,9 @@ type Call struct {
 	Stderr  io.Writer
 }
 
+// Key returns the key of a service that the command declares, or the problem that NCLY_MISSING_KEYS names for it, from M08
+func (c Call) Key(service string) (string, *contract.Problem)
+
 func Main(e Extension) // runs the extension as this process, then exits with its code
 func Check(e Extension) error
 
@@ -483,7 +486,7 @@ func Check(e Extension) error
 func ParseSkill(data []byte) (Frontmatter, error)
 ```
 
-`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. From M08, `Call.Key` takes a service that the command declares and returns its key, or the problem that `NCLY_MISSING_KEYS` names for it, with the hint and `next` of [Grants](#grants), so a handler returns that problem and never builds one. `Main` prints the result by its kind, from the command's `result`:
+`Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. From M08, `Call.Key` takes a service that the command declares and returns its key, or the problem that `NCLY_MISSING_KEYS` names for it, with the hint and `next` of [Grants](#grants), so a handler returns that problem and never builds one. A service whose variable is empty and that `NCLY_MISSING_KEYS` does not name, as when `ncly-<domain>` runs directly, gets `AUTH_MISSING`, and a service that the command does not declare gets `RUNTIME`, because core never passes its key. `Main` prints the result by its kind, from the command's `result`:
 
 - `object` and `batch`: in human mode, the handler writes its text to `Stdout`. With `--json`, it writes nothing there, and the SDK prints the answer from the outcome
 - `report`: in human mode, the handler writes its report to `Stdout`. With `--json`, the SDK prints the findings from the outcome's data on stdout, in an answer without `errors`, as [Output](#output) says. In both modes, the handler returns its findings in that data, and sets the outcome's `HumanNeeded` when a finding needs a human, which makes the exit code 78 instead of 0, and `ok` false with `--json`. Core's doctor uses the same outcome from M05
@@ -645,7 +648,7 @@ Core never refuses to start an extension over a key, and never asks for a grant 
 
 An optional key, which a manifest marks in its `keys` table, as [Manifest](#manifest) defines, follows the same rules. The command runs without it, such as a harness that uses its own login, so a missing grant, a missing key, and an unavailable keychain never block that fallback, and [ncly auth](core-spec.md#ncly-auth) `status` and [ncly doctor](core-spec.md#ncly-doctor) report it without failing.
 
-In a nested call, such as transcript calling `ncly agent run`, the inner `ncly` applies these rules to the inner extension, with the variables that reached it and the keychain. A key that exists only in the outer shell's environment does not cross an extension that was not granted it, so the harness key of a nested agent run comes from the keychain, or the harness uses its own login.
+In a nested call, such as transcript calling `ncly agent run`, the inner `ncly` applies these rules to the inner extension, with the variables that reached it and the keychain, and sets `NCLY_MISSING_KEYS` anew, so the outer extension's value never reaches the inner one. A key that exists only in the outer shell's environment does not cross an extension that was not granted it, so the harness key of a nested agent run comes from the keychain, or the harness uses its own login.
 
 ## Programs that ncly runs
 
