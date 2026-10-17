@@ -635,8 +635,10 @@ func checkResult(path string, c *Command) error {
 
 // IsService reports whether name is a service name, as Keys in contract.md
 // defines it: lowercase letters and digits that start with a letter, other
-// than keychain.
-func IsService(name string) bool { return domainName.MatchString(name) && name != "keychain" }
+// than keychain and grants, which name checks of doctor.
+func IsService(name string) bool {
+	return domainName.MatchString(name) && name != "keychain" && name != "grants"
+}
 
 // codePrefix starts every code that the extension owns, such as HELLO_.
 func (m Manifest) codePrefix() string { return strings.ToUpper(m.Domain) + "_" }

@@ -109,13 +109,16 @@ exits 78 ncly catalog --json
 answer stderr EXTENSION_INVALID
 stderr 'lacks the ID \\"catalog.run.summary\\"'
 
-# A manifest rejects a malformed service name in requires.keys, keychain, and a service named twice
-exec sh broken.sh keyform keychain keytwice
+# A manifest rejects a malformed service name in requires.keys, keychain and grants, which name
+# checks of doctor, and a service named twice
+exec sh broken.sh keyform keychain keygrants keytwice
 exits 78 ncly keyform --json
 answer stderr EXTENSION_INVALID
 stderr 'lists \\"Deep-gram\\" in requires.keys of the command \\"keyform run\\"'
 exits 78 ncly keychain --json
 stderr 'lists \\"keychain\\" in requires.keys'
+exits 78 ncly keygrants --json
+stderr 'lists \\"grants\\" in requires.keys of the command \\"keygrants run\\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain and grants\.'
 exits 78 ncly keytwice --json
 stderr 'lists \\"deepgram\\" in requires.keys of the command \\"keytwice run\\"'
 
@@ -466,6 +469,19 @@ summary = "keychain.summary"
 path = "keychain run"
 summary = "keychain.summary"
 requires = { keys = ["keychain"] }
+-- broken/keygrants.toml --
+format_version = 1
+contract_version = 1
+domain = "keygrants"
+
+[[commands]]
+path = "keygrants"
+summary = "keygrants.summary"
+
+[[commands]]
+path = "keygrants run"
+summary = "keygrants.summary"
+requires = { keys = ["grants"] }
 -- broken/keytwice.toml --
 format_version = 1
 contract_version = 1

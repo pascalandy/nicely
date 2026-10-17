@@ -170,8 +170,8 @@ description = "Reason inside extension.invalid. {{.File}} is the manifest's name
 other = "{{.File}} sets doctor on the command \"{{.Path}}\", which must be the status command of its domain: <domain> status, a report without arguments or flag groups, whose only flags are live, a switch that defaults to false, and timeout, a string, neither required nor with values, with effects that neither write nor bill, live when they use the network, and no mode."
 
 ["extension.key"]
-description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys and keychain stay as is."
-other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain."
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys, keychain, and grants stay as is."
+other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain and grants."
 
 ["extension.config_key"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} a config key that the command declares, such as hello.greeting, and {{.Domain}} the extension's domain, which starts each key. config is a key and stays as is."
@@ -550,8 +550,8 @@ description = "ncly auth login, human text: the key of a service is now in the O
 other = "Stored the key of {{.Service}} in the keychain."
 
 ["auth.invalid_service"]
-description = "Message of USAGE_INVALID in ncly auth: the argument is no service name. {{.Service}} is what the human gave."
-other = "{{.Service}} is no service name: a service name is lowercase letters and digits that start with a letter, other than keychain."
+description = "Message of USAGE_INVALID in ncly auth: the argument is no service name. {{.Service}} is what the human gave. keychain and grants stay as is."
+other = "{{.Service}} is no service name: a service name is lowercase letters and digits that start with a letter, other than keychain and grants."
 
 ["auth.terminal_required"]
 description = "Message of TERMINAL_REQUIRED in ncly auth login: without a terminal and without --stdin, nothing can ask for the key."
