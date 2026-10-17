@@ -12,7 +12,7 @@ description: Use before running any ncly command.
 - Run a command that writes or bills with `--dry-run` first. The dry run checks what that call needs
 - Check the whole machine with `ncly doctor --json` during setup, or when a dry run reports a problem you cannot explain
 - List the keys that installed extensions need, and where each one comes from, with `ncly auth status --json`. Its findings are under `services`, and it never prints a key
-- On `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human, who stores the key with `ncly auth login`. Never type or pipe a key yourself
+- On `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human, who stores the key with `ncly auth login` and grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`. Never type or pipe a key yourself, and never grant one
 - Branch on the exit code and `errors[].code`, never on `message` or `hint`. `next` holds the command to run as words
 - Exit 2: fix the call. Exit 78: relay `hint` and `next` to the human. Exit 1: inspect before anything else. Only exit 75 permits repeating the same call
 - `ncly doctor` and each status command marked `doctor` list their findings under `checks`, on stdout. On exit 78, relay the `hint` and `next` of each failed check to the human. Another report command lists its findings under the key that `ncly describe` gives it. `errors` holds only a failure of the command itself

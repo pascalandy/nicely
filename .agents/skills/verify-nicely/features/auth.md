@@ -1,10 +1,13 @@
 # auth
 
-`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, and says whether its key comes from its environment variable or from the OS keychain, without printing any key. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. It never touches the key of a real service.
+`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, and says whether its key comes from its environment variable or from the OS keychain, without printing any key. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. `ncly auth grant` lets an extension receive a key once a human confirms it in a terminal, and `ncly auth revoke` takes the grant back. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. It never touches the key of a real service.
 
 ## Sub-features
 
 - `auth-keychain` reports whether the real keychain answers
+- `auth-grant-dry-run` plans the grant of the test service to the fixture, with the confirmation pending, without a terminal
+- `auth-grant-terminal` refuses to grant without a terminal, and names the command that a human runs in one
+- `auth-revoke-missing` answers `NOT_FOUND` for a grant that does not exist
 - `auth-missing` fails the report with `AUTH_MISSING` for the test service when neither its variable nor the keychain holds its key
 - `auth-env` reads the key from the variable, and never prints it
 - `auth-login-dry-run` plans the login without asking the keychain anything
@@ -24,6 +27,8 @@
 - `ncly auth status --json`
 - `ncly auth login <service> --stdin`, `--force`, and `--dry-run`
 - `ncly auth logout <service>`, `--force`, and `--dry-run`
+- `ncly auth grant <service> <domain>` and `--dry-run`
+- `ncly auth revoke <service> <domain>` and `--force`
 - `ncly auth login <service>` and `ncly auth logout <service>` in a terminal, through `just verify tmux`
 - `ncly auth login` without a service, in a terminal and in a pipe
 - `ncly doctor auth`, and `ncly doctor` without a component
@@ -39,7 +44,10 @@ Preconditions:
 - The fake key of this run: `fake=verify-nicely-fake-$(date +%s)`
 
 - **Fixture.** Run `just verify prepare "$run" auth`. Exit 0, and stderr names the service `verifynicely` and its variable `VERIFYNICELY_API_KEY`.
-- **Help.** Run `just verify step "$run" auth auth --help`. Exit 0, and `COMMANDS` lists `login`, `logout`, and `status`.
+- **Help.** Run `just verify step "$run" auth auth --help`. Exit 0, and `COMMANDS` lists `grant`, `login`, `logout`, `revoke`, and `status`.
+- **Grant dry run.** Run `just verify step "$run" auth auth grant verifynicely verifykeys --dry-run --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":[{"id":"auth.confirmation","message":"Whether a human at a terminal confirms the grant of the key of verifynicely to verifykeys."}],"plan":[{"key":"verifynicely","action":"grant","domain":"verifykeys","effects":{"user_writes":true,"network":false,"paid":false}}]}`.
+- **Grant without a terminal.** Run `just verify step "$run" auth auth grant verifynicely verifykeys --json`. Exit 78, stdout is empty, and stderr ends with an answer whose first error is `TERMINAL_REQUIRED`, with the hint ``Run `ncly auth grant verifynicely verifykeys` in a terminal`` and the `next` `["ncly","auth","grant","verifynicely","verifykeys"]`.
+- **No grant to revoke.** Run `just verify step "$run" auth auth revoke verifynicely verifykeys --force --json`. Exit 2, and stderr ends with an answer whose first error is `NOT_FOUND`, with the hint `ncly auth status` and the same command in `next`.
 - **Missing key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Without the fake key of an earlier run, exit 78, stderr is empty, and stdout is one line with `"ok":false`, `"keychain":"available"`, and the one entry `{"service":"verifynicely","configured":false,"source":"none","code":"AUTH_MISSING", ...}`, whose `hint` is `ncly auth login verifynicely` and whose `next` is `["ncly","auth","login","verifynicely"]`. With it, exit 0 and the entry `{"service":"verifynicely","configured":true,"source":"keychain"}`: report which one you saw.
 - **Missing key as text.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status`. The first line is `keychain      available`, then an empty line. Without the fake key of an earlier run, exit 78, and the line of `verifynicely` is `verifynicely  none`. Two lines follow it, in the column of `none`: `fail[AUTH_MISSING] No key for verifynicely in VERIFYNICELY_API_KEY or the keychain.`, then `hint: ncly auth login verifynicely`. With the key, exit 0, and the line is `verifynicely  keychain`.
 - **Key from the variable.** Run `VERIFYNICELY_API_KEY="$fake" just verify step "$run" auth auth status --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"verifynicely","configured":true,"source":"env"}]}`.

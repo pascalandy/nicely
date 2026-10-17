@@ -1,6 +1,6 @@
 # M08 Grants
 
-Status: ready
+Status: active
 Version: v0.8.0
 
 ## Demo
@@ -17,7 +17,7 @@ The scenarios declare services in the manifests of the shell fixture of M01 and 
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M08-T1 | Grant and revoke | agent | — | todo |
+| M08-T1 | Grant and revoke | agent | — | done |
 | M08-T2 | Keys reach granted extensions | agent | M08-T1 | todo |
 | M08-T3 | Source identity | agent | M08-T2 | todo |
 | M08-T4 | Status and doctor | agent | M08-T3 | todo |
