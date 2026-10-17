@@ -22,7 +22,7 @@ Core keeps `run list` and `run view`: a human can recover a generated ID after l
 | M10-T1 | One-step records | agent | — | done |
 | M10-T2 | Codex execution and replay | agent | M10-T1 | done |
 | M10-T3 | Run list | agent | M10-T1 | done |
-| M10-T4 | Run view | agent | M10-T1 | todo |
+| M10-T4 | Run view | agent | M10-T1 | done |
 | M10-T5 | Cancellation and failures | agent | M10-T2, M10-T4 | todo |
 
 ### M10-T1 One-step records
