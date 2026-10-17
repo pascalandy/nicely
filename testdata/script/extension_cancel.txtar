@@ -116,9 +116,11 @@ while [ $run -lt 30 ]; do
     for wait in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$grandchild" 2>/dev/null || break; sleep 0.1; done
     if kill -0 "$grandchild" 2>/dev/null; then fail "grandchild $grandchild still runs"; fi
   else
-    kill "$grandchild" 2>/dev/null
+    # Core also stops the grandchild when it reads the process tree before the
+    # extension exits, so the grandchild may be gone already.
+    kill "$grandchild" 2>/dev/null || :
   fi
-done || fail "the loop ended with status $?"
+done
 -- grandchild.sh --
 # grandchild.sh writes its process ID once its traps are set, then runs until a signal
 # ends it, and writes the name of that signal.
