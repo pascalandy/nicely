@@ -43,14 +43,15 @@ ncly run view "$RUN_ID" --json
 | `cwd` | string | The absolute folder where Codex works |
 | `task_sha256` | string | The SHA-256 of the task, in lowercase hexadecimal |
 | `invocation` | array | The path of Codex, then the words that execution passes to it, as [Codex invocation](#codex-invocation) lists them. `<answer-file>` stands for the file that execution creates for the answer. The task never appears, because Codex reads it on stdin, and no key does |
+| `environment` | object | The variables that Nicely sets for Codex, as strings: `NCLY_AGENT_DEPTH`, as [Depth limit](#depth-limit) defines. Codex inherits the rest of the environment of `ncly`, without any `*_API_KEY` variable, which this answer never shows |
 
 `plan` holds one item, whose `key` is `task` and whose `output` is the `runs` folder of the state directory, such as `~/.local/state/nicely/runs`. Its one step is `codex`, with the action `run`, and its `effects` set `user_writes`, `network`, and `paid` to `true`. `pending_checks` holds `agent.login`, because Codex checks its own login only when it runs the task.
 
 ```json
-{"ok":true,"contract_version":1,"cwd":"/Users/me/project","dry_run":true,"effort":"medium","harness":"codex","harness_version":"0.163.0","invocation":["/opt/homebrew/bin/codex","exec","--model","<model id>","-c","model_reasoning_effort=\"medium\"","--sandbox","workspace-write","--skip-git-repo-check","--cd","/Users/me/project","--json","--output-last-message","<answer-file>","-"],"model":"<model id>","pending_checks":[{"id":"agent.login","message":"Codex checks its login only when it runs the task."}],"plan":[{"key":"task","output":"/Users/me/.local/state/nicely/runs","steps":[{"id":"codex","action":"run"}],"effects":{"network":true,"paid":true,"user_writes":true}}],"task_sha256":"<sha256>"}
+{"ok":true,"contract_version":1,"cwd":"/Users/me/project","dry_run":true,"effort":"medium","environment":{"NCLY_AGENT_DEPTH":"1"},"harness":"codex","harness_version":"0.163.0","invocation":["/opt/homebrew/bin/codex","exec","--model","<model id>","-c","model_reasoning_effort=\"medium\"","--sandbox","workspace-write","--skip-git-repo-check","--cd","/Users/me/project","--json","--output-last-message","<answer-file>","-"],"model":"<model id>","pending_checks":[{"id":"agent.login","message":"Codex checks its login only when it runs the task."}],"plan":[{"key":"task","output":"/Users/me/.local/state/nicely/runs","steps":[{"id":"codex","action":"run"}],"effects":{"network":true,"paid":true,"user_writes":true}}],"task_sha256":"<sha256>"}
 ```
 
-Without `--json`, the dry run prints the invocation as a POSIX shell reads it back, then the model, the effort, the folder, and each pending check, as plain text.
+Without `--json`, the dry run prints the invocation as a POSIX shell reads it back, then the model, the effort, the folder, the environment, and each pending check, as plain text.
 
 ## Settings
 
@@ -97,7 +98,9 @@ This task supports no explicit resume. A record with no persisted effect intent 
 
 ## Depth limit
 
-`ncly agent run` checks `[agent] max_depth`, 2 by default, before preparation. `NCLY_AGENT_DEPTH` defaults to 0. At or above the limit, answer `AGENT_DEPTH_LIMIT`. A launch receives the depth plus one.
+`ncly agent run` reads `[agent] max_depth`, 2 by default, then `NCLY_AGENT_DEPTH`, the number of agents above the call, 0 when unset or empty. At or above the limit, the call answers `AGENT_DEPTH_LIMIT` once it has read the settings, before it checks the task, the model, the folder, Codex, or `--tools`, so it starts no Codex, not even the version probe. Its hint names the file that sets `max_depth`, or the shared config file: only a human decides whether a deeper chain of agents may run. A `max_depth` that is no whole number from 1 answers `CONFIG_INVALID`, and an `NCLY_AGENT_DEPTH` that is no whole number from 0 answers `USAGE_INVALID`.
+
+Codex receives the depth plus one in `NCLY_AGENT_DEPTH`, for the version probe as for the task, so an `ncly agent run` that Codex starts counts one more agent above it. The dry run shows that value in `environment`.
 
 ## Error codes
 
