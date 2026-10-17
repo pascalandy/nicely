@@ -1,6 +1,6 @@
 # M09 Codex preparation
 
-Status: active
+Status: done
 Version: v0.9.0
 
 ## Demo
@@ -23,7 +23,7 @@ One model and effort can come from flags or `[agent]` defaults. Named profiles, 
 |---|---|---|---|---|
 | M09-T1 | Extension and install | agent | — | done |
 | M09-T2 | Codex dry run | agent | M09-T1 | done |
-| M09-T3 | Depth limit | agent | M09-T2 | todo |
+| M09-T3 | Depth limit | agent | M09-T2 | done |
 
 ### M09-T1 Extension and install
 
