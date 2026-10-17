@@ -1,6 +1,7 @@
-// Package platform holds what ncly needs from the operating system: for
-// now, the process tree that cleanup reaches, as Programs that ncly runs in
-// contract.md defines.
+// Package platform holds what ncly needs from the operating system: the
+// process tree that cleanup reaches, as Programs that ncly runs in
+// contract.md defines, and the durable writes and the locks of the files
+// in the state folder, as Record format defines.
 package platform
 
 import "slices"
