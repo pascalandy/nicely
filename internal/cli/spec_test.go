@@ -71,10 +71,10 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 
 // shipped lists the milestones whose commands core declares, and active
 // the milestone whose cards still add commands, which core may declare in
-// part, such as run list before run view.
+// part, such as run list before run view: none now.
 var (
-	shipped = []string{"M00", "M03", "M05", "M06", "M08"}
-	active  = "M10"
+	shipped = []string{"M00", "M03", "M05", "M06", "M08", "M10"}
+	active  = ""
 )
 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the

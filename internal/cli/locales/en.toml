@@ -950,3 +950,75 @@ other = "Cannot read the records of {{.IDs}}: ncly run view <run-id> says why."
 ["run.list.more"]
 description = "ncly run list, human text: the last line when more runs match than --limit shows. --limit stays as is."
 other = "More runs match: raise --limit, or narrow the filters."
+
+["run.view.summary"]
+description = "Help page and ncly describe: summary of `ncly run view`, which shows one saved record of a run, with whether a process holds it now."
+other = "Show the record of one run"
+
+["run.view.run_id"]
+description = "Help page: summary of the run-id argument of `ncly run view`, the ID of the run to show."
+other = "The ID of the run, as its call gave it or ncly run list shows it"
+
+["run.view.id_invalid"]
+description = "Error USAGE_INVALID of `ncly run view` when the argument is no run ID. {{.ID}} is the value that the call gave."
+other = "{{.ID}} is no run ID: a run ID holds 1 to 64 lowercase letters, digits, and hyphens, and starts with a letter or a digit."
+
+["run.view.not_found"]
+description = "Error NOT_FOUND of `ncly run view` when no record holds the run ID. {{.ID}} is the run ID, which stays as is."
+other = "No record holds the run {{.ID}}."
+
+["run.view.unreadable"]
+description = "Error RESUME_UNSAFE of `ncly run view` when the record of the run cannot be read, cannot be parsed, or holds another format_version. {{.File}} is the path of the record."
+other = "Cannot read the record {{.File}}, or this release does not support its format."
+
+["run.view.unreadable_hint"]
+description = "Hint under the error run.view.unreadable: what the user does next. The record never counts as absent, so its run may have billed."
+other = "Inspect the file before you start any new run of the same work: its run may have billed."
+
+["run.view.status"]
+description = "ncly run view, human text: the label of the saved status of the run, such as completed or unknown."
+other = "status"
+
+["run.view.active"]
+description = "ncly run view, human text: the label of whether a process holds the run now, followed by yes or no."
+other = "active"
+
+["run.view.yes"]
+description = "ncly run view, human text: the value of the label active when a process holds the run now."
+other = "yes"
+
+["run.view.no"]
+description = "ncly run view, human text: the value of the label active when no process holds the run."
+other = "no"
+
+["run.view.started"]
+description = "ncly run view, human text: the label of the time when the run started, in UTC."
+other = "started"
+
+["run.view.updated"]
+description = "ncly run view, human text: the label of the time when the record last changed, in UTC."
+other = "updated"
+
+["run.view.attempts"]
+description = "ncly run view, human text: the label of the number of executions of the run."
+other = "attempts"
+
+["run.view.ncly"]
+description = "ncly run view, human text: the label of the version of ncly that last wrote the record. ncly is the name of the program and stays as is."
+other = "ncly"
+
+["run.view.inputs"]
+description = "ncly run view, human text: the heading of the values that the call stated, such as the SHA-256 of a task. An uppercase heading, as in the help."
+other = "INPUTS"
+
+["run.view.resolved"]
+description = "ncly run view, human text: the heading of the values that preparation picked from the config or the machine, such as a model. An uppercase heading, as in the help."
+other = "RESOLVED"
+
+["run.view.tools"]
+description = "ncly run view, human text: the heading of the versions of the programs that the run used. An uppercase heading, as in the help."
+other = "TOOLS"
+
+["run.view.items"]
+description = "ncly run view, human text: the heading of the items of the run, each with its steps. An uppercase heading, as in the help."
+other = "ITEMS"

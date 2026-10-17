@@ -7,6 +7,7 @@
 package record
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -196,7 +197,7 @@ func (s Store) Open(ctx context.Context, id string) (*Run, error) {
 		return nil, err
 	}
 	r := &Run{ID: id, store: s, unlock: unlock}
-	if r.Record, err = read(s.File(id), id); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if r.Record, _, err = read(s.File(id), id); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		unlock()
 		return nil, err
 	}
@@ -207,11 +208,31 @@ func (s Store) Open(ctx context.Context, id string) (*Run, error) {
 // inspection: nil when no record holds the ID, and an UnreadableError for
 // a record that it cannot use.
 func (s Store) Read(id string) (*Record, error) {
-	rec, err := read(s.File(id), id)
+	rec, _, err := read(s.File(id), id)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	return rec, err
+}
+
+// View reads a record as Read does, for an inspection, and also returns
+// every key that its file holds, numbers as json.Number, so a key that
+// this release does not know still shows.
+func (s Store) View(id string) (*Record, map[string]any, error) {
+	rec, data, err := read(s.File(id), id)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	var keys map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(&keys); err != nil {
+		return nil, nil, &UnreadableError{File: s.File(id), Err: err}
+	}
+	return rec, keys, nil
 }
 
 // IDs returns, in name order, the run ID of each record of the folder: each
@@ -239,33 +260,34 @@ func (s Store) IDs() ([]string, error) {
 // lock file and never holds the lock past its answer.
 func (s Store) Active(id string) (bool, error) { return platform.Held(s.lock(id)) }
 
-// read reads the record of a file, or returns fs.ErrNotExist when no file
-// exists. Any other failure is an UnreadableError.
-func read(file, id string) (*Record, error) {
+// read reads the record of a file, with the bytes of the file, or returns
+// fs.ErrNotExist when no file exists. Any other failure is an
+// UnreadableError.
+func read(file, id string) (*Record, []byte, error) {
 	data, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, err
+		return nil, nil, err
 	}
 	if err != nil {
-		return nil, &UnreadableError{File: file, Err: err}
+		return nil, nil, &UnreadableError{File: file, Err: err}
 	}
 	var version struct {
 		FormatVersion *int `json:"format_version"`
 	}
 	if err := json.Unmarshal(data, &version); err != nil {
-		return nil, &UnreadableError{File: file, Err: err}
+		return nil, nil, &UnreadableError{File: file, Err: err}
 	}
 	if version.FormatVersion == nil || *version.FormatVersion != FormatVersion {
-		return nil, &UnreadableError{File: file, Err: errors.New("unsupported format_version")}
+		return nil, nil, &UnreadableError{File: file, Err: errors.New("unsupported format_version")}
 	}
 	var rec Record
 	if err := json.Unmarshal(data, &rec); err != nil {
-		return nil, &UnreadableError{File: file, Err: err}
+		return nil, nil, &UnreadableError{File: file, Err: err}
 	}
 	if !shaped(data) || !fits(&rec, id) {
-		return nil, &UnreadableError{File: file, Err: errors.New("the record breaks its format")}
+		return nil, nil, &UnreadableError{File: file, Err: errors.New("the record breaks its format")}
 	}
-	return &rec, nil
+	return &rec, data, nil
 }
 
 // shaped reports whether data holds every key of Record format in

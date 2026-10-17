@@ -3,7 +3,9 @@ package cli
 import (
 	"cmp"
 	_ "embed"
+	"fmt"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"strconv"
@@ -23,6 +25,9 @@ import (
 //go:embed run_list_schema.json
 var runListSchema []byte
 
+//go:embed run_view_schema.json
+var runViewSchema []byte
+
 var runCommand = contract.Command{
 	Path:    []string{"run"},
 	Summary: "run.summary",
@@ -30,6 +35,7 @@ var runCommand = contract.Command{
 	Examples: []string{
 		`ncly run list`,
 		`ncly run list --path 'agent run' --json`,
+		`ncly run view review-1`,
 	},
 }
 
@@ -48,6 +54,18 @@ var runListCommand = contract.Command{
 		`ncly run list`,
 		`ncly run list --path 'transcript run youtube' --key <url> --json`,
 		`ncly run list --since 2026-10-07T00:00:00Z --limit 50`,
+	},
+}
+
+var runViewCommand = contract.Command{
+	Path:    []string{"run", "view"},
+	Result:  contract.Result{Schema: mustSchema(runViewSchema)},
+	Summary: "run.view.summary",
+	Args:    []contract.Arg{{Name: "run-id", Summary: "run.view.run_id", Required: true}},
+	Effects: &contract.Effects{},
+	Examples: []string{
+		`ncly run view review-1`,
+		`ncly run view 20261007-214501-3f9a2c --json`,
 	},
 }
 
@@ -132,6 +150,27 @@ func addRun(p *i18n.Printer, root *cobra.Command) {
 		return &answered{
 			outcome: contract.Outcome{Data: list},
 			text:    func(w io.Writer) error { return writeRuns(w, p, list) },
+		}
+	}))
+	group.AddCommand(command.Build(p, p, runViewCommand, func(c *cobra.Command, args []string) error {
+		id := args[0]
+		if !record.ValidID(id) {
+			return command.Fail(command.HelpUsage(c, p.T("run.view.id_invalid", map[string]any{"ID": id})))
+		}
+		store := runs()
+		rec, keys, err := store.View(id)
+		if err != nil {
+			return command.Fail(contract.Problem{Code: contract.ResumeUnsafe, Message: p.T("run.view.unreadable", map[string]any{"File": store.File(id)}), Hint: p.T("run.view.unreadable_hint")})
+		}
+		if rec == nil {
+			list := []string{"ncly", "run", "list"}
+			return command.Fail(contract.Problem{Code: contract.NotFound, Message: p.T("run.view.not_found", map[string]any{"ID": id}), Hint: strings.Join(list, " "), Next: list})
+		}
+		active, _ := store.Active(id)
+		keys["active"] = active
+		return &answered{
+			outcome: contract.Outcome{Data: map[string]any{"run": keys}},
+			text:    func(w io.Writer) error { return writeRun(w, p, id, rec, keys, active) },
 		}
 	}))
 	root.AddCommand(group)
@@ -242,3 +281,142 @@ func writeRuns(w io.Writer, p *i18n.Printer, list runList) error {
 
 // activeMark starts the row of a run that a process holds, in green.
 var activeMark = ansi.Style{}.ForegroundColor(ansi.Green).Styled("●")
+
+// writeRun prints a record as ncly run in core-spec.md shows it: the run
+// ID and the command path, its facts as labeled lines, then its inputs, its
+// resolved values, the versions of its tools, and its items under bold
+// headings. keys are the keys of the record file, whose values keep their
+// numbers as the file holds them.
+func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys map[string]any, active bool) error {
+	var b strings.Builder
+	b.WriteString(tui.Bold(id) + "  " + rec.Path + "\n")
+	held := p.T("run.view.no")
+	if active {
+		held = p.T("run.view.yes")
+	}
+	writeValues(&b, "", [][2]any{
+		{p.T("run.view.status"), string(rec.Status)},
+		{p.T("run.view.active"), held},
+		{p.T("run.view.started"), rec.StartedAt},
+		{p.T("run.view.updated"), rec.UpdatedAt},
+		{p.T("run.view.attempts"), strconv.Itoa(rec.Attempts)},
+		{p.T("run.view.ncly"), rec.NclyVersion},
+	})
+	for _, section := range []struct{ heading, key string }{
+		{"run.view.inputs", "inputs"},
+		{"run.view.resolved", "resolved"},
+		{"run.view.tools", "tools"},
+	} {
+		if values, _ := keys[section.key].(map[string]any); len(values) > 0 {
+			b.WriteString("\n" + tui.Bold(p.T(section.heading)) + "\n")
+			writeValues(&b, "  ", sortedValues(values))
+		}
+	}
+	if len(rec.Items) > 0 {
+		b.WriteString("\n" + tui.Bold(p.T("run.view.items")) + "\n")
+	}
+	widths := [3]int{}
+	for _, it := range rec.Items {
+		for _, s := range it.Steps {
+			for i, cell := range []string{string(s.Status), s.ID, string(s.Effect)} {
+				widths[i] = max(widths[i], ansi.StringWidth(cell))
+			}
+		}
+	}
+	for _, it := range rec.Items {
+		b.WriteString("  " + it.Key)
+		if it.OutputDir != nil {
+			b.WriteString(" → " + *it.OutputDir)
+		}
+		b.WriteString("\n")
+		for _, s := range it.Steps {
+			cells := []string{string(s.Status), s.ID, string(s.Effect)}
+			for i, cell := range cells {
+				cells[i] = cell + strings.Repeat(" ", widths[i]-ansi.StringWidth(cell))
+			}
+			line := strings.Join(cells, "  ")
+			if s.StartedAt != nil {
+				line += "  " + stepTimes(*s.StartedAt, s.FinishedAt)
+			}
+			b.WriteString("    " + strings.TrimRight(line, " ") + "\n")
+			for _, a := range s.Artifacts {
+				b.WriteString("      " + a.Path + "  " + p.Size(a.SizeBytes) + "\n")
+			}
+			if s.Error != nil {
+				b.WriteString("      " + tui.ErrorLabel(p.T("error.label", map[string]any{"Code": s.Error.Code})) + " " + s.Error.Message + "\n")
+				if s.Error.Hint != "" {
+					b.WriteString("      " + tui.HintLabel(p.T("error.hint")) + " " + s.Error.Hint + "\n")
+				}
+			}
+		}
+	}
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+// stepTimes shows when a step started, then, once it finished, when, and
+// how long it took.
+func stepTimes(started string, finished *string) string {
+	if finished == nil {
+		return started
+	}
+	text := started + " → " + *finished
+	from, errFrom := time.Parse(time.RFC3339, started)
+	to, errTo := time.Parse(time.RFC3339, *finished)
+	if errFrom == nil && errTo == nil {
+		text += ", " + to.Sub(from).String()
+	}
+	return text
+}
+
+// sortedValues returns the keys of an object, in name order, with their
+// values.
+func sortedValues(values map[string]any) [][2]any {
+	var pairs [][2]any
+	for _, k := range slices.Sorted(maps.Keys(values)) {
+		pairs = append(pairs, [2]any{k, values[k]})
+	}
+	return pairs
+}
+
+// writeValues prints labeled values in aligned columns, each label at
+// indent. An object takes its own labeled lines under its label, and an
+// array one line per element, both indented once more.
+func writeValues(b *strings.Builder, indent string, pairs [][2]any) {
+	width := 0
+	for _, pair := range pairs {
+		width = max(width, ansi.StringWidth(pair[0].(string)))
+	}
+	for _, pair := range pairs {
+		label := pair[0].(string)
+		switch v := pair[1].(type) {
+		case map[string]any:
+			b.WriteString(indent + label + "\n")
+			writeValues(b, indent+"  ", sortedValues(v))
+		case []any:
+			b.WriteString(indent + label + "\n")
+			for _, element := range v {
+				if object, isObject := element.(map[string]any); isObject {
+					writeValues(b, indent+"  ", sortedValues(object))
+					continue
+				}
+				b.WriteString(indent + "  " + scalar(element) + "\n")
+			}
+		default:
+			b.WriteString(indent + label + strings.Repeat(" ", width-ansi.StringWidth(label)+2) + scalar(v) + "\n")
+		}
+	}
+}
+
+// scalar shows a JSON value that is no object and no array.
+func scalar(v any) string {
+	switch v := v.(type) {
+	case nil:
+		return "null"
+	case string:
+		return v
+	case bool:
+		return strconv.FormatBool(v)
+	}
+	return fmt.Sprint(v)
+}

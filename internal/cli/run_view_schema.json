@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "required": ["run"],
+  "properties": {
+    "run": {
+      "type": "object",
+      "required": ["format_version", "run_id", "path", "status", "started_at", "updated_at", "ncly_version", "attempts", "inputs", "resolved", "tools", "items", "active"],
+      "properties": {
+        "format_version": {"const": 1},
+        "run_id": {"type": "string"},
+        "path": {"type": "string"},
+        "status": {"type": "string"},
+        "started_at": {"type": "string"},
+        "updated_at": {"type": "string"},
+        "ncly_version": {"type": "string"},
+        "attempts": {"type": "integer", "minimum": 1},
+        "inputs": {"type": "object"},
+        "resolved": {"type": "object"},
+        "tools": {"type": "object", "additionalProperties": {"type": "string"}},
+        "items": {"type": "array", "items": {"type": "object", "required": ["key", "output_dir", "steps"]}},
+        "active": {"type": "boolean"}
+      }
+    }
+  }
+}
