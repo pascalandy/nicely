@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pascalandy/nicely/extensions/agent"
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/runner"
 	hello "github.com/pascalandy/nicely/testdata/extensions/hello"
@@ -28,6 +29,7 @@ func TestMain(m *testing.M) {
 		"holdlock":       holdLock,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
 		"keyed-external": func() { shortCleanup(); extension.Main(keyed.Extension) },
+		"agent-external": func() { shortCleanup(); extension.Main(agent.Extension) },
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the
 		// fixture through the routing of run, as in a release.
@@ -45,9 +47,11 @@ func testBundled() {
 	os.Exit(run([]extension.Extension{hello.Extension}))
 }
 
-// fixtures holds the Go fixture extensions of testdata/extensions/, by
-// domain. The setup of a fixture's scenarios installs it in the data folder.
-var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension}
+// fixtures holds the Go extensions that scenarios install as external ones,
+// by domain: the fixtures of testdata/extensions/, and agent of extensions/,
+// which just install installs the same way. The setup of their own
+// scenarios installs each one in the data folder.
+var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension, "agent": agent.Extension}
 
 // testNcly runs ncly with a short cleanup and the test keychain.
 func testNcly() {
@@ -122,7 +126,7 @@ func cmdInstall(ts *testscript.TestScript, neg bool, args []string) {
 	ts.Check(install(ts.Getenv("WORK"), ts.Setenv, args[0], e))
 }
 
-// install puts a Go fixture in the data folder as an external extension:
+// install puts a Go extension in the data folder as an external one:
 // the script ncly-<domain> that runs it, with its manifest, catalogs, and
 // skill beside it. The script appends its domain to $WORK/external.log, then runs
 // the test binary under the name <domain>-external, so the fixture runs as

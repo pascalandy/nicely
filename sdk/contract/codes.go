@@ -40,6 +40,9 @@ const (
 	KeyringUnavailable   Code = "KEYRING_UNAVAILABLE"
 	AuthMissing          Code = "AUTH_MISSING"
 	KeyNotGranted        Code = "KEY_NOT_GRANTED"
+	// CapabilityUnsupported is a mode or a protocol that the selected
+	// program cannot enforce, such as a harness that cannot turn tools off.
+	CapabilityUnsupported Code = "CAPABILITY_UNSUPPORTED"
 
 	ConfigUnknownKey   Code = "CONFIG_UNKNOWN_KEY"
 	ConfigDefaultsUsed Code = "CONFIG_DEFAULTS_USED"
@@ -63,6 +66,7 @@ var errorCodes = []codeExit{
 	{TerminalRequired, ExitHuman},
 	{PrereqMissing, ExitHuman},
 	{CheckTimeout, ExitHuman},
+	{CapabilityUnsupported, ExitHuman},
 	{KeyringUnavailable, ExitHuman},
 	{AuthMissing, ExitHuman},
 	{KeyNotGranted, ExitHuman},
