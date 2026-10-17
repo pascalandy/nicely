@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -224,15 +225,82 @@ func read(file, id string) (*Record, error) {
 	if err := json.Unmarshal(data, &rec); err != nil {
 		return nil, &UnreadableError{File: file, Err: err}
 	}
-	if !fits(&rec, id) {
+	if !shaped(data) || !fits(&rec, id) {
 		return nil, &UnreadableError{File: file, Err: errors.New("the record breaks its format")}
 	}
 	return &rec, nil
 }
 
-// fits reports whether rec holds every key of Record format in contract.md
-// that is not optional, each with a value of its type, and the run ID of its
-// file, so that no reader uses a record that it would misread.
+// shaped reports whether data holds every key of Record format in
+// contract.md that is not optional, nested ones included, each with a value
+// of its JSON type, so that a missing key never reads as null.
+func shaped(data []byte) bool {
+	var rec map[string]any
+	if json.Unmarshal(data, &rec) != nil ||
+		!holds(rec, "string", "run_id", "path", "status", "started_at", "updated_at", "ncly_version") ||
+		!holds(rec, "number", "attempts") || !holds(rec, "object", "inputs", "resolved", "tools") || !holds(rec, "array", "items") {
+		return false
+	}
+	for _, version := range rec["tools"].(map[string]any) {
+		if _, isString := version.(string); !isString {
+			return false
+		}
+	}
+	for _, x := range rec["items"].([]any) {
+		it, isObject := x.(map[string]any)
+		if !isObject || !holds(it, "string", "key") || !holds(it, "string?", "output_dir") || !holds(it, "array", "steps") {
+			return false
+		}
+		for _, y := range it["steps"].([]any) {
+			s, isObject := y.(map[string]any)
+			if !isObject || !holds(s, "string", "id", "effect", "status") || !holds(s, "string?", "started_at", "finished_at") ||
+				!holds(s, "array", "artifacts") || !holds(s, "object?", "error") {
+				return false
+			}
+			if e, _ := s["error"].(map[string]any); e != nil && !holds(e, "string", "code", "message", "hint") {
+				return false
+			}
+			if _, present := s["evidence"]; present && !holds(s, "object", "evidence") {
+				return false
+			}
+			for _, z := range s["artifacts"].([]any) {
+				a, isObject := z.(map[string]any)
+				if !isObject || !holds(a, "string", "path", "sha256") || !holds(a, "number", "size_bytes") {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// holds reports whether o holds each named key with a value of kind:
+// string, number, object, or array, or null too when kind ends with ?.
+func holds(o map[string]any, kind string, names ...string) bool {
+	kind, nullable := strings.CutSuffix(kind, "?")
+	for _, name := range names {
+		value, present := o[name]
+		ok := present && value == nil && nullable
+		switch value.(type) {
+		case string:
+			ok = ok || kind == "string"
+		case float64:
+			ok = ok || kind == "number"
+		case map[string]any:
+			ok = ok || kind == "object"
+		case []any:
+			ok = ok || kind == "array"
+		}
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// fits reports whether rec holds a value in the range of each key of Record
+// format in contract.md, and the run ID of its file, so that no reader uses
+// a record that it would misread.
 func fits(rec *Record, id string) bool {
 	if rec.RunID != id || rec.Path == "" || rec.NclyVersion == "" || rec.Attempts < 1 ||
 		!isTime(rec.StartedAt) || !isTime(rec.UpdatedAt) ||

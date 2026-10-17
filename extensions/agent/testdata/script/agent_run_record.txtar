@@ -76,8 +76,8 @@ chmod 600 $RUNS/r4.json
 cmp $RUNS/r4.json version2.json
 grep -count=3 '(?m)^exec ' $TMPDIR/task.log
 
-# So does a record that lacks a key of Record format, and one whose run_id is not the ID of its
-# file
+# So does a record that lacks a key of Record format, even a nested key that may be null, one
+# that holds null where a string belongs, and one whose run_id is not the ID of its file
 cp partial.json $RUNS/r6.json
 exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r6 --json
 answer stderr RESUME_UNSAFE
@@ -87,6 +87,14 @@ cp $RUNS/r1.json $RUNS/r7.json
 exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r7 --json
 answer stderr RESUME_UNSAFE
 stderr '"message":"Cannot read the record '${RUNS@R}'/r7\.json, so this call started no task\."'
+cp nostart.json $RUNS/r8.json
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r8 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the record '${RUNS@R}'/r8\.json, so this call started no task\."'
+cp nulltool.json $RUNS/r9.json
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r9 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the record '${RUNS@R}'/r9\.json, so this call started no task\."'
 grep -count=3 '(?m)^exec ' $TMPDIR/task.log
 
 # A record that holds the ID starts no second task: this build cannot answer from it yet
@@ -126,6 +134,10 @@ grep -count=3 '(?m)^exec ' $TMPDIR/task.log
 {"format_version":2,"run_id":"r4"}
 -- partial.json --
 {"format_version":1,"run_id":"r6"}
+-- nostart.json --
+{"format_version":1,"run_id":"r8","path":"agent run","status":"running","started_at":"2026-10-17T00:00:00Z","updated_at":"2026-10-17T00:00:00Z","ncly_version":"v0.0.1","attempts":1,"inputs":{},"resolved":{},"tools":{"codex":"0.163.0"},"items":[{"key":"task","output_dir":null,"steps":[{"id":"codex","effect":"paid","status":"pending","finished_at":null,"artifacts":[],"error":null}]}]}
+-- nulltool.json --
+{"format_version":1,"run_id":"r9","path":"agent run","status":"running","started_at":"2026-10-17T00:00:00Z","updated_at":"2026-10-17T00:00:00Z","ncly_version":"v0.0.1","attempts":1,"inputs":{},"resolved":{},"tools":{"codex":null},"items":[{"key":"task","output_dir":null,"steps":[{"id":"codex","effect":"paid","status":"pending","started_at":null,"finished_at":null,"artifacts":[],"error":null}]}]}
 -- bin/codex --
 #!/bin/sh
 if [ "$1" = --version ]; then
