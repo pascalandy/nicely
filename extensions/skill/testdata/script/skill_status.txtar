@@ -31,7 +31,7 @@ schema status.json describe.json schema
 exec ncly doctor skill --json
 cmp stdout status.json
 exec ncly skill status
-stdout '^warn  skill\.names  The skill in '${WORK@R}'/skills/wrongdir is named right, not wrongdir\.$'
+stdout '^warn  skill\.names           The skill in '${WORK@R}'/skills/wrongdir is named right, not wrongdir\.$'
 exec ncly --lang en-XA skill status
 pseudo stdout skill.sources skill.names skill.files
 

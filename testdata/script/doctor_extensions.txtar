@@ -32,9 +32,9 @@ stdout '"checks":\[\{"id":"core\.config",.*\},\{"id":"extensions\.auth",'
 
 # Without --json, each entry is one line, with the hint of the failed one under it
 exits 78 ncly doctor extensions
-stdout '^pass  extensions\.hello  hello runs from '${DATA@R}'/ncly-hello\.$'
-stdout '^fail  extensions\.broken  The extension broken cannot run: '
-stdout '^      hint: '
+stdout '^pass  extensions\.hello     hello runs from '${DATA@R}'/ncly-hello\.$'
+stdout '^fail  extensions\.broken    The extension broken cannot run: '
+stdout '^      EXTENSION_INVALID    hint: '
 ! stderr .
 exits 78 ncly --lang en-XA doctor extensions
 pseudo stdout extensions.auth extensions.broken extensions.describe extensions.hello extensions.skill

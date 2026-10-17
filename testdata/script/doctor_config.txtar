@@ -21,7 +21,7 @@ stdout '"checks":\[\{"id":"core\.config","component":"core","status":"warn","cod
 ! stdout 'greeting|away|later|"pass"'
 ! stderr .
 exec ncly doctor core
-stdout '\Awarn  core\.config  '${CFG@R}'/config\.toml holds the unknown key colour\.\n      hint: Remove or rename colour in '${CFG@R}'/config\.toml\.\n'
+stdout '\Awarn  core\.config         '${CFG@R}'/config\.toml holds the unknown key colour\.\n      CONFIG_UNKNOWN_KEY  hint: Remove or rename colour in '${CFG@R}'/config\.toml\.\n'
 ! stderr .
 exec ncly --lang en-XA doctor core
 pseudo stdout core.config colour hello.volume describe future hello.extra

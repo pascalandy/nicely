@@ -14,7 +14,7 @@ stdout '"warnings":\[\{"code":"SKILL_SHADOWED","message":"The skill dup in '${WO
 ! stderr .
 
 exec ncly skill list
-stdout '^dup     Use the Zed copy\.$'
+stdout '^dup:     Use the Zed copy\.$'
 stderr '^warning\[SKILL_SHADOWED\]: The skill dup in '
 exec ncly --lang en-XA skill list
 pseudo stderr

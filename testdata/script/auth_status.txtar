@@ -91,7 +91,7 @@ stdout '"keychain":"unavailable","services":\[\{"service":"deepgram","configured
 stdout '\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE",'
 grep -count=2 '"call":"get"' test-keychain.jsonl
 exits 78 ncly auth status
-stdout '\Akeychain  The keychain does not answer, so keys come only from the environment\.\n'
+stdout '\Akeychain  unavailable\n\n'
 
 # A signal during a keychain call reaches the program that the call started, as go-keyring
 # starts security on macOS, and status exits 143 with TERMINATED once that program ends
@@ -138,14 +138,17 @@ exits 78 ncly auth status --json
 -- seed.jsonl --
 {"call":"set","account":"openai","key":"sk-from-keychain"}
 -- found.txt --
-keychain  The keychain answers.
-deepgram  The key comes from DEEPGRAM_API_KEY.
-openai    The key comes from the keychain.
+keychain  available
+
+deepgram  env
+openai    keychain
 -- missing.txt --
-keychain  The keychain answers.
-deepgram  No key for deepgram in DEEPGRAM_API_KEY or the keychain.
+keychain  available
+
+deepgram  none
+          fail[AUTH_MISSING] No key for deepgram in DEEPGRAM_API_KEY or the keychain.
           hint: ncly auth login deepgram
-openai    The key comes from the keychain.
+openai    keychain
 -- .local/share/nicely/extensions/ncly-hello --
 #!/bin/sh
 echo "$0" >> "$WORK/ran"

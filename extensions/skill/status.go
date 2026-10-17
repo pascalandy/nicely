@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
-	"unicode/utf8"
+
+	"github.com/pascalandy/nicely/sdk/tui"
 
 	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -125,21 +125,16 @@ func status(ctx context.Context, call extension.Call) contract.Outcome {
 	return contract.Outcome{Data: r}
 }
 
-// writeChecks prints one line per check, as ncly doctor does: its status,
-// its id, and its message, then its hint under the id.
+// writeChecks prints the report as ncly doctor does, in the look of sdk/tui.
 func writeChecks(w io.Writer, p *i18n.Printer, checks []check) {
 	labels := map[string]string{"pass": p.T("skill.status_pass"), "warn": p.T("skill.status_warn")}
-	width := 0
-	for _, label := range labels {
-		width = max(width, utf8.RuneCountInString(label))
+	rows := make([]tui.Check, len(checks))
+	for i, c := range checks {
+		rows[i] = tui.Check{Status: c.Status, Label: labels[c.Status], ID: c.ID, Message: c.Message, Code: string(c.Code), Hint: c.Hint}
 	}
-	var b strings.Builder
-	for _, c := range checks {
-		label := labels[c.Status]
-		b.WriteString(label + strings.Repeat(" ", width-utf8.RuneCountInString(label)) + "  " + c.ID + "  " + c.Message + "\n")
-		if c.Hint != "" {
-			b.WriteString(strings.Repeat(" ", width+2) + p.T("error.hint") + " " + c.Hint + "\n")
-		}
-	}
-	_, _ = io.WriteString(w, b.String())
+	_, _ = io.WriteString(tui.Output(w, noColor()), tui.Checks(rows, p.T("error.hint")))
 }
+
+// noColor reports whether the human text goes without styles: core passes
+// the resolved --no-color as NO_COLOR, as Global flags in contract.md says.
+func noColor() bool { return os.Getenv("NO_COLOR") != "" }

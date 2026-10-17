@@ -462,19 +462,43 @@ description = "Help page and ncly describe: summary of `ncly auth status`, which
 other = "List the keys that extensions need, and where each one comes from"
 
 ["auth.keychain_available"]
-description = "ncly auth status, human text: the line of the OS keychain, which answered every call of the command. It follows the word keychain in the first column."
+description = "ncly doctor: the message of the auth.keychain check, when the OS keychain answered every call of the command."
 other = "The keychain answers."
 
 ["auth.keychain_unavailable"]
-description = "ncly auth status, human text: the line of the OS keychain, which refused a call of the command or did not answer it in time, so keys come only from environment variables. It follows the word keychain in the first column."
+description = "ncly doctor: the message of the auth.keychain check, when the OS keychain refused a call of the command or did not answer it in time, so keys come only from environment variables."
 other = "The keychain does not answer, so keys come only from the environment."
 
+["auth.state_available"]
+description = "ncly auth status, human text: the state of the OS keychain after the label keychain, when it answers."
+other = "available"
+
+["auth.state_unavailable"]
+description = "ncly auth status, human text: the state of the OS keychain after the label keychain, when it does not answer, so keys come only from the environment."
+other = "unavailable"
+
+["auth.source_env"]
+description = "ncly auth status, human text: the column after a service, when its key comes from its environment variable, such as DEEPGRAM_API_KEY."
+other = "env"
+
+["auth.source_keychain"]
+description = "ncly auth status, human text: the column after a service, when its key comes from the OS keychain."
+other = "keychain"
+
+["auth.source_none"]
+description = "ncly auth status, human text: the column after a service, when neither its variable nor the OS keychain holds its key."
+other = "none"
+
+["auth.fail_label"]
+description = "ncly auth status, human text: the label of a service's problem, under its line, before the message. {{.Code}} is an error code, such as AUTH_MISSING, which stays in English."
+other = "fail[{{.Code}}]"
+
 ["auth.from_env"]
-description = "ncly auth status, human text: the key of a service comes from its environment variable, such as DEEPGRAM_API_KEY. It follows the service name in the first column. {{.Variable}} is the variable, and the key itself never appears."
+description = "ncly doctor: the message of the check of a service, whose key comes from its environment variable, such as DEEPGRAM_API_KEY. {{.Variable}} is the variable, and the key itself never appears."
 other = "The key comes from {{.Variable}}."
 
 ["auth.from_keychain"]
-description = "ncly auth status, human text: the key of a service comes from the OS keychain. It follows the service name in the first column, and the key itself never appears."
+description = "ncly doctor: the message of the check of a service, whose key comes from the OS keychain. The key itself never appears."
 other = "The key comes from the keychain."
 
 ["auth.missing"]

@@ -1,0 +1,190 @@
+# On a terminal, skill list, auth status, and the doctor report use the styles of sdk/tui,
+# and a pipe gets the same text without them. In interactive mode, ncly skill view renders its
+# Markdown through Glamour, in the style of the help, and a pipe gets the file as it is. pty
+# runs a command on a pseudo-terminal of 80 columns and prints what the terminal showed, and
+# plain writes that text without its escape sequences. The test keychain is the file
+# $HOME/test-keychain.jsonl, which holds no key here.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+cp config.toml $CFG/config.toml
+env DATA=$WORK/.local/share/nicely/extensions
+chmod 755 $DATA/ncly-hello
+env DEEPGRAM_API_KEY=dg-from-env
+env OPENAI_API_KEY=
+env TERM=xterm-256color
+
+# skill list prints each name and a colon, then its description, aligned as the help aligns
+# its commands. On a terminal, the names are bold, and the text is the same
+exec ncly skill list
+cmpenv stdout list.txt
+! stdout '\x1b'
+exec pty none.txt ncly skill list
+stdout '^\x1b\[1malpha:\x1b\[m   Use when '
+stdout '^\x1b\[1mnicely:\x1b\[m  Use before '
+plain stdout shown.txt
+cmpenv shown.txt list.txt
+
+# auth status prints the keychain and its state, an empty line, then each service in bold and
+# its source, with a problem under its line, in the column of its source, with the label
+# styles of an error
+exits 78 ncly auth status
+cmp stdout status.txt
+! stdout '\x1b'
+exits 78 pty none.txt ncly auth status
+stdout '^\x1b\[1mdeepgram\x1b\[m  env$'
+stdout '^          \x1b\[1;31mfail\[AUTH_MISSING\]\x1b\[m No key for openai '
+stdout '^          \x1b\[1;36mhint:\x1b\[m ncly auth login openai$'
+plain stdout shown.txt
+cmp shown.txt status.txt
+
+# Without a service, the keychain line ends the report
+env XDG_DATA_HOME=$WORK/empty
+exec ncly auth status
+cmp stdout bare.txt
+env XDG_DATA_HOME=
+
+# The doctor report aligns each check's status, id, and message, with the code and the hint of
+# a problem under it. The status is bold, green for pass, yellow for warn, and red for fail,
+# and the code takes the color of its status
+cp unknown.toml $CFG/config.toml
+exec ncly doctor core
+cmpenv stdout doctor-core.txt
+exits 78 ncly doctor auth
+cmp stdout doctor-auth.txt
+! stdout '\x1b'
+exec pty none.txt ncly doctor core
+stdout '^\x1b\[1;33mwarn\x1b\[m  core\.config         '
+stdout '^      \x1b\[33mCONFIG_UNKNOWN_KEY\x1b\[m  \x1b\[1;36mhint:\x1b\[m Remove or rename colour '
+plain stdout shown.txt
+cmpenv shown.txt doctor-core.txt
+exits 78 pty none.txt ncly doctor auth
+stdout '^\x1b\[1;32mpass\x1b\[m  auth\.keychain  '
+stdout '^\x1b\[1;31mfail\x1b\[m  auth\.openai    '
+stdout '^      \x1b\[31mAUTH_MISSING\x1b\[m   \x1b\[1;36mhint:\x1b\[m ncly auth login openai$'
+plain stdout shown.txt
+cmp shown.txt doctor-auth.txt
+cp config.toml $CFG/config.toml
+
+# A pipe gets the styles when CLICOLOR_FORCE asks for them, and NO_COLOR or --no-color turns
+# them off, even on a terminal
+env CLICOLOR_FORCE=1
+exits 78 ncly auth status
+stdout '\x1b\[1mdeepgram\x1b\[m'
+env NO_COLOR=1
+exits 78 ncly auth status
+! stdout '\x1b'
+env NO_COLOR= CLICOLOR_FORCE=
+exits 78 pty none.txt ncly --no-color doctor auth
+! stdout '\x1b\[[0-9;]*m'
+
+# In interactive mode, skill view shows the folder, with folder in bright black, then the
+# Markdown without its frontmatter: headings in bold uppercase, code in cyan, and dashes for
+# bullets, where code in a heading keeps its case
+exec pty none.txt ncly skill view alpha
+stdout '\A\x1b\[90mfolder\x1b\[m  '${WORK@R}'/skills/alpha\n\n'
+stdout '^\x1b\[1mALPHA\x1b\[m$'
+stdout '^  Run \x1b\[36mncly doctor\x1b\[m first\.$'
+stdout '^  - Set \x1b\[36mNCLY_NO_INPUT=1\x1b\[m$'
+stdout '^\x1b\[1mUSE \x1b\[m\x1b\[36;1m--dry-run\x1b\[m'
+! stdout 'skill-dir'
+! stdout 'name: alpha'
+! stdout '^---'
+! stdout '##'
+
+# Without color, the view keeps the backticks of code, so it stays apart from the prose, and
+# shows no style
+exec pty none.txt ncly --no-color skill view alpha
+stdout '^folder  '${WORK@R}'/skills/alpha$'
+stdout '^ALPHA$'
+stdout '^  Run `ncly doctor` first\.$'
+stdout '^USE `--dry-run` FIRST$'
+! stdout '\x1b\[[0-9;]*m'
+
+# A pipe gets the file as it is, after the comment that gives the folder. The bundled skill
+# has no folder, so its view starts with its first heading
+exec ncly skill view alpha
+stdout '\A<!-- skill-dir: '${WORK@R}'/skills/alpha -->\n---\nname: alpha\n'
+exec pty none.txt ncly skill view nicely
+! stdout '\A\x1b\[90mfolder'
+stdout '^\x1b\[1mNICELY\x1b\[m$'
+
+# Under the pseudo-locale, every word of the reports comes from the catalog, and so does the
+# folder label of the view, whose skill keeps the words of its author
+exits 78 pty none.txt ncly --lang en-XA auth status
+pseudo stdout keychain deepgram openai auth login AUTH_MISSING
+exec pty none.txt ncly --lang en-XA skill view alpha
+stdout '\A\x1b\[90m⟦[^⟧]+⟧\x1b\[m  '${WORK@R}'/skills/alpha\n'
+
+-- none.txt --
+-- config.toml --
+[skill]
+paths = ["~/skills"]
+-- unknown.toml --
+colour = "blue"
+
+[skill]
+paths = ["~/skills"]
+-- list.txt --
+alpha:   Use when the user asks for alpha.
+beta:    Use when the user asks for beta, which has a long description that a terminal wraps when it is too long for the line.
+nicely:  Use before running any ncly command.
+-- status.txt --
+keychain  available
+
+deepgram  env
+openai    none
+          fail[AUTH_MISSING] No key for openai in OPENAI_API_KEY or the keychain.
+          hint: ncly auth login openai
+-- bare.txt --
+keychain  available
+-- doctor-core.txt --
+warn  core.config         $WORK/.config/nicely/config.toml holds the unknown key colour.
+      CONFIG_UNKNOWN_KEY  hint: Remove or rename colour in $WORK/.config/nicely/config.toml.
+-- doctor-auth.txt --
+pass  auth.keychain  The keychain answers.
+pass  auth.deepgram  The key comes from DEEPGRAM_API_KEY.
+fail  auth.openai    No key for openai in OPENAI_API_KEY or the keychain.
+      AUTH_MISSING   hint: ncly auth login openai
+-- skills/alpha/SKILL.md --
+---
+name: alpha
+description: Use when the user asks for alpha.
+---
+
+# Alpha
+
+Run `ncly doctor` first.
+
+- Set `NCLY_NO_INPUT=1`
+
+## Use `--dry-run` first
+
+Then run the command.
+-- skills/beta/SKILL.md --
+---
+name: beta
+description: Use when the user asks for beta, which has a long description that a terminal wraps when it is too long for the line.
+---
+
+# Beta
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"

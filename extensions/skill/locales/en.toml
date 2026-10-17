@@ -133,3 +133,7 @@ other = "The skill of the extension {{.Domain}} in {{.Path}} is named {{.Name}},
 ["skill.domain_mismatch_hint"]
 description = "Hint under skill.domain_mismatch: what the user does next. {{.File}} is the path of the SKILL.md, and {{.Domain}} the extension's domain."
 other = "Rename the skill in {{.File}} to {{.Domain}}."
+
+["skill.folder"]
+description = "ncly skill view in a terminal: the label of the first line, before the folder of the skill, which its relative paths start from."
+other = "folder"

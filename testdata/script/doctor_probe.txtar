@@ -44,7 +44,7 @@ schema probe.json describe.json schema
 exits 78 ncly doctor --json
 stdout '"checks":\[\{"id":"core\.config",.*\{"id":"extensions\.hello",.*\{"id":"hello\.badtool",'
 exits 78 ncly doctor hello
-stdout '^fail  hello\.nothere  nothere is not installed\.\n      hint: (sudo apt|brew) install nothere$'
+stdout '^fail  hello\.nothere   nothere is not installed\.\n      PREREQ_MISSING  hint: (sudo apt|brew) install nothere$'
 exits 78 ncly --lang en-XA doctor hello
 pseudo stdout hello.badtool hello.errtool hello.hangtool hello.newtool hello.nothere hello.oldtool hello.paconly hello.silent hello.plain badtool errtool hangtool newtool nothere oldtool paconly silent plain --version sudo apt brew install
 ! exists ran

@@ -140,7 +140,7 @@ pseudo stdout auth.keychain auth.deepgram auth.openai auth login deepgram
 -- pass.txt --
 pass  auth.keychain  The keychain answers.
 pass  auth.deepgram  The key comes from DEEPGRAM_API_KEY.
-pass  auth.openai  The key comes from the keychain.
+pass  auth.openai    The key comes from the keychain.
 -- bin/plain --
 #!/bin/sh
 exit 0

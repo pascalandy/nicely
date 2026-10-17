@@ -8,7 +8,9 @@ import (
 	"os"
 	"slices"
 	"strings"
-	"unicode/utf8"
+
+	"github.com/charmbracelet/x/ansi"
+	"github.com/pascalandy/nicely/sdk/tui"
 
 	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
@@ -68,7 +70,8 @@ type serviceEntry struct {
 	Message    string        `json:"message,omitempty"`
 	Hint       string        `json:"hint,omitempty"`
 	Next       []string      `json:"next,omitempty"`
-	// found is the message of an entry whose key was found, for human text.
+	// found is the message of an entry whose key was found, for the check of
+	// its service in ncly doctor.
 	found string
 }
 
@@ -174,28 +177,35 @@ func serviceVerdict(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, 
 // DEEPGRAM_API_KEY, as Keys in contract.md names it.
 func keyVariable(service string) string { return strings.ToUpper(service) + "_API_KEY" }
 
-// writeServices prints the report as text: the keychain first, then one
-// line per service, with the hint of a problem under it.
+// writeServices prints the report as text: the keychain and its state, an
+// empty line, then one line per service, in aligned columns, its name in
+// bold, then its source. A service's problem follows its line, in the column
+// of its source, with the label styles of an error.
 func writeServices(w io.Writer, p *i18n.Printer, r statusReport) error {
-	width := utf8.RuneCountInString(sourceKeychain)
+	width := ansi.StringWidth(sourceKeychain)
 	for _, s := range r.Services {
-		width = max(width, utf8.RuneCountInString(s.Service))
+		width = max(width, ansi.StringWidth(s.Service))
 	}
-	pad := func(s string) string { return s + strings.Repeat(" ", width-utf8.RuneCountInString(s)) }
-	var b strings.Builder
-	state := p.T("auth.keychain_available")
+	state := p.T("auth.state_available")
 	if r.Keychain != "available" {
-		state = p.T("auth.keychain_unavailable")
+		state = p.T("auth.state_unavailable")
 	}
-	b.WriteString(pad(sourceKeychain) + "  " + state + "\n")
+	sources := map[string]string{
+		sourceEnv:      p.T("auth.source_env"),
+		sourceKeychain: p.T("auth.source_keychain"),
+		sourceNone:     p.T("auth.source_none"),
+	}
+	indent := strings.Repeat(" ", width+2)
+	var b strings.Builder
+	b.WriteString(sourceKeychain + strings.Repeat(" ", width-ansi.StringWidth(sourceKeychain)+2) + state + "\n")
+	if len(r.Services) > 0 {
+		b.WriteString("\n")
+	}
 	for _, s := range r.Services {
-		message := s.found
+		b.WriteString(tui.Bold(s.Service) + strings.Repeat(" ", width-ansi.StringWidth(s.Service)+2) + sources[s.Source] + "\n")
 		if s.Code != "" {
-			message = s.Message
-		}
-		b.WriteString(pad(s.Service) + "  " + message + "\n")
-		if s.Hint != "" {
-			b.WriteString(strings.Repeat(" ", width+2) + p.T("error.hint") + " " + s.Hint + "\n")
+			b.WriteString(indent + tui.ErrorLabel(p.T("auth.fail_label", map[string]any{"Code": s.Code})) + " " + s.Message + "\n")
+			b.WriteString(indent + tui.HintLabel(p.T("error.hint")) + " " + s.Hint + "\n")
 		}
 	}
 	_, err := io.WriteString(w, b.String())

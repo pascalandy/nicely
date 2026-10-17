@@ -21,7 +21,7 @@ stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/unreadable/SKILL\
 ! stderr .
 
 exec ncly skill list
-stdout '^good    Use when all is well\.$'
+stdout '^good:    Use when all is well\.$'
 stderr '^warning\[SKILL_INVALID\]: '
 exec ncly --lang en-XA skill list
 pseudo stderr

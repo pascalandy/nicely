@@ -16,7 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode/utf8"
+
+	"github.com/pascalandy/nicely/sdk/tui"
 
 	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
@@ -585,26 +586,19 @@ func statusChecks(p *i18n.Printer, e *extension, raw []json.RawMessage, exit int
 	return checks, ""
 }
 
-// writeChecks prints one line per check: its status, its id, and its
-// message, then its hint on the next line, under the id.
+// writeChecks prints the report in the look of sdk/tui: each check's status,
+// id, and message in aligned columns, then the code and the hint of a
+// problem under it.
 func writeChecks(w io.Writer, p *i18n.Printer, checks []check) error {
 	labels := map[string]string{
 		statusPass: p.T("doctor.status_pass"),
 		statusWarn: p.T("doctor.status_warn"),
 		statusFail: p.T("doctor.status_fail"),
 	}
-	width := 0
-	for _, label := range labels {
-		width = max(width, utf8.RuneCountInString(label))
+	rows := make([]tui.Check, len(checks))
+	for i, c := range checks {
+		rows[i] = tui.Check{Status: c.Status, Label: labels[c.Status], ID: c.ID, Message: c.Message, Code: string(c.Code), Hint: c.Hint}
 	}
-	pad := func(s string) string { return s + strings.Repeat(" ", width-utf8.RuneCountInString(s)) }
-	var b strings.Builder
-	for _, c := range checks {
-		b.WriteString(pad(labels[c.Status]) + "  " + c.ID + "  " + c.Message + "\n")
-		if c.Hint != "" {
-			b.WriteString(strings.Repeat(" ", width+2) + p.T("error.hint") + " " + c.Hint + "\n")
-		}
-	}
-	_, err := io.WriteString(w, b.String())
+	_, err := io.WriteString(w, tui.Checks(rows, p.T("error.hint")))
 	return err
 }

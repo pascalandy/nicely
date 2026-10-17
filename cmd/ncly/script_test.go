@@ -94,6 +94,7 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 			"snapshot":  cmdSnapshot,
 			"unchanged": cmdUnchanged,
 			"pseudo":    cmdPseudo,
+			"plain":     cmdPlain,
 			"waitfile":  cmdWaitfile,
 			"gone":      cmdGone,
 			"term":      cmdTerm,

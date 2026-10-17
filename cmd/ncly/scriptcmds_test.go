@@ -299,6 +299,16 @@ func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
+// cmdPlain writes a stream without its escape sequences to a file, so a
+// scenario compares what a terminal shows with what a pipe gets:
+// plain <stdout|stderr> <file>
+func cmdPlain(ts *testscript.TestScript, neg bool, args []string) {
+	if neg || len(args) != 2 || (args[0] != "stdout" && args[0] != "stderr") {
+		ts.Fatalf("usage: plain <stdout|stderr> <file>")
+	}
+	ts.Check(os.WriteFile(ts.MkAbs(args[1]), []byte(ansi.Strip(ts.ReadFile(args[0]))), 0o644))
+}
+
 // codeForm is the form of an extension's code, such as HELLO_GRUMPY.
 var codeForm = regexp.MustCompile(`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$`)
 

@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pascalandy/nicely/sdk/tui"
+
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -450,7 +452,7 @@ func (a *answered) Error() string { return "answered" }
 // answer with --json, and its warnings either way.
 func (a *answered) print(p *i18n.Printer, g command.Globals, out *command.Output, stderr io.Writer) int {
 	if !g.JSON {
-		if err := a.text(out); err != nil || out.Err() != nil {
+		if err := a.text(tui.Output(out, g.NoColor)); err != nil || out.Err() != nil {
 			return command.Report(p, g, contract.Core, command.WriteFailure(p), out, stderr)
 		}
 	}

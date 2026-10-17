@@ -24,7 +24,16 @@ var (
 	errorLabel   = ansi.Style{}.Bold().ForegroundColor(ansi.Red)
 	warningLabel = ansi.Style{}.Bold().ForegroundColor(ansi.Yellow)
 	hintLabel    = ansi.Style{}.Bold().ForegroundColor(ansi.Cyan)
+	muted        = ansi.Style{}.ForegroundColor(ansi.BrightBlack)
 )
+
+// Bold, ErrorLabel, HintLabel, and Muted style a word of a report as the help
+// and the error block do: a name in bold, a problem's label in bold red,
+// hint: in bold cyan, and a label of lesser weight in bright black.
+func Bold(s string) string       { return heading.Styled(s) }
+func ErrorLabel(s string) string { return errorLabel.Styled(s) }
+func HintLabel(s string) string  { return hintLabel.Styled(s) }
+func Muted(s string) string      { return muted.Styled(s) }
 
 // Output wraps a stream so that styles become plain text when color is off.
 // noColor turns color off even with CLICOLOR_FORCE. Otherwise a stream that
@@ -97,7 +106,7 @@ func Help(p HelpPage) string {
 	}
 	block(p.UsageTitle, []string{p.Usage})
 	for _, s := range p.Sections {
-		block(s.Title, columns(s))
+		block(s.Title, columns(s.Entries, s.Colon, ansi.Style{}))
 	}
 	var examples []string
 	for _, e := range p.Examples {
@@ -107,21 +116,66 @@ func Help(p HelpPage) string {
 	return b.String()
 }
 
-func columns(s Section) []string {
-	names := make([]string, len(s.Entries))
+// Names renders entries as the help renders its commands: each name and a
+// colon, in bold, then its summary, aligned after the widest name, so the
+// terminal wraps a long summary.
+func Names(entries []Entry) string {
+	return strings.Join(columns(entries, true, heading), "\n") + "\n"
+}
+
+func columns(entries []Entry, colon bool, style ansi.Style) []string {
+	names := make([]string, len(entries))
 	width := 0
-	for i, e := range s.Entries {
+	for i, e := range entries {
 		names[i] = e.Name
-		if s.Colon {
+		if colon {
 			names[i] += ":"
 		}
 		width = max(width, ansi.StringWidth(names[i]))
 	}
-	lines := make([]string, len(s.Entries))
-	for i, e := range s.Entries {
-		lines[i] = names[i] + strings.Repeat(" ", width-ansi.StringWidth(names[i])+2) + e.Summary
+	lines := make([]string, len(entries))
+	for i, e := range entries {
+		lines[i] = style.Styled(names[i]) + strings.Repeat(" ", width-ansi.StringWidth(names[i])+2) + e.Summary
 	}
 	return lines
+}
+
+// Check is one finding of a report, such as a check of ncly doctor, with its
+// text in the active language.
+type Check struct {
+	// Status is pass, warn, or fail, and Label its word in the active
+	// language.
+	Status, Label string
+	ID, Message   string
+	// Code and Hint stay empty for a check that passes.
+	Code, Hint string
+}
+
+// The status styles of a check, as ncly doctor in core-spec.md describes
+// them.
+var statusColors = map[string]ansi.BasicColor{"pass": ansi.Green, "warn": ansi.Yellow, "fail": ansi.Red}
+
+// Checks renders a report in three aligned columns: each check's status, in
+// bold and in its color, its id, and its message. A check with a problem adds
+// a line under it, with its code, in the color of its status, in the column
+// of the id, then the hint label, such as hint:, and its hint in the column
+// of the message.
+func Checks(checks []Check, hint string) string {
+	status, id := 0, 0
+	for _, c := range checks {
+		status = max(status, ansi.StringWidth(c.Label))
+		id = max(id, ansi.StringWidth(c.ID), ansi.StringWidth(c.Code))
+	}
+	pad := func(s string, width int) string { return s + strings.Repeat(" ", width-ansi.StringWidth(s)+2) }
+	var b strings.Builder
+	for _, c := range checks {
+		color := statusColors[c.Status]
+		b.WriteString(ansi.Style{}.Bold().ForegroundColor(color).Styled(c.Label) + strings.Repeat(" ", status-ansi.StringWidth(c.Label)+2) + pad(c.ID, id) + c.Message + "\n")
+		if c.Hint != "" {
+			b.WriteString(strings.Repeat(" ", status+2) + ansi.Style{}.ForegroundColor(color).Styled(c.Code) + strings.Repeat(" ", id-ansi.StringWidth(c.Code)+2) + hintLabel.Styled(hint) + " " + c.Hint + "\n")
+		}
+	}
+	return b.String()
 }
 
 // Problems renders errors, then warnings. Each one leads with a label that
