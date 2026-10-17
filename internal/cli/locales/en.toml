@@ -821,6 +821,10 @@ other = "Read {{.File}} before you run the command again."
 description = "Message of KEY_NOT_GRANTED in ncly auth status and in the check of a service in ncly doctor: the key exists, and the extension of a domain needs it, but no human granted it to that extension. {{.Service}} is the service, such as deepgram, and {{.Domain}} the domain, such as transcript."
 other = "The key of {{.Service}} is not granted to {{.Domain}}."
 
+["auth.optional_missing"]
+description = "Report of `ncly doctor`: message of the check of a service that passes although neither its variable nor the keychain gives its key, because each extension that declares the service marks its key optional and runs without it. {{.Service}} is the service, such as anthropic."
+other = "No key for {{.Service}}, and each extension that declares it runs without it."
+
 ["auth.grant_granted"]
 description = "ncly auth status, human text: one grant of a service, after its source, when a human granted the key to the extension of the domain. {{.Domain}} is the domain, such as transcript."
 other = "{{.Domain}}: granted"

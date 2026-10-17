@@ -171,8 +171,9 @@ func authStatus(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, exte
 // from the keychain, which it reads only when the variable is empty, then,
 // with judgeGrants, the grant of each extension that needs the key. A
 // missing key reports its own code alone, because the key comes before its
-// grants. It returns the error of ctx when ctx ends before the keychain
-// answers.
+// grants, and no code when each extension that declares the service marks
+// its key optional. It returns the error of ctx when ctx ends before the
+// keychain answers.
 func serviceVerdict(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, service string, extensions []*extension, grants []grant, judgeGrants bool) (serviceEntry, error) {
 	data := map[string]any{"Service": service, "Variable": keyVariable(service)}
 	entry := serviceEntry{Service: service, Source: sourceNone, Grants: serviceGrants(service, extensions, grants)}
@@ -181,14 +182,18 @@ func serviceVerdict(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, 
 		return entry, err
 	}
 	entry.Source = source
-	switch code {
-	case contract.KeyringUnavailable:
+	needed := slices.ContainsFunc(entry.Grants, func(g grantEntry) bool { return !g.Optional })
+	switch {
+	case code == "":
+		entry.Configured, entry.found = true, p.T("auth.from_"+source, data)
+	case !needed:
+		entry.found = p.T("auth.optional_missing", data)
+		return entry, nil
+	case code == contract.KeyringUnavailable:
 		entry.Code, entry.Message, entry.Hint = code, p.T("auth.keyring_unavailable", data), p.T("auth.keyring_unavailable_hint", data)
-	case contract.AuthMissing:
+	case code == contract.AuthMissing:
 		login := []string{"ncly", "auth", "login", service}
 		entry.Code, entry.Message, entry.Hint, entry.Next = code, p.T("auth.missing", data), strings.Join(login, " "), login
-	case "":
-		entry.Configured, entry.found = true, p.T("auth.from_"+source, data)
 	}
 	if code != "" || !judgeGrants {
 		return entry, nil
@@ -216,7 +221,7 @@ func notGranted(p *i18n.Printer, service, domain string) contract.Problem {
 
 // serviceGrants lists, in name order, the grant of each valid extension
 // that declares a service: whether a human granted the key to that
-// extension at its source.
+// extension at its source, and whether its manifest marks the key optional.
 func serviceGrants(service string, extensions []*extension, grants []grant) []grantEntry {
 	entries := []grantEntry{}
 	for _, e := range extensions {
@@ -224,7 +229,7 @@ func serviceGrants(service string, extensions []*extension, grants []grant) []gr
 			continue
 		}
 		g := findGrant(grants, service, e.domain)
-		entries = append(entries, grantEntry{Domain: e.domain, Granted: g != nil && sameSource(g.Path, sourceOf(e))})
+		entries = append(entries, grantEntry{Domain: e.domain, Granted: g != nil && sameSource(g.Path, sourceOf(e)), Optional: e.manifest.Optional(service)})
 	}
 	slices.SortFunc(entries, func(a, b grantEntry) int { return strings.Compare(a.Domain, b.Domain) })
 	return entries

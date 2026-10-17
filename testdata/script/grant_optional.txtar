@@ -1,0 +1,182 @@
+# A manifest marks a key optional in its keys table when each command that declares the
+# service runs without it, as a harness that falls back to its own login. The key follows the
+# rules of Grants: the command runs without the key or its grant, and NCLY_MISSING_KEYS names
+# it. status lists it with optional true and stays ok, and doctor's auth.<service> passes with
+# a message that says the key is missing. agent marks anthropic optional, and writes the names
+# of the key variables that it receives, each with the SHA-256 of its value, never the key,
+# then NCLY_MISSING_KEYS, to $WORK/agent.log. review declares anthropic and needs it. The test
+# keychain is the file $HOME/test-keychain.jsonl.
+env STATE=$WORK/.local/state/nicely
+chmod 755 bin/ncly-agent
+chmod 755 more/ncly-review
+env PATH=$WORK/bin:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env ANTHROPIC_API_KEY=
+env NCLY_MISSING_KEYS=
+mkdir $STATE
+
+# describe gives each key that a command requires with optional
+exec ncly describe 'agent run' --json
+stdout '"requires":\{"bins":\[\],"keys":\[\{"name":"anthropic","optional":true\}\]\}'
+cp stdout describe-run.json
+exec ncly describe describe --json
+cp stdout describe-describe.json
+schema describe-run.json describe-describe.json schema
+
+# Without its key or its grant, status lists the service with optional true and stays ok, and
+# doctor passes it with a message that says the key is missing
+exec ncly auth status --json
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"available","services":\[\{"service":"anthropic","configured":false,"source":"none","grants":\[\{"domain":"agent","granted":false,"optional":true\}\]\}\]\}\n\z'
+! stderr .
+cp stdout optional.json
+exec ncly describe 'auth status' --json
+cp stdout describe-status.json
+schema optional.json describe-status.json schema
+exec ncly auth status
+cmp stdout optional.txt
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass",[^}]*\},\{"id":"auth\.grants","component":"auth","status":"pass",[^}]*\},\{"id":"auth\.anthropic","component":"auth","status":"pass","message":"No key for anthropic, and each extension that declares it runs without it\."\}\]\}\n\z'
+
+# The command runs, and NCLY_MISSING_KEYS names the service. A key in the shell without the
+# grant changes no verdict, and never reaches the command
+exec ncly agent run --json
+stdout '\A\{"ok":true,"contract_version":1\}\n\z'
+cmp agent.log want-not-granted.log
+env ANTHROPIC_API_KEY=an-env
+exec ncly auth status --json
+stdout '"services":\[\{"service":"anthropic","configured":true,"source":"env","grants":\[\{"domain":"agent","granted":false,"optional":true\}\]\}\]\}\n\z'
+stdout '\A\{"ok":true,'
+exec ncly doctor auth --json
+stdout '\{"id":"auth\.anthropic","component":"auth","status":"pass","message":"The key comes from ANTHROPIC_API_KEY\."\}'
+exec ncly agent run --json
+cmp agent.log want-not-granted.log
+
+# With its grant, the key reaches the command, and a missing key or an unavailable keychain
+# never stops it
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" agent.tmpl > "$STATE/grants.json"'
+exec ncly agent run --json
+cmp agent.log want-granted.log
+env ANTHROPIC_API_KEY=
+exec ncly agent run --json
+cmp agent.log want-missing.log
+env NCLY_TEST_KEYCHAIN=unavailable
+exec ncly agent run --json
+stdout '\A\{"ok":true,"contract_version":1\}\n\z'
+cmp agent.log want-unavailable.log
+
+# Under an unavailable keychain, status stays ok, and doctor warns about the keychain alone
+exec ncly auth status --json
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"anthropic","configured":false,"source":"none","grants":\[\{"domain":"agent","granted":true,"optional":true\}\]\}\]\}\n\z'
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,'
+stdout '\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY",'
+stdout '\{"id":"auth\.anthropic","component":"auth","status":"pass","message":"No key for anthropic, and each extension that declares it runs without it\."\}'
+
+# Under the pseudo-locale, every word of both reports comes from the catalog
+exec ncly --lang en-XA auth status
+pseudo stdout keychain anthropic agent
+exec ncly --lang en-XA doctor auth
+pseudo stdout auth.keychain auth.grants auth.anthropic KEYRING_ENV_ONLY ANTHROPIC_API_KEY anthropic
+env NCLY_TEST_KEYCHAIN=
+
+# A second extension that declares the same service without marking it optional needs the key:
+# without its grant, status and doctor fail with KEY_NOT_GRANTED for it alone, and without the
+# key, with AUTH_MISSING
+env PATH=$WORK/more:$PATH
+env ANTHROPIC_API_KEY=an-env
+exits 78 ncly auth status --json
+stdout '\{"service":"anthropic","configured":true,"source":"env","code":"KEY_NOT_GRANTED","message":"The key of anthropic is not granted to review\.","hint":"ncly auth grant anthropic review","next":\["ncly","auth","grant","anthropic","review"\],"grants":\[\{"domain":"agent","granted":true,"optional":true\},\{"domain":"review","granted":false,"optional":false\}\]\}'
+exits 78 ncly auth status
+cmp stdout two.txt
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.anthropic","component":"auth","status":"fail","code":"KEY_NOT_GRANTED","message":"The key of anthropic is not granted to review\.","hint":"ncly auth grant anthropic review","next":\["ncly","auth","grant","anthropic","review"\]\}\]\}\n\z'
+! stdout 'not granted to agent'
+exec ncly describe 'review run' --json
+stdout '"keys":\[\{"name":"anthropic","optional":false\}\]'
+env ANTHROPIC_API_KEY=
+exits 78 ncly auth status --json
+stdout '"code":"AUTH_MISSING","message":"No key for anthropic in ANTHROPIC_API_KEY or the keychain\."'
+
+# The log holds digests only, never a key
+! grep 'an-env' agent.log
+
+-- optional.txt --
+keychain   available
+
+anthropic  none  agent: not granted, optional
+-- two.txt --
+keychain   available
+
+anthropic  env  agent: granted, optional, review: not granted
+           fail[KEY_NOT_GRANTED] The key of anthropic is not granted to review.
+           hint: ncly auth grant anthropic review
+-- agent.tmpl --
+{"format_version":1,"grants":[{"service":"anthropic","domain":"agent","path":"@WORK@/bin/ncly-agent","granted_at":"2026-10-17T04:00:00Z"}]}
+-- want-not-granted.log --
+NCLY_MISSING_KEYS=anthropic=KEY_NOT_GRANTED
+-- want-granted.log --
+ANTHROPIC_API_KEY 85d02fed197c0aa86911f688302ffd263c5d5c9036995ebb7b8d5f2973c346ba
+NCLY_MISSING_KEYS unset
+-- want-missing.log --
+NCLY_MISSING_KEYS=anthropic=AUTH_MISSING
+-- want-unavailable.log --
+NCLY_MISSING_KEYS=anthropic=KEYRING_UNAVAILABLE
+-- bin/ncly-agent --
+#!/bin/sh
+# Writes the names of the key variables that it receives, each with the SHA-256 of its value,
+# then NCLY_MISSING_KEYS, to $WORK/agent.log.
+log="$WORK/agent.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+: >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-agent.toml --
+format_version = 1
+contract_version = 1
+domain = "agent"
+
+[[commands]]
+path = "agent"
+summary = "agent.summary"
+
+[[commands]]
+path = "agent run"
+summary = "agent.summary"
+requires = { keys = ["anthropic"] }
+
+[keys.anthropic]
+optional = true
+-- bin/ncly-agent.locales/en.toml --
+["agent.summary"]
+description = "Summary of the agent fixture."
+other = "Run a task through a harness"
+-- more/ncly-review --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- more/ncly-review.toml --
+format_version = 1
+contract_version = 1
+domain = "review"
+
+[[commands]]
+path = "review"
+summary = "review.summary"
+
+[[commands]]
+path = "review run"
+summary = "review.summary"
+requires = { keys = ["anthropic"] }
+-- more/ncly-review.locales/en.toml --
+["review.summary"]
+description = "Summary of the review fixture."
+other = "Review a change"
