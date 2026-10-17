@@ -93,8 +93,8 @@ description = "Error USAGE_INVALID of `ncly agent run` when --task-file names th
 other = "{{.File}} is the input of ncly, which this command never reads."
 
 ["agent.run.task_is_input_hint"]
-description = "Hint under the error agent.run.task_is_input: what the user does next. --task-file is a flag and stays as is."
-other = "Give --task-file the path of the file itself."
+description = "Hint under the error agent.run.task_is_input: what the user does next, which removes the redirection of the file to stdin, such as < task.md. --task-file is a flag, and ncly the name of the program, which stay as is."
+other = "Give --task-file the path of the task file, and do not also send that file to the input of ncly."
 
 ["agent.run.task_unreadable_hint"]
 description = "Hint under the error agent.run.task_unreadable: what the user does next. --task-file is a flag and stays as is."
