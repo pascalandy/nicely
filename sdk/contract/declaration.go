@@ -1,5 +1,10 @@
 package contract
 
+import (
+	"math"
+	"strconv"
+)
+
 // GlobalFlags declares the flags that every command accepts.
 var GlobalFlags = []Flag{
 	{Name: "help", Shorthand: "h", Summary: "flag.help"},
@@ -74,6 +79,24 @@ const (
 
 // Types lists the types of values, in the order of the spec.
 var Types = []Type{TypeString, TypeBoolean, TypeInteger, TypeNumber}
+
+// Reads reports whether a word, as a command line gives it, is a value of
+// the type: any word for a string, and a finite number for a number, since
+// JSON has no NaN or infinity.
+func (t Type) Reads(word string) bool {
+	switch t {
+	case TypeBoolean:
+		_, err := strconv.ParseBool(word)
+		return err == nil
+	case TypeInteger:
+		_, err := strconv.ParseInt(word, 10, 64)
+		return err == nil
+	case TypeNumber:
+		n, err := strconv.ParseFloat(word, 64)
+		return err == nil && !math.IsNaN(n) && !math.IsInf(n, 0)
+	}
+	return true
+}
 
 // Arg is one positional argument.
 type Arg struct {

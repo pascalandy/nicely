@@ -1,9 +1,7 @@
 package command
 
 import (
-	"math"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -136,19 +134,5 @@ func FlagValues(flag *pflag.Flag) []string {
 // accepts reports whether a word is a value of a type, among the accepted
 // values when the declaration lists them.
 func accepts(t contract.Type, values []string, word string) bool {
-	if len(values) > 0 && !slices.Contains(values, word) {
-		return false
-	}
-	switch t {
-	case contract.TypeBoolean:
-		_, err := strconv.ParseBool(word)
-		return err == nil
-	case contract.TypeInteger:
-		_, err := strconv.ParseInt(word, 10, 64)
-		return err == nil
-	case contract.TypeNumber:
-		n, err := strconv.ParseFloat(word, 64)
-		return err == nil && !math.IsNaN(n) && !math.IsInf(n, 0)
-	}
-	return true
+	return (len(values) == 0 || slices.Contains(values, word)) && t.Reads(word)
 }

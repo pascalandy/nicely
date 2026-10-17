@@ -7,7 +7,6 @@ import (
 	"math"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -504,20 +503,7 @@ func fitValues(values []string, t Type) bool {
 		return true
 	}
 	for i, v := range values {
-		var err error
-		switch t {
-		case TypeBoolean:
-			_, err = strconv.ParseBool(v)
-		case TypeInteger:
-			_, err = strconv.ParseInt(v, 10, 64)
-		case TypeNumber:
-			var n float64
-			n, err = strconv.ParseFloat(v, 64)
-			if err == nil && (math.IsNaN(n) || math.IsInf(n, 0)) {
-				err = strconv.ErrRange
-			}
-		}
-		if v == "" || err != nil || slices.Index(values, v) != i {
+		if v == "" || !t.Reads(v) || slices.Index(values, v) != i {
 			return false
 		}
 	}
