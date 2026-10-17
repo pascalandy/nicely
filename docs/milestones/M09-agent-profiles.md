@@ -30,7 +30,7 @@ Before distribution in [M12](M12-taps.md), `just install` puts `ncly` in `~/.loc
 - **Read:** [agent spec](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions), [Required programs](../north-star/core-spec.md#required-programs)
 - **Proves:** `extensions/agent/testdata/script/agent_install.txtar`
 
-Add the manifest, catalogs, skill, and binary in `extensions/agent/`. Add `just install` with the paths above. Declare Codex as a required program, with its minimum version and local version probe. Existing doctor behavior then checks `agent.codex`; no separate profile scanner or status command is needed.
+Add the manifest, catalogs, skill, and binary in `extensions/agent/`. Add `just install`, which puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. Declare Codex as a required program, with its minimum version and local version probe. Existing doctor behavior then checks `agent.codex`; no separate profile scanner or status command is needed.
 
 Prove that `ncly agent --help` reaches the installed extension. A missing or old Codex fails `ncly doctor agent` with `PREREQ_MISSING` and its install hint. A counted stub proves that doctor starts no task.
 

@@ -9,9 +9,9 @@ A user without a source checkout installs one selected first-party extension fro
 
 ## Scope
 
-The first tap supports installation of one explicitly selected extension from a GitHub `owner/repo`. Its executable, manifest, catalogs, and skill form one installation. Record the source and resolved revision, and validate the complete installation before exposing it to discovery.
+The first tap installs one explicitly selected first-party extension from the official tap, the nicely repository on GitHub. Its executable, manifest, catalogs, and skill form one installation. Record the source and resolved revision, and validate the complete installation before exposing it to discovery.
 
-Keep `ncly tap add` and `ncly tap list` for this path. The make-ready spec defines selection of the extension and the release artifact. Use the user's existing Git or download authentication. Nicely adds no credential manager.
+Keep `ncly tap add` and `ncly tap list` for this path. Without `--json`, `list` keeps the look that Pascal picked in [M07](M07-forms.md): one line per tap, in aligned columns, with the tap, its source identity, and its revision, then its extensions on indented lines under it, each with its domain and path. The make-ready spec defines selection of the extension and the release artifact. Use the user's existing Git or download authentication. Nicely adds no credential manager.
 
 A repeat add of the same installed revision is a no-op. An existing different installation or user-owned destination is a conflict. Do not overwrite it or silently upgrade it. A failed installation leaves no partially discoverable extension.
 

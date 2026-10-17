@@ -179,7 +179,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: the identifier of one run, chosen by the caller with `--run-id`, or generated
   - Project note: [Run IDs](contract.md#run-ids) defines what a call with an existing run ID does
 - Resolved value
-  - Def.: a value that preparation picked for a run from the config or the machine, such as its profile
+  - Def.: a value that preparation picked for a run from the config or the machine, such as its model and effort
   - Project note: a run record keeps it under `resolved`, and every later attempt reads it from there, as [Records and evidence](contract.md#records-and-evidence) defines
   - Distinct from: an input, which the call states, and which a call with the same run ID compares
 - Effect

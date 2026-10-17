@@ -55,7 +55,7 @@ matrix. A tools-off consumer must first prove that its chosen runtime disables t
 The old multi-adapter M11 is removed from the delivery queue.
 
 A Codex API key needs no new Nicely machinery: M08 already ships optional keys. PR #156
-recorded that `codex exec` reads `CODEX_API_KEY`, so the adapter maps the granted `openai`
+recorded that `codex exec` reads `CODEX_API_KEY`, so the adapter would map the granted `openai`
 key to it. Reverify that flag before a card uses it.
 
 ## Taps
@@ -107,7 +107,9 @@ teaches the command, and proves that an independent fresh session can use it.
 
 Revisit another input source for a real transcript need. Add browser support only when the
 selected machine needs it. Retire the old CLI only after Pascal's required uses have parity;
-a partial replacement does not justify deleting a working workflow.
+a partial replacement does not justify deleting a working workflow. Pascal picked the spinner's
+look in M07-T1; [the transcript spec at 29b311f](https://github.com/pascalandy/nicely/blob/29b311fed17791eb8d91d043a70751c3c2ce3d3e/extensions/transcript/spec.md)
+records it, so a spinner needs no new mockup.
 
 ## Everyday domains
 
