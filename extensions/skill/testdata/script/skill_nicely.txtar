@@ -22,9 +22,11 @@ grep '`ncly skill status --json`' nicely.md
 # The skill teaches auth status, whose report lists its findings under services
 grep '`ncly auth status --json`' nicely.md
 grep 'under `services`' nicely.md
-# On a missing key, the agent relays the hint to the human and never types or pipes a key
-grep '`AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human' nicely.md
-grep 'Never type or pipe a key yourself' nicely.md
+# On a missing key or a missing grant, the agent relays the hint to the human, who logs in,
+# grants the key, or takes a grant back, and never types, pipes, or grants a key itself
+grep '`AUTH_MISSING`, `KEYRING_UNAVAILABLE`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human' nicely.md
+grep 'grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`' nicely.md
+grep 'Never type or pipe a key yourself, and never grant one' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'
