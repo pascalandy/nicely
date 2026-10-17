@@ -122,6 +122,10 @@ exec /usr/bin/mkfifo $TMPDIR/fifo
 exits 2 ncly agent run --task-file $TMPDIR/fifo --tools --model m1 --dry-run --json
 answer stderr USAGE_INVALID
 stderr 'fifo is not a regular file'
+# Nor when the input of ncly comes from a regular file, which /dev/stdin and /dev/fd/0 name
+exec /bin/sh -c 'for f in /dev/stdin /dev/fd/0; do ncly agent run --task-file "$f" --tools --model m1 --dry-run --json < task.md 2>> "$TMPDIR/input.json"; echo "exit $?" >> "$TMPDIR/input.txt"; done'
+cmp $TMPDIR/input.txt want-input.txt
+grep -count=2 '"code":"USAGE_INVALID","message":"/dev/(stdin|fd/0) is the input of ncly, which this command never reads\.","hint":"Give --task-file the path of the file itself\."' $TMPDIR/input.json
 exits 2 ncly agent run 'Review this branch' --task-file task.md --tools --model m1 --dry-run --json
 answer stderr USAGE_INVALID
 stderr '"message":"Give the task either as an argument or with --task-file, not both\.","hint":"ncly agent run \(\\u003ctask\\u003e \| --task-file \\u003cfile\\u003e\) --tools"\}'
@@ -185,6 +189,9 @@ answer stderr USAGE_INVALID
 
 -- want-rest.txt --
 left for the caller
+-- want-input.txt --
+exit 2
+exit 2
 -- want-probe.log --
 --version
 -- want-dry-run.txt --

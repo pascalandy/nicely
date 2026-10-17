@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -141,6 +142,13 @@ func readSettings(p *i18n.Printer) (settings, *contract.Problem) {
 	return s, nil
 }
 
+// isInput reports whether info is the input of ncly, such as /dev/stdin
+// when a regular file feeds it, which this command never reads.
+func isInput(info os.FileInfo) bool {
+	in, err := os.Stdin.Stat()
+	return err == nil && os.SameFile(info, in)
+}
+
 // readTask returns the task of the call: its argument, or the regular file
 // that --task-file names, read from the current folder. Exactly one of them
 // gives a task that holds more than whitespace.
@@ -160,7 +168,17 @@ func readTask(p *i18n.Printer, call extension.Call) ([]byte, *contract.Problem) 
 		if err == nil && !info.Mode().IsRegular() {
 			return nil, usage(p, "agent.run.task_not_file", "agent.run.task_unreadable_hint", map[string]any{"File": file})
 		}
-		if text, err = os.ReadFile(file); err != nil {
+		f, err := os.Open(file)
+		if err != nil {
+			return nil, usage(p, "agent.run.task_unreadable", "agent.run.task_unreadable_hint", map[string]any{"File": file})
+		}
+		defer func() { _ = f.Close() }()
+		// The opened file, not its path, shows the input of ncly: macOS gives
+		// /dev/stdin the stat of another device.
+		if opened, err := f.Stat(); err == nil && isInput(opened) {
+			return nil, usage(p, "agent.run.task_is_input", "agent.run.task_is_input_hint", map[string]any{"File": file})
+		}
+		if text, err = io.ReadAll(f); err != nil {
 			return nil, usage(p, "agent.run.task_unreadable", "agent.run.task_unreadable_hint", map[string]any{"File": file})
 		}
 	}
