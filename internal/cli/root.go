@@ -105,7 +105,7 @@ func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend
 	)
 	switch {
 	case errors.As(err, &extensionCall):
-		code = extensionCall.run(p, g, stdout, stderr)
+		code = extensionCall.run(p, g, keys, stdout, stderr)
 	case errors.As(err, &done) && out.Err() == nil:
 		code = done.print(p, g, out, stderr)
 	default:

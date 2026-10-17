@@ -484,10 +484,15 @@ func (pr *prober) status(e *extension) []check {
 	}
 	var stdout bytes.Buffer
 	stderr := &heldLines{dest: io.Discard}
+	// The status command gets no key yet: NCLY_MISSING_KEYS names the
+	// services that no human granted.
+	vars := extensionVars(withJSON(pr.g))
+	keys, _ := keyVars(pr.ctx, nil, e, d.Requires.Keys, false)
+	maps.Copy(vars, keys)
 	program := runner.Program{
 		Path:   e.path,
 		Args:   append(args, "--"),
-		Env:    runner.Environ(os.Environ(), extensionVars(withJSON(pr.g))),
+		Env:    runner.Environ(os.Environ(), vars),
 		Stdout: &stdout,
 		Stderr: stderr,
 		Limit:  left,

@@ -5,10 +5,12 @@ import (
 	"context"
 	"errors"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"strconv"
 
+	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
@@ -23,6 +25,10 @@ type call struct {
 	extension *extension
 	kind      contract.ResultKind
 	args      []string
+	// services are the services that the command declares in
+	// requires.keys, and readKeys reports whether core reads their keys.
+	services []string
+	readKeys bool
 }
 
 func (c *call) Error() string { return "call to " + c.extension.domain }
@@ -45,17 +51,28 @@ func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string
 }
 
 // run starts the extension with the environment of Programs that ncly runs
-// in contract.md, and returns the exit code of ncly. Without --json, and
-// for a text result, the extension writes to the streams of ncly, and core
+// in contract.md, with the keys that a human granted to it, which it reads
+// through b, and returns the exit code of ncly. Without --json, and for a
+// text result, the extension writes to the streams of ncly, and core
 // checks only its exit code. Otherwise core checks its answer first. When
 // Ctrl-C or SIGTERM arrives before the extension exits, the first signal
 // decides the verdict.
-func (c *call) run(p *i18n.Printer, g command.Globals, stdout, stderr *os.File) int {
+func (c *call) run(p *i18n.Printer, g command.Globals, b keychain.Backend, stdout, stderr *os.File) int {
 	ctx := runner.OnSignal()
+	vars := extensionVars(g)
+	keys, err := keyVars(ctx, keychain.New(b, interactive(g, stdout)), c.extension, c.services, c.readKeys)
+	if err != nil {
+		// A signal ended a keychain read before the extension started, which
+		// a read leaves running.
+		signal := runner.SignalOf(ctx)
+		runner.Stop(signal)
+		return command.Report(p, g, contract.Core, contract.Outcome{Signal: contract.StopSignal(signal)}, stdout, stderr)
+	}
+	maps.Copy(vars, keys)
 	program := runner.Program{
 		Path:     c.extension.path,
 		Args:     c.args,
-		Env:      runner.Environ(os.Environ(), extensionVars(g)),
+		Env:      runner.Environ(os.Environ(), vars),
 		Stdin:    os.Stdin,
 		Stdout:   stdout,
 		Stderr:   stderr,

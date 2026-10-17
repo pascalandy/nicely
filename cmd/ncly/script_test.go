@@ -11,6 +11,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/runner"
 	hello "github.com/pascalandy/nicely/testdata/extensions/hello"
+	"github.com/pascalandy/nicely/testdata/extensions/keyed"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -26,6 +27,7 @@ func TestMain(m *testing.M) {
 		"codes":          printCodes,
 		"holdlock":       holdLock,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
+		"keyed-external": func() { shortCleanup(); extension.Main(keyed.Extension) },
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the
 		// fixture through the routing of run, as in a release.
@@ -45,7 +47,7 @@ func testBundled() {
 
 // fixtures holds the Go fixture extensions of testdata/extensions/, by
 // domain. The setup of a fixture's scenarios installs it in the data folder.
-var fixtures = map[string]extension.Extension{"hello": hello.Extension}
+var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension}
 
 // testNcly runs ncly with a short cleanup and the test keychain.
 func testNcly() {

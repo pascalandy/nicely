@@ -1,0 +1,23 @@
+format_version = 1
+contract_version = 1
+domain = "keyed"
+
+[[commands]]
+path = "keyed"
+summary = "keyed.summary"
+
+[[commands]]
+path = "keyed fetch"
+summary = "keyed.fetch.summary"
+examples = ["ncly keyed fetch", "ncly keyed fetch --cached --json"]
+effects = { network = true }
+requires = { keys = ["deepgram"] }
+
+[[commands.flags]]
+name = "cached"
+summary = "keyed.fetch.cached"
+
+[commands.result.schema]
+type = "object"
+required = ["source"]
+properties = { source = { enum = ["cache", "key"] }, sha256 = { type = "string" } }

@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"io"
 	"os"
 	"slices"
@@ -154,24 +153,21 @@ func authStatus(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, serv
 // from the keychain, which it reads only when the variable is empty. It
 // returns the error of ctx when ctx ends before the keychain answers.
 func serviceVerdict(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, service string) (serviceEntry, error) {
-	variable := keyVariable(service)
-	data := map[string]any{"Service": service, "Variable": variable}
+	data := map[string]any{"Service": service, "Variable": keyVariable(service)}
 	entry := serviceEntry{Service: service, Source: sourceNone}
-	if os.Getenv(variable) != "" {
-		entry.Configured, entry.Source, entry.found = true, sourceEnv, p.T("auth.from_env", data)
-		return entry, nil
-	}
-	_, found, err := k.Read(ctx, service)
-	switch {
-	case errors.Is(err, keychain.ErrUnavailable):
-		entry.Code, entry.Message, entry.Hint = contract.KeyringUnavailable, p.T("auth.keyring_unavailable", data), p.T("auth.keyring_unavailable_hint", data)
-	case err != nil:
+	_, source, code, err := lookupKey(ctx, k, service)
+	if err != nil {
 		return entry, err
-	case found:
-		entry.Configured, entry.Source, entry.found = true, sourceKeychain, p.T("auth.from_keychain", data)
-	default:
+	}
+	entry.Source = source
+	switch code {
+	case contract.KeyringUnavailable:
+		entry.Code, entry.Message, entry.Hint = code, p.T("auth.keyring_unavailable", data), p.T("auth.keyring_unavailable_hint", data)
+	case contract.AuthMissing:
 		login := []string{"ncly", "auth", "login", service}
-		entry.Code, entry.Message, entry.Hint, entry.Next = contract.AuthMissing, p.T("auth.missing", data), strings.Join(login, " "), login
+		entry.Code, entry.Message, entry.Hint, entry.Next = code, p.T("auth.missing", data), strings.Join(login, " "), login
+	case "":
+		entry.Configured, entry.found = true, p.T("auth.from_"+source, data)
 	}
 	return entry, nil
 }

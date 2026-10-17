@@ -1,0 +1,241 @@
+# When core starts a command of an extension, it passes the key of each service that the
+# command declares and that a human granted to the extension, from the service's variable or,
+# when that variable is empty, from the keychain. NCLY_MISSING_KEYS names each declared service
+# whose key it does not pass, with its code, as Grants defines. The shell fixtures spy and
+# inner write the names of the key variables that they receive to $WORK/<domain>.log, each with
+# the SHA-256 of its value, never the key, then NCLY_MISSING_KEYS. The Go fixture keyed answers
+# through Call.Key. The test keychain is the file $HOME/test-keychain.jsonl, one line per call.
+env STATE=$WORK/.local/state/nicely
+chmod 755 bin/ncly-spy
+chmod 755 bin/ncly-inner
+env PATH=$WORK/bin:$PATH
+install keyed
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=dg-env
+env OPENAI_API_KEY=
+env MISTRAL_API_KEY=ms-shell
+env NCLY_MISSING_KEYS=
+cp seed.jsonl test-keychain.jsonl
+mkdir $STATE
+exec sh -c 'sed "s|@WORK@|$WORK|g" grants.tmpl > "$STATE/grants.json"'
+
+# A granted key from its variable, deepgram, and one from the keychain, openai, reach the
+# fixture. mistral, whose key the shell exports but no human granted, never does, and
+# NCLY_MISSING_KEYS names it with KEY_NOT_GRANTED. Only the empty variable costs a keychain read
+exec ncly spy run --json
+stdout '\A\{"ok":true,"contract_version":1\}\n\z'
+! stderr .
+cmp spy.log want-run.log
+grep -count=1 '"call":"get"' test-keychain.jsonl
+grep -count=1 '"call":"get","account":"openai"\}' test-keychain.jsonl
+exec ncly spy run
+cmp spy.log want-run.log
+
+# A granted key in neither source is AUTH_MISSING. Under an unavailable keychain, it is
+# KEYRING_UNAVAILABLE, and so is every later key of the call, after one refused read
+env DEEPGRAM_API_KEY=
+exec ncly spy run --json
+cmp spy.log want-missing.log
+env NCLY_TEST_KEYCHAIN=unavailable
+exec ncly spy run --json
+cmp spy.log want-unavailable.log
+grep -count=1 '"refused":true' test-keychain.jsonl
+
+# The Go fixture answers those codes through Call.Key, with exit 78 and the hint and next of
+# each, and runs without the key when the call needs none
+exits 78 ncly keyed fetch --json
+answer stderr KEYRING_UNAVAILABLE
+stderr '"message":"The keychain does not answer, and DEEPGRAM_API_KEY is empty\.","hint":"Export DEEPGRAM_API_KEY, or unlock the keychain\."\}'
+! stderr '"next"'
+env NCLY_TEST_KEYCHAIN=
+exits 78 ncly keyed fetch --json
+answer stderr AUTH_MISSING
+stderr '"message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]'
+exec ncly keyed fetch --cached --json
+stdout '\A\{"ok":true,"contract_version":1,"source":"cache"\}\n\z'
+env DEEPGRAM_API_KEY=dg-env
+exec ncly keyed fetch --json
+stdout '\A\{"ok":true,"contract_version":1,"sha256":"4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064","source":"key"\}\n\z'
+exec ncly keyed fetch
+stdout '\AThe key has the SHA-256 4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064\.\n\z'
+
+# Without the grant, the key that the shell exports never reaches the Go fixture, which answers
+# KEY_NOT_GRANTED with exit 78, the hint, and the next that grant it, and a call that needs no
+# key still runs
+exec ncly auth revoke deepgram keyed --force --json
+exits 78 ncly keyed fetch --json
+answer stderr KEY_NOT_GRANTED
+stderr '"message":"The key of deepgram is not granted to keyed\.","hint":"ncly auth grant deepgram keyed","next":\["ncly","auth","grant","deepgram","keyed"\]'
+exec ncly keyed fetch --cached --json
+stdout '"source":"cache"'
+exits 78 ncly --lang en-XA keyed fetch
+pseudo stderr deepgram keyed auth grant
+exec pty yes.txt ncly auth grant deepgram keyed
+exec ncly keyed fetch --json
+stdout '"sha256":"4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064"'
+
+# A dry run, a status command without --live, and a command that declares no key read no key:
+# the keychain gets no call, even under a keychain that never answers. NCLY_MISSING_KEYS names
+# only the services that no human granted, and the granted key of the variable stays out too.
+# With --live, the status command gets its keys as any other command
+cp test-keychain.jsonl before.jsonl
+env NCLY_TEST_KEYCHAIN=hang
+exec ncly spy plan --dry-run --json
+cmp spy.log want-no-read.log
+exec ncly spy status --json
+stdout '"checks":\[\]'
+cmp spy.log want-no-read.log
+env NCLY_MISSING_KEYS=leak=KEY_NOT_GRANTED
+exec ncly spy bare --json
+cmp spy.log want-bare.log
+env NCLY_MISSING_KEYS=
+cmp test-keychain.jsonl before.jsonl
+env NCLY_TEST_KEYCHAIN=
+exec ncly spy status --live --json
+cmp spy.log want-run.log
+
+# In a nested call, the inner ncly gives the inner extension its own granted key, deepgram,
+# from the keychain, and never openai, which a human granted only to the outer one
+exec sh -c 'echo dg-stored | ncly auth login deepgram --stdin --json'
+env DEEPGRAM_API_KEY=
+env OPENAI_API_KEY=oa-shell
+exec ncly spy nest --json
+cmp spy.log want-nest.log
+cmp inner.log want-inner.log
+
+# The fixtures recorded digests only, never a key
+! grep 'dg-env|sk-stored|dg-stored|oa-shell|ms-shell' spy.log
+! grep 'dg-env|sk-stored|dg-stored|oa-shell|ms-shell' inner.log
+
+-- yes.txt --
+[y/N]	y
+-- seed.jsonl --
+{"call":"set","account":"openai","key":"sk-stored"}
+-- grants.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"inner","path":"@WORK@/bin/ncly-inner","granted_at":"2026-10-17T04:00:00Z"},{"service":"deepgram","domain":"keyed","path":"@WORK@/.local/share/nicely/extensions/ncly-keyed","granted_at":"2026-10-17T04:00:00Z"},{"service":"deepgram","domain":"spy","path":"@WORK@/bin/ncly-spy","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"spy","path":"@WORK@/bin/ncly-spy","granted_at":"2026-10-17T04:00:00Z"}]}
+-- want-run.log --
+DEEPGRAM_API_KEY 4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064
+OPENAI_API_KEY 0ca1e46a725d1d4bb66187b398aa39ba422632e37e73416e4932889ad4f6ec2e
+NCLY_MISSING_KEYS=mistral=KEY_NOT_GRANTED
+-- want-missing.log --
+OPENAI_API_KEY 0ca1e46a725d1d4bb66187b398aa39ba422632e37e73416e4932889ad4f6ec2e
+NCLY_MISSING_KEYS=deepgram=AUTH_MISSING,mistral=KEY_NOT_GRANTED
+-- want-unavailable.log --
+NCLY_MISSING_KEYS=deepgram=KEYRING_UNAVAILABLE,openai=KEYRING_UNAVAILABLE,mistral=KEY_NOT_GRANTED
+-- want-no-read.log --
+NCLY_MISSING_KEYS=mistral=KEY_NOT_GRANTED
+-- want-bare.log --
+NCLY_MISSING_KEYS unset
+-- want-nest.log --
+OPENAI_API_KEY 6cf82da4a9374f40d338c4a014706fdc5f12fa6d3d167591d459054863f5e8d9
+NCLY_MISSING_KEYS unset
+-- want-inner.log --
+DEEPGRAM_API_KEY ff7506fc14da24862c1cf728498bc50ec3011e27ad4a16fbf4005281d9261db0
+NCLY_MISSING_KEYS=openai=KEY_NOT_GRANTED
+-- bin/ncly-spy --
+#!/bin/sh
+# Writes the names of the key variables that it receives, each with the SHA-256 of its value,
+# then NCLY_MISSING_KEYS, to $WORK/<domain>.log. nest calls inner through the same ncly.
+log="$WORK/${0##*/ncly-}.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+: >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+case "$1" in
+nest) "$NCLY_BIN" inner run --json >/dev/null || exit 1 ;;
+status)
+	echo '{"ok":true,"contract_version":1,"checks":[]}'
+	exit 0
+	;;
+esac
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-spy.toml --
+format_version = 1
+contract_version = 1
+domain = "spy"
+
+[[commands]]
+path = "spy"
+summary = "spy.summary"
+
+[[commands]]
+path = "spy run"
+summary = "spy.summary"
+requires = { keys = ["deepgram", "openai", "mistral"] }
+
+[[commands]]
+path = "spy plan"
+summary = "spy.summary"
+effects = { user_writes = true }
+modes = { dry_run = true }
+requires = { keys = ["deepgram", "openai", "mistral"] }
+
+[[commands]]
+path = "spy status"
+summary = "spy.summary"
+doctor = true
+effects = { network = true }
+result = { kind = "report" }
+requires = { keys = ["deepgram", "openai", "mistral"] }
+
+[[commands.flags]]
+name = "live"
+summary = "spy.summary"
+
+[[commands]]
+path = "spy bare"
+summary = "spy.summary"
+
+[[commands]]
+path = "spy nest"
+summary = "spy.summary"
+requires = { keys = ["openai"] }
+-- bin/ncly-spy.locales/en.toml --
+["spy.summary"]
+description = "Summary of the spy fixture."
+other = "Record the keys that arrive"
+-- bin/ncly-inner --
+#!/bin/sh
+# Writes the names of the key variables that it receives, each with the SHA-256 of its value,
+# then NCLY_MISSING_KEYS, to $WORK/<domain>.log.
+log="$WORK/${0##*/ncly-}.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+: >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-inner.toml --
+format_version = 1
+contract_version = 1
+domain = "inner"
+
+[[commands]]
+path = "inner"
+summary = "inner.summary"
+
+[[commands]]
+path = "inner run"
+summary = "inner.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- bin/ncly-inner.locales/en.toml --
+["inner.summary"]
+description = "Summary of the inner fixture."
+other = "Record the keys of a nested call"

@@ -223,7 +223,18 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, g command.Globals, exte
 		}
 		domain := command.AddManifest(root, p, e.catalogs.Printer(lang), e.manifest, func(d contract.Command) func(*cobra.Command, []string) error {
 			return func(c *cobra.Command, args []string) error {
-				return &call{extension: e, kind: d.Result.Kind, args: canonicalArgs(d, c, args)}
+				// A dry run and a status command without --live send no
+				// request, so core reads no key for them, as Grants in
+				// contract.md defines.
+				dryRun, _ := c.Flags().GetBool(contract.DryRunFlag.Name)
+				live, _ := c.Flags().GetBool("live")
+				return &call{
+					extension: e,
+					kind:      d.Result.Kind,
+					args:      canonicalArgs(d, c, args),
+					services:  d.Requires.Keys,
+					readKeys:  !dryRun && (!d.Doctor || live),
+				}
 			}
 		})
 		domain.GroupID = extensionGroup

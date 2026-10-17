@@ -1,0 +1,21 @@
+# English catalog of the keyed fixture. Each entry needs a description of where the text appears.
+
+["keyed.summary"]
+description = "Help page: summary of the keyed fixture, whose command needs a key."
+other = "Answer with a key"
+
+["keyed.fetch.summary"]
+description = "Help page: summary of `ncly keyed fetch`, which needs the key of the test service deepgram, unless --cached answers from a cache."
+other = "Fetch with the deepgram key"
+
+["keyed.fetch.cached"]
+description = "Help page: the --cached flag of `ncly keyed fetch`, which answers without the key."
+other = "Answer from the cache, without the key"
+
+["keyed.fetch.from_cache"]
+description = "Human text of `ncly keyed fetch --cached`: the fixture answered without reading any key."
+other = "Answered from the cache, without a key."
+
+["keyed.fetch.digest"]
+description = "Human text of `ncly keyed fetch`: the SHA-256 of the key that the fixture received, never the key. {{.Digest}} is 64 hexadecimal digits."
+other = "The key has the SHA-256 {{.Digest}}."

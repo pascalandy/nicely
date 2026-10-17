@@ -2,10 +2,12 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -103,10 +105,15 @@ func listValues(extensions []*extension, g command.Globals, from contract.Values
 	}
 	var stdout bytes.Buffer
 	stderr := &heldLines{dest: io.Discard}
+	// A Tab never waits on the keychain, so core reads no key for the
+	// command, as Completion values in contract.md defines.
+	vars := extensionVars(withJSON(g))
+	missing, _ := keyVars(context.Background(), nil, e, d.Requires.Keys, false)
+	maps.Copy(vars, missing)
 	program := runner.Program{
 		Path:   e.path,
 		Args:   append(slices.Clone(d.Path[1:]), "--"),
-		Env:    runner.Environ(os.Environ(), extensionVars(withJSON(g))),
+		Env:    runner.Environ(os.Environ(), vars),
 		Stdout: &stdout,
 		Stderr: stderr,
 		Limit:  valuesLimit,
