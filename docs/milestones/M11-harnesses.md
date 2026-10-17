@@ -5,11 +5,11 @@ Version: v0.11.0
 
 ## Demo
 
-`ncly agent run --tools` works through Codex, Grok, and OpenCode, and `--check-unchanged` reports the files that a run changed.
+`ncly agent run --tools` works through Codex, and `--check-unchanged` reports the files that a run changed.
 
 ## Scope
 
-Extend the `claude` and `pi` adapters of M09 with `codex`, `grok`, and `opencode`. Use the `headless` skill's existing adapters and notes where available. Each adapter declares supported versions, tools-off behavior, input delivery, cancellation, and result parsing, and its declared modes are validated on the real installed harness before they are enabled.
+Add `codex` beside the `claude` and `pi` adapters of M09. Grok and OpenCode wait in [M99](M99-parking-lot.md). Use the `headless` skill's existing adapters and notes where available. Each adapter declares supported versions, tools-off behavior, input delivery, cancellation, and result parsing, and its declared modes are validated on the real installed harness before they are enabled.
 
 `--check-unchanged` reports the files that a run changed, with the limits that [ncly agent](../../extensions/agent/spec.md#ncly-agent) states. Write-prevention sandboxes and cost tracking stay out of scope.
 
@@ -20,10 +20,8 @@ Extend the `claude` and `pi` adapters of M09 with `codex`, `grok`, and `opencode
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M11-T1 | Codex adapter | agent | — | todo |
-| M11-T2 | Grok adapter | agent | — | todo |
-| M11-T3 | OpenCode adapter | agent | — | todo |
-| M11-T4 | Check unchanged | agent | — | todo |
-| M11-T5 | Doctor agent | agent | — | todo |
+| M11-T2 | Check unchanged | agent | — | todo |
+| M11-T3 | Doctor agent | agent | — | todo |
 
 ### M11-T1 Codex adapter
 
@@ -32,28 +30,14 @@ Extend the `claude` and `pi` adapters of M09 with `codex`, `grok`, and `opencode
 
 Add the `codex` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding, stdin delivery, and answer checks for `--tools`. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
 
-### M11-T2 Grok adapter
-
-- **Read:** [Adapters](../../extensions/agent/spec.md#adapters), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
-- **Proves:** `extensions/agent/testdata/script/agent_grok.txtar`
-
-Add the `grok` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding, prompt-file delivery, and terminal-result checks for `--tools`. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
-
-### M11-T3 OpenCode adapter
-
-- **Read:** [Adapters](../../extensions/agent/spec.md#adapters), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
-- **Proves:** `extensions/agent/testdata/script/agent_opencode.txtar`
-
-Add the `opencode` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding, provider and effort selection, stdin delivery, and the final answer read from the JSON events for `--tools`. A zero exit without a final answer is a missing answer that exits 1. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
-
-### M11-T4 Check unchanged
+### M11-T2 Check unchanged
 
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent)
 - **Proves:** `extensions/agent/testdata/script/agent_check_unchanged.txtar`
 
 Add the comparison in `extensions/agent/`. `--check-unchanged` exits 1 with `AGENT_FILES_CHANGED` when a covered file changed during the run, and reports nothing about ignored files. A completed run's ID with the flag toggled answers `USAGE_INVALID`, and the counted stub harness starts no second time.
 
-### M11-T5 Doctor agent
+### M11-T3 Doctor agent
 
 - **Read:** [Status command](../north-star/contract.md#status-command), [Required programs](../north-star/core-spec.md#required-programs), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Adapters](../../extensions/agent/spec.md#adapters)
 - **Proves:** `extensions/agent/testdata/script/agent_status.txtar`
@@ -64,5 +48,5 @@ Add `ncly agent status` in `extensions/agent/`, with `doctor = true` in its mani
 
 These steps wait on Pascal and block no card. Pascal decides when.
 
-- Pascal runs a real task with each of the five harnesses he has installed
+- Pascal runs a real task with `claude`, `pi`, and `codex`
 - The `headless` skill of `pascalandy/skills` points to `ncly agent`
