@@ -263,3 +263,23 @@ other = "[y/N]"
 ["confirm.yes"]
 description = "The answers that confirm a confirmation, separated by commas, in lowercase. Any other answer means no. Include the letter that confirm.choices shows for yes."
 other = "y, yes"
+
+["key.not_granted"]
+description = "Message of KEY_NOT_GRANTED that an extension answers: the command needs the key of a service, and no human granted that key to the extension. {{.Service}} is the service, such as deepgram, and {{.Domain}} the extension's domain, such as transcript."
+other = "The key of {{.Service}} is not granted to {{.Domain}}."
+
+["key.missing"]
+description = "Message of AUTH_MISSING that an extension answers: neither the environment variable nor the OS keychain holds the key of a service that the command needs. {{.Service}} is the service, such as deepgram, and {{.Variable}} its variable, such as DEEPGRAM_API_KEY."
+other = "No key for {{.Service}} in {{.Variable}} or the keychain."
+
+["key.unavailable"]
+description = "Message of KEYRING_UNAVAILABLE that an extension answers: the OS keychain does not answer, and the environment variable of a key that the command needs is empty. {{.Variable}} is the variable, such as DEEPGRAM_API_KEY."
+other = "The keychain does not answer, and {{.Variable}} is empty."
+
+["key.unavailable_hint"]
+description = "Hint of KEYRING_UNAVAILABLE that an extension answers: the human exports the key's environment variable, such as DEEPGRAM_API_KEY, or unlocks the OS keychain. {{.Variable}} is the variable."
+other = "Export {{.Variable}}, or unlock the keychain."
+
+["key.undeclared"]
+description = "Message of RUNTIME when an extension's code asks for the key of a service that its command does not declare in its manifest, so ncly never passes that key. {{.Path}} is the command path, such as transcript run youtube, and {{.Service}} the service. requires.keys stays as is."
+other = "The command {{.Path}} asks for the key of {{.Service}}, which its requires.keys does not declare."

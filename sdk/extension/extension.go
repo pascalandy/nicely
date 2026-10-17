@@ -66,6 +66,10 @@ type Call struct {
 	// it discards what a command other than a text command writes.
 	Stdout io.Writer
 	Stderr io.Writer
+	// domain is the extension's domain, and services the services that the
+	// command declares in requires.keys, which Key reads.
+	domain   string
+	services []string
 }
 
 // Main runs the extension as this process with the arguments of the
@@ -248,6 +252,7 @@ func (l loaded) handle(s selection, p *i18n.Printer, g command.Globals, codes co
 	kind := s.command.Result.Kind
 	call := s.call
 	call.JSON, call.Printer = g.JSON, p
+	call.domain, call.services = l.manifest.Domain, s.command.Requires.Keys
 	call.Mode = contract.DetectMode(term.IsTerminal(int(os.Stdin.Fd())), term.IsTerminal(int(stdout.Fd())), g.NoInput, g.JSON, os.LookupEnv)
 	call.Stdin, call.Stdout, call.Stderr = os.Stdin, io.Writer(out), io.Writer(stderr)
 	if g.JSON && kind != contract.ResultText {
