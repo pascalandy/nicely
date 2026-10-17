@@ -14,7 +14,7 @@
 ncly agent run (<task> | --task-file <file>) --tools [--model <id>] [--effort <level>] [--cwd <dir>] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
 ```
 
-- Exactly one task argument or `--task-file` is required: neither or both fail with `USAGE_INVALID`. The file contains the trusted task instructions, and a relative path reads from the current directory. An unreadable file fails with `USAGE_INVALID` before launch, and so does a task that holds only whitespace. The task counts by its SHA-256, the same for both sources.
+- Exactly one task argument or `--task-file` is required: neither or both fail with `USAGE_INVALID`. The file contains the trusted task instructions, and a relative path reads from the current directory. It must be a regular file: a folder, a pipe, a device, or `/dev/stdin` fails with `USAGE_INVALID` before anything reads it. An unreadable file fails with `USAGE_INVALID` before launch, and so does a task that holds only whitespace. The task counts by its SHA-256, the same for both sources.
 - `--cwd` selects an existing directory, or defaults to the current directory. A relative path resolves from the current directory, and Codex receives the absolute path. An invalid directory fails with `USAGE_INVALID` before launch.
 - The adapter requires explicit `--tools`. Without it, even in a dry run, the command answers `CAPABILITY_UNSUPPORTED` before launching Codex. Never enable tools silently.
 - External material is outside this first command. It accepts no `--input` flag. Do not put a transcript or web page into `--task-file` to bypass [D028](../../docs/north-star/decisions/D028-outside-text.md).

@@ -84,6 +84,10 @@ other = "ncly agent run (<task> | --task-file <file>) --tools"
 description = "Error USAGE_INVALID of `ncly agent run` when the file of --task-file cannot be read, such as a missing file or a folder. {{.File}} is the path that the call gave."
 other = "Cannot read the task file {{.File}}."
 
+["agent.run.task_not_file"]
+description = "Error USAGE_INVALID of `ncly agent run` when --task-file names something other than a regular file, such as a folder, a pipe, a device, or /dev/stdin, which ncly never reads. {{.File}} is the path that the call gave."
+other = "{{.File}} is not a regular file, so it cannot hold the task."
+
 ["agent.run.task_unreadable_hint"]
 description = "Hint under the error agent.run.task_unreadable: what the user does next. --task-file is a flag and stays as is."
 other = "Give --task-file a file that you can read."

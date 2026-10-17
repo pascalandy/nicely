@@ -141,8 +141,8 @@ func readSettings(p *i18n.Printer) (settings, *contract.Problem) {
 	return s, nil
 }
 
-// readTask returns the task of the call: its argument, or the file that
-// --task-file names, read from the current folder. Exactly one of them
+// readTask returns the task of the call: its argument, or the regular file
+// that --task-file names, read from the current folder. Exactly one of them
 // gives a task that holds more than whitespace.
 func readTask(p *i18n.Printer, call extension.Call) ([]byte, *contract.Problem) {
 	file, fromFile := call.Flags["task-file"]
@@ -154,7 +154,12 @@ func readTask(p *i18n.Printer, call extension.Call) ([]byte, *contract.Problem) 
 	}
 	text := []byte(strings.Join(call.Args, " "))
 	if fromFile {
-		var err error
+		// Only a regular file holds a task: stdin, a pipe, or a device would
+		// make preparation read the input of ncly, or wait for a writer.
+		info, err := os.Stat(file)
+		if err == nil && !info.Mode().IsRegular() {
+			return nil, usage(p, "agent.run.task_not_file", "agent.run.task_unreadable_hint", map[string]any{"File": file})
+		}
 		if text, err = os.ReadFile(file); err != nil {
 			return nil, usage(p, "agent.run.task_unreadable", "agent.run.task_unreadable_hint", map[string]any{"File": file})
 		}

@@ -110,6 +110,18 @@ answer stderr USAGE_INVALID
 stderr '"message":"Cannot read the task file missing\.md\.","hint":"Give --task-file a file that you can read\."'
 exits 2 ncly agent run --task-file nbin --tools --model m1 --dry-run --json
 answer stderr USAGE_INVALID
+stderr '"message":"nbin is not a regular file, so it cannot hold the task\.","hint":"Give --task-file a file that you can read\."'
+
+# --task-file reads only a regular file, so a dry run never reads the stdin of ncly, even
+# through /dev/stdin, and never waits for the writer of a pipe
+exec /bin/sh -c 'printf "left for the caller\n" | { ncly agent run --task-file /dev/stdin --tools --model m1 --dry-run --json 2> "$TMPDIR/err.json"; echo "exit $?" > "$TMPDIR/exit.txt"; /bin/cat > "$TMPDIR/rest.txt"; }'
+cmp $TMPDIR/rest.txt want-rest.txt
+grep '^exit 2$' $TMPDIR/exit.txt
+grep '"code":"USAGE_INVALID","message":"/dev/stdin is not a regular file' $TMPDIR/err.json
+exec /usr/bin/mkfifo $TMPDIR/fifo
+exits 2 ncly agent run --task-file $TMPDIR/fifo --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+stderr 'fifo is not a regular file'
 exits 2 ncly agent run 'Review this branch' --task-file task.md --tools --model m1 --dry-run --json
 answer stderr USAGE_INVALID
 stderr '"message":"Give the task either as an argument or with --task-file, not both\.","hint":"ncly agent run \(\\u003ctask\\u003e \| --task-file \\u003cfile\\u003e\) --tools"\}'
