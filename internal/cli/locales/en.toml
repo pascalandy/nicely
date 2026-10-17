@@ -868,3 +868,84 @@ other = "The keychain did not answer within --timeout."
 ["doctor.key_timeout"]
 description = "Report of `ncly doctor`: message of the check of one service's key, which failed because the OS keychain did not answer its read before the time of --timeout ended. {{.Service}} is the service, such as deepgram."
 other = "The keychain did not answer within --timeout for the key of {{.Service}}."
+
+["run.summary"]
+description = "Help page and ncly describe: summary of `ncly run`, the group of commands that inspect the records of recorded runs, such as those of ncly agent run."
+other = "Inspect the records of runs"
+
+["run.list.summary"]
+description = "Help page and ncly describe: summary of `ncly run list`, which lists the saved records of runs, newest first."
+other = "List the runs that the state folder records"
+
+["run.list.path"]
+description = "Help page: summary of the --path flag of `ncly run list`, which keeps the runs of one command path, such as agent run, which stays as is."
+other = "Keep the runs of this command path, such as 'agent run'"
+
+["run.list.key"]
+description = "Help page: summary of the --key flag of `ncly run list`, which keeps the runs that hold an item key, such as a URL that a run processed."
+other = "Keep the runs that hold this item key, such as a URL"
+
+["run.list.since"]
+description = "Help page: summary of the --since flag of `ncly run list`, which keeps the runs that started at or after a time. The example is an RFC 3339 time, which stays as is."
+other = "Keep the runs that started at or after this time, such as 2026-10-07T00:00:00Z"
+
+["run.list.limit"]
+description = "Help page: summary of the --limit flag of `ncly run list`, the most runs that the list shows. 20 is the default number."
+other = "Show at most this many runs, 20 by default"
+
+["run.list.since_invalid"]
+description = "Error USAGE_INVALID of `ncly run list` when --since is no RFC 3339 time. {{.Value}} is the value that the call gave. --since and the example time stay as is."
+other = "{{.Value}} is no RFC 3339 time: give --since a time such as 2026-10-07T00:00:00Z."
+
+["run.list.limit_invalid"]
+description = "Error USAGE_INVALID of `ncly run list` when --limit is no whole number from 1. {{.Value}} is the value that the call gave. --limit stays as is."
+other = "{{.Value}} is not a count of runs: give --limit a whole number from 1."
+
+["run.list.folder_unreadable"]
+description = "Error RUNTIME of `ncly run list` when the runs folder of the state folder cannot be read. {{.Dir}} is that folder."
+other = "Cannot read the records in {{.Dir}}."
+
+["run.list.folder_unreadable_hint"]
+description = "Hint under the error run.list.folder_unreadable: what the user does next. {{.Dir}} is the runs folder."
+other = "Check that you can read {{.Dir}}, then list the runs again."
+
+["run.list.none"]
+description = "ncly run list, human text: the one line of a list where no run matches the filters, or where the state folder records no run."
+other = "No run matches."
+
+["run.list.column_run"]
+description = "ncly run list, human text: the header of the column of run IDs. A short uppercase word, as in a table."
+other = "RUN"
+
+["run.list.column_status"]
+description = "ncly run list, human text: the header of the column of saved statuses, such as completed. A short uppercase word, as in a table."
+other = "STATUS"
+
+["run.list.column_started"]
+description = "ncly run list, human text: the header of the column of the dates when the runs started. A short uppercase word, as in a table."
+other = "STARTED"
+
+["run.list.column_command"]
+description = "ncly run list, human text: the header of the column of command paths, such as agent run. A short uppercase word, as in a table."
+other = "COMMAND"
+
+["run.list.column_items"]
+description = "ncly run list, human text: the header of the column of item counts, the number of inputs of each run. A short uppercase word, as in a table."
+other = "ITEMS"
+
+["run.list.more_keys"]
+description = "ncly run list, human text: the line under the previewed item keys of a run that holds more items. {{.Count}} is the number of items that the list does not show."
+other = "and {{.Count}} more"
+
+["run.list.active_legend"]
+description = "ncly run list, human text: the legend under the list, after a green dot, that explains the dot that starts the row of an active run."
+other = "A process holds this run now."
+
+["run.list.unreadable"]
+description = "ncly run list, human text: the line that names the records that the list cannot read, which never count as absent runs. {{.IDs}} lists their run IDs, separated by commas, which stay as is, and ncly run view a command, which stays as is."
+one = "Cannot read the record of {{.IDs}}: ncly run view {{.IDs}} says why."
+other = "Cannot read the records of {{.IDs}}: ncly run view <run-id> says why."
+
+["run.list.more"]
+description = "ncly run list, human text: the last line when more runs match than --limit shows. --limit stays as is."
+other = "More runs match: raise --limit, or narrow the filters."

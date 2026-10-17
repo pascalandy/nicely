@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "required": ["runs", "more", "unreadable"],
+  "properties": {
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["run_id", "path", "status", "started_at", "updated_at", "active", "item_count", "keys"],
+        "properties": {
+          "run_id": {"type": "string"},
+          "path": {"type": "string"},
+          "status": {"type": "string"},
+          "started_at": {"type": "string"},
+          "updated_at": {"type": "string"},
+          "active": {"type": "boolean"},
+          "item_count": {"type": "integer", "minimum": 0},
+          "keys": {"type": "array", "items": {"type": "string"}, "maxItems": 3}
+        }
+      }
+    },
+    "more": {"type": "boolean"},
+    "unreadable": {"type": "array", "items": {"type": "string"}}
+  }
+}

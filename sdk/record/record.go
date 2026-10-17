@@ -214,6 +214,27 @@ func (s Store) Read(id string) (*Record, error) {
 	return rec, err
 }
 
+// IDs returns, in name order, the run ID of each record of the folder: each
+// file <id>.json whose name holds a valid run ID. It skips any other file,
+// such as the temporary file of a write, and a missing folder holds none.
+func (s Store) IDs() ([]string, error) {
+	entries, err := os.ReadDir(s.Dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for _, e := range entries {
+		id, isRecord := strings.CutSuffix(e.Name(), ".json")
+		if isRecord && e.Type().IsRegular() && ValidID(id) {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}
+
 // Active reports whether a process holds the run now. It never creates the
 // lock file and never holds the lock past its answer.
 func (s Store) Active(id string) (bool, error) { return platform.Held(s.lock(id)) }

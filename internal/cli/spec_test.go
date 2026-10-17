@@ -69,14 +69,21 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 	return keys
 }
 
-// shipped lists the milestones whose commands core declares.
-var shipped = []string{"M00", "M03", "M05", "M06", "M08"}
+// shipped lists the milestones whose commands core declares, and active
+// the milestone whose cards still add commands, which core may declare in
+// part, such as run list before run view.
+var (
+	shipped = []string{"M00", "M03", "M05", "M06", "M08"}
+	active  = "M10"
+)
 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the
 // entries of the command tree that shipped, such as
 // "completion zsh|bash|fish". A word in brackets, such as [command...], is
 // an argument, not a command. A bundled extension, the bundled rows of the
-// domain table in architecture.md, declares its own commands.
+// domain table in architecture.md, declares its own commands. A command of
+// the active milestone may still be missing, and is compared once its
+// milestone ships.
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	spec, err := specdoc.Block("../../docs/north-star/core-spec.md", "Command tree")
 	if err != nil {
@@ -92,27 +99,36 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 			bundled = append(bundled, specdoc.Backticked(row[0])...)
 		}
 	}
-	var want []string
+	var want, partial []string
 	for _, line := range spec {
 		fields := strings.Fields(strings.TrimLeft(line, "│├└─ "))
-		if len(fields) < 2 || !slices.Contains(shipped, fields[len(fields)-1]) || slices.Contains(bundled, fields[0]) {
+		if len(fields) < 2 || slices.Contains(bundled, fields[0]) {
+			continue
+		}
+		milestone := fields[len(fields)-1]
+		paths := &want
+		switch {
+		case milestone == active:
+			paths = &partial
+		case !slices.Contains(shipped, milestone):
 			continue
 		}
 		path := fields[0]
-		want = append(want, path)
+		*paths = append(*paths, path)
 		for _, words := range fields[1 : len(fields)-1] {
 			if strings.HasPrefix(words, "[") {
 				continue
 			}
 			for word := range strings.SplitSeq(words, "|") {
-				want = append(want, path+" "+word)
+				*paths = append(*paths, path+" "+word)
 			}
 		}
 	}
 	var got []string
 	for _, c := range tree()[1:] {
-		if c.Name() != "help" {
-			got = append(got, strings.TrimPrefix(c.CommandPath(), "ncly "))
+		path := strings.TrimPrefix(c.CommandPath(), "ncly ")
+		if c.Name() != "help" && !slices.Contains(partial, path) {
+			got = append(got, path)
 		}
 	}
 	slices.Sort(got)

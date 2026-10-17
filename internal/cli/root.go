@@ -137,6 +137,7 @@ func newRoot(p *i18n.Printer, g command.Globals, extensions []*extension, keys k
 	addDescribe(p, g.Lang, root, extensions)
 	addDoctor(p, g, root, extensions, keys)
 	addAuth(p, g, root, extensions, keys)
+	addRun(p, root)
 	addExtensions(root, p, g, extensions)
 	return root
 }
