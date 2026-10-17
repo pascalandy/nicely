@@ -128,6 +128,13 @@ exits 130 pty dumb-interrupt.txt ncly auth login cohere
 stdout 'error\[INTERRUPTED\]'
 stderr '\Aecho on\nterminal as found\n\z'
 ! grep '"account":"cohere","key"' test-keychain.jsonl
+
+# There, the field turns echo off before its title shows, and drops what the human typed
+# before it, which the terminal echoed: only the answer to the title becomes the key
+exec pty dumb-early.txt ncly auth login cohere
+! stdout sk-late
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"cohere","key":"sk-late"\}' test-keychain.jsonl
 env TERM=xterm-256color
 
 # Under the pseudo-locale, every word of the field and of the confirmation comes from the
@@ -165,6 +172,9 @@ groq key	^C
 groq key	sk-dumb
 -- dumb-interrupt.txt --
 cohere key	^C
+-- dumb-early.txt --
+	sk-early\c
+cohere key	sk-late
 -- pseudo-key.txt --
 openai	sk-pseudo
 -- pseudo-decline.txt --

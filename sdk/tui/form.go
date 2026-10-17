@@ -12,6 +12,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
+	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 )
 
@@ -39,6 +40,9 @@ type Masked struct {
 // ErrInterrupted, and the end of ctx returns its error, after the field
 // has left the terminal as it found it.
 func AskMasked(ctx context.Context, in *os.File, out io.Writer, noColor bool, m Masked) (string, error) {
+	if dumb() {
+		return askLine(ctx, in, out, m.Title+" ", true)
+	}
 	var typed string
 	field := huh.NewInput().Title(m.Title).Description(m.Description).EchoMode(huh.EchoModePassword).Value(&typed)
 	if err := ask(ctx, in, out, noColor, m.Keys, field); err != nil {
@@ -56,12 +60,7 @@ func ask(ctx context.Context, in *os.File, out io.Writer, noColor bool, keys Key
 		return err
 	}
 	defer func() { _ = term.Restore(fd, found) }()
-	form := newForm(keys, fields...)
-	if os.Getenv("TERM") == "dumb" {
-		err = askLines(ctx, form, in, Output(out, noColor))
-	} else {
-		err = draw(ctx, form, in, out, Profile(out, noColor))
-	}
+	err = draw(ctx, newForm(keys, fields...), in, out, Profile(out, noColor))
 	switch {
 	case ctx.Err() != nil:
 		return ctx.Err()
@@ -131,20 +130,50 @@ func (f *frame) View() tea.View {
 	return tea.NewView(f.last)
 }
 
-// askLines runs form in Huh's accessible mode, which asks each field on its
-// own line, for a terminal whose TERM is dumb, which cannot redraw a line.
-// That mode reads without ctx, so askLines returns once ctx ends, and ask
-// restores the terminal in its place.
-func askLines(ctx context.Context, form *huh.Form, in *os.File, out io.Writer) error {
-	form = form.WithAccessible(true).WithInput(in).WithOutput(out)
-	done := make(chan error, 1)
-	go func() { done <- form.RunWithContext(ctx) }()
-	select {
-	case err := <-done:
-		return err
-	case <-ctx.Done():
-		// The answer of the command starts its own line, after the title.
-		_, _ = io.WriteString(out, "\n")
-		return ctx.Err()
+// dumb reports whether TERM is dumb: the terminal cannot redraw a line,
+// so a form asks on lines instead of drawing.
+func dumb() bool { return os.Getenv("TERM") == "dumb" }
+
+// askLine asks one field on a line, for a terminal whose TERM is dumb, as
+// Huh's accessible mode lays it out: the prompt, then the answer on the
+// same line. A masked field turns echo off before its prompt shows, so no
+// typed character echoes, and drops what the human typed before the prompt.
+// askLine returns the answer, an empty one at the end of input, or the
+// error of ctx once ctx ends, and leaves the terminal as it found it.
+func askLine(ctx context.Context, in *os.File, out io.Writer, prompt string, masked bool) (string, error) {
+	fd := int(in.Fd())
+	found, err := term.GetState(fd)
+	if err != nil {
+		return "", err
 	}
+	defer func() { _ = term.Restore(fd, found) }()
+	if masked {
+		if err := echoOff(fd); err != nil {
+			return "", err
+		}
+	}
+	if _, err := io.WriteString(out, prompt); err != nil {
+		return "", err
+	}
+	line, err := readLine(ctx, in)
+	if masked || err != nil {
+		// The Enter of a masked answer does not echo, and no Enter ended
+		// the line otherwise, so what follows starts its own line.
+		_, _ = io.WriteString(out, "\n")
+	}
+	if errors.Is(err, io.EOF) {
+		return "", nil
+	}
+	return line, err
+}
+
+// echoOff turns off the echo of the terminal fd, and drops the input that it
+// holds, which the terminal echoed as the human typed it.
+func echoOff(fd int) error {
+	t, err := unix.IoctlGetTermios(fd, ioctlGetTermios)
+	if err != nil {
+		return err
+	}
+	t.Lflag &^= unix.ECHO
+	return unix.IoctlSetTermios(fd, ioctlSetTermiosFlush, t)
 }
