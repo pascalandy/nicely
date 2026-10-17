@@ -14,4 +14,5 @@ description: Use when running a trusted task through Codex with ncly agent.
 - On `AGENT_DEPTH_LIMIT`, the call already runs inside as many agents as `max_depth` in `[agent]` allows: do the task yourself, or relay the hint to the human. Never raise `max_depth` or change `NCLY_AGENT_DEPTH` yourself
 - Check the task with `ncly agent run "<task>" --tools --model <id> --dry-run --json` first: it checks Codex and the settings, shows the invocation, and starts no task
 - Then run it with `ncly agent run "<task>" --tools --model <id> --run-id <id> --json`, with a new ID of your choice, such as `review-1`: the answer holds `answer` and `run_id`, and the record of the run keeps that ID even when the answer is lost
-- A failure after Codex started, such as `RUNTIME`, may have billed. Never start the task again on your own: relay the hint to the human
+- To get a lost answer back, make the same call with the same `--run-id`: it answers from the record, and Codex does not run again. `USAGE_INVALID` with that ID means that the ID names another call
+- A failure after Codex started, such as `RUNTIME`, or `RESUME_UNSAFE` on a repeated call, means that Codex may have billed without a saved answer. Never start the task again under a new ID on your own: relay the hint to the human
