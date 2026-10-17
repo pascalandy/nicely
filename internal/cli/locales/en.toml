@@ -137,6 +137,10 @@ other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" required, wh
 description = "Reason inside extension.invalid, when a switch or an argument other than the last takes several values. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag."
 other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" take several values, which only the last argument and a flag that takes a value may."
 
+["extension.values"]
+description = "Reason inside extension.invalid, when the accepted values of an argument or a flag do not fit it. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag. values is a key and stays as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" values that do not fit it: none, one that appears twice, one that its type does not read, or values on a switch."
+
 ["extension.default"]
 description = "Reason inside extension.invalid, when the default of a flag does not fit it. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the flag."
 other = "{{.File}} gives the flag \"{{.Name}}\" of the command \"{{.Path}}\" a default that does not fit it: of another type, a number that is not finite, a default on a required flag or a flag with several values, or a switch's default other than false."

@@ -7,6 +7,7 @@ import (
 	"math"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -154,6 +155,7 @@ type manifestFile struct {
 			Type       string          `toml:"type"`
 			Required   bool            `toml:"required"`
 			Variadic   bool            `toml:"variadic"`
+			Values     []string        `toml:"values"`
 			ValuesFrom *valuesFromFile `toml:"values_from"`
 		} `toml:"args"`
 		Flags []struct {
@@ -164,6 +166,7 @@ type manifestFile struct {
 			Type       string          `toml:"type"`
 			Required   bool            `toml:"required"`
 			Variadic   bool            `toml:"variadic"`
+			Values     []string        `toml:"values"`
 			Default    any             `toml:"default"`
 			ValuesFrom *valuesFromFile `toml:"values_from"`
 		} `toml:"flags"`
@@ -252,14 +255,14 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 		for _, a := range raw.Args {
 			c.Args = append(c.Args, Arg{
 				Name: a.Name, Summary: a.Summary, Type: Type(a.Type), Required: a.Required, Variadic: a.Variadic,
-				ValuesFrom: a.ValuesFrom.declared(),
+				Values: a.Values, ValuesFrom: a.ValuesFrom.declared(),
 			})
 		}
 		for _, f := range raw.Flags {
 			c.Flags = append(c.Flags, Flag{
 				Name: f.Name, Shorthand: f.Shorthand, Value: f.Value, Summary: f.Summary,
 				Type: Type(f.Type), Required: f.Required, Variadic: f.Variadic, Default: f.Default,
-				ValuesFrom: f.ValuesFrom.declared(),
+				Values: f.Values, ValuesFrom: f.ValuesFrom.declared(),
 			})
 		}
 		for _, g := range raw.FlagGroups {
@@ -472,6 +475,8 @@ func checkValues(path string, c Command) error {
 			return broken("extension.required", data(a.Name))
 		case a.Variadic && i != len(c.Args)-1:
 			return broken("extension.variadic", data(a.Name))
+		case !fitValues(a.Values, a.ArgType()):
+			return broken("extension.values", data(a.Name))
 		}
 		optional = optional || !a.Required
 	}
@@ -485,9 +490,38 @@ func checkValues(path string, c Command) error {
 			return broken("extension.variadic", data(f.Name))
 		case f.Default != nil && (f.Required || f.Variadic || !typed(f.Default, f.FlagType()) || f.Value == "" && f.Default != false):
 			return broken("extension.default", data(f.Name))
+		case f.Values != nil && (f.Value == "" || !fitValues(f.Values, f.FlagType())):
+			return broken("extension.values", data(f.Name))
 		}
 	}
 	return nil
+}
+
+// fitValues reports whether the accepted values of an argument or a flag
+// are absent, or hold at least one value, each once, that its type reads.
+func fitValues(values []string, t Type) bool {
+	if values == nil {
+		return true
+	}
+	for i, v := range values {
+		var err error
+		switch t {
+		case TypeBoolean:
+			_, err = strconv.ParseBool(v)
+		case TypeInteger:
+			_, err = strconv.ParseInt(v, 10, 64)
+		case TypeNumber:
+			var n float64
+			n, err = strconv.ParseFloat(v, 64)
+			if err == nil && (math.IsNaN(n) || math.IsInf(n, 0)) {
+				err = strconv.ErrRange
+			}
+		}
+		if v == "" || err != nil || slices.Index(values, v) != i {
+			return false
+		}
+	}
+	return len(values) > 0
 }
 
 // typed reports whether a value that TOML decoded has a type: an integer

@@ -144,6 +144,15 @@ exits 78 ncly switchdefault --json
 stderr 'gives the flag \\"loud\\" of the command \\"switchdefault run\\" a default'
 exits 78 ncly nandefault --json
 stderr 'gives the flag \\"limit\\" of the command \\"nandefault run\\" a default'
+
+# Accepted values sit on an argument or a flag that takes a value, each once, and fit its type
+exec sh broken.sh switchvalues typevalues twicevalues
+exits 78 ncly switchvalues --json
+stderr 'gives \\"loud\\" of the command \\"switchvalues run\\" values that do not fit it'
+exits 78 ncly typevalues --json
+stderr 'gives \\"count\\" of the command \\"typevalues run\\" values that do not fit it'
+exits 78 ncly twicevalues --json
+stderr 'gives \\"size\\" of the command \\"twicevalues run\\" values that do not fit it'
 exits 78 ncly group --json
 stderr 'the group of flags --left, --nope'
 exits 78 ncly bin --json
@@ -612,6 +621,59 @@ value = "n"
 type = "integer"
 default = "three"
 summary = "default.summary"
+-- broken/switchvalues.toml --
+format_version = 1
+contract_version = 1
+domain = "switchvalues"
+
+[[commands]]
+path = "switchvalues"
+summary = "switchvalues.summary"
+
+[[commands]]
+path = "switchvalues run"
+summary = "switchvalues.summary"
+
+[[commands.flags]]
+name = "loud"
+values = ["true"]
+summary = "switchvalues.summary"
+-- broken/typevalues.toml --
+format_version = 1
+contract_version = 1
+domain = "typevalues"
+
+[[commands]]
+path = "typevalues"
+summary = "typevalues.summary"
+
+[[commands]]
+path = "typevalues run"
+summary = "typevalues.summary"
+
+[[commands.args]]
+name = "count"
+type = "integer"
+values = ["1", "two"]
+summary = "typevalues.summary"
+-- broken/twicevalues.toml --
+format_version = 1
+contract_version = 1
+domain = "twicevalues"
+
+[[commands]]
+path = "twicevalues"
+summary = "twicevalues.summary"
+
+[[commands]]
+path = "twicevalues run"
+summary = "twicevalues.summary"
+
+[[commands.flags]]
+name = "size"
+value = "size"
+values = ["small", "small"]
+summary = "twicevalues.summary"
 -- broken/switchdefault.toml --
 format_version = 1
 contract_version = 1
