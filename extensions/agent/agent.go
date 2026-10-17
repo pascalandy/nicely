@@ -18,6 +18,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/pascalandy/nicely/sdk/record"
 )
 
 //go:embed manifest.toml
@@ -79,8 +80,8 @@ type check struct {
 	Message string `json:"message"`
 }
 
-// run prepares the task. A dry run shows what execution would run, and
-// starts no task. This build runs no task yet: M10 adds execution.
+// run prepares the task, then runs it under its run ID. A dry run shows
+// what execution would run, and starts no task.
 func run(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	t, problem := prepare(ctx, call)
@@ -91,12 +92,12 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
+	id, given := call.Flags["run-id"]
+	if given && !record.ValidID(id) {
+		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.run_id_invalid", "agent.run.run_id_invalid_hint", map[string]any{"ID": id})}}
+	}
 	if call.Flags["dry-run"] != "true" {
-		return contract.Outcome{Errors: []contract.Problem{{
-			Code:    contract.CapabilityUnsupported,
-			Message: p.T("agent.run.execution_unavailable"),
-			Hint:    p.T("agent.run.execution_unavailable_hint"),
-		}}}
+		return execute(ctx, call, t, id)
 	}
 	home, _ := os.UserHomeDir()
 	d := dryRun{

@@ -10,9 +10,9 @@ examples = ["ncly agent run \"Review this branch\" --tools --dry-run", "ncly doc
 [[commands]]
 path = "agent run"
 summary = "agent.run.summary"
-examples = ["ncly agent run \"Review this branch\" --tools --effort high --dry-run", "ncly agent run --task-file task.md --tools --dry-run --json"]
+examples = ["ncly agent run \"Review this branch\" --tools --effort high --dry-run", "ncly agent run --task-file task.md --tools --run-id review-1 --json"]
 effects = { user_writes = true, network = true, paid = true }
-modes = { dry_run = true }
+modes = { dry_run = true, recorded = true }
 config = ["agent.model", "agent.effort", "agent.max_depth"]
 requires = { bins = ["codex"] }
 
@@ -44,6 +44,11 @@ summary = "agent.run.effort"
 name = "cwd"
 value = "dir"
 summary = "agent.run.cwd"
+
+[commands.result.schema]
+type = "object"
+required = ["run_id", "answer", "harness", "model", "duration_ms"]
+properties = { run_id = { type = "string" }, answer = { type = "string", minLength = 1 }, harness = { const = "codex" }, model = { type = "string", minLength = 1 }, duration_ms = { type = "integer", minimum = 0 } }
 
 [commands.result.dry_run_schema]
 type = "object"

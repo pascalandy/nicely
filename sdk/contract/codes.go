@@ -43,6 +43,9 @@ const (
 	// CapabilityUnsupported is a mode or a protocol that the selected
 	// program cannot enforce, such as a harness that cannot turn tools off.
 	CapabilityUnsupported Code = "CAPABILITY_UNSUPPORTED"
+	// ResumeUnsafe is a run that cannot safely continue, because its
+	// evidence is missing, changed, uncertain, or unsupported.
+	ResumeUnsafe Code = "RESUME_UNSAFE"
 
 	ConfigUnknownKey   Code = "CONFIG_UNKNOWN_KEY"
 	ConfigDefaultsUsed Code = "CONFIG_DEFAULTS_USED"
@@ -60,6 +63,7 @@ type codeExit struct {
 var errorCodes = []codeExit{
 	{Interrupted, ExitInterrupted},
 	{Terminated, ExitTerminated},
+	{ResumeUnsafe, ExitRuntime},
 	{Runtime, ExitRuntime},
 	{ConfigInvalid, ExitHuman},
 	{ExtensionInvalid, ExitHuman},
