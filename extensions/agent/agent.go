@@ -124,6 +124,9 @@ func dryRunOf(ctx context.Context, call extension.Call, t task, id string) contr
 				return failure(problem, keep)
 			}
 			if completed {
+				if _, _, problem := verified(p, saved, runs.File(id), id); problem != nil {
+					return failure(problem, keep)
+				}
 				return reused(call, t, saved, id)
 			}
 		}

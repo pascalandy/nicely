@@ -176,15 +176,9 @@ func sameValues(a, b map[string]any) bool {
 // first call answered, and never from what Codex wrote before completion.
 func savedAnswer(call extension.Call, saved *record.Record, file, id string, effect contract.Effect) contract.Outcome {
 	p := call.Printer
-	keep := map[string]string{"run_id": id}
-	step := saved.Items[0].Steps[0]
-	var ev evidence
-	if len(step.Artifacts) != 1 || json.Unmarshal(step.Evidence, &ev) != nil || ev.FormatVersion != 1 {
-		return failure(unreadable(p, file, id), keep)
-	}
-	text, err := step.Artifacts[0].Read()
-	if err != nil {
-		return failure(inspect(p, contract.ResumeUnsafe, id, "agent.run.answer_changed", map[string]any{"File": step.Artifacts[0].Path}), keep)
+	text, ev, problem := verified(p, saved, file, id)
+	if problem != nil {
+		return failure(problem, map[string]string{"run_id": id})
 	}
 	model, _ := saved.Resolved["model"].(string)
 	if !call.JSON {
@@ -194,6 +188,23 @@ func savedAnswer(call extension.Call, saved *record.Record, file, id string, eff
 		}
 	}
 	return contract.Outcome{Data: answer{RunID: id, Answer: string(text), Harness: "codex", Model: model, DurationMS: ev.DurationMS}, Effect: effect}
+}
+
+// verified reads the saved answer of a completed run, with the evidence of
+// its step codex, and checks that the answer still matches the size and the
+// SHA-256 of its artifact, as case 3 of Records and replay in spec.md asks.
+// A dry run and execution share it, so they decide alike.
+func verified(p *i18n.Printer, saved *record.Record, file, id string) ([]byte, evidence, *contract.Problem) {
+	step := saved.Items[0].Steps[0]
+	var ev evidence
+	if len(step.Artifacts) != 1 || json.Unmarshal(step.Evidence, &ev) != nil || ev.FormatVersion != 1 {
+		return nil, ev, unreadable(p, file, id)
+	}
+	text, err := step.Artifacts[0].Read()
+	if err != nil {
+		return nil, ev, inspect(p, contract.ResumeUnsafe, id, "agent.run.answer_changed", map[string]any{"File": step.Artifacts[0].Path})
+	}
+	return text, ev, nil
 }
 
 // unreadable is the RESUME_UNSAFE problem of a record that the call cannot

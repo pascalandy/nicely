@@ -68,11 +68,17 @@ exits 2 ncly agent run 'Review this other branch' --tools --run-id r1 --dry-run 
 answer stderr USAGE_INVALID
 grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
 
-# A saved answer that changed never answers
+# A saved answer that changed or vanished never answers, and a dry run promises no reuse of it
 exec /bin/sh -c 'printf "Edited" > "$RUNS/r1/answer.txt"'
 exits 1 ncly agent run 'Review this branch' --tools --run-id r1 --json
 answer stderr RESUME_UNSAFE
 stderr '"message":"'${RUNS@R}'/r1/answer\.txt changed since the run saved it\."'
+exits 1 ncly agent run 'Review this branch' --tools --run-id r1 --dry-run --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"'${RUNS@R}'/r1/answer\.txt changed since the run saved it\."'
+rm $RUNS/r1/answer.txt
+exits 1 ncly agent run 'Review this branch' --tools --run-id r1 --dry-run --json
+answer stderr RESUME_UNSAFE
 grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
 
 # A failed Codex and a missing answer leave the step unknown, and a repeated call starts no
