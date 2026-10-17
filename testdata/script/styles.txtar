@@ -89,6 +89,8 @@ stdout '^  - Set \x1b\[36mNCLY_NO_INPUT=1\x1b\[m$'
 stdout '^\x1b\[1mUSE \x1b\[m\x1b\[36;1m--dry-run\x1b\[m'
 ! stdout 'skill-dir'
 ! stdout 'name: alpha'
+! stdout '/scripts/check\.sh'
+! stdout 'CASEPATH'
 ! stdout '^---'
 ! stdout '##'
 
@@ -99,6 +101,11 @@ stdout '^folder  '${WORK@R}'/skills/alpha$'
 stdout '^ALPHA$'
 stdout '^  Run `ncly doctor` first\.$'
 stdout '^USE `--dry-run` FIRST$'
+
+# A link keeps its destination as the skill writes it, so a relative path still resolves
+# against the folder, and a heading keeps the case of a link
+stdout '^  Then run the command, as the check scripts/check\.sh does\.$'
+stdout '^READ https://example\.com/CasePath$'
 ! stdout '\x1b\[[0-9;]*m'
 
 # A pipe gets the file as it is, after the comment that gives the folder. The bundled skill
@@ -160,7 +167,9 @@ Run `ncly doctor` first.
 
 ## Use `--dry-run` first
 
-Then run the command.
+Then run the command, as [the check](scripts/check.sh) does.
+
+## Read https://example.com/CasePath
 -- skills/beta/SKILL.md --
 ---
 name: beta

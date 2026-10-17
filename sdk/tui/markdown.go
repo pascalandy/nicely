@@ -10,10 +10,14 @@ import (
 // Markdown renders a skill's Markdown in the look of ncly skill view: the
 // style of the help, with headings in bold uppercase, code in cyan, and
 // dashes for bullets, wrapped at width. Without color, code keeps its
-// backticks, so it stays apart from the prose. Glamour writes the styles,
-// and Output turns them into plain text when color is off.
+// backticks, so it stays apart from the prose. A link shows its destination
+// as the skill writes it, so a relative path still resolves against the
+// skill's folder. Glamour writes the styles, and Output turns them into
+// plain text when color is off.
 func Markdown(markdown string, width int, noColor bool) (string, error) {
-	r, err := glamour.NewTermRenderer(glamour.WithStyles(markdownStyle(noColor)), glamour.WithWordWrap(width))
+	// Glamour roots a relative destination at / against any base it can
+	// parse, and keeps it as written against one that it cannot.
+	r, err := glamour.NewTermRenderer(glamour.WithStyles(markdownStyle(noColor)), glamour.WithWordWrap(width), glamour.WithBaseURL("%"))
 	if err != nil {
 		return "", err
 	}
@@ -30,7 +34,8 @@ func Markdown(markdown string, width int, noColor bool) (string, error) {
 }
 
 // markdownStyle is the Glamour style of Markdown, with the 16 ANSI colors
-// only.
+// only. Code and links keep their case in a heading, so they copy as the
+// skill writes them.
 func markdownStyle(noColor bool) ansi.StyleConfig {
 	on, off, indent, quote, cyan := true, false, uint(2), uint(1), "6"
 	code := ansi.StyleBlock{StylePrimitive: ansi.StylePrimitive{Color: &cyan, Upper: &off}}
@@ -46,6 +51,8 @@ func markdownStyle(noColor bool) ansi.StyleConfig {
 		Item:           ansi.StylePrimitive{BlockPrefix: "- "},
 		Enumeration:    ansi.StylePrimitive{BlockPrefix: ". "},
 		Code:           code,
+		Link:           ansi.StylePrimitive{Upper: &off},
+		LinkText:       ansi.StylePrimitive{Upper: &off},
 		CodeBlock:      ansi.StyleCodeBlock{StyleBlock: ansi.StyleBlock{Margin: &indent}},
 		BlockQuote:     ansi.StyleBlock{Indent: &quote, IndentToken: &[]string{"| "}[0]},
 		HorizontalRule: ansi.StylePrimitive{Format: "\n--------\n"},
