@@ -111,7 +111,9 @@ func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend
 	default:
 		code = command.Finish(p, g, contract.Core, out, err, "ncly --help", stdout, stderr)
 	}
-	form.PrintNext(code)
+	if err := form.PrintNext(code); err != nil {
+		return command.Report(p, g, contract.Core, command.WriteFailure(p), stdout, stderr)
+	}
 	return code
 }
 

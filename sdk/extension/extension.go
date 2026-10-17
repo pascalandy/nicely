@@ -200,7 +200,9 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 	} else {
 		code = command.Finish(p, g, codes, out, err, "ncly "+domain+" --help", stdout, stderr)
 	}
-	form.PrintNext(code)
+	if err := form.PrintNext(code); err != nil {
+		return command.Report(p, g, codes, command.WriteFailure(p), stdout, stderr)
+	}
 	return code
 }
 

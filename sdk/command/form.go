@@ -53,12 +53,14 @@ func WithForm(ctx context.Context, f *Form) context.Context {
 
 // PrintNext prints, after a run that the form completed, the line Next
 // time: and the equivalent command, unless a signal stopped the run, which
-// code tells.
-func (f *Form) PrintNext(code int) {
+// code tells. It returns the error of a write that fails, which fails the
+// run, as Output in contract.md asks of lost output.
+func (f *Form) PrintNext(code int) error {
 	if f == nil || f.next == "" || code == int(contract.ExitInterrupted) || code == int(contract.ExitTerminated) {
-		return
+		return nil
 	}
-	_, _ = io.WriteString(tui.Output(f.out, f.noColor), tui.Muted(f.p.T("form.next_time"))+"\n  "+f.next+"\n")
+	_, err := io.WriteString(tui.Output(f.out, f.noColor), tui.Muted(f.p.T("form.next_time"))+"\n  "+f.next+"\n")
+	return err
 }
 
 // FormKeys returns the help of a form's keys in the language of p.
