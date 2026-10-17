@@ -249,6 +249,10 @@ other = "Codex could not start for {{.ID}}, so no task ran."
 description = "Error INTERRUPTED or TERMINATED of `ncly agent run` when Ctrl-C or SIGTERM stopped Codex during its task, so its paid work may have happened. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
 other = "A signal stopped Codex during the run {{.ID}}, so its result is unknown."
 
+["agent.run.stopped_after"]
+description = "Error INTERRUPTED or TERMINATED of `ncly agent run` when Ctrl-C or SIGTERM came after the call saved the answer of Codex and the completion of the run, so the answer stays saved. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
+other = "A signal stopped the call after the run {{.ID}} saved the answer of Codex, so the run is complete."
+
 ["agent.run.timed_out"]
 description = "Error RUNTIME of `ncly agent run` when the call reached its --timeout during the task of Codex, so its paid work may have happened. {{.Limit}} is the timeout, such as 5m, which stays as is. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
 other = "Codex did not finish within {{.Limit}} for {{.ID}}, so its result is unknown."

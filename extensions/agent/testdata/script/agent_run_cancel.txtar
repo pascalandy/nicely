@@ -150,7 +150,8 @@ stdout '"answer":"OK from the stub".*"run_id":"k8"'
 exec ncly run view k8 --json
 stdout '"status":"completed","tools"'
 
-# After Ctrl-C, INTERRUPTED with the keys of the answer, and a repeated call answers it again
+# After Ctrl-C, INTERRUPTED with the keys of the answer, whose hint and next inspect the run, and
+# a repeated call answers it again
 rm paused
 exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k9 --json &
 waitfile paused
@@ -160,6 +161,7 @@ grep '^130$' exit.txt
 answer stderr INTERRUPTED
 stderr '"answer":"OK from the stub"'
 stderr '"run_id":"k9"'
+stderr '"message":"A signal stopped the call after the run k9 saved the answer of Codex, so the run is complete\.","hint":"ncly run view k9","next":\["ncly","run","view","k9"\]'
 env CODEX_QUICK= NCLY_TEST_BOUNDARY=
 exec ncly run view k9 --json
 stdout '"status":"completed","tools"'

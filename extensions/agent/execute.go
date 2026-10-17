@@ -147,7 +147,13 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 		o.Effect = run.Effect()
 		return o
 	}
-	return savedAnswer(call, run.Record, run.File(), id, run.Effect())
+	o := savedAnswer(call, run.Record, run.File(), id, run.Effect())
+	if ctx.Err() != nil && !timedOut(ctx) && o.Errors == nil {
+		// A signal came once Codex had answered: the answer and the
+		// completion stay saved, and the signal still decides the exit code.
+		o.Errors = []contract.Problem{*inspect(p, stopCode(ctx), id, "agent.run.stopped_after", data)}
+	}
+	return o
 }
 
 // decide applies Records and replay in spec.md to the record that holds
