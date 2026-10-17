@@ -46,7 +46,7 @@ func invalid(p *i18n.Printer, c *cobra.Command, d contract.Command, args []strin
 	}
 	for _, g := range d.FlagGroups {
 		if setFlags(c, g) > g.Max {
-			return usage(groupMessage(p, g, g.Max))
+			return usage(groupMessage(p, g, true))
 		}
 	}
 	return nil
@@ -94,22 +94,23 @@ func missing(p *i18n.Printer, c *cobra.Command, d contract.Command, args []strin
 	case first.flag != nil:
 		message = p.T("usage.missing_flag", map[string]any{"Flag": "--" + first.flag.Name})
 	default:
-		message = groupMessage(p, *first.group, first.group.Min)
+		message = groupMessage(p, *first.group, false)
 	}
 	return contract.Problem{Code: contract.UsageInvalid, Message: message, Hint: commandLine(c, d, args, lacks)}
 }
 
-// groupMessage says how many flags of a group to give, where count is the
-// bound that the call breaks.
-func groupMessage(p *i18n.Printer, g contract.FlagGroup, count int) string {
+// groupMessage says how many flags of a group to give: at most its max when
+// the call sets too many, at least its min otherwise, or exactly one number
+// when both are the same.
+func groupMessage(p *i18n.Printer, g contract.FlagGroup, tooMany bool) string {
 	data := map[string]any{"Flags": "--" + strings.Join(g.Flags, ", --")}
 	switch {
 	case g.Min == g.Max:
 		return p.N("usage.flag_group_exactly", g.Min, data)
-	case count == g.Min:
-		return p.N("usage.flag_group_at_least", g.Min, data)
+	case tooMany:
+		return p.N("usage.flag_group_at_most", g.Max, data)
 	}
-	return p.N("usage.flag_group_at_most", g.Max, data)
+	return p.N("usage.flag_group_at_least", g.Min, data)
 }
 
 // setFlags counts the flags of a group that the call set.

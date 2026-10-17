@@ -5,12 +5,10 @@ import (
 	"errors"
 	"io"
 	"os"
-	"os/signal"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -108,7 +106,7 @@ func complete(p, text *i18n.Printer, c *cobra.Command, d contract.Command, args 
 // Ctrl-C, or a signal that ends the form, returns a failure that the signal
 // decides.
 func (f *Form) ask(text *i18n.Printer, c *cobra.Command, d contract.Command, args []string, lacks []lack) ([]string, error) {
-	ctx, done := onSignal()
+	ctx, done := runner.ListenForSignals()
 	defer done()
 	stopped := func(err error) error {
 		if ctx.Err() == nil && !errors.Is(err, tui.ErrInterrupted) {
@@ -216,30 +214,10 @@ func (f *Form) pick(ctx context.Context, text *i18n.Printer, c *cobra.Command, d
 	}
 	return tui.AskChoice(ctx, f.in, f.out, f.noColor, tui.Choice{
 		Title:       f.p.T("form.group_title"),
-		Description: groupMessage(f.p, g, g.Min),
+		Description: groupMessage(f.p, g, false),
 		Options:     options,
 		Keys:        FormKeys(f.p),
 	})
-}
-
-// onSignal returns a context that Ctrl-C or SIGTERM ends while a form asks,
-// with the signal as its cause, as runner.OnSignal does, and a function that
-// stops listening, so a later signal reaches the command as before.
-func onSignal() (context.Context, func()) {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-	ctx, cancel := context.WithCancelCause(context.Background())
-	go func() {
-		select {
-		case s := <-signals:
-			cancel(runner.SignalCause{Signal: s})
-		case <-ctx.Done():
-		}
-	}()
-	return ctx, func() {
-		signal.Stop(signals)
-		cancel(nil)
-	}
 }
 
 // commandLine writes a call as the Next time: line of Modes in contract.md

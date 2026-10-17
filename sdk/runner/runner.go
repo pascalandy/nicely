@@ -322,11 +322,29 @@ func SignalOf(ctx context.Context) os.Signal {
 // that signal as its cause. The handler stays registered for the life of
 // the process, so a later signal never ends it.
 func OnSignal() context.Context {
+	ctx, _ := ListenForSignals()
+	return ctx
+}
+
+// ListenForSignals returns a context that the first Ctrl-C or SIGTERM ends,
+// with that signal as its cause, as OnSignal does, and a function that stops
+// listening, after which a signal reaches the process as before, such as
+// once a form has its answer.
+func ListenForSignals() (context.Context, func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
 	ctx, cancel := context.WithCancelCause(context.Background())
-	go func() { cancel(SignalCause{<-signals}) }()
-	return ctx
+	go func() {
+		select {
+		case s := <-signals:
+			cancel(SignalCause{s})
+		case <-ctx.Done():
+		}
+	}()
+	return ctx, func() {
+		signal.Stop(signals)
+		cancel(nil)
+	}
 }
 
 func exitCode(state *os.ProcessState) int {
