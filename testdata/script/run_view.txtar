@@ -1,0 +1,135 @@
+# ncly run view shows one saved record without taking its lock: every key that the file holds,
+# then active, which it reads from the lock without creating it. A saved run that failed still
+# inspects with exit 0, and a record that cannot be used answers RESUME_UNSAFE.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+mkdir nbin
+exec /bin/sh -c 'for c in ncly holdlock; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/nbin
+env RUNS=$WORK/.local/state/nicely/runs
+mkdir $RUNS
+cp c1.json $RUNS/c1.json
+cp f1.json $RUNS/f1.json
+cp r1.json $RUNS/r1.json
+cp garbage.json $RUNS/bad.json
+cp v2.json $RUNS/v2.json
+
+# A completed run: every key of the file, numbers as the file holds them, a key that this
+# release does not know, then active. Viewing it creates no lock file
+exec ncly run view c1 --json
+stdout '\A\{"ok":true,"contract_version":1,"run":\{"active":false,"attempts":1,"format_version":1,"future_key":"kept",'
+stdout '"inputs":\{"cwd":"/work","options":\{"lang":"fr","max":3\},"task_sha256":"87b5","tools":true,"urls":\["u1","u2"\]\}'
+stdout '"artifacts":\[\{"path":"/state/runs/c1/answer\.txt","sha256":"1762","size_bytes":16\}\],"effect":"paid","error":null,"evidence":\{"duration_ms":28,"format_version":1\}'
+! stderr .
+! exists $RUNS/c1.lock
+cp stdout view.json
+exec ncly describe 'run view' --json
+cp stdout describe.json
+schema view.json describe.json schema
+exec ncly run view c1
+cmp stdout want-c1.txt
+! stderr .
+
+# A saved run that failed still inspects with exit 0: ok describes the inspection, and status
+# the saved operation. The text shows the error of the step and its hint
+exec ncly run view f1 --json
+stdout '\A\{"ok":true,"contract_version":1,"run":\{"active":false,'
+stdout '"status":"failed"'
+exec ncly run view f1
+cmp stdout want-f1.txt
+
+# While another process holds a run, view answers at once with active, and a step that
+# started without an end shows its start alone
+! exec holdlock $RUNS/r1.lock held &
+waitfile held
+exec ncly run view r1 --json
+stdout '"active":true'
+exec ncly run view r1
+stdout '^active    yes$'
+stdout '^    unknown  codex  paid  2026-10-17T18:40:00Z$'
+kill
+wait
+exec ncly run view r1 --json
+stdout '"active":false'
+
+# A run ID outside the rule is USAGE_INVALID, and an unknown run NOT_FOUND, whose next lists
+# the runs
+exits 2 ncly run view Bad_ID --json
+answer stderr USAGE_INVALID
+stderr '"message":"Bad_ID is no run ID: a run ID holds 1 to 64 lowercase letters, digits, and hyphens, and starts with a letter or a digit\."'
+exits 2 ncly run view nothing --json
+answer stderr NOT_FOUND
+stderr '"message":"No record holds the run nothing\.","hint":"ncly run list","next":\["ncly","run","list"\]'
+! exists $RUNS/nothing.lock
+
+# A record that is no JSON, or that holds another format_version, is RESUME_UNSAFE, and stays
+exits 1 ncly run view bad --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the record '${RUNS@R}'/bad\.json, or this release does not support its format\."'
+exits 1 ncly run view v2 --json
+answer stderr RESUME_UNSAFE
+cmp $RUNS/v2.json v2.json
+
+# The text of the view comes from the catalog
+exec ncly --lang en-XA run view f1
+pseudo stdout f1 transcript run youtube failed pending transcribe summarize paid none u1 2026-10-01T10:00:00Z 2026-10-01T10:00:05Z 5s v0.13.0 RUNTIME Deepgram refused the file Check then again 1 lang fr
+
+-- want-c1.txt --
+c1  agent run
+status    completed
+active    no
+started   2026-10-17T18:37:13Z
+updated   2026-10-17T18:37:14Z
+attempts  1
+ncly      v0.10.0
+
+INPUTS
+  cwd          /work
+  options
+    lang  fr
+    max   3
+  task_sha256  87b5
+  tools        true
+  urls
+    u1
+    u2
+
+RESOLVED
+  effort   medium
+  harness  codex
+  model    m1
+
+TOOLS
+  codex  0.163.0
+
+ITEMS
+  task → /state/runs/c1
+    completed  codex  paid  2026-10-17T18:37:13Z → 2026-10-17T18:37:14Z, 1s
+      /state/runs/c1/answer.txt  16 B
+-- want-f1.txt --
+f1  transcript run youtube
+status    failed
+active    no
+started   2026-10-01T10:00:00Z
+updated   2026-10-01T10:00:05Z
+attempts  1
+ncly      v0.13.0
+
+RESOLVED
+  lang  fr
+
+ITEMS
+  u1
+    failed   transcribe  paid  2026-10-01T10:00:00Z → 2026-10-01T10:00:05Z, 5s
+      error[RUNTIME]: Deepgram refused the file.
+      hint: Check the file, then run again.
+    pending  summarize   none
+-- c1.json --
+{"format_version":1,"run_id":"c1","path":"agent run","status":"completed","started_at":"2026-10-17T18:37:13Z","updated_at":"2026-10-17T18:37:14Z","ncly_version":"v0.10.0","attempts":1,"inputs":{"cwd":"/work","task_sha256":"87b5","tools":true,"urls":["u1","u2"],"options":{"lang":"fr","max":3}},"resolved":{"effort":"medium","harness":"codex","model":"m1"},"tools":{"codex":"0.163.0"},"items":[{"key":"task","output_dir":"/state/runs/c1","steps":[{"id":"codex","effect":"paid","status":"completed","started_at":"2026-10-17T18:37:13Z","finished_at":"2026-10-17T18:37:14Z","artifacts":[{"path":"/state/runs/c1/answer.txt","size_bytes":16,"sha256":"1762"}],"error":null,"evidence":{"format_version":1,"duration_ms":28}}]}],"future_key":"kept"}
+-- f1.json --
+{"format_version":1,"run_id":"f1","path":"transcript run youtube","status":"failed","started_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:00:05Z","ncly_version":"v0.13.0","attempts":1,"inputs":{},"resolved":{"lang":"fr"},"tools":{},"items":[{"key":"u1","output_dir":null,"steps":[{"id":"transcribe","effect":"paid","status":"failed","started_at":"2026-10-01T10:00:00Z","finished_at":"2026-10-01T10:00:05Z","artifacts":[],"error":{"code":"RUNTIME","message":"Deepgram refused the file.","hint":"Check the file, then run again."}},{"id":"summarize","effect":"none","status":"pending","started_at":null,"finished_at":null,"artifacts":[],"error":null}]}]}
+-- r1.json --
+{"format_version":1,"run_id":"r1","path":"agent run","status":"running","started_at":"2026-10-17T18:40:00Z","updated_at":"2026-10-17T18:40:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{"cwd":"/work","task_sha256":"87b5","tools":true},"resolved":{"effort":"medium","harness":"codex","model":"m1"},"tools":{"codex":"0.163.0"},"items":[{"key":"task","output_dir":"/state/runs/r1","steps":[{"id":"codex","effect":"paid","status":"unknown","started_at":"2026-10-17T18:40:00Z","finished_at":null,"artifacts":[],"error":null}]}]}
+-- garbage.json --
+{"format_version":
+-- v2.json --
+{"format_version":2,"run_id":"v2"}
