@@ -45,8 +45,7 @@ func addAuthLogout(p *i18n.Printer, g command.Globals, group *cobra.Command, ext
 			return plannedChange(p, service, "logout")
 		}
 		force, _ := c.Flags().GetBool(forceFlag.Name)
-		out := c.OutOrStdout()
-		human := interactive(g, out)
+		human := interactive(g, c.OutOrStdout())
 		data := map[string]any{"Service": service, "Variable": keyVariable(service)}
 		ctx := runner.OnSignal()
 		k := keychain.New(b, human)
@@ -72,7 +71,7 @@ func addAuthLogout(p *i18n.Printer, g command.Globals, group *cobra.Command, ext
 				hint:     strings.Join(forced, " "),
 				next:     forced,
 			}
-			if err := question.ask(ctx, p, human, out); err != nil {
+			if err := question.ask(ctx, p, g, human, c.ErrOrStderr()); err != nil {
 				return err
 			}
 		}

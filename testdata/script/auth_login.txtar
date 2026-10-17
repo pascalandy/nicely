@@ -1,8 +1,7 @@
 # ncly auth login stores the key of a service in the keychain and never shows or answers
 # the key. It checks the name first, then asks the keychain before it reads a key or asks for
-# a confirmation. The test keychain is the file $HOME/test-keychain.jsonl. pty runs a command
-# on a pseudo-terminal, types each answer of its script once the prompt shows, prints what
-# the terminal showed, and says on stderr whether the command left echo on.
+# a confirmation. The test keychain is the file $HOME/test-keychain.jsonl. auth_form.txtar
+# proves the masked field and the confirmation in a terminal.
 env DATA=$WORK/.local/share/nicely/extensions
 chmod 755 $DATA/ncly-hello
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
@@ -129,39 +128,11 @@ answer stderr INTERRUPTED
 stderr '"code":"RUNTIME","message":"[^"]+","hint":"Check the key of deepgram with ncly auth status\.","next":\["ncly","auth","status"\]'
 env NCLY_TEST_KEYCHAIN=
 
-# In a terminal, the key prompt turns echo off, so the typed key never shows, while the
-# keychain holds it
-exec pty type-key.txt ncly auth login openai
-stdout '\AKey for openai: \nStored the key of openai in the keychain\.\n\z'
-! stdout sk-typed
-stderr '\Aecho on\n\z'
-grep -count=1 '"call":"set","account":"openai","key":"sk-typed"\}' test-keychain.jsonl
-
-# A declined replacement keeps the old key and exits 2 with CONFIRMATION_REQUIRED, before
-# any key prompt, and a confirmed one replaces it
-exits 2 pty decline.txt ncly auth login openai
-stdout '\AThe keychain already holds a key for openai\. Replace it\? \[y/N\] n\n\z'
-stderr '^error\[CONFIRMATION_REQUIRED\]: The key of openai stays as it was\.$'
-stderr '^echo on$'
-grep -count=1 '"call":"set","account":"openai"' test-keychain.jsonl
-exec pty accept.txt ncly auth login openai
-stdout 'Replace it\? \[y/N\] y\nKey for openai: \nStored the key of openai in the keychain\.\n\z'
-! stdout sk-second
-grep -count=1 '"call":"set","account":"openai","key":"sk-second"\}' test-keychain.jsonl
-
-# Ctrl-C at the key prompt exits 130 with INTERRUPTED and leaves echo on
-exits 130 pty interrupt.txt ncly auth login mistral
-stderr '^error\[INTERRUPTED\]'
-stderr '^echo on$'
-! grep '"account":"mistral","key"' test-keychain.jsonl
-
 # Under the pseudo-locale, every word comes from the catalog
 exec ncly --lang en-XA auth login --help
 pseudo stdout auth login deepgram service stdin
 exits 78 ncly --lang en-XA auth login openai
 pseudo stderr auth login openai
-exec pty pseudo-key.txt ncly --lang en-XA auth login openai --force
-pseudo stdout openai
 
 -- padded.txt --
   dg-padded  
@@ -171,17 +142,6 @@ pseudo stdout openai
 -- empty.txt --
 -- late.txt --
 dg-late
--- type-key.txt --
-Key for openai: 	sk-typed
--- pseudo-key.txt --
-openai: 	sk-pseudo
--- decline.txt --
-Replace it? [y/N] 	n
--- accept.txt --
-Replace it? [y/N] 	y
-Key for openai: 	sk-second
--- interrupt.txt --
-Key for mistral: 	^C
 -- .local/share/nicely/extensions/ncly-hello --
 #!/bin/sh
 echo "$0" >> "$WORK/ran"

@@ -207,3 +207,19 @@ other = "This extension does not match its own manifest."
 ["outcome.extension_broken_hint"]
 description = "Hint under outcome.extension_broken: what the user does next. --verbose is a flag and stays as is."
 other = "Report it to the extension's author, with the details that --verbose shows."
+
+["form.key_enter"]
+description = "Key help under a form, such as the masked field of a key: the name of the Enter key, which form.submit follows."
+other = "enter"
+
+["form.submit"]
+description = "Key help under a form, after the name of the Enter key in form.key_enter: pressing it sends the answer."
+other = "submit"
+
+["confirm.choices"]
+description = "End of a confirmation in a terminal, after its question: the answers, with the default, No, in uppercase. Use the letters of confirm.yes for yes."
+other = "[y/N]"
+
+["confirm.yes"]
+description = "The answers that confirm a confirmation, separated by commas, in lowercase. Any other answer means no. Include the letter that confirm.choices shows for yes."
+other = "y, yes"

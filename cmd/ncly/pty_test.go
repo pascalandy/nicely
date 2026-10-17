@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -16,14 +18,19 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// ptyRun runs a command with stdin and stdout on a pseudo-terminal, as a
-// human at a terminal runs it: pty <script> <command> [args...]. Each line
-// of the script holds a prompt and an answer, separated by a tab. pty waits
-// until the terminal shows the prompt, then types the answer and Enter, or
-// Ctrl-C when the answer is ^C. Once the command ends, pty prints what the
-// terminal showed on stdout, with each CR LF as LF, then echo on or echo
-// off on stderr, the state that the command left the terminal in, and exits
-// with the command's code. stderr of the command stays the caller's.
+// ptyRun runs a command with stdin, stdout, and stderr on a pseudo-terminal
+// of 80 columns and 24 rows, as a human at a terminal runs it:
+// pty <script> <command> [args...]. Each line of the script holds a prompt
+// and an answer, separated by a tab. pty waits until the terminal shows the
+// prompt, then types the answer and Enter, Ctrl-C when the answer is ^C, or
+// Enter alone when it is ^M. An answer that ends with \c, as in echo, is
+// typed without Enter, so the next prompt can be what the typing shows.
+// Once the command ends, pty prints what the terminal showed on stdout, with
+// each CR LF as LF, and exits with the command's code. On stderr, it then
+// says echo on or echo off, the state that the command left the terminal in,
+// and terminal as found, or terminal changed and what changed: the settings
+// of the terminal, or each mode that the command changed and left changed,
+// such as a hidden cursor.
 //
 // testscript's ttyin leaves stdout a pipe, so the call would be
 // non-interactive, and script writes its input before ncly turns echo off,
@@ -49,8 +56,15 @@ func runPty(args []string) int {
 		return fail(err)
 	}
 	defer func() { _ = ptmx.Close() }()
+	if err := pty.Setsize(ptmx, &pty.Winsize{Rows: 24, Cols: 80}); err != nil {
+		return fail(err)
+	}
+	found, err := unix.IoctlGetTermios(int(tty.Fd()), ioctlGetTermios)
+	if err != nil {
+		return fail(err)
+	}
 	cmd := exec.Command(args[1], args[2:]...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, os.Stderr
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, tty
 	// The command leads its own session, with the terminal as its
 	// controlling one, so Ctrl-C reaches it as SIGINT.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
@@ -66,9 +80,14 @@ func runPty(args []string) int {
 			fmt.Print(screen.text())
 			return fail(fmt.Errorf("the prompt %q never appeared", s.prompt))
 		}
-		answer := s.answer + "\r"
-		if s.answer == "^C" {
+		answer, typed := strings.CutSuffix(s.answer, `\c`)
+		switch {
+		case s.answer == "^C":
 			answer = "\x03"
+		case s.answer == "^M":
+			answer = "\r"
+		case !typed:
+			answer += "\r"
 		}
 		if _, err := ptmx.WriteString(answer); err != nil {
 			return fail(err)
@@ -86,16 +105,57 @@ func runPty(args []string) int {
 	case err != nil:
 		return fail(err)
 	}
+	left, err := unix.IoctlGetTermios(int(settingsSide(ptmx, tty).Fd()), ioctlGetTermios)
+	if err != nil {
+		return fail(err)
+	}
 	echo := "echo off"
-	if t, err := unix.IoctlGetTermios(int(tty.Fd()), ioctlGetTermios); err == nil && t.Lflag&unix.ECHO != 0 {
+	if left.Lflag&unix.ECHO != 0 {
 		echo = "echo on"
 	}
 	// Once the terminal closes, the reader sees the end of what it showed.
 	_ = tty.Close()
 	screen.waitDone(2 * time.Second)
-	fmt.Print(screen.text())
+	text := screen.text()
+	fmt.Print(text)
 	fmt.Fprintln(os.Stderr, echo)
+	changed := changedModes(text)
+	if *left != *found {
+		changed = append([]string{"settings"}, changed...)
+	}
+	if len(changed) == 0 {
+		fmt.Fprintln(os.Stderr, "terminal as found")
+	} else {
+		fmt.Fprintln(os.Stderr, "terminal changed:", strings.Join(changed, ", "))
+	}
 	return code
+}
+
+// privateMode is a sequence that sets or resets modes of a terminal, such as
+// ESC [ ? 25 l, which hides the cursor.
+var privateMode = regexp.MustCompile(`\x1b\[\?([0-9;]+)([hl])`)
+
+// changedModes lists each mode that what the terminal showed changed and
+// left changed. A program changes a mode from the state that it found, so
+// the mode is as found when its last change undoes its first one.
+func changedModes(text string) []string {
+	first, last := map[string]string{}, map[string]string{}
+	for _, m := range privateMode.FindAllStringSubmatch(text, -1) {
+		for mode := range strings.SplitSeq(m[1], ";") {
+			if _, seen := first[mode]; !seen {
+				first[mode] = m[2]
+			}
+			last[mode] = m[2]
+		}
+	}
+	var changed []string
+	for mode, set := range first {
+		if last[mode] == set {
+			changed = append(changed, "mode "+mode)
+		}
+	}
+	slices.Sort(changed)
+	return changed
 }
 
 type ptyStep struct{ prompt, answer string }

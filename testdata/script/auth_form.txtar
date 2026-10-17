@@ -1,0 +1,195 @@
+# In a terminal, ncly auth login asks for the key in the masked field, and a replacement or
+# a logout asks for a [y/N] confirmation, on stderr, in the looks that Modes describes. pty
+# runs a command on a pseudo-terminal, types each answer of its script once the prompt shows,
+# prints what the terminal showed, then says whether the command left the terminal as it
+# found it. The test keychain is the file $HOME/test-keychain.jsonl. Inside tmux, the field
+# takes its color profile from sdk/tui, so it never runs tmux info, which the stub would log.
+env DATA=$WORK/.local/share/nicely/extensions
+chmod 755 $DATA/ncly-hello
+chmod 755 bin/tmux
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env OPENAI_API_KEY=
+env MISTRAL_API_KEY=
+env GROQ_API_KEY=
+env COHERE_API_KEY=
+env PATH=$WORK/bin:$PATH
+env TMUX=/tmp/tmux-test/default,1,0
+env TERM=xterm-256color
+
+# pty tells a terminal that a command left changed from one it left as found: the settings,
+# such as echo, and a mode, such as a hidden cursor
+exec pty none.txt sh -c 'stty -echo'
+stderr '\Aecho off\nterminal changed: settings\n\z'
+exec pty none.txt sh -c 'printf "\033[?25l"'
+stderr '\Aecho on\nterminal changed: mode 25\n\z'
+exec pty none.txt sh -c 'printf "\033[?25l\033[?25h"'
+stderr '\Aecho on\nterminal as found\n\z'
+
+# The masked field shows its title, its description, and one * per typed character, never
+# the key. It fills no missing value, so no Next time line follows. Once answered, it erases
+# its five lines from the first one down, so the answer takes its place. The keychain holds
+# the key.
+exec pty type-key.txt ncly auth login openai
+stdout 'openai key'
+stdout 'It goes to the keychain and never shows\.'
+stdout '> \*{8}'
+! stdout sk-typed
+! stdout 'Next time'
+stdout '\r\x1b\[4A\x1b\[JStored the key of openai in the keychain\.\n\z'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"openai","key":"sk-typed"\}' test-keychain.jsonl
+! exists tmux.log
+
+# The field uses Huh's Base16 theme: the bar is bright black, the title cyan, and the
+# description and the key help bright black
+stdout '\x1b\[90m┃'
+stdout '\x1b\[36mopenai key'
+stdout '\x1b\[90mIt goes to the keychain and never shows\.'
+stdout '\x1b\[90menter'
+stdout '\x1b\[90msubmit'
+
+# Without color, the field keeps its text and shows no style
+exec pty type-other.txt ncly --no-color auth login mistral
+stdout 'mistral key'
+stdout 'enter submit'
+! stdout '\x1b\[[0-9;]*m'
+! stdout sk-other
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"mistral","key":"sk-other"\}' test-keychain.jsonl
+
+# A declined replacement asks before the field, keeps the old key, and exits 2 with
+# CONFIRMATION_REQUIRED. The question and the answer stay on screen: ? in cyan, the question
+# in bold, then [y/N] in bright black
+exits 2 pty decline.txt ncly auth login openai
+stdout '\x1b\[36m\?\x1b\[m \x1b\[1mThe keychain already holds a key for openai\. Replace it\?\x1b\[m \x1b\[90m\[y/N\]\x1b\[m n\n'
+stdout 'error\[CONFIRMATION_REQUIRED\]:\x1b\[m The key of openai stays as it was\.'
+! stdout 'openai key'
+! stdout 'Next time'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"openai"' test-keychain.jsonl
+
+# A confirmed replacement opens the field, then replaces the key, with no --force on screen
+exec pty accept.txt ncly --no-color auth login openai
+stdout '^\? The keychain already holds a key for openai\. Replace it\? \[y/N\] y$'
+stdout 'Stored the key of openai in the keychain\.\n\z'
+! stdout sk-second
+! stdout 'Next time'
+! stdout 'force'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"openai","key":"sk-second"\}' test-keychain.jsonl
+
+# Ctrl-C at the field exits 130 with INTERRUPTED, stores nothing, erases the field, and
+# leaves the terminal as it found it
+exits 130 pty interrupt.txt ncly auth login groq
+stdout '\r\x1b\[4A\x1b\[J\x1b\[1;31merror\[INTERRUPTED\]'
+stderr '\Aecho on\nterminal as found\n\z'
+! grep '"account":"groq","key"' test-keychain.jsonl
+
+# Ctrl-C at the confirmation of a replacement exits 130 with INTERRUPTED before the field,
+# keeps the key, and leaves the terminal as it found it
+exits 130 pty interrupt-replace.txt ncly auth login openai
+stdout 'error\[INTERRUPTED\]'
+! stdout 'openai key'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=2 '"call":"set","account":"openai"' test-keychain.jsonl
+
+# Without a stored key, logout exits 2 with NOT_FOUND before any confirmation
+exits 2 pty nothing.txt ncly auth logout groq
+! stdout 'y/N'
+stdout 'error\[NOT_FOUND\]'
+
+# A declined logout keeps the key and exits 2 with CONFIRMATION_REQUIRED, Ctrl-C at its
+# confirmation exits 130 and keeps the key, and a confirmed one removes it
+exits 2 pty logout-decline.txt ncly --no-color auth logout openai
+stdout '^\? Remove the key of openai from the keychain\? \[y/N\] n$'
+stdout 'error\[CONFIRMATION_REQUIRED\]: The key of openai stays in the keychain\.'
+stderr '\Aecho on\nterminal as found\n\z'
+exits 130 pty logout-interrupt.txt ncly auth logout openai
+stdout 'error\[INTERRUPTED\]'
+stderr '\Aecho on\nterminal as found\n\z'
+! grep '"call":"delete"' test-keychain.jsonl
+exec pty logout-accept.txt ncly auth logout openai
+stdout 'y/N.* y\n'
+stdout 'Removed the key of openai from the keychain\.\n\z'
+! stdout 'Next time'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"delete","account":"openai"\}' test-keychain.jsonl
+
+# When TERM is dumb, the field asks on its own line, shows nothing as the human types, and
+# writes no escape sequence. Ctrl-C there exits 130 and leaves the terminal as it found it
+env TERM=dumb
+exec pty dumb-key.txt ncly auth login groq
+stdout '\Agroq key \n'
+! stdout sk-dumb
+! stdout '\x1b'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"groq","key":"sk-dumb"\}' test-keychain.jsonl
+exits 130 pty dumb-interrupt.txt ncly auth login cohere
+stdout 'error\[INTERRUPTED\]'
+stderr '\Aecho on\nterminal as found\n\z'
+! grep '"account":"cohere","key"' test-keychain.jsonl
+env TERM=xterm-256color
+
+# Under the pseudo-locale, every word of the field and of the confirmation comes from the
+# catalog
+exec pty pseudo-key.txt ncly --lang en-XA auth login openai
+pseudo stdout openai
+exits 2 pty pseudo-decline.txt ncly --lang en-XA auth login openai
+pseudo stdout openai auth login n
+
+! exists tmux.log
+
+-- none.txt --
+-- type-key.txt --
+openai key	sk-typed\c
+********	^M
+-- type-other.txt --
+mistral key	sk-other
+-- decline.txt --
+[y/N]	n
+-- accept.txt --
+[y/N]	y
+openai key	sk-second
+-- interrupt.txt --
+groq key	^C
+-- interrupt-replace.txt --
+[y/N]	^C
+-- nothing.txt --
+-- logout-decline.txt --
+[y/N]	n
+-- logout-interrupt.txt --
+[y/N]	^C
+-- logout-accept.txt --
+[y/N]	y
+-- dumb-key.txt --
+groq key	sk-dumb
+-- dumb-interrupt.txt --
+cohere key	^C
+-- pseudo-key.txt --
+openai	sk-pseudo
+-- pseudo-decline.txt --
+Ñ]	n
+-- bin/tmux --
+#!/bin/sh
+echo "$@" >> "$WORK/tmux.log"
+sleep 5
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["openai"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"

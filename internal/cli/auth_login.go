@@ -14,6 +14,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/pascalandy/nicely/sdk/runner"
+	"github.com/pascalandy/nicely/sdk/tui"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -92,8 +93,7 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 		}
 		fromStdin, _ := c.Flags().GetBool("stdin")
 		force, _ := c.Flags().GetBool(forceFlag.Name)
-		out := c.OutOrStdout()
-		human := interactive(g, out)
+		human := interactive(g, c.OutOrStdout())
 		call := []string{"ncly", "auth", "login", service}
 		if fromStdin {
 			call = append(call, "--stdin")
@@ -121,7 +121,7 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 				declined: p.T("auth.replace_declined", data),
 				hint:     strings.Join(append(call, "--force"), " "),
 			}
-			if err := question.ask(ctx, p, human, out); err != nil {
+			if err := question.ask(ctx, p, g, human, c.ErrOrStderr()); err != nil {
 				return err
 			}
 		}
@@ -129,11 +129,17 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 		if fromStdin {
 			key, err = readAll(ctx, os.Stdin)
 		} else {
-			key, err = readSecret(ctx, os.Stdin, out, p.T("auth.key_prompt", data))
+			key, err = tui.AskMasked(ctx, os.Stdin, c.ErrOrStderr(), g.NoColor, tui.Masked{
+				Title:       p.T("auth.key_title", data),
+				Description: p.T("auth.key_description", data),
+				Keys:        tui.Keys{Enter: p.T("form.key_enter"), Submit: p.T("form.submit")},
+			})
 		}
 		switch {
 		case ctx.Err() != nil:
 			return stopped(ctx)
+		case errors.Is(err, tui.ErrInterrupted):
+			return interrupted()
 		case err != nil && !errors.Is(err, io.EOF):
 			return err
 		}
@@ -190,11 +196,11 @@ func plannedChange(p *i18n.Printer, service, action string) *answered {
 	}
 }
 
-// confirmation is the confirmation that a change to a stored key needs,
-// until the confirmation form of M07: CONFIRMATION_REQUIRED with required
-// and the hint without a terminal, and the y/N question in one, where any
-// answer but yes keeps the key, with declined. next holds the hint's words
-// when the hint's command runs as is.
+// confirmation is the confirmation that a change to a stored key needs:
+// CONFIRMATION_REQUIRED with required and the hint without a terminal, and
+// the [y/N] prompt of sdk/tui in one, on out, where any answer but yes keeps
+// the key, with declined. next holds the hint's words when the hint's
+// command runs as is.
 type confirmation struct {
 	question, required, declined, hint string
 	next                               []string
@@ -202,12 +208,12 @@ type confirmation struct {
 
 // ask returns nil once the human said yes, and the answer of the command
 // otherwise.
-func (c confirmation) ask(ctx context.Context, p *i18n.Printer, human bool, out io.Writer) error {
+func (c confirmation) ask(ctx context.Context, p *i18n.Printer, g command.Globals, human bool, out io.Writer) error {
 	problem := contract.Problem{Code: contract.ConfirmationRequired, Message: c.required, Hint: c.hint, Next: c.next}
 	if !human {
 		return command.Fail(problem)
 	}
-	yes, err := confirm(ctx, os.Stdin, out, c.question, yesWords(p.T("auth.yes")))
+	yes, err := tui.Confirm(ctx, os.Stdin, out, g.NoColor, tui.Confirmation{Question: c.question, Choices: p.T("confirm.choices"), Yes: p.T("confirm.yes")})
 	switch {
 	case ctx.Err() != nil:
 		return stopped(ctx)
@@ -245,6 +251,12 @@ func writeUnknown(p *i18n.Printer, service string, declared []string, message st
 		problem.Hint = p.T("auth.write_unknown_entry_hint", data)
 	}
 	return problem
+}
+
+// interrupted answers a command that the human ended with Ctrl-C at a
+// form, which reads Ctrl-C as a key, so no signal reaches ncly.
+func interrupted() *answered {
+	return &answered{outcome: contract.Outcome{Signal: contract.Interrupt}, text: func(io.Writer) error { return nil }}
 }
 
 // stopped answers a command that a signal ended. The signal also reaches

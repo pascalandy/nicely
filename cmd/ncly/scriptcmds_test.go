@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/platform"
 	"github.com/rogpeppe/go-internal/testscript"
@@ -264,12 +265,13 @@ var (
 // mark: pseudo <stdout|stderr> [word...]. Example lines, flags, ncly, codes
 // such as USAGE_INVALID, placeholders such as <tag>, version numbers, and
 // the listed words, such as command names, stay unmarked because they are
-// never translated.
+// never translated. Escape sequences, such as the styles and the cursor moves
+// that pty shows, are no words.
 func cmdPseudo(ts *testscript.TestScript, neg bool, args []string) {
 	if neg || len(args) < 1 || (args[0] != "stdout" && args[0] != "stderr") {
 		ts.Fatalf("usage: pseudo <stdout|stderr> [word...]")
 	}
-	text := ts.ReadFile(args[0])
+	text := ansi.Strip(ts.ReadFile(args[0]))
 	if !marked.MatchString(text) {
 		ts.Fatalf("pseudo: no marked text on %s", args[0])
 	}

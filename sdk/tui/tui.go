@@ -1,6 +1,7 @@
 // Package tui holds the look that every command shares: the styles, the
-// help page, and the error block. A form, a spinner, or a progress bar
-// joins it with the first command that needs one.
+// help page, the error block, the masked field of a key, and the
+// confirmation. A spinner or a progress bar joins it with the first command
+// that needs one.
 package tui
 
 import (
@@ -16,9 +17,8 @@ import (
 
 // The styles follow variant D of the T4 mockups: the quiet help of variant
 // A, with bold uppercase headings, and the errors of variant B, which lead
-// with their code. They are plain SGR sequences rather than Lip Gloss,
-// whose package detects the terminal as it loads and can wait on
-// `tmux info` without a time limit.
+// with their code. They are plain SGR sequences, which Output turns into
+// plain text when color is off.
 var (
 	heading      = ansi.Style{}.Bold()
 	errorLabel   = ansi.Style{}.Bold().ForegroundColor(ansi.Red)
@@ -32,12 +32,18 @@ var (
 // The decision reads only the environment and the stream, and never queries
 // the terminal.
 func Output(w io.Writer, noColor bool) io.Writer {
+	return &colorprofile.Writer{Forward: w, Profile: Profile(w, noColor)}
+}
+
+// Profile returns the color profile of styles written to w, by the rule of
+// Output: the 16 ANSI colors, or plain text when color is off. A form takes
+// this profile, so Bubble Tea never detects one, which queries tmux.
+func Profile(w io.Writer, noColor bool) colorprofile.Profile {
 	force := os.Getenv("CLICOLOR_FORCE")
-	profile := colorprofile.NoTTY
 	if !noColor && (isTerminal(w) || (force != "" && force != "0")) {
-		profile = colorprofile.ANSI
+		return colorprofile.ANSI
 	}
-	return &colorprofile.Writer{Forward: w, Profile: profile}
+	return colorprofile.NoTTY
 }
 
 func isTerminal(w io.Writer) bool {

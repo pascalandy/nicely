@@ -505,17 +505,17 @@ other = "Read the key from stdin, to its end"
 description = "Help page: the --force flag of `ncly auth login`, which replaces a stored key without asking for a confirmation."
 other = "Replace a stored key without asking"
 
-["auth.key_prompt"]
-description = "Prompt of `ncly auth login` in a terminal, before the human types the key, which never shows. {{.Service}} is the service, such as deepgram. Keep the colon and the final space."
-other = "Key for {{.Service}}: "
+["auth.key_title"]
+description = "Title of the masked field of `ncly auth login` in a terminal, where the human types the key, which never shows. {{.Service}} is the service, such as deepgram."
+other = "{{.Service}} key"
+
+["auth.key_description"]
+description = "Line under the title of the masked field of `ncly auth login`, where the human types the key: the key goes to the OS keychain, and the field shows one * per typed character instead of the key."
+other = "It goes to the keychain and never shows."
 
 ["auth.replace_question"]
-description = "Prompt of `ncly auth login` in a terminal, when the OS keychain already holds a key for the service. Only an answer among the words of auth.yes replaces the key. Keep [y/N] and the final space. {{.Service}} is the service."
-other = "The keychain already holds a key for {{.Service}}. Replace it? [y/N] "
-
-["auth.yes"]
-description = "The answers that confirm a y/N prompt of `ncly auth`, separated by commas, in lowercase. Any other answer means no. Include the letter that the prompt shows in [y/N]."
-other = "y, yes"
+description = "Question of the confirmation of `ncly auth login` in a terminal, when the OS keychain already holds a key for the service. [y/N] follows it, and only an answer among the words of confirm.yes replaces the key. {{.Service}} is the service."
+other = "The keychain already holds a key for {{.Service}}. Replace it?"
 
 ["auth.stored"]
 description = "ncly auth login, human text: the key of a service is now in the OS keychain. {{.Service}} is the service; the key itself never appears."
@@ -614,8 +614,8 @@ description = "Message of CONFIRMATION_REQUIRED in ncly auth logout without a te
 other = "Removing the key of {{.Service}} from the keychain needs a confirmation."
 
 ["auth.remove_question"]
-description = "Prompt of `ncly auth logout` in a terminal. Only an answer among the words of auth.yes removes the key. Keep [y/N] and the final space. {{.Service}} is the service."
-other = "Remove the key of {{.Service}} from the keychain? [y/N] "
+description = "Question of the confirmation of `ncly auth logout` in a terminal. [y/N] follows it, and only an answer among the words of confirm.yes removes the key. {{.Service}} is the service."
+other = "Remove the key of {{.Service}} from the keychain?"
 
 ["auth.remove_declined"]
 description = "Message of CONFIRMATION_REQUIRED in ncly auth logout, after the human answered no: the key stays in the OS keychain. {{.Service}} is the service."

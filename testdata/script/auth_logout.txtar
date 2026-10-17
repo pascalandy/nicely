@@ -1,7 +1,7 @@
 # ncly auth logout removes the key of a service from the keychain. It checks the name first,
 # then asks the keychain, and a service without a stored key exits 2 with NOT_FOUND before
 # any confirmation. It never changes the environment. The test keychain is the file
-# $HOME/test-keychain.jsonl, and pty runs a command on a pseudo-terminal.
+# $HOME/test-keychain.jsonl. auth_form.txtar proves the confirmation in a terminal.
 env DATA=$WORK/.local/share/nicely/extensions
 chmod 755 $DATA/ncly-hello
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
@@ -34,25 +34,12 @@ answer stderr NOT_FOUND
 stderr '"hint":"The key of deepgram comes from DEEPGRAM_API_KEY, which ncly auth logout never changes: unset it in your shell\.","next":\["ncly","auth","status"\]'
 ! stderr dg-from-env
 env DEEPGRAM_API_KEY=
-exits 2 pty nothing.txt ncly auth logout deepgram
-! stdout 'y/N'
-stderr '^error\[NOT_FOUND\]'
 
 # Without a terminal and without --force, a removal needs a confirmation and keeps the key
 exits 2 ncly auth logout openai --json
 answer stderr CONFIRMATION_REQUIRED
 stderr '"hint":"ncly auth logout openai --force","next":\["ncly","auth","logout","openai","--force"\]'
 ! grep '"call":"delete","account":"openai"' test-keychain.jsonl
-
-# In a terminal, a declined prompt keeps the key, and a confirmed one removes it
-exits 2 pty decline.txt ncly auth logout openai
-stdout '\ARemove the key of openai from the keychain\? \[y/N\] n\n\z'
-stderr '^error\[CONFIRMATION_REQUIRED\]: The key of openai stays in the keychain\.$'
-stderr '^echo on$'
-! grep '"call":"delete","account":"openai"' test-keychain.jsonl
-exec pty accept.txt ncly auth logout openai
-stdout 'y/N\] y\nRemoved the key of openai from the keychain\.\n\z'
-grep -count=1 '"call":"delete","account":"openai"\}' test-keychain.jsonl
 
 # An unavailable keychain exits 78 with KEYRING_UNAVAILABLE, whose hint asks to unlock it
 env NCLY_TEST_KEYCHAIN=unavailable
@@ -115,7 +102,7 @@ env NCLY_TEST_KEYCHAIN=
 # Under the pseudo-locale, every word comes from the catalog
 exec ncly --lang en-XA auth logout --help
 pseudo stdout auth logout deepgram service force
-exits 2 ncly --lang en-XA auth logout openai
+exits 2 ncly --lang en-XA auth logout groq
 pseudo stderr auth status
 exits 2 ncly --lang en-XA auth logout keychain
 pseudo stderr keychain auth status
@@ -124,11 +111,6 @@ pseudo stderr keychain auth status
 {"call":"set","account":"deepgram","key":"dg-stored"}
 {"call":"set","account":"openai","key":"sk-stored"}
 {"call":"set","account":"mistral","key":"ms-stored"}
--- nothing.txt --
--- decline.txt --
-Remove the key of openai from the keychain? [y/N] 	n
--- accept.txt --
-Remove the key of openai from the keychain? [y/N] 	y
 -- .local/share/nicely/extensions/ncly-hello --
 #!/bin/sh
 echo "$0" >> "$WORK/ran"
