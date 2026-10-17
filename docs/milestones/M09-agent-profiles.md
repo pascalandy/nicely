@@ -15,7 +15,7 @@ Use Codex's existing login. The extension declares no API key and forwards none.
 
 One model and effort can come from flags or `[agent]` defaults. Named profiles, providers, a model catalog, and a generic adapter registry stay in M99. There is one Codex invocation to implement.
 
-Before distribution in [M12](M12-taps.md), `just install` puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. This developer install remains available after M12.
+`just install` puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. Taps wait in [M99](M99-parking-lot.md#taps).
 
 ## Cards
 

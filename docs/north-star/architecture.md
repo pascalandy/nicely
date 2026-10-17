@@ -88,7 +88,7 @@ The other folders:
 | `doctor` | Checks tools, keys, extensions, and components | core |
 | `auth` | Stores keys and grants them to extensions | core |
 | `run` | Lists and inspects recorded operations | core |
-| `tap` | Installs and lists selected extensions from a GitHub tap | core |
+| `tap` | Would install extensions from a tap, parked in [M99](../milestones/M99-parking-lot.md#taps) | core |
 | `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled |
 | `agent` | Runs one trusted Codex task with model and effort settings | external |
 | `transcript` | Transcribes one selected YouTube video | external |

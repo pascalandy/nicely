@@ -1,6 +1,6 @@
 # skill extension spec
 
-`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, [M05](../../docs/milestones/M05-doctor.md) adds `status`, and [M12](../../docs/milestones/M12-taps.md) installs extensions whose skills use the existing discovery path. Standalone tap skills and `skill link` remain in [M99](../../docs/milestones/M99-parking-lot.md#taps).
+`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, [M05](../../docs/milestones/M05-doctor.md) adds `status`. Taps and `skill link` remain in [M99](../../docs/milestones/M99-parking-lot.md#taps).
 
 ## ncly skill
 

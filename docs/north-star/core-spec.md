@@ -15,7 +15,7 @@ ncly
 ├── auth login|logout|status        M06
 ├── auth grant|revoke               M08
 ├── run list|view                   M10
-└── tap add|list                   M12
+└── tap add|list                   M99
 ```
 
 `<domain>` is an extension. `skill` is the bundled extension, as [Extensions](contract.md#extensions) defines, and [extensions/skill/spec.md](../../extensions/skill/spec.md) specifies it. External extensions, such as `agent` and `transcript`, list their commands in their own specs.

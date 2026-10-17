@@ -19,9 +19,9 @@ The current build implements help, the version, shell completion, and `ncly desc
 
 ## Planned commands
 
-Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It bundles `skill`, which agents use to learn Nicely. Other domains use external extensions named `ncly-<domain>`.
+Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, and `run`. It bundles `skill`, which agents use to learn Nicely. Other domains use external extensions named `ncly-<domain>`.
 
-The first `agent` command runs one trusted task through Codex. The first `transcript` command transcribes one explicitly selected YouTube video. Tap installation distributes one selected extension from the official repository. Each capability starts with its smallest useful path; additional harnesses, transcript summaries, and broader tap management remain in [M99](docs/milestones/M99-parking-lot.md).
+The first `agent` command runs one trusted task through Codex. The first `transcript` command transcribes one explicitly selected YouTube video. A checkout installs the extensions with `just install`. Each capability starts with its smallest useful path; additional harnesses, transcript summaries, and taps remain in [M99](docs/milestones/M99-parking-lot.md).
 
 The plan also keeps an everyday task chosen from real use, a local view of selected project docs, and Canadian French. Markdown is the first everyday candidate. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
 

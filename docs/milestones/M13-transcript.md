@@ -10,7 +10,7 @@ One explicit YouTube URL produces verified transcript files and an inspectable r
 ## Scope
 
 `transcript` is a first-party external extension in `extensions/transcript/`, built as `ncly-transcript`.
-It ships through the official tap of [M12](M12-taps.md).
+It installs with the `just install` of [M09](M09-agent-profiles.md).
 The [transcript spec](../../extensions/transcript/spec.md) defines one YouTube video and one `transcribe` step.
 A human grants its required Deepgram key.
 
