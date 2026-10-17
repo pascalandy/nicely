@@ -20,7 +20,7 @@ The scenarios declare services in the manifests of shell fixtures and of the Go 
 | M08-T1 | Grant and revoke | agent | — | done |
 | M08-T2 | Keys reach granted extensions | agent | M08-T1 | done |
 | M08-T3 | Source identity | agent | M08-T2 | done |
-| M08-T4 | Status and doctor | agent | M08-T3 | todo |
+| M08-T4 | Status and doctor | agent | M08-T3 | done |
 | M08-T5 | Optional keys | agent | M08-T4 | todo |
 
 ### M08-T1 Grant and revoke
