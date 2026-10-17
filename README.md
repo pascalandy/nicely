@@ -21,7 +21,7 @@ The current build implements help, the version, shell completion, and `ncly desc
 
 Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It finds extensions named `ncly-<domain>`, and it bundles one extension, `skill`, which agents use to learn Nicely. Everything else is an extension, including the first ones: `agent`, which runs a task through Claude Code, Pi, and other harnesses, and `transcript`, which transcribes YouTube and Zoom audio and summarizes it through `agent`. Taps arrive between the two, so `transcript` installs from the official tap. Everyday domains such as `markdown` and `video`, a private docs hub, and Canadian French follow. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
 
-In a terminal, a form asks for each missing value, then shows the full command after `Next time:`. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
+In a terminal, a form asks a human for each missing value. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 
 ## Agent instructions
 
