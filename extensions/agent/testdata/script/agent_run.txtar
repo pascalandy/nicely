@@ -111,7 +111,7 @@ grep '"status":"completed",.*"attempts":2,.*"tools":\{"codex":"0\.163\.0"\}' $RU
 grep -count=9 '(?m)^(--version|exec )' $TMPDIR/calls.log
 
 # A record of another command under the ID names another call
-exec /bin/sh -c '/usr/bin/sed "s/\"path\":\"agent run\"/\"path\":\"transcript run youtube\"/" "$RUNS/p1.json" > "$RUNS/t1.json"'
+exec /bin/sh -c '/usr/bin/sed -e "s/\"path\":\"agent run\"/\"path\":\"transcript run youtube\"/" -e "s/\"run_id\":\"p1\"/\"run_id\":\"t1\"/" "$RUNS/p1.json" > "$RUNS/t1.json"'
 exits 2 ncly agent run 'Review this branch' --tools --run-id t1 --json
 answer stderr USAGE_INVALID
 
