@@ -38,7 +38,7 @@ rm $TMPDIR/codex.log
 snapshot before
 exec /bin/sh -c 'printf "left for the caller\n" | { ncly agent run "Review this branch" --tools --model m1 --dry-run --json; /bin/cat > "$TMPDIR/rest.txt"; }'
 unchanged before
-stdout '\A\{"ok":true,"contract_version":1,"cwd":"'${WORK@R}'","dry_run":true,"effort":"medium","harness":"codex","harness_version":"0\.163\.0","invocation":\["'${WORK@R}'/bin/codex","exec","--model","m1","-c","model_reasoning_effort=\\"medium\\"","--sandbox","workspace-write","--skip-git-repo-check","--cd","'${WORK@R}'","--json","--output-last-message","\\u003canswer-file\\u003e","-"\],"model":"m1","pending_checks":\[\{"id":"agent\.login","message":"Codex checks its login only when it runs the task\."\}\],"plan":\[\{"key":"task","output":"'${RUNS@R}'","steps":\[\{"id":"codex","action":"run"\}\],"effects":\{"network":true,"paid":true,"user_writes":true\}\}\],"task_sha256":"'$SUM'"\}\n\z'
+stdout '\A\{"ok":true,"contract_version":1,"cwd":"'${WORK@R}'","dry_run":true,"effort":"medium","environment":\{"NCLY_AGENT_DEPTH":"1"\},"harness":"codex","harness_version":"0\.163\.0","invocation":\["'${WORK@R}'/bin/codex","exec","--model","m1","-c","model_reasoning_effort=\\"medium\\"","--sandbox","workspace-write","--skip-git-repo-check","--cd","'${WORK@R}'","--json","--output-last-message","\\u003canswer-file\\u003e","-"\],"model":"m1","pending_checks":\[\{"id":"agent\.login","message":"Codex checks its login only when it runs the task\."\}\],"plan":\[\{"key":"task","output":"'${RUNS@R}'","steps":\[\{"id":"codex","action":"run"\}\],"effects":\{"network":true,"paid":true,"user_writes":true\}\}\],"task_sha256":"'$SUM'"\}\n\z'
 ! stderr .
 cp stdout $TMPDIR/dry.json
 cmp $TMPDIR/rest.txt want-rest.txt
@@ -173,7 +173,7 @@ exec ncly agent run 'Review this branch' --tools --model m1 --dry-run
 cmpenv stdout want-dry-run.txt
 ! stderr .
 exec ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --dry-run
-pseudo stdout $WORK/bin/codex exec m1 model_reasoning_effort="medium workspace-write $WORK agent.login
+pseudo stdout $WORK/bin/codex exec m1 model_reasoning_effort="medium workspace-write $WORK NCLY_AGENT_DEPTH=1 agent.login
 exits 78 ncly --lang en-XA agent run 'Review this branch' --model m1 --dry-run
 pseudo stderr --tools
 
@@ -200,6 +200,7 @@ Would run Codex 0.163.0 with this command, and give it the task on its input:
 model: m1
 effort: medium
 folder: $WORK
+environment: NCLY_AGENT_DEPTH=1
 pending  agent.login  Codex checks its login only when it runs the task.
 -- task.md --
 Fix the bug

@@ -1,0 +1,126 @@
+# ncly agent run bounds a chain of agents: NCLY_AGENT_DEPTH counts the agents above the call,
+# 0 when unset, and at [agent] max_depth, 2 by default, the call answers AGENT_DEPTH_LIMIT
+# before any other check, so it starts no Codex, not even the version probe. Codex gets the
+# depth plus one in its environment, which the dry run shows. The stub codex appends each call
+# to $TMPDIR/codex.log and its environment to $TMPDIR/codex.env, answers --version, and
+# appends any other call, which would start a task, to $TMPDIR/task.log.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+mkdir nbin
+exec /bin/sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+env CODEX_VERSION=0.163.0
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+
+# Unset, the depth is 0, and Codex gets 1, in the probe as in the invocation of the dry run
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stdout '"environment":\{"NCLY_AGENT_DEPTH":"1"\}'
+grep '^NCLY_AGENT_DEPTH=1$' $TMPDIR/codex.env
+env NCLY_AGENT_DEPTH=
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stdout '"environment":\{"NCLY_AGENT_DEPTH":"1"\}'
+env NCLY_AGENT_DEPTH=1
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stdout '"environment":\{"NCLY_AGENT_DEPTH":"2"\}'
+grep '^NCLY_AGENT_DEPTH=2$' $TMPDIR/codex.env
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run
+stdout '^environment: NCLY_AGENT_DEPTH=2$'
+
+# At the default limit, the call answers AGENT_DEPTH_LIMIT with exit 2 before the task, the
+# model, the folder, Codex, and --tools: it starts nothing, in a dry run or not
+rm $TMPDIR/codex.log
+env NCLY_AGENT_DEPTH=2
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+! stdout .
+answer stderr AGENT_DEPTH_LIMIT
+stderr '"message":"This call already runs inside 2 agents, and max_depth in \[agent\] allows 2\.","hint":"Run the task from a shell outside the agents, or ask a human to raise max_depth in the \[agent\] table of '${CFG@R}'/config\.toml\."\}'
+exits 2 ncly agent run --json
+answer stderr AGENT_DEPTH_LIMIT
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --json
+answer stderr AGENT_DEPTH_LIMIT
+env NCLY_AGENT_DEPTH=7
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stderr 'inside 7 agents'
+! exists $TMPDIR/codex.log
+! exists $TMPDIR/task.log
+
+# [agent] max_depth raises or lowers the limit, and the hint names the file that sets it
+cp three.toml $CFG/config.local.toml
+env NCLY_AGENT_DEPTH=2
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stdout '"environment":\{"NCLY_AGENT_DEPTH":"3"\}'
+env NCLY_AGENT_DEPTH=3
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stderr '"message":"This call already runs inside 3 agents, and max_depth in \[agent\] allows 3\.","hint":"Run the task from a shell outside the agents, or ask a human to raise max_depth in the \[agent\] table of '${CFG@R}'/config\.local\.toml\."\}'
+rm $CFG/config.local.toml
+cp one.toml $CFG/config.toml
+env NCLY_AGENT_DEPTH=1
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stderr '"message":"This call already runs inside 1 agent, and max_depth in \[agent\] allows 1\."'
+env NCLY_AGENT_DEPTH=
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stdout '"environment":\{"NCLY_AGENT_DEPTH":"1"\}'
+
+# A max_depth that is no whole number from 1 is CONFIG_INVALID, and an NCLY_AGENT_DEPTH that
+# is no whole number from 0 is USAGE_INVALID
+cp zero.toml $CFG/config.toml
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr CONFIG_INVALID
+stderr '"message":"max_depth in the \[agent\] table of '${CFG@R}'/config\.toml is not a whole number from 1\.","hint":"Fix '${CFG@R}'/config\.toml\."'
+cp text.toml $CFG/config.toml
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr CONFIG_INVALID
+cp float.toml $CFG/config.toml
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr CONFIG_INVALID
+rm $CFG/config.toml
+env NCLY_AGENT_DEPTH=-1
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"NCLY_AGENT_DEPTH holds -1, which is no whole number from 0\.","hint":"Unset NCLY_AGENT_DEPTH, or set it to the number of agents above this call\."'
+env NCLY_AGENT_DEPTH=two
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+
+# describe gives max_depth with its source, and the manifest declares the code
+env NCLY_AGENT_DEPTH=
+cp three.toml $CFG/config.toml
+exec ncly describe 'agent run' --json
+stdout '\{"key":"agent\.max_depth","value":3,"source":"'${CFG@R}'/config\.toml"\}'
+rm $CFG/config.toml
+
+# The text of the limit comes from the catalog, with its plural forms
+env NCLY_AGENT_DEPTH=2
+exits 2 ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --dry-run
+pseudo stderr AGENT_DEPTH_LIMIT
+env NCLY_AGENT_DEPTH=two
+exits 2 ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --dry-run
+pseudo stderr NCLY_AGENT_DEPTH
+! exists $TMPDIR/task.log
+
+-- three.toml --
+[agent]
+max_depth = 3
+-- one.toml --
+[agent]
+max_depth = 1
+-- zero.toml --
+[agent]
+max_depth = 0
+-- text.toml --
+[agent]
+max_depth = "two"
+-- float.toml --
+[agent]
+max_depth = 1.5
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$TMPDIR/codex.log"
+/usr/bin/env > "$TMPDIR/codex.env"
+if [ "$1" = --version ]; then
+  echo "codex-cli $CODEX_VERSION"
+  exit 0
+fi
+echo "$*" >> "$TMPDIR/task.log"
+exit 1

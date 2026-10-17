@@ -85,12 +85,14 @@ mv codex.stub bin/codex
 exec ncly --lang en-XA agent run --help
 pseudo stdout ncly agent run task --cwd --dry-run --effort --model --task-file --tools --help --json --lang --no-color --no-input --verbose --version dir level id file tag -n -h -v [task] [flags] Review this branch task.md
 
-# The skill installed beside the extension teaches only commands and codes that this ncly has
+# The skill installed beside the extension teaches only commands that this ncly has, and codes
+# of the registry or of the installed manifest
 exec ncly skill view agent --json
 stdout '"name":"agent","path":"'${DATA@R}'/ncly-agent\.skill","source":"extension"'
 exec ncly describe --json
 cp stdout describe.json
-exec codes
+exec /bin/sh -c 'codes && /usr/bin/sed -n "s/^code = \"\(.*\)\"\$/\1/p" "$DATA/ncly-agent.toml"'
+stdout '^AGENT_DEPTH_LIMIT$'
 cp stdout codes.txt
 mentions $DATA/ncly-agent.skill/SKILL.md describe.json codes.txt
 ! exists external.log
