@@ -78,7 +78,7 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 	case errors.As(err, &bad):
 		return failure(unreadable(p, bad.File, id), keep)
 	case ctx.Err() != nil:
-		return contract.Outcome{}
+		return stopped(ctx, p, t, keep)
 	case err != nil:
 		return unsaved()
 	}
@@ -96,7 +96,7 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 	}
 	problem := pick(ctx, call, &t, resolved)
 	if ctx.Err() != nil {
-		return contract.Outcome{}
+		return stopped(ctx, p, t, keep)
 	}
 	if problem != nil {
 		return failure(problem, keep)
@@ -121,7 +121,7 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 	if err := run.Begin(0, 0); err != nil {
 		return unsaved()
 	}
-	text, duration, problem := launch(ctx, call, t, id)
+	text, duration, problem, started := launch(ctx, call, t, id)
 	if problem == nil {
 		var artifact record.Artifact
 		if artifact, err = run.Publish(answerTo, text); err == nil {
@@ -132,9 +132,17 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 		}
 	}
 	if problem != nil {
-		// Codex may have started its paid work, so nothing proves that it
-		// had no effect: the step stays unknown.
-		_ = run.End(0, 0, record.StepUnknown, *problem, record.Unknown)
+		// Once Codex started, its paid work may have happened, so nothing
+		// proves that it had no effect: the step stays unknown. A start that
+		// failed, or that a stop came before, ran no task.
+		step, status := record.StepUnknown, record.Unknown
+		if !started {
+			step, status = record.StepFailed, record.Failed
+			if problem.Code == contract.Interrupted || problem.Code == contract.Terminated {
+				status = record.Interrupted
+			}
+		}
+		_ = run.End(0, 0, step, *problem, status)
 		o := failure(problem, keep)
 		o.Effect = run.Effect()
 		return o
@@ -264,14 +272,15 @@ func nclyVersion() string {
 
 // launch runs Codex with the prepared invocation in the run's own
 // temporary folder, sends the task on stdin, and returns the answer that
-// Codex wrote, with how long it ran. A failure after the start is a
-// problem whose effect stays unknown.
-func launch(ctx context.Context, call extension.Call, t task, id string) ([]byte, time.Duration, *contract.Problem) {
+// Codex wrote, with how long it ran. On failure, it returns the problem,
+// and whether Codex started, so its paid work may have happened, as Stops
+// and failures in spec.md defines.
+func launch(ctx context.Context, call extension.Call, t task, id string) ([]byte, time.Duration, *contract.Problem, bool) {
 	p := call.Printer
-	data := map[string]any{"ID": id}
+	data := map[string]any{"ID": id, "Limit": limitText(t.timeout)}
 	tmp, err := os.MkdirTemp("", "ncly-run-"+id+"-")
 	if err != nil {
-		return nil, 0, inspect(p, contract.Runtime, id, "agent.run.launch_failed", data)
+		return nil, 0, inspect(p, contract.Runtime, id, "agent.run.start_failed", data), false
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
 	file := filepath.Join(tmp, answerTo)
@@ -285,17 +294,67 @@ func launch(ctx context.Context, call extension.Call, t task, id string) ([]byte
 	start := time.Now()
 	result, err := runner.Run(ctx, runner.Program{Path: t.codex, Args: t.args(file), Env: t.env, Stdin: bytes.NewReader(t.text), Stderr: stderr})
 	duration := time.Since(start)
-	if err != nil {
-		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.launch_failed", data)
-	}
-	if result.Exit != 0 {
-		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.codex_failed", data)
+	switch {
+	case err != nil:
+		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.start_failed", data), false
+	case result.Exit == -1 && timedOut(ctx):
+		// The stop came before the start, so Codex never ran.
+		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.timed_out_early", data), false
+	case result.Exit == -1:
+		return nil, duration, inspect(p, stopCode(ctx), id, "agent.run.stopped_early", data), false
+	case result.Signal != nil && timedOut(ctx):
+		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.timed_out", data), true
+	case result.Signal != nil:
+		return nil, duration, inspect(p, stopCode(ctx), id, "agent.run.stopped", data), true
+	case result.Exit != 0:
+		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.codex_failed", data), true
 	}
 	text, err := os.ReadFile(file)
 	if err != nil || strings.TrimSpace(string(text)) == "" {
-		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.answer_missing", data)
+		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.answer_missing", data), true
 	}
-	return text, duration, nil
+	return text, duration, nil, true
+}
+
+// stopped answers a call that a signal or the timeout stopped before its
+// record, with keep: the signal, which the SDK answers, or RUNTIME, whose
+// hint asks for a longer timeout.
+func stopped(ctx context.Context, p *i18n.Printer, t task, keep map[string]string) contract.Outcome {
+	if !timedOut(ctx) {
+		var o contract.Outcome
+		if keep != nil {
+			o.Data = keep
+		}
+		return o
+	}
+	message := p.T("agent.run.timed_out_early", map[string]any{"Limit": limitText(t.timeout)})
+	return failure(&contract.Problem{Code: contract.Runtime, Message: message, Hint: p.T("agent.run.timed_out_early_hint")}, keep)
+}
+
+// timedOut reports whether the timeout of the call ended ctx, rather than a
+// signal.
+func timedOut(ctx context.Context) bool { return errors.Is(context.Cause(ctx), errTimedOut) }
+
+// stopCode is the code of the signal that ended ctx: INTERRUPTED for
+// Ctrl-C, and TERMINATED for SIGTERM.
+func stopCode(ctx context.Context) contract.Code {
+	if contract.StopSignal(runner.SignalOf(ctx)) == contract.Interrupt {
+		return contract.Interrupted
+	}
+	return contract.Terminated
+}
+
+// limitText writes a timeout as a caller writes it, such as 30s, 5m, or
+// 1h30m, without the zero units that time.Duration adds.
+func limitText(d time.Duration) string {
+	text := d.String()
+	if strings.HasSuffix(text, "m0s") {
+		text = strings.TrimSuffix(text, "0s")
+	}
+	if strings.HasSuffix(text, "h0m") {
+		text = strings.TrimSuffix(text, "0m")
+	}
+	return text
 }
 
 // inspect is a problem whose hint and next inspect the run before anything

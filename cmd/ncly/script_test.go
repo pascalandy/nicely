@@ -5,11 +5,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/pascalandy/nicely/extensions/agent"
 	"github.com/pascalandy/nicely/sdk/extension"
+	"github.com/pascalandy/nicely/sdk/record"
 	"github.com/pascalandy/nicely/sdk/runner"
 	hello "github.com/pascalandy/nicely/testdata/extensions/hello"
 	"github.com/pascalandy/nicely/testdata/extensions/keyed"
@@ -29,7 +32,11 @@ func TestMain(m *testing.M) {
 		"holdlock":       holdLock,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
 		"keyed-external": func() { shortCleanup(); extension.Main(keyed.Extension) },
-		"agent-external": func() { shortCleanup(); extension.Main(agent.Extension) },
+		"agent-external": func() {
+			shortCleanup()
+			record.Boundary = boundaryHook(os.Getenv("NCLY_TEST_BOUNDARY"))
+			extension.Main(agent.Extension)
+		},
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the
 		// fixture through the routing of run, as in a release.
@@ -52,6 +59,29 @@ func testBundled() {
 // which just install installs the same way. The setup of their own
 // scenarios installs each one in the data folder.
 var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension, "agent": agent.Extension}
+
+// boundaryHook returns the boundary hook of record support that
+// NCLY_TEST_BOUNDARY asks for, which only the test binary reads: none when
+// it is empty. A boundary name, such as after-intent, kills the process
+// with SIGKILL at that boundary, as a crash would. pause:<boundary> writes
+// $WORK/paused at that boundary, then waits 2 seconds, so a scenario can
+// send a signal there.
+func boundaryHook(name string) func(string) {
+	if name == "" {
+		return nil
+	}
+	pause, paused := strings.CutPrefix(name, "pause:")
+	return func(at string) {
+		switch {
+		case paused && at == pause:
+			_ = os.WriteFile(filepath.Join(os.Getenv("WORK"), "paused"), nil, 0o644)
+			time.Sleep(2 * time.Second)
+		case at == name:
+			_ = syscall.Kill(os.Getpid(), syscall.SIGKILL)
+			select {}
+		}
+	}
+}
 
 // testNcly runs ncly with a short cleanup and the test keychain.
 func testNcly() {

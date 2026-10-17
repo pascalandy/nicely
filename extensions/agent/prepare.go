@@ -56,6 +56,8 @@ type task struct {
 	depth int
 	// settings are the values of [agent], which pick reads.
 	settings settings
+	// timeout is the limit of the whole call, which its errors name.
+	timeout time.Duration
 }
 
 // args returns the words after codex, as Codex invocation in spec.md lists

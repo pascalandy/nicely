@@ -32,6 +32,10 @@ other = "The reasoning effort, instead of effort in [agent]"
 description = "Help of `ncly agent run`: the --cwd flag, the folder where Codex works."
 other = "The folder where Codex works, the current one by default"
 
+["agent.run.timeout"]
+description = "Help of `ncly agent run`: the --timeout flag, the limit of the whole call, and its default, 5 minutes. Codex is the name of a program, and 5m a duration, which stay as is."
+other = "Stop the call and Codex after this duration, 5m by default"
+
 ["agent.run.planned"]
 description = "ncly agent run --dry-run, human text: the line before the command that execution would run, which follows on the next line. {{.Version}} is the version of Codex, such as 0.163.0. Codex is the name of a program and stays as is."
 other = "Would run Codex {{.Version}} with this command, and give it the task on its input:"
@@ -217,9 +221,37 @@ other = "Cannot save the record of the run in {{.Dir}}, so no Codex task started
 description = "Hint under the error agent.run.record_failed: what the user does next. {{.Dir}} is the folder of the records."
 other = "Check that you can write in {{.Dir}}, then make the call again."
 
-["agent.run.launch_failed"]
-description = "Error RUNTIME of `ncly agent run` when ncly could not start Codex or prepare its files after it saved the intent of the run. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
-other = "Codex could not run the task of {{.ID}}, so its result is unknown."
+["agent.run.timeout_invalid"]
+description = "Error USAGE_INVALID of `ncly agent run` when --timeout is no duration above 0. {{.Value}} is the value that the call gave. --timeout stays as is."
+other = "{{.Value}} is no valid timeout."
+
+["agent.run.timeout_invalid_hint"]
+description = "Hint under the error agent.run.timeout_invalid: the rule of a timeout. --timeout, 30s, 5m, and 2h stay as is."
+other = "Give --timeout a duration above 0, such as 30s, 5m, or 2h, or a number of seconds."
+
+["agent.run.timed_out_early"]
+description = "Error RUNTIME of `ncly agent run` when the call reached its --timeout before Codex started its task, so no task ran. {{.Limit}} is the timeout, such as 5m, which stays as is. Codex is the name of a program and stays as is."
+other = "The call reached its timeout of {{.Limit}} before Codex started, so no task ran."
+
+["agent.run.timed_out_early_hint"]
+description = "Hint under the error agent.run.timed_out_early when the call saved no record yet: what the user does next. --timeout stays as is."
+other = "Give --timeout a longer duration, then make the call again."
+
+["agent.run.stopped_early"]
+description = "Error INTERRUPTED or TERMINATED of `ncly agent run` when Ctrl-C or SIGTERM came after the call saved the intent of the run, but before Codex started, so no task ran. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
+other = "A signal stopped the run {{.ID}} before Codex started, so no task ran."
+
+["agent.run.start_failed"]
+description = "Error RUNTIME of `ncly agent run` when ncly could not start Codex, or make the temporary folder of the run, after it saved the intent of the run, so no task ran. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
+other = "Codex could not start for {{.ID}}, so no task ran."
+
+["agent.run.stopped"]
+description = "Error INTERRUPTED or TERMINATED of `ncly agent run` when Ctrl-C or SIGTERM stopped Codex during its task, so its paid work may have happened. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
+other = "A signal stopped Codex during the run {{.ID}}, so its result is unknown."
+
+["agent.run.timed_out"]
+description = "Error RUNTIME of `ncly agent run` when the call reached its --timeout during the task of Codex, so its paid work may have happened. {{.Limit}} is the timeout, such as 5m, which stays as is. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."
+other = "Codex did not finish within {{.Limit}} for {{.ID}}, so its result is unknown."
 
 ["agent.run.codex_failed"]
 description = "Error RUNTIME of `ncly agent run` when Codex exited with an error after it started, so its paid work may have happened. {{.ID}} is the run ID, which stays as is. Codex is the name of a program and stays as is."

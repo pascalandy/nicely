@@ -27,6 +27,22 @@ import (
 	"github.com/pascalandy/nicely/sdk/platform"
 )
 
+// Boundary, when set, runs at each step boundary of record support, just
+// before and just after it persists the intent, the artifact, or the
+// completion of a step, with the name of that boundary: before-intent,
+// after-intent, before-artifact, after-artifact, before-completion, or
+// after-completion. Only the test binary sets it, to kill the process
+// there, as the boundary scenario of a recorded operation asks, or to
+// pause it there, so a scenario sends a signal at that boundary.
+var Boundary func(name string)
+
+// boundary runs Boundary at the boundary that name gives.
+func boundary(name string) {
+	if Boundary != nil {
+		Boundary(name)
+	}
+}
+
 // FormatVersion is the record format that this package reads and writes.
 const FormatVersion = 1
 
@@ -454,10 +470,12 @@ func (r *Run) Begin(item, step int) error {
 	s := &r.Record.Items[item].Steps[step]
 	t := now()
 	s.Status, s.StartedAt, s.FinishedAt, s.Error = StepUnknown, &t, nil, nil
+	boundary("before-intent")
 	if err := r.save(); err != nil {
 		return err
 	}
 	r.effect = max(r.effect, effectOf(s.Effect))
+	boundary("after-intent")
 	return nil
 }
 
@@ -493,7 +511,12 @@ func (r *Run) Complete(item, step int, artifacts []Artifact, evidence any) error
 			}
 		}
 	}
-	return r.save()
+	boundary("before-completion")
+	if err := r.save(); err != nil {
+		return err
+	}
+	boundary("after-completion")
+	return nil
 }
 
 // End records how an execution ended without completion: the problem of a
@@ -515,6 +538,7 @@ func (r *Run) End(item, step int, status StepStatus, p contract.Problem, run Sta
 // The domain records completion only after Publish returns.
 func (r *Run) Publish(name string, data []byte) (Artifact, error) {
 	path := filepath.Join(r.ArtifactDir(), name)
+	boundary("before-artifact")
 	if err := platform.WriteFile(path, data, 0o600); err != nil {
 		return Artifact{}, err
 	}
@@ -523,6 +547,7 @@ func (r *Run) Publish(name string, data []byte) (Artifact, error) {
 	if _, err := a.Read(); err != nil {
 		return Artifact{}, err
 	}
+	boundary("after-artifact")
 	return a, nil
 }
 

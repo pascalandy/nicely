@@ -6,6 +6,7 @@ package agent
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -80,14 +81,32 @@ type check struct {
 	Message string `json:"message"`
 }
 
+// defaultTimeout bounds a call without --timeout, as the manifest declares.
+const defaultTimeout = "5m"
+
+// errTimedOut is the cause of a context that the timeout of the call ended.
+var errTimedOut = errors.New("the call reached its timeout")
+
 // run prepares the task, then runs it under its run ID. A dry run shows
-// what execution would do, and starts no task.
+// what execution would do, and starts no task. The timeout covers the whole
+// call, from the start of preparation.
 func run(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
+	value, given := call.Flags["timeout"]
+	if !given {
+		value = defaultTimeout
+	}
+	limit, valid := command.Duration(value)
+	if !valid {
+		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.timeout_invalid", "agent.run.timeout_invalid_hint", map[string]any{"Value": value})}}
+	}
+	ctx, cancel := context.WithTimeoutCause(ctx, limit, errTimedOut)
+	defer cancel()
 	t, problem := prepare(call)
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
+	t.timeout = limit
 	id, given := call.Flags["run-id"]
 	if given && !record.ValidID(id) {
 		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.run_id_invalid", "agent.run.run_id_invalid_hint", map[string]any{"ID": id})}}
@@ -137,8 +156,7 @@ func dryRunOf(ctx context.Context, call extension.Call, t task, id string) contr
 	}
 	problem := pick(ctx, call, &t, resolved)
 	if ctx.Err() != nil {
-		// A signal stopped the Codex check, and the SDK answers it alone.
-		return contract.Outcome{}
+		return stopped(ctx, p, t, nil)
 	}
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}

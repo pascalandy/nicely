@@ -45,6 +45,12 @@ name = "cwd"
 value = "dir"
 summary = "agent.run.cwd"
 
+[[commands.flags]]
+name = "timeout"
+value = "duration"
+summary = "agent.run.timeout"
+default = "5m"
+
 [commands.result.schema]
 type = "object"
 required = ["run_id", "answer", "harness", "model", "duration_ms"]
