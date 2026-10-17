@@ -98,6 +98,25 @@ stdout 'error\[INTERRUPTED\]'
 stderr '\Aecho on\nterminal as found\n\z'
 grep -count=3 '^cafe order' ran
 
+# When TERM is dumb, the form asks on lines: a text field shows its title, then the answer,
+# and a choice lists its options by number. A number that names no option, or the end of
+# input, leaves the value missing, so the call fails as it does without the form
+env TERM=dumb
+exec pty dumb.txt ncly cafe order latte --to-go
+stdout '\A--size <size>\n1\. small\n2\. large\nType a number from 1 to 2: 2\n'
+stdout 'Next time:\n  ncly cafe order latte --size large --to-go\n\z'
+! stdout '\x1b'
+stderr '\Aecho on\nterminal as found\n\z'
+exits 2 pty dumb-nine.txt ncly cafe order latte --to-go
+stdout 'error\[USAGE_INVALID\]: The flag --size is missing\.'
+exits 2 pty dumb-eof.txt ncly cafe order latte --to-go
+stdout 'error\[USAGE_INVALID\]: The flag --size is missing\.'
+stderr '\Aecho on\nterminal as found\n\z'
+exec pty dumb-text.txt ncly cafe order --size small --to-go
+stdout '\Adrink latte\n'
+env TERM=xterm-256color
+grep -count=5 '^cafe order' ran
+
 # ncly auth login without its service asks for it in a text field that suggests the declared
 # services, then for the key in the masked field. Its Next time: line holds the service,
 # never the key, and never --force
@@ -155,6 +174,14 @@ drink	^M
 drink	^C
 -- interrupt-choice.txt --
 <size>	^C
+-- dumb.txt --
+1 to 2:	2
+-- dumb-nine.txt --
+1 to 2:	9
+-- dumb-eof.txt --
+1 to 2:	^D
+-- dumb-text.txt --
+drink	latte
 -- login.txt --
 service	ope\c
 openai	^E

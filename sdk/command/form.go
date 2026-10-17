@@ -183,7 +183,7 @@ func (f *Form) value(ctx context.Context, text *i18n.Printer, title, summary str
 		for i, v := range values {
 			options[i] = tui.Option{Label: v, Value: v}
 		}
-		return tui.AskChoice(ctx, f.in, f.out, f.noColor, tui.Choice{Title: title, Description: text.T(summary), Options: options, Keys: FormKeys(f.p)})
+		return tui.AskChoice(ctx, f.in, f.out, f.noColor, tui.Choice{Title: title, Description: text.T(summary), Options: options, Keys: FormKeys(f.p), Number: f.number(len(options))})
 	}
 	var suggestions []string
 	for _, s := range suggest() {
@@ -217,7 +217,14 @@ func (f *Form) pick(ctx context.Context, text *i18n.Printer, c *cobra.Command, d
 		Description: groupMessage(f.p, g, false),
 		Options:     options,
 		Keys:        FormKeys(f.p),
+		Number:      f.number(len(options)),
 	})
+}
+
+// number asks for the number of one of count options, on a terminal whose
+// TERM is dumb.
+func (f *Form) number(count int) string {
+	return f.p.T("form.number", map[string]any{"Count": count})
 }
 
 // commandLine writes a call as the Next time: line of Modes in contract.md

@@ -232,6 +232,10 @@ other = "filter"
 description = "Key help under a text field of a form that suggests values, after the key ctrl+e: pressing it accepts the suggestion that the field shows."
 other = "complete"
 
+["form.number"]
+description = "Prompt of a choice of a form on a terminal that cannot redraw a line, which lists the options as numbered lines above it. {{.Count}} is the number of the last option, at least 1. The human types a number after it."
+other = "Type a number from 1 to {{.Count}}:"
+
 ["form.group_title"]
 description = "Title of a choice in the form for missing values, which asks which flag of a group to set, such as --latest or --path. The description under it says how many to give."
 other = "Pick a flag"

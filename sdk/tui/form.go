@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -68,6 +69,9 @@ type Text struct {
 // AskText asks for a value in a text field, as AskMasked asks for a key, and
 // returns the typed text.
 func AskText(ctx context.Context, in *os.File, out io.Writer, noColor bool, t Text) (string, error) {
+	if dumb() {
+		return askLine(ctx, in, out, t.Title+" ", false)
+	}
 	var typed string
 	field := huh.NewInput().Title(t.Title).Description(t.Description).Suggestions(t.Suggestions).Value(&typed)
 	if err := ask(ctx, in, out, noColor, t.Keys, field); err != nil {
@@ -82,6 +86,9 @@ type Choice struct {
 	Description string
 	Options     []Option
 	Keys        Keys
+	// Number asks for the number of an option, on a terminal whose TERM is
+	// dumb, which lists the options by number.
+	Number string
 }
 
 // Option is one option of a choice: what it shows, and the value that it
@@ -91,8 +98,23 @@ type Option struct {
 }
 
 // AskChoice asks the human to pick one option of a choice, as AskMasked asks
-// for a key, and returns its value.
+// for a key, and returns its value. On a terminal whose TERM is dumb, it
+// lists the options by number, and an answer that names none of them, the
+// end of input included, returns an empty value.
 func AskChoice(ctx context.Context, in *os.File, out io.Writer, noColor bool, c Choice) (string, error) {
+	if dumb() {
+		var b strings.Builder
+		b.WriteString(c.Title + "\n")
+		for i, o := range c.Options {
+			b.WriteString(strconv.Itoa(i+1) + ". " + o.Label + "\n")
+		}
+		answer, err := askLine(ctx, in, out, b.String()+c.Number+" ", false)
+		n, invalid := strconv.Atoi(strings.TrimSpace(answer))
+		if err != nil || invalid != nil || n < 1 || n > len(c.Options) {
+			return "", err
+		}
+		return c.Options[n-1].Value, nil
+	}
 	var chosen string
 	options := make([]huh.Option[string], len(c.Options))
 	for i, o := range c.Options {
