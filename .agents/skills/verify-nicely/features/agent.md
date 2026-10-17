@@ -12,7 +12,7 @@
 - `agent-dry-run` prepares a task, shows the resolved settings and the invocation of Codex, starts no task, and records nothing
 - `agent-tools` refuses a call without `--tools` with `CAPABILITY_UNSUPPORTED`, even in a dry run
 - `agent-depth` gives Codex `NCLY_AGENT_DEPTH` plus one, and refuses a call at `[agent] max_depth` with `AGENT_DEPTH_LIMIT` before it probes Codex
-- `agent-run` runs one task under a run ID that the caller chose, answers from its record, and saves the record and `answer.txt` in the state folder
+- `agent-run` runs one task under a run ID that the caller chose, answers from its record, and saves the record and `answer.txt` in the state folder. The same call again answers from the record without starting Codex
 
 ## How to get to it (user POV)
 
@@ -46,8 +46,9 @@ Preconditions:
 - **One level deeper.** Run `NCLY_AGENT_DEPTH=1 just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --dry-run --json`. Exit 0, and `environment` is `{"NCLY_AGENT_DEPTH":"2"}`.
 - **Run.** Run `just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --run-id verify-run --json`. Exit 0, and stdout is one answer with `"answer":"OK from the stub"`, `"harness":"codex"`, `"model":"test-model"`, `"run_id":"verify-run"`, and `duration_ms`.
 - **Record.** Run `cat "$run/scratch/home/.local/state/nicely/runs/verify-run.json"`, then `cat "$run/scratch/home/.local/state/nicely/runs/verify-run/answer.txt"`. The record has `"status":"completed"`, `"path":"agent run"`, `"inputs"` with `"model":"test-model"`, `"tools":true`, and `task_sha256`, and one step `codex` with `"effect":"paid"` and `"status":"completed"`, whose one artifact is that `answer.txt`, with `"size_bytes":16`. The answer file holds `OK from the stub`. Report both outputs beside the quote.
-- **Same ID.** Run the call of Run again. Exit 1, stdout is empty, and stderr holds the code `RESUME_UNSAFE` and `"run_id":"verify-run"`: this build starts no second task under an ID that a record holds.
-- **Calls.** After the cleanup, run `just verify quote "$run" codex-calls`, then `just verify quote "$run" codex-task`. In `codex-calls.txt`, each line is `codex --version`, one per `ncly doctor agent` call and one per `ncly agent run` call other than the one at the depth limit, except one `codex exec` line after the probe of Run. `codex-task.txt` holds that one line, which ends with `--output-last-message`, a file of the run's temporary folder, and `-`, and `evidence/codex-input.txt` holds `Review this branch`.
+- **Same ID.** Run the call of Run again. Exit 0, and stdout is the answer of Run, `duration_ms` included, because the call answers from the record and starts no Codex.
+- **Reuse.** Run `just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --run-id verify-run --dry-run --json`. Exit 0, and the one item of `plan` has the `output_dir` `<run>/scratch/home/.local/state/nicely/runs/verify-run` and the step `codex` with the action `reuse`, `invocation` is empty, and `pending_checks` is empty.
+- **Calls.** After the cleanup, run `just verify quote "$run" codex-calls`, then `just verify quote "$run" codex-task`. In `codex-calls.txt`, each line is `codex --version`, one per `ncly doctor agent` call and one per `ncly agent run` call before Run other than Without --tools and Depth limit, which stop before the probe, then one probe and one `codex exec` line for Run, and nothing for Same ID and Reuse. `codex-task.txt` holds that one line, which ends with `--output-last-message`, a file of the run's temporary folder, and `-`, and `evidence/codex-input.txt` holds `Review this branch`.
 
 ## Gotchas
 
