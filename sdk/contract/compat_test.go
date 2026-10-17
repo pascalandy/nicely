@@ -429,3 +429,62 @@ func TestAConsumerReadsAProgramWithAndWithoutItsEntry(t *testing.T) {
 		}
 	}
 }
+
+func TestAConsumerReadsAServiceWithAndWithoutGrants(t *testing.T) {
+	// Entries of services as ncly auth status gives them, written out: an
+	// entry of M06 holds no grants, and from M08 grants lists one object per
+	// domain whose extension declares the service, with granted and
+	// optional.
+	type grant struct {
+		Domain   string `json:"domain"`
+		Granted  bool   `json:"granted"`
+		Optional bool   `json:"optional"`
+	}
+	type service struct {
+		Service    string  `json:"service"`
+		Configured bool    `json:"configured"`
+		Source     string  `json:"source"`
+		Code       Code    `json:"code"`
+		Grants     []grant `json:"grants"`
+	}
+	for _, c := range []struct {
+		line      string
+		want      service
+		hasGrants bool
+	}{
+		{`{"service":"deepgram","configured":true,"source":"keychain"}`, service{Service: "deepgram", Configured: true, Source: "keychain"}, false},
+		{`{"service":"deepgram","configured":true,"source":"keychain","grants":[{"domain":"transcript","granted":true,"optional":false}]}`, service{Service: "deepgram", Configured: true, Source: "keychain", Grants: []grant{{"transcript", true, false}}}, true},
+		{`{"service":"deepgram","configured":true,"source":"env","code":"KEY_NOT_GRANTED","message":"m","hint":"ncly auth grant deepgram transcript","next":["ncly","auth","grant","deepgram","transcript"],"grants":[{"domain":"agent","granted":false,"optional":true},{"domain":"transcript","granted":false,"optional":false}]}`, service{Service: "deepgram", Configured: true, Source: "env", Code: KeyNotGranted, Grants: []grant{{"agent", false, true}, {"transcript", false, false}}}, true},
+	} {
+		var got service
+		var keys map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(c.line), &got); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal([]byte(c.line), &keys); err != nil {
+			t.Fatal(err)
+		}
+		_, hasGrants := keys["grants"]
+		sameGrants := len(got.Grants) == len(c.want.Grants)
+		for i := range got.Grants {
+			sameGrants = sameGrants && got.Grants[i] == c.want.Grants[i]
+		}
+		if got.Service != c.want.Service || got.Configured != c.want.Configured || got.Source != c.want.Source ||
+			got.Code != c.want.Code || hasGrants != c.hasGrants || !sameGrants {
+			t.Errorf("consumer read %+v from %s", got, c.line)
+		}
+		// KEY_NOT_GRANTED asks a human to act, as every code of exit 78 does.
+		if exit, known := got.Code.Exit(); got.Code != "" && (!known || exit != ExitHuman) {
+			t.Errorf("%s maps to exit %d, %v", got.Code, exit, known)
+		}
+		// A consumer written before M08 reads the same verdict, and ignores grants.
+		var older struct {
+			Service    string `json:"service"`
+			Configured bool   `json:"configured"`
+			Source     string `json:"source"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &older); err != nil || older.Service != "deepgram" || older.Configured != c.want.Configured || older.Source != c.want.Source {
+			t.Errorf("older consumer read %+v from %s", older, c.line)
+		}
+	}
+}

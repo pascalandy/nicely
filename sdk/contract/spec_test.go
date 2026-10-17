@@ -15,7 +15,7 @@ const contractDoc = "../../docs/north-star/contract.md"
 // shippedWarnings those whose warning codes it holds.
 var (
 	shipped         = []string{"M00", "M01", "M03", "M05", "M06", "M08"}
-	shippedWarnings = []string{"M00", "M01", "M03", "M05", "M06"}
+	shippedWarnings = []string{"M00", "M01", "M03", "M05", "M06", "M08"}
 )
 
 func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
