@@ -97,7 +97,7 @@ stdout '^attempts  1,003$'
 
 # The text of the view comes from the catalog
 exec ncly --lang en-XA run view f1
-pseudo stdout f1 transcript run youtube failed pending transcribe summarize paid none u1 2026-10-01T10:00:00Z 2026-10-01T10:00:05Z 5s v0.13.0 RUNTIME Deepgram refused the file Check then again 1 lang fr
+pseudo stdout f1 transcript run youtube failed pending transcribe summarize paid none u1 2026-10-01T10:00:00Z 2026-10-01T10:00:05Z v0.13.0 RUNTIME Deepgram refused the file Check then again 1 lang fr
 
 -- want-c1.txt --
 c1  agent run
@@ -129,7 +129,7 @@ TOOLS
 
 ITEMS
   task → /state/runs/c1
-    completed  codex  paid  2026-10-17T18:37:13Z → 2026-10-17T18:37:14Z, 1s
+    completed  codex  paid  2026-10-17T18:37:13Z → 2026-10-17T18:37:14Z, 1 s
       /state/runs/c1/answer.txt  16 B
 -- want-f1.txt --
 f1  transcript run youtube
@@ -145,7 +145,7 @@ RESOLVED
 
 ITEMS
   u1
-    failed   transcribe  paid  2026-10-01T10:00:00Z → 2026-10-01T10:00:05Z, 5s
+    failed   transcribe  paid  2026-10-01T10:00:00Z → 2026-10-01T10:00:05Z, 5 s
       error[RUNTIME]: Deepgram refused the file.
       hint: Check the file, then run again.
     pending  summarize   none

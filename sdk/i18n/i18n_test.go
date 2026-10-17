@@ -103,6 +103,12 @@ func TestFormats(t *testing.T) {
 		{en.Size(1500), "1.5 kB"},
 		{en.Size(1_500_000), "1.5 MB"},
 		{en.Size(2_000_000_000_000_000), "2,000 TB"},
+		{en.Duration(250 * time.Millisecond), "250 ms"},
+		{en.Duration(1500 * time.Millisecond), "1.5 s"},
+		{en.Duration(90 * time.Second), "1.5 min"},
+		{en.Duration(2 * time.Hour), "2 h"},
+		{en.Duration(200 * time.Hour), "200 h"},
+		{strings.ReplaceAll(fr.Duration(1500*time.Millisecond), " ", " "), "1,5 s"},
 		{en.Date(day), "2026-10-06"},
 	}
 	for _, c := range cases {

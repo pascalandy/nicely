@@ -124,6 +124,22 @@ other = "Could not write the output."
 description = "Hint under output.write_failed: what the user checks before running the command again."
 other = "Check the file or pipe that receives the output, such as its free space."
 
+["duration.milliseconds"]
+description = "A duration in milliseconds. {{.N}} is a number already formatted for the language, such as 250. ms is the unit symbol."
+other = "{{.N}} ms"
+
+["duration.seconds"]
+description = "A duration in seconds. {{.N}} is a number already formatted, such as 1.5. s is the unit symbol."
+other = "{{.N}} s"
+
+["duration.minutes"]
+description = "A duration in minutes. {{.N}} is a number already formatted, such as 1.5. min is the unit symbol."
+other = "{{.N}} min"
+
+["duration.hours"]
+description = "A duration in hours. {{.N}} is a number already formatted, such as 1.5. h is the unit symbol."
+other = "{{.N}} h"
+
 ["size.bytes"]
 description = "A size in bytes. {{.N}} is a number already formatted for the language, such as 512. B is the symbol of the byte."
 other = "{{.N}} B"

@@ -342,7 +342,7 @@ func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys 
 			}
 			line := strings.Join(cells, "  ")
 			if s.StartedAt != nil {
-				line += "  " + stepTimes(*s.StartedAt, s.FinishedAt)
+				line += "  " + stepTimes(p, *s.StartedAt, s.FinishedAt)
 			}
 			b.WriteString("    " + strings.TrimRight(line, " ") + "\n")
 			for _, a := range s.Artifacts {
@@ -362,15 +362,15 @@ func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys 
 
 // stepTimes shows when a step started, then, once it finished, when, and
 // how long it took.
-func stepTimes(started string, finished *string) string {
+func stepTimes(p *i18n.Printer, started string, finished *string) string {
 	if finished == nil {
 		return started
 	}
 	text := started + " → " + *finished
 	from, errFrom := time.Parse(time.RFC3339, started)
 	to, errTo := time.Parse(time.RFC3339, *finished)
-	if errFrom == nil && errTo == nil {
-		text += ", " + to.Sub(from).String()
+	if errFrom == nil && errTo == nil && !to.Before(from) {
+		text += ", " + p.Duration(to.Sub(from))
 	}
 	return text
 }

@@ -230,6 +230,29 @@ func (p *Printer) Size(bytes int64) string {
 	return p.T(sizeUnits[unit], map[string]any{"N": p.Number(value, decimals)})
 }
 
+// durationUnits holds the catalog IDs of duration units, from the
+// millisecond to the hour, with the length of each.
+var durationUnits = []struct {
+	id     string
+	length time.Duration
+}{{"duration.milliseconds", time.Millisecond}, {"duration.seconds", time.Second}, {"duration.minutes", time.Minute}, {"duration.hours", time.Hour}}
+
+// Duration formats d in the largest unit, up to the hour, that keeps the
+// number at 1 or more, with at most one decimal, such as 1.5 s or 2 min.
+// Milliseconds take no decimal.
+func (p *Printer) Duration(d time.Duration) string {
+	unit := 0
+	for unit < len(durationUnits)-1 && d >= durationUnits[unit+1].length {
+		unit++
+	}
+	decimals := 1
+	if unit == 0 {
+		decimals = 0
+	}
+	value := float64(d) / float64(durationUnits[unit].length)
+	return p.T(durationUnits[unit].id, map[string]any{"N": p.Number(value, decimals)})
+}
+
 // Date formats a day as ISO 8601, such as 2026-10-06, in every language:
 // it reads the same in English and is the Canadian French standard.
 func (p *Printer) Date(t time.Time) string { return t.Format(time.DateOnly) }
