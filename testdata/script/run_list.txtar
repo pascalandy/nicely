@@ -86,6 +86,17 @@ exits 2 ncly run list --since yesterday --json
 answer stderr USAGE_INVALID
 stderr '"message":"yesterday is no RFC 3339 time: give --since a time such as 2026-10-07T00:00:00Z\."'
 
+# A run whose lock cannot be read is unreadable too, and never reads as inactive
+cp a4.json $RUNS/a4.json
+exec /bin/sh -c ': > "$RUNS/a4.lock"'
+chmod 000 $RUNS/a4.lock
+exec ncly run list --json
+stdout '"unreadable":\["a4","bad","badtime","v2"\]'
+! stdout '"run_id":"a4"'
+exec ncly run list --path nothing --json
+stdout '"unreadable":\["a4","bad","badtime","v2"\]'
+rm $RUNS/a4.lock $RUNS/a4.json
+
 # A runs folder that cannot be read answers RUNTIME
 chmod 000 $RUNS
 exits 1 ncly run list --json
@@ -129,6 +140,8 @@ More runs match: raise --limit, or narrow the filters.
 {"format_version":1,"run_id":"a2","path":"agent run","status":"completed","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:02:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
 -- a3.json --
 {"format_version":1,"run_id":"a3","path":"agent run","status":"running","started_at":"2026-10-05T12:00:00Z","updated_at":"2026-10-05T12:00:01Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
+-- a4.json --
+{"format_version":1,"run_id":"a4","path":"agent run","status":"completed","started_at":"2026-10-04T08:00:00Z","updated_at":"2026-10-04T08:01:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
 -- garbage.json --
 {"format_version":
 -- v2.json --

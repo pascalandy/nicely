@@ -156,14 +156,16 @@ func listRuns(store record.Store, f runFilter, limit int) (runList, error) {
 			continue
 		}
 		started, err := time.Parse(time.RFC3339, rec.StartedAt)
-		if err != nil {
+		// A lock that cannot be read leaves active unknown, which never
+		// reads as false.
+		active, errActive := store.Active(id)
+		if err != nil || errActive != nil {
 			list.Unreadable = append(list.Unreadable, id)
 			continue
 		}
 		if !f.keep(rec, started) {
 			continue
 		}
-		active, _ := store.Active(id)
 		e := runEntry{RunID: id, Path: rec.Path, Status: string(rec.Status), StartedAt: rec.StartedAt, UpdatedAt: rec.UpdatedAt, Active: active, ItemCount: len(rec.Items), Keys: []string{}, started: started}
 		for _, it := range rec.Items[:min(keyPreview, len(rec.Items))] {
 			e.Keys = append(e.Keys, it.Key)
