@@ -1,7 +1,8 @@
 # Ctrl-C, SIGTERM, and the timeout stop Codex and every descendant that ncly can reach, as
 # Stops and failures in spec.md defines. Once Codex started, the step and the run stay unknown,
 # and a repeated call starts nothing. The stub codex appends each call to $WORK/calls.log. As a
-# task, it starts child.sh in a process group of its own and waits: child.sh writes its process
+# task, under CODEX_QUICK, it writes OK from the stub as its last message and exits. Otherwise,
+# it starts child.sh in a process group of its own and waits: child.sh writes its process
 # ID once it is ready, and the name of the signal that ends it, which the SIGKILL of cleanup
 # never writes. Under CODEX_HANG_PROBE, codex --version writes probe.pid and never ends.
 # exitcode passes the signal on to ncly and writes its exit code.
@@ -139,6 +140,34 @@ answer stderr RESUME_UNSAFE
 grep -count=11 '(?m)^(--version|exec )' calls.log
 grep -count=3 '(?m)^exec ' calls.log
 
+# Once Codex exited with its answer, a stop keeps that answer and the completion, at the pause
+# of the boundary hook after the answer file. After the timeout, the call answers the saved
+# answer
+env CODEX_QUICK=1 NCLY_TEST_BOUNDARY=pause:after-artifact
+rm paused
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id k8 --timeout 1s --json
+stdout '"answer":"OK from the stub".*"run_id":"k8"'
+exec ncly run view k8 --json
+stdout '"status":"completed","tools"'
+
+# After Ctrl-C, INTERRUPTED with the keys of the answer, and a repeated call answers it again
+rm paused
+exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k9 --json &
+waitfile paused
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"answer":"OK from the stub"'
+stderr '"run_id":"k9"'
+env CODEX_QUICK= NCLY_TEST_BOUNDARY=
+exec ncly run view k9 --json
+stdout '"status":"completed","tools"'
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id k9 --json
+stdout '"answer":"OK from the stub".*"run_id":"k9"'
+grep -count=15 '(?m)^(--version|exec )' calls.log
+grep -count=5 '(?m)^exec ' calls.log
+
 -- child.sh --
 # child.sh writes its process ID once its traps are set, then runs until a signal ends it,
 # and writes the name of that signal.
@@ -160,6 +189,13 @@ if [ "$1" = --version ]; then
   exit 0
 fi
 /bin/cat > /dev/null
+if [ -n "$CODEX_QUICK" ]; then
+  while [ $# -gt 0 ]; do
+    if [ "$1" = --output-last-message ]; then printf 'OK from the stub' > "$2"; fi
+    shift
+  done
+  exit 0
+fi
 # pgroup starts the child in its own process group, where Ctrl-C is not ignored, with no
 # terminal and whichever shell sh is.
 pgroup /bin/sh "$WORK/child.sh" > /dev/null 2>&1 &
