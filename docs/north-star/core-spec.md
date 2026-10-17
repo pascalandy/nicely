@@ -11,6 +11,7 @@ ncly
 ├── describe [command...]           M03
 ├── skill list|view                 M04
 ├── skill status                    M05
+├── skill link                      M12
 ├── doctor [component]              M05
 ├── auth login|logout|status        M06
 ├── auth grant|revoke               M08
@@ -192,6 +193,154 @@ Their dry-run JSON has `dry_run: true`, `plan`, an array with one entry containi
 ```
 
 `keychain` is `available` or `unavailable`. To move a key from another secret store, pipe it once: `<command that prints the key> | ncly auth login deepgram --stdin`.
+
+## ncly tap
+
+Taps install skills and extensions from Git repositories. [D061](decisions/D061-tap-publications.md) records the distribution and publication choices.
+
+```text
+ncly tap add <owner/repo | git-url> [--dry-run]
+ncly tap list [--json]
+ncly tap sync [<tap>] [--dry-run]
+ncly tap remove <tap> [--dry-run] [--force]
+```
+
+### Tap identity and storage
+
+A tap ID identifies the Git source, independently of its installed revision. `owner/repo` expands to `https://github.com/owner/repo.git`.
+For GitHub, HTTPS and SSH URLs with their default ports identify the same repository. Their ID is `github.com/<owner>/<repo>`, with lowercase names and no final `.git`.
+This includes GitHub's `git@github.com:owner/repo.git` form.
+For other URLs, only the scheme and hostname become lowercase. The ID preserves the scheme, user, port, path, query, and fragment.
+An SCP-style source preserves its syntax, user, and path, with a lowercase hostname. Other URL spellings remain separate taps, even when Git reaches the same repository.
+A local fixture uses an absolute `file://` URL. A source URL must contain no password or token. Git uses the user's existing credentials.
+
+`<tap>` accepts its tap ID or a source that normalizes to that ID. An unknown ID answers `NOT_FOUND`.
+Storage is `taps/<sha256-of-id>/` below the data folder. The hash uses the complete UTF-8 tap ID, without truncation.
+The folder holds the ID, the Git clone, and its tap publications. An existing folder with another recorded ID is a conflict, never another tap's storage.
+Nicely records each publication's Git commit, release tag, archive checksums, and extension origins. Paths alone never establish ownership.
+
+### Configuration and commands
+
+The shared config lists sources in order:
+
+```toml
+[tap]
+sources = ["pascalandy/nicely", "ssh://git@example.com/tools/personal.git"]
+```
+
+The list follows [Configuration](contract.md#configuration), including whole-list replacement by the local config. Repeated tap IDs are `CONFIG_INVALID`.
+`add` and `remove` edit only `tap.sources` in the shared config, honoring `NCLY_CONFIG` when set.
+They use [`tomledit`](https://github.com/creachadair/tomledit) through `sdk/config/` to keep comments, formatting, and unrelated keys.
+They fail before effects when a local override would hide the requested change. The `CONFIG_INVALID` hint names that local file.
+
+- `add` clones with Git, prepares the complete tap publication, and validates every extension before it changes the shared config
+- After publication, interactive `add` lists the declared services and offers the existing grant confirmation for each selected extension and service
+- Non-interactive `add` installs without grants. Declining a grant keeps the tap installed. An already granted service needs no second confirmation
+- Repeating `add` for an installed tap changes nothing and asks for no grant. Updates use `sync`, and later grants use `ncly auth grant`
+- `sync` fetches and stages the named tap, or every configured tap in effective config order. It publishes the selected revisions under the rules below
+- `sync` never edits the configured source list or grants a key. A repeated sync with unchanged inputs publishes nothing
+- A dirty clone is a conflict. No command resets or discards its local changes
+- `remove` checks all managed files and harness links before confirmation or a config edit. An edit or an unmanaged replacement is a conflict
+- After confirmation, `remove` removes the shared entry and unchanged managed links, then moves the tap's clone and publications to the OS trash
+- `--force` supplies removal confirmation only. It overrides neither a conflict nor a grant requirement
+- Repeating a completed `remove` changes nothing and succeeds. A tap absent from both config and ownership evidence answers `NOT_FOUND`
+
+`list --json` returns `taps`, in effective config order. Each entry has `id`, `url`, `revision`, `path`, and `extensions`.
+`url` is the configured source. `revision` is the published Git commit, or `null` before publication. `path` is the absolute storage folder.
+Each extension entry has `domain`, `path`, and `release`, the release tag or `null` for a Git executable.
+Without `--json`, aligned columns show the configured source, tap ID, and revision. Indented lines below each tap show each extension's domain and path.
+
+Writing commands return `taps` for the affected taps, with `id` and `action`: `added`, `unchanged`, `synced`, or `removed`.
+A partial failure retains those completed entries beside `errors`. A conflict answers `RUNTIME` and names the changed path for inspection.
+Dry run returns `dry_run: true`, `plan`, and `pending_checks`. Each plan entry has `key`, the tap ID, `action`, `paths`, and `effects`.
+`paths` lists each config, publication, link, or trash destination that would change. `effects` holds `user_writes`, `network`, and `paid`, which is always false.
+Dry run may fetch and stage in Nicely's cache. It changes no config, grant, installed publication, or harness link, and moves nothing to trash.
+It prompts for nothing and reads no key. `pending_checks` lists confirmations as objects with `id` and `message`.
+Grant checks use `tap.grant.<domain>.<service>`. Removal confirmation uses `tap.remove`, absent with `--force`.
+
+### Extension packages and releases
+
+An executable that runs as published, such as a script with an interpreter line, stays in the Git tree.
+It sits at `extensions/ncly-<domain>`, beside its `.toml`, `.locales/`, and `.skill/` files, as [Extensions](contract.md#extensions) defines.
+Standalone skills sit at `skills/<name>/SKILL.md`. Their optional `nicely.toml` uses the manifest's requirements format, as [ncly skill](../../extensions/skill/spec.md#ncly-skill) defines.
+
+A tap that distributes precompiled extensions names them in its root `tap.toml`:
+
+```toml
+[release]
+repository = "owner/repo"
+extensions = ["hello"]
+```
+
+`repository` names the GitHub repository that publishes the archives. `extensions` lists domains, each once, with no executable of that domain in the Git tree.
+Without this table, the tap uses Git executables only. Nicely never builds an extension, runs an install script, or requires Go on the user's machine.
+
+Each release publishes `ncly-<domain>_<version>_<os>_<arch>.tar.gz` for each domain and system, plus `ncly_<version>_checksums.txt` with SHA-256 checksums.
+`<version>` is the release tag without its leading `v`. The systems are `darwin` and `linux`, each with `amd64` and `arm64`.
+An archive holds the executable `ncly-<domain>`, manifest `ncly-<domain>.toml`, catalogs `ncly-<domain>.locales/`, and skill `ncly-<domain>.skill/` together.
+Nicely selects the machine's archive and verifies its checksum before publication. Extraction stays inside staging, and every manifest must pass the existing `contract_version` check.
+A missing archive, checksum mismatch, or invalid archive fails installation and preserves the installed publication. Nicely never falls back to a build.
+
+Other taps select their release repository's latest stable, non-draft release at each `add` or `sync`. One invocation resolves that tag once.
+Their Git content follows the fetched default branch. Each invocation resolves its commit once per tap.
+The official tap is `github.com/pascalandy/nicely`, as [D041](decisions/D041-first-party-extensions.md) decides.
+It selects the Git tag and release matching the installed `ncly` version, such as `v0.12.0`. It never follows the latest release independently of `ncly`.
+After an `ncly` upgrade, `ncly tap sync pascalandy/nicely` selects that installed version's tag and archives. The manifest check supplies compatibility without another version mechanism.
+The existing release workflow publishes first-party extension archives, `agent` first, alongside core's archives. Homebrew installs only `ncly`.
+
+README.md and the bundled `nicely` skill invite users to install the recommended first-party extensions with `ncly tap add pascalandy/nicely`.
+The skill teaches this command only from the release that supports it. An interactive invitation stays in [M99](../milestones/M99-parking-lot.md).
+
+### Publication and recovery
+
+Each tap publication is a complete installed tree in its own immutable folder. Its extensions each contain the executable, manifest, catalogs, and skill together.
+Nicely stages and validates the tree before an atomic replacement of that tap's `current` link selects it, under the publication lock.
+The publication includes its ownership evidence: tap ID, resolved revisions, and each managed path's type, file hash, executable mode, or link target.
+Old publications remain until tap removal, so a sync never removes files that an earlier call selected. Unrelated taps have separate publication boundaries.
+Before replacement or removal, Nicely compares the installed tree and managed links with their evidence. Local changes stop that destination as conflicts, as [D035](decisions/D035-sync-ownership.md) requires.
+
+Before a config edit, link replacement, publication, or trash move, Nicely saves its intent durably in the state folder.
+The intent identifies the command, normalized arguments, taps, affected paths, ownership evidence, expected old values, and staged new values.
+A trash intent names its unique trash destination.
+Config evidence covers the file's bytes. Link evidence covers its exact target. Each invocation owns distinct temporary paths.
+Writers lock the destination and revalidate the evidence before an atomic rename. A config edit uses a temporary file, despite preserving the original file's formatting.
+
+Repeating an interrupted command first reconciles its pending intent under the same locks. A verified new destination completes that step without another write or trash move.
+A retry uses the intent's saved revisions instead of resolving newer ones.
+A verified old destination permits the staged step. Anything else stops as a conflict and preserves both the user's files and recovery evidence.
+An interrupted `add` finishes its pending config and publication steps before it can become the ordinary repeated-add no-op.
+An interrupted `remove` retains its intent until links, config, and trash all agree. A missing source alone never proves a trash move completed.
+Completed removals retain enough evidence for the repeated-remove no-op. Removing and later adding the same source starts a new installation.
+No command silently discards another command's pending intent. Dry run describes recovery without performing it.
+
+[Retry safety](contract.md#retry-safety) applies to the whole invocation, including earlier taps, config edits, grants, links, and trash moves.
+A temporary lock or network failure permits exit 75 only when every prior effect has verified repeat behavior.
+An unknown effect exits 1 with its evidence path and an inspection hint. Signals retain 130 and 143.
+Boundary scenarios kill the process before and after each effect. They repeat the same invocation and count writes, trash moves, and extension launches.
+
+### Discovery and grants
+
+After reserved core and bundled names, discovery checks taps in effective config order, then the data-folder and `PATH` sources of [Discovery](contract.md#discovery).
+`just install` remains the developer path from a checkout. A tap copy wins over that data-folder copy of the same domain, and discovery reports the hidden copy.
+Tap-backed domain entries in `ncly describe` add `tap`, the tap ID, and `revision`, the Git commit. `ncly doctor` reports selected and hidden origins.
+The domain entry's existing `skill` path names the selected publication. Thus `skill` reaches host discovery through the CLI, as [D054](decisions/D054-extension-skills-through-describe.md) requires.
+
+A call resolves `current` once before it reads a tap extension's manifest. It uses that immutable folder for catalogs, skill paths, and process launch.
+Calls that use tap files hold a shared tap-lifetime lock until their work and child process end. Removal needs the exclusive lifetime lock.
+Sync uses a separate publication lock, so it can publish between manifest loading and process launch. That call launches its selected revision, and the next call sees the new revision.
+
+A tap extension's grant source is its tap ID, with the service and domain, as [Grants](contract.md#grants) stores it.
+Changing a revision or archive within that tap keeps existing grants. Changing taps, switching to a local copy, or first declaring a key requires a human grant.
+An existing path grant never converts to a tap grant automatically, even when both copies have the same domain.
+Tap removal revokes no grant. An unused grant follows the existing `GRANT_UNUSED` check, and re-adding that same tap restores its source identity.
+
+### Python tap authors
+
+A Python tap author converts script-output string errors before publishing the script as an extension.
+Each failure uses [D027](decisions/D027-json-answer.md)'s objects with `code`, `message`, and `hint`.
+For example, `{"ok":false,"errors":["No input"]}` becomes `{"ok":false,"contract_version":1,"errors":[{"code":"USAGE_INVALID","message":"No input.","hint":"Supply an input file."}]}` and exits 2.
+The script follows [Output](contract.md#output), including streams, translation, and exit codes. Core provides no adapter for string errors.
+Extension-specific codes appear in the manifest. A Python program embedded by Go keeps its internal protocol, which Go maps to the public answer.
 
 ## Examples
 

@@ -237,6 +237,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 ### Relations
 
 - A tap carries skills and extensions; this repository is the official tap of the first-party extensions
+- A tap ID identifies a tap's source; a tap publication holds one complete installed revision of that source
 - The Homebrew tap ships `ncly` itself
 
 ### Definitions
@@ -244,6 +245,14 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - Tap
   - Def.: a Git repository that holds skills and extensions, like a Pi package
   - Distinct from: the Homebrew tap
+- Tap ID
+  - Def.: the canonical identity of a tap's Git source, including its host
+  - Project note: [Tap identity and storage](core-spec.md#tap-identity-and-storage) defines normalization and local storage
+  - Distinct from: an extension's domain, which several taps can provide
+- Tap publication
+  - Def.: an immutable installed tree of a tap's skills and complete extensions, with its Git revision and verified release archives
+  - Project note: [Publication and recovery](core-spec.md#publication-and-recovery) defines its ownership evidence and selection
+  - Distinct from: the Git clone, which `sync` fetches, and the tap ID, which stays the same across updates
 - Homebrew tap
   - Def.: the repository `pascalandy/homebrew-tap`, whose formula builds `ncly`
 

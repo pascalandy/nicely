@@ -33,6 +33,7 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | More languages | Spanish, Japanese, and others, through the M22 workflow | A user asks, or `fr-CA` proves the workflow |
 | Terminal demos | VHS recordings of key commands for the README and the docs | The everyday domains ship |
 | First-run experience | What a new visitor sees first, and the marketing around it | The everyday domains ship |
+| Recommended extensions prompt | Invites the user to install first-party extensions, after Pascal picks a published mockup. M12 keeps the invitation in README.md and the `nicely` skill | A non-developer installs ncly |
 | Project config | A `.nicely.toml` in a repository, read between the environment and the local config | A project needs its own profile or paths |
 | `ncly config` | `ncly config get`, `set`, and `list` edit the config with comments kept | Agents edit the config by hand often enough to break it |
 | Key checks for skills | `ncly doctor` checks the keys that skills declare in `nicely.toml`, replacing `just api-keys-validation` | Taps carry skills with manifests, in M12 |

@@ -23,6 +23,9 @@ Nicely is a small core that every domain extends, in the spirit of Pi. Core brin
 
 Interactive forms will ask for missing values. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 
+From M12, install the recommended first-party extensions, starting with `agent`, with `ncly tap add pascalandy/nicely`.
+The [tap spec](docs/north-star/core-spec.md#ncly-tap) defines installation from release archives, with no Go compiler on your machine.
+
 ## Agent instructions
 
 Add one line to your agent instructions, such as `AGENTS.md` or `CLAUDE.md`, to teach an agent to use Nicely:
