@@ -11,7 +11,6 @@ ncly
 ├── describe [command...]           M03
 ├── skill list|view                 M04
 ├── skill status                    M05
-├── skill link                      M12
 ├── doctor [component]              M05
 ├── auth login|logout|status        M06
 ├── auth grant|revoke               M08
@@ -218,7 +217,8 @@ A local fixture uses an absolute `file://` URL. A source URL must contain no pas
 `<tap>` accepts its tap ID or a source that normalizes to that ID. An unknown ID answers `NOT_FOUND`.
 Storage is `taps/<sha256-of-id>/` below the data folder. The hash uses the complete UTF-8 tap ID, without truncation.
 The folder holds the ID and its tap publications. A Git tap also holds a bare clone.
-Nicely records each publication's Git commit or release tag, archive checksums, and extension origins. Paths alone never establish publication ownership.
+`sdk/config/` owns tap ID normalization and the storage path.
+`internal/cli/` and the skill extension share this package because extensions may not import `internal/`.
 
 ### Configuration and commands
 
@@ -241,9 +241,8 @@ They fail before effects when a local override would hide the requested change. 
 - Repeating `add` for an installed tap changes nothing and asks for no grant. Updates use `sync`, and later grants use `ncly auth grant`
 - `sync` fetches and stages the named tap, or every configured tap in effective config order. It publishes the selected revisions under the rules below
 - `sync` never edits the configured source list or grants a key. A repeated sync with unchanged inputs publishes nothing
-- `remove` checks all managed publication files before confirmation or a config edit. An edit or an unmanaged replacement is a conflict
-- After confirmation, `remove` removes managed links, then the shared entry, then moves the tap folder to the OS trash
-- `--force` supplies removal confirmation only. It overrides neither a conflict nor a grant requirement
+- After confirmation, `remove` removes the shared entry, then moves the tap folder to the OS trash. Edits inside tap storage never block removal and stay recoverable
+- `--force` supplies removal confirmation only
 - A tap that neither the config nor the storage holds exits 2 with `NOT_FOUND` before any confirmation. Its `next` is `ncly tap list`, as `ncly auth revoke` does
 
 `list --json` returns `taps`, in effective config order. Each entry has `id`, `url`, `revision`, `path`, and `extensions`.
@@ -254,8 +253,8 @@ Without `--json`, aligned columns show the configured source, tap ID, and revisi
 Writing commands return `taps` for the affected taps, with `id` and `action`: `added`, `unchanged`, `synced`, or `removed`.
 A partial failure retains those completed entries beside `errors`. A conflict answers `RUNTIME` and names the changed path for inspection.
 Dry run returns `dry_run: true`, `plan`, and `pending_checks`. Each plan entry has `key`, the tap ID, `action`, `paths`, and `effects`.
-`paths` lists each config, publication, link, or trash destination that would change. `effects` holds `user_writes`, `network`, and `paid`, which is always false.
-Dry run may fetch and stage in Nicely's cache. It changes no config, grant, installed publication, or harness link, and moves nothing to trash.
+`paths` lists each config, publication, `current` link, or trash destination that would change. `effects` holds `user_writes`, `network`, and `paid`, which is always false.
+Dry run may fetch and stage in Nicely's cache. It changes no config, grant, or installed publication, and moves nothing to trash.
 It prompts for nothing and reads no key. `pending_checks` lists confirmations as objects with `id` and `message`.
 Grant checks use `tap.grant.<domain>.<service>`. Removal confirmation uses `tap.remove`, absent with `--force`.
 
@@ -263,7 +262,8 @@ Grant checks use `tap.grant.<domain>.<service>`. Removal confirmation uses `tap.
 
 An executable that runs as published, such as a script with an interpreter line, stays in the Git tree.
 It sits at `extensions/ncly-<domain>`, beside its `.toml`, `.locales/`, and `.skill/` files, as [Extensions](contract.md#extensions) defines.
-Standalone skills sit at `skills/<name>/SKILL.md`. Their optional `nicely.toml` uses the manifest's requirements format, as [ncly skill](../../extensions/skill/spec.md#ncly-skill) defines.
+Standalone skills sit at `skills/<name>/SKILL.md`, with an optional `nicely.toml` beside it.
+A script extension answers with [D027](decisions/D027-json-answer.md)'s error objects. Core accepts no string errors.
 
 Only the official tap ships precompiled extensions in M12. Other taps carry executables that run as published, such as scripts.
 Nicely never builds an extension, runs an install script, or requires Go on the user's machine.
@@ -289,21 +289,20 @@ An interactive invitation stays in [M99](../milestones/M99-parking-lot.md).
 
 Each tap publication is a complete installed tree in its own immutable folder.
 Nicely stages and validates the tree before an atomic replacement of that tap's `current` link selects it, under the publication lock.
-The publication includes its ownership evidence: tap ID, resolved revisions, and each managed path's type, file hash, executable mode, or link target.
-Sync keeps the selected publication and the previous one. It deletes an older one that matches its evidence and reports a changed one as a conflict.
+The publication records its tap ID and resolved revisions.
+Sync keeps the selected publication and the previous one, and moves older ones to the OS trash.
 Unrelated taps have separate publication boundaries.
-Before replacement or removal, Nicely compares the installed tree with its evidence. Local changes stop that destination as conflicts, as [D035](decisions/D035-sync-ownership.md) requires.
 
 Each step derives its work from the state that exists, so repeating a command finishes an interrupted one.
 `add` writes the publication, then `current`, then the config entry.
-`remove` removes managed links, then the config entry, then moves the tap folder to the trash.
+`remove` removes the config entry, then moves the tap folder to the trash.
 A step whose result exists does nothing.
 Writers lock the destination and revalidate it before an atomic rename, and each invocation owns distinct temporary paths.
 A config edit uses a temporary file, despite preserving the original file's formatting.
 
-[Retry safety](contract.md#retry-safety) applies to the whole invocation, including earlier taps, config edits, grants, links, and trash moves.
+[Retry safety](contract.md#retry-safety) applies to the whole invocation, including earlier taps, config edits, grants, `current` links, and trash moves.
 Every effect is repeatable, so a temporary lock or network failure exits 75. Signals retain 130 and 143.
-The test binary's boundary hook also fires before and after each platform-helper write, link swap, and trash move.
+The test binary's boundary hook also fires before and after each platform-helper write, `current` link swap, and trash move.
 Boundary scenarios kill there, repeat the same invocation, and count writes, trash moves, and extension launches.
 
 ### Discovery and grants
@@ -312,7 +311,7 @@ After reserved core and bundled names, discovery checks taps in effective config
 `just install` remains the developer path from a checkout. A tap copy wins over that data-folder copy of the same domain, and discovery reports the hidden copy.
 Tap-backed domain entries in `ncly describe` add `tap`, the tap ID, and `revision`, the Git commit or official release tag.
 `ncly doctor` reports selected and hidden origins.
-The domain entry's existing `skill` path names the selected publication. Thus `skill` reaches host discovery through the CLI, as [D054](decisions/D054-extension-skills-through-describe.md) requires.
+The domain entry's existing `skill` path goes through `current`. Thus `skill` reaches host discovery through the CLI, as [D054](decisions/D054-extension-skills-through-describe.md) requires.
 
 A call resolves `current` once and reads and launches from that publication.
 Sync takes only the publication lock, so it can publish between manifest loading and process launch.
@@ -323,14 +322,6 @@ A tap extension's grant source is its path through the tap's `current` link, whi
 Updates keep that path, so grants follow the tap. Another tap or a local copy has another path and inherits nothing.
 First declaring a key requires a human grant, as [Grants](contract.md#grants) defines.
 Tap removal revokes no grant. An unused grant follows the existing `GRANT_UNUSED` check, and re-adding that same tap restores its source identity.
-
-### Python tap authors
-
-A Python tap author converts script-output string errors before publishing the script as an extension.
-Each failure uses [D027](decisions/D027-json-answer.md)'s objects with `code`, `message`, and `hint`.
-For example, `{"ok":false,"errors":["No input"]}` becomes `{"ok":false,"contract_version":1,"errors":[{"code":"USAGE_INVALID","message":"No input.","hint":"Supply an input file."}]}` and exits 2.
-The script follows [Output](contract.md#output), including streams, translation, and exit codes. Core provides no adapter for string errors.
-Extension-specific codes appear in the manifest. A Python program embedded by Go keeps its internal protocol, which Go maps to the public answer.
 
 ## Examples
 

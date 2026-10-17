@@ -19,6 +19,8 @@ Ideas that are kept but belong to no milestone. Add one row per idea. To start o
 | `ncly skill pack` | Zips a skill for upload to the Claude apps | A skill must work in an app that cannot read GitHub |
 | `ncly skill index` | Generates the remote skills index that `just remote-skills` builds today | The skills repository moves its tooling into Nicely |
 | `ncly skill run` | Runs a script of a skill with its prerequisites checked | Agents struggle to run skill scripts by path |
+| ncly skill link | Links selected skills into harness skill folders, so `ncly skill link` can replace `just install-skills` and the sync recipes of pascalandy/skills | Pascal retires `just install-skills` |
+| Qualified tap skills | `ncly skill view <tap>/<name>` and `shadowed` in `view --json` | A hidden tap skill must be read |
 | MCP skills server | Serves skills over the MCP Skills extension, SEP-2640, from the `skill` domain package rather than from CLI output. Per-file manifests join `view --json` as optional fields, never `list`, which agents read whole. Research in [#10](https://github.com/pascalandy/nicely/issues/10) | A host Pascal uses supports SEP-2640 and cannot read skills from disk. `ncly skill pack` answers the same need |
 | Agent code review | Exposes the built-in review mode of each harness through the `agent` extension | Pascal reviews code through `ncly agent` weekly |
 | Public docs build | `ncly docs build --public` builds and hosts only the `public` projects | A project needs public docs |

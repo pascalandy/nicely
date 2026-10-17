@@ -35,7 +35,6 @@ Each action has one verb in every domain. Reuse a verb from this table when it f
 | `remove` | Removes an item |
 | `run` | Runs a task |
 | `sync` | Brings local copies up to date with their source |
-| `link` | Links an item into a configured destination |
 | `login`, `logout` | Stores or removes a key |
 | `status` | Reports the current state |
 | `resume` | Continues a recorded run after checking which steps are safe |
@@ -262,10 +261,10 @@ Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a skill 
 
 ### Discovery
 
-A domain is lowercase letters and digits that start with a letter, such as `transcript`, as a service name is. Core looks for a file named `ncly-<domain>` that the user may execute, or a link to one: first in the `extensions` folder of the data folder, such as `~/.local/share/nicely/extensions/`, then in each folder of `PATH`, in order. It skips an empty or relative `PATH` entry, a reserved name of [core-spec.md](core-spec.md#command-tree), and every name whose domain breaks the rule above, such as `ncly-hello.toml`. The first file found for a domain is its extension and hides any later one. Core never resolves the link: the manifest, the catalogs, and the skill sit beside the path that it found.
+A domain is lowercase letters and digits that start with a letter, such as `transcript`, as a service name is. Core looks for a file named `ncly-<domain>` that the user may execute, or a link to one: first in the `extensions` folder of the data folder, such as `~/.local/share/nicely/extensions/`, then in each folder of `PATH`, in order. It skips an empty or relative `PATH` entry, a reserved name of [core-spec.md](core-spec.md#command-tree), and every name whose domain breaks the rule above, such as `ncly-hello.toml`. The first file found for a domain is its extension and hides any later one. For these sources, core keeps the link unresolved. The manifest, the catalogs, and the skill sit beside the path that it found.
 
 From M12, configured taps precede the data folder and `PATH`, as [Discovery and grants](core-spec.md#discovery-and-grants) defines.
-Core never resolves a link for the source. A tap call reads and launches from the publication that `current` names when the call starts.
+Core reports and grants by the path through `current`, unresolved. A call resolves `current` once, then reads and launches from that publication.
 
 To dispatch `ncly <domain>`, core reads that domain's manifest and catalogs only. `ncly --help` and completion read every one, and `ncly --help` lists the extensions in their own section, apart from core's commands. Core never starts an extension to learn its commands. An extension whose manifest or `en` catalog is missing, unreadable, or invalid stays its domain's extension: `ncly <domain>`, its help included, answers `EXTENSION_INVALID` with exit 78 without starting it, and `ncly --help` and completion leave it out. A broken extension never affects another domain.
 

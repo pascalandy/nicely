@@ -1,6 +1,6 @@
 # skill extension spec
 
-`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, [M05](../../docs/milestones/M05-doctor.md) adds `status`, and [M12](../../docs/milestones/M12-taps.md) adds taps and `skill link`.
+`skill` is the bundled extension: a Go package compiled into `ncly`, with the same manifest and contract as an external extension, as [Extensions](../../docs/north-star/contract.md#extensions) defines. It is bundled because an agent needs it to operate Nicely. It follows the [contract](../../docs/north-star/contract.md). [M04](../../docs/milestones/M04-skill.md) builds it, [M05](../../docs/milestones/M05-doctor.md) adds `status`, and [M12](../../docs/milestones/M12-taps.md) adds taps.
 
 ## ncly skill
 
@@ -10,10 +10,10 @@ ncly skill view <name> [--json]
 ncly skill status [--json]
 ```
 
-- Skills come from the folders in `[skill] paths`, then taps in effective config order from M12, then bundled `nicely`, then installed extensions. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
+- Skills come from the folders in `[skill] paths`, then bundled `nicely`, then taps in effective config order from M12, then installed extensions. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
 - `skill` finds the skills of installed extensions through `ncly describe --json`, whose entry for each extension's domain gives the folder of its skill, as [D054](../../docs/north-star/decisions/D054-extension-skills-through-describe.md) decides. It never searches for extensions itself, so it lists the skill of the extension that core runs, never one that core hides. It runs `"$NCLY_BIN" describe --json` through the program runner, and when that call fails or gives an answer that it cannot read, `list` and `view` fail with `RUNTIME`, whose hint and `next` are `ncly describe --json`.
 - A skill's subfolder in `[skill] paths`, or in a tap from M12, takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works, and `ncly skill status` warns. An extension's skill keeps the folder `ncly-<domain>.skill/`, so `status` compares its `name` with the domain instead.
-- A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links, and `skill link` creates them from M12. A broken link is not a skill, and `list` skips it.
+- A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links. A broken link is not a skill, and `list` skips it.
 - When two sources hold the same skill name, the first source wins and `list` adds a `SKILL_SHADOWED` warning. Two subfolders that resolve to the same folder are one skill, listed with the path of the first, without a warning.
 - Inside one folder of `paths`, when two subfolders declare the same `name`, the subfolder whose name sorts first byte by byte wins, and `list` adds `SKILL_SHADOWED`.
 - A `SKILL.md` that cannot be read, whose frontmatter is invalid, or that lacks `name` or `description` is not a skill. `list` skips it and adds a `SKILL_INVALID` warning whose hint names the file to fix, and `view` answers `NOT_FOUND` for it.
@@ -33,14 +33,9 @@ ncly skill status [--json]
 
 `view --json` returns `{"ok":true,"contract_version":1,"name":"…","path":"…","source":"…","content":"…"}`, with the same `path` and `source` as `list`.
 
-From M12, `ncly skill view <tap>/<name>` selects a standalone skill from that tap, even when another source hides it.
-`<tap>` is its canonical tap ID, as [Tap identity and storage](../../docs/north-star/core-spec.md#tap-identity-and-storage) defines.
-The tap's publication supplies the skill path. `list` adds `tap` and `revision` to a standalone tap skill's entry.
-`view --json` adds those fields and `shadowed`, an array of hidden sources with `source`, `path`, and, for taps, `tap` and `revision`.
-It also adds `links`, each with `harness`, `path`, and `target`, for the selected skill's managed harness links.
-These fields describe files, never what a running harness has loaded. `list` keeps one line per selected skill.
+From M12, the tap's publication supplies the skill path. `list` adds `tap` and `revision` to a standalone tap skill's entry.
+`view --json` adds those same fields. `list` keeps one line per selected skill.
 Installed extension skills still come only from `ncly describe`, with its selected tap origin, as [Discovery and grants](../../docs/north-star/core-spec.md#discovery-and-grants) defines.
-A standalone tap skill's `nicely.toml` uses the [manifest's](../../docs/north-star/contract.md#manifest) `programs`, `keys`, and `requires` formats for its requirements.
 
 ### The nicely skill
 
@@ -48,7 +43,7 @@ A standalone tap skill's `nicely.toml` uses the [manifest's](../../docs/north-st
 
 The skill teaches only what the release that ships it can do. M04 ships the loop with `describe`, dry run, codes, and exit codes, and each milestone that adds a command of core or of the skill domain adds its lines: `doctor` and `skill status` in M05, `auth status` and the rule that an agent relays a missing key to the human and never pipes one itself in M06, `KEY_NOT_GRANTED` under the same rule in M08, `run` and run IDs in M10, and `run resume` in M15. The skill writes each command in a code span, such as `ncly skill list`, so that a test reads it. A test fails when the skill names an `ncly` command or an error code that this `ncly` lacks. The skill holds at most 60 lines, so an agent reads it in one call.
 
-M12 adds the tap commands and `skill link`. It invites users to install the recommended first-party extensions with `ncly tap add pascalandy/nicely`.
+M12 adds the tap commands. It invites users to install the recommended first-party extensions with `ncly tap add pascalandy/nicely`.
 
 Every extension ships a skill named after its domain, which teaches an agent to use that extension, so `ncly skill list` grows with every extension installed, and an agent that meets a domain in `ncly describe` reads `ncly skill view <domain>`. The `skill` extension ships no skill named `skill`: the `nicely` skill, which it serves as its bundled source, teaches core and the skill domain together.
 
@@ -62,36 +57,6 @@ paths = ["~/code/skills"]
 | Key | Default | Meaning |
 |---|---|---|
 | `paths` | none | Folders of skills, searched in order. Each one is absolute or starts with `~/`, as [Configuration](../../docs/north-star/contract.md#configuration) requires. A higher config source replaces the whole list |
-
-## ncly skill link
-
-```text
-ncly skill link [<name>] [--harness <name>] [--dry-run]
-```
-
-From M12, `link` creates a symlink for the selected skill, or every selected skill when `<name>` is absent.
-Without `--harness`, it targets every configured harness. An unknown skill or harness answers `NOT_FOUND`.
-The harness names and destination folders come from `[skill.link]`:
-
-```toml
-[skill.link]
-claude = "~/.claude/skills"
-```
-
-Each value is absolute or starts with `~/`, as [Configuration](../../docs/north-star/contract.md#configuration) requires. No configured harness is `CONFIG_INVALID` with a hint naming that table.
-Each link is `<harness-folder>/<skill-name>` and targets the selected skill folder. Tap targets use that tap's `current` path, so sync selects the new files.
-`link` skips the bundled `nicely` skill, which agents read with `ncly skill view nicely`.
-A link is managed when its target is a skill folder that Nicely selects or a path under a tap's `current` link.
-Any other file or link at the destination is a conflict. The command answers `RUNTIME` and preserves it.
-Repeating `link` leaves a matching managed link alone. A source switch replaces only a managed link.
-Link updates follow [Publication and recovery](../../docs/north-star/core-spec.md#publication-and-recovery), including locks, revalidation, and whole-invocation retry checks.
-Tap removal removes the links in the `[skill.link]` folders whose targets lie inside that tap's storage.
-Core inspects those targets without importing the skill extension. It leaves a user-modified link to another target alone, so that link does not block removal.
-
-The answer has `links`, sorted by harness and skill name. Each entry has `name`, `harness`, `path`, `target`, and `action`: `created`, `updated`, or `unchanged`.
-A partial failure keeps the completed entries beside `errors`. Dry run returns `dry_run: true`, `plan`, and `pending_checks`, which is empty.
-Each plan entry names the same link fields, its intended action, and `effects`: `user_writes: true`, `network: false`, and `paid: false`.
-Dry run checks conflicts and changes no files or links.
 
 ## ncly skill status
 

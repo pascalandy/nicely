@@ -251,7 +251,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Distinct from: an extension's domain, which several taps can provide
 - Tap publication
   - Def.: an immutable installed tree of a tap's skills and complete extensions, from a Git revision or verified official release archives
-  - Project note: [Publication and recovery](core-spec.md#publication-and-recovery) defines its ownership evidence and selection
+  - Project note: [Publication and recovery](core-spec.md#publication-and-recovery) defines its whole-folder ownership and selection
   - Distinct from: a Git tap's bare clone, which `sync` fetches, and the tap ID, which stays the same across updates
 - Homebrew tap
   - Def.: the repository `pascalandy/homebrew-tap`, whose formula builds `ncly`
