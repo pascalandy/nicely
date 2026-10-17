@@ -1,0 +1,123 @@
+# The boundary hook of the test binary kills the agent with SIGKILL, as a crash would, at each
+# boundary of its one paid step: before and after the intent, the answer file, and the
+# completion. ncly then answers RUNTIME without the run_id, which the agent never wrote. Another
+# process inspects the record: no process holds the run, whatever its saved status says, and
+# that status decides the repeated call. A kill before the intent lets the call run the task
+# again, a kill after the completion replays the saved answer, and a kill between them leaves
+# the step unknown, so the repeated call starts no second task. The stub codex appends each
+# call to $WORK/calls.log and writes OK from the stub as its last message.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+mkdir nbin
+exec /bin/sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+env RUNS=$WORK/.local/state/nicely/runs
+
+# Before the intent: the step is still pending, so no task started
+env NCLY_TEST_BOUNDARY=before-intent
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b1 --json
+answer stderr RUNTIME
+stderr '"message":"The extension agent exited with 137, which is not an exit code of the contract\."'
+! stderr run_id
+env NCLY_TEST_BOUNDARY=
+exec ncly run view b1 --json
+stdout '"active":false,'
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"codex","started_at":null,"status":"pending"\}\]'
+stdout '"status":"running","tools"'
+grep -count=1 '(?m)^(--version|exec )' calls.log
+
+# The repeated call runs the task under the same ID, once, as a second attempt
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id b1 --json
+stdout '"answer":"OK from the stub".*"run_id":"b1"'
+exec ncly run view b1 --json
+stdout '"attempts":2,'
+stdout '"status":"completed","tools"'
+grep -count=3 '(?m)^(--version|exec )' calls.log
+grep -count=1 '(?m)^exec ' calls.log
+
+# After the intent: the step is unknown, with its start time, before Codex starts. Codex ran no
+# task, but nothing in the record proves it, so the repeated call starts nothing
+env NCLY_TEST_BOUNDARY=after-intent
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b2 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view b2 --json
+stdout '"active":false,'
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"codex","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+stdout '"status":"running","tools"'
+grep -count=4 '(?m)^(--version|exec )' calls.log
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b2 --json
+answer stderr RESUME_UNSAFE
+stderr '"run_id":"b2"'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b2 --dry-run --json
+answer stderr RESUME_UNSAFE
+grep -count=4 '(?m)^(--version|exec )' calls.log
+
+# Before the answer file: Codex did its paid work, and the run holds no answer
+env NCLY_TEST_BOUNDARY=before-artifact
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b3 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view b3 --json
+stdout '"active":false,'
+stdout '"error":null,"finished_at":null,"id":"codex","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+! exists $RUNS/b3/answer.txt
+grep -count=6 '(?m)^(--version|exec )' calls.log
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b3 --json
+answer stderr RESUME_UNSAFE
+grep -count=6 '(?m)^(--version|exec )' calls.log
+
+# After the answer file, and before the completion: the answer is on disk, but the record never
+# verified it, so the step stays unknown and the call never answers from the file
+env NCLY_TEST_BOUNDARY=after-artifact
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b4 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=before-completion
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b5 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec /bin/sh -c 'printf "OK from the stub" | /usr/bin/cmp - "$RUNS/b4/answer.txt"'
+exec /bin/sh -c 'printf "OK from the stub" | /usr/bin/cmp - "$RUNS/b5/answer.txt"'
+exec ncly run view b4 --json
+stdout '"active":false,'
+stdout '"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"codex","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+stdout '"status":"running","tools"'
+exec ncly run view b5 --json
+stdout '"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"codex","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+grep -count=10 '(?m)^(--version|exec )' calls.log
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b4 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b5 --json
+answer stderr RESUME_UNSAFE
+grep -count=10 '(?m)^(--version|exec )' calls.log
+
+# After the completion: the call never answered, but the record holds the verified answer, so
+# the repeated call answers it without any call to Codex, not even the Codex check
+env NCLY_TEST_BOUNDARY=after-completion
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id b6 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view b6 --json
+stdout '"active":false,'
+stdout '"status":"completed"\}\]'
+stdout '"status":"completed","tools"'
+grep -count=12 '(?m)^(--version|exec )' calls.log
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id b6 --json
+stdout '\A\{"ok":true,"contract_version":1,"answer":"OK from the stub","duration_ms":[0-9]+,"harness":"codex","model":"m1","run_id":"b6"\}\n\z'
+grep -count=12 '(?m)^(--version|exec )' calls.log
+grep -count=5 '(?m)^exec ' calls.log
+
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$WORK/calls.log"
+if [ "$1" = --version ]; then
+  echo "codex-cli 0.163.0"
+  exit 0
+fi
+/bin/cat > /dev/null
+out=
+while [ $# -gt 0 ]; do
+  if [ "$1" = --output-last-message ]; then out=$2; fi
+  shift
+done
+printf 'OK from the stub' > "$out"

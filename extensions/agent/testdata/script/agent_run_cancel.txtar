@@ -1,0 +1,166 @@
+# Ctrl-C, SIGTERM, and the timeout stop Codex and every descendant that ncly can reach, as
+# Stops and failures in spec.md defines. Once Codex started, the step and the run stay unknown,
+# and a repeated call starts nothing. The stub codex appends each call to $WORK/calls.log. As a
+# task, it starts child.sh in a process group of its own and waits: child.sh writes its process
+# ID once it is ready, and the name of the signal that ends it, which the SIGKILL of cleanup
+# never writes. Under CODEX_HANG_PROBE, codex --version writes probe.pid and never ends.
+# exitcode passes the signal on to ncly and writes its exit code.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+mkdir nbin
+exec /bin/sh -c 'for c in ncly agent-external exitcode pgroup; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+env RUNS=$WORK/.local/state/nicely/runs
+
+# Ctrl-C while Codex runs: INTERRUPTED with exit 130 and the run_id, whose hint and next inspect
+# the run. Ctrl-C stopped the child of Codex
+exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k1 --json &
+waitfile child.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+stderr '"run_id":"k1"'
+stderr '"message":"A signal stopped Codex during the run k1, so its result is unknown\.","hint":"ncly run view k1","next":\["ncly","run","view","k1"\]'
+gone child.pid
+grep '^INT$' child.sig
+
+# Another process sees the step and the run unknown, with the error of the stop, and no
+# process holds the run
+exec ncly run view k1 --json
+stdout '"active":false,'
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":\{"code":"INTERRUPTED","hint":"ncly run view k1","message":"A signal stopped Codex during the run k1, so its result is unknown\."\},"finished_at":null,"id":"codex","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+stdout '"status":"unknown","tools"'
+! exists $RUNS/k1/answer.txt
+grep -count=2 '(?m)^(--version|exec )' calls.log
+
+# A repeated call starts no second task: RESUME_UNSAFE, and Codex gets no call
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k1 --json
+answer stderr RESUME_UNSAFE
+grep -count=2 '(?m)^(--version|exec )' calls.log
+
+# SIGTERM while Codex runs: TERMINATED with exit 143, and SIGTERM stopped the child of Codex
+rm child.pid child.sig
+exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k2 --json &
+waitfile child.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"run_id":"k2"'
+stderr '"hint":"ncly run view k2"'
+gone child.pid
+grep '^TERM$' child.sig
+exec ncly run view k2 --json
+stdout '"error":\{"code":"TERMINATED",'
+stdout '"status":"unknown","tools"'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k2 --json
+answer stderr RESUME_UNSAFE
+grep -count=4 '(?m)^(--version|exec )' calls.log
+
+# The timeout while Codex runs: RUNTIME with exit 1, the run unknown, and SIGTERM stopped the
+# child of Codex
+rm child.pid child.sig
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k3 --timeout 2s --json
+answer stderr RUNTIME
+stderr '"run_id":"k3"'
+stderr '"message":"Codex did not finish within 2s for k3, so its result is unknown\.","hint":"ncly run view k3","next":\["ncly","run","view","k3"\]'
+gone child.pid
+grep '^TERM$' child.sig
+exec ncly run view k3 --json
+stdout '"error":\{"code":"RUNTIME",'
+stdout '"status":"unknown","tools"'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k3 --json
+answer stderr RESUME_UNSAFE
+grep -count=6 '(?m)^(--version|exec )' calls.log
+
+# Ctrl-C during the Codex check stops the check at once, before the record: INTERRUPTED with
+# the run_id, and no record exists
+env CODEX_HANG_PROBE=1
+exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k4 --json &
+waitfile probe.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"run_id":"k4"'
+gone probe.pid
+! exists $RUNS/k4.json
+
+# The timeout during the Codex check: RUNTIME with a hint for a longer timeout, and no record
+rm probe.pid
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k5 --timeout 1 --json
+answer stderr RUNTIME
+stderr '"run_id":"k5"'
+stderr '"message":"The call reached its timeout of 1s before Codex started, so no task ran\.","hint":"Give --timeout a longer duration, then make the call again\."'
+gone probe.pid
+! exists $RUNS/k5.json
+
+# A dry run that the timeout stops answers RUNTIME too, without run_id
+rm probe.pid
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --timeout 1s --dry-run --json
+answer stderr RUNTIME
+! stderr run_id
+gone probe.pid
+env CODEX_HANG_PROBE=
+grep -count=9 '(?m)^(--version|exec )' calls.log
+
+# Ctrl-C after the intent and before Codex starts: no task ran, so the step turns failed and
+# the run interrupted. The boundary hook of the test binary pauses the call after the intent
+env NCLY_TEST_BOUNDARY=pause:after-intent
+exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k6 --json &
+waitfile paused
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"run_id":"k6"'
+stderr '"message":"A signal stopped the run k6 before Codex started, so no task ran\.","hint":"ncly run view k6","next":\["ncly","run","view","k6"\]'
+exec ncly run view k6 --json
+stdout '"error":\{"code":"INTERRUPTED","hint":"ncly run view k6","message":"A signal stopped the run k6 before Codex started, so no task ran\."\},"finished_at":"[0-9TZ:-]+","id":"codex","started_at":"[0-9TZ:-]+","status":"failed"\}'
+stdout '"status":"interrupted","tools"'
+
+# The timeout at the same place: RUNTIME, the step failed, and the run failed
+rm paused
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k7 --timeout 1s --json
+answer stderr RUNTIME
+stderr '"message":"The call reached its timeout of 1s before Codex started, so no task ran\.","hint":"ncly run view k7","next":\["ncly","run","view","k7"\]'
+env NCLY_TEST_BOUNDARY=
+exec ncly run view k7 --json
+stdout '"error":\{"code":"RUNTIME",.*"status":"failed"\}'
+stdout '"status":"failed","tools"'
+
+# A failed step saved the intent of a paid task, so a repeated call starts nothing
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k6 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id k7 --json
+answer stderr RESUME_UNSAFE
+grep -count=11 '(?m)^(--version|exec )' calls.log
+grep -count=3 '(?m)^exec ' calls.log
+
+-- child.sh --
+# child.sh writes its process ID once its traps are set, then runs until a signal ends it,
+# and writes the name of that signal.
+trap 'echo INT > "$WORK/child.sig"; exit 130' INT
+trap 'echo TERM > "$WORK/child.sig"; exit 143' TERM
+echo $$ > "$WORK/child.tmp"
+/bin/mv "$WORK/child.tmp" "$WORK/child.pid"
+while :; do /bin/sleep 0.1; done
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$WORK/calls.log"
+if [ "$1" = --version ]; then
+  if [ -n "$CODEX_HANG_PROBE" ]; then
+    echo $$ > "$WORK/probe.tmp"
+    /bin/mv "$WORK/probe.tmp" "$WORK/probe.pid"
+    while :; do /bin/sleep 0.1; done
+  fi
+  echo "codex-cli 0.163.0"
+  exit 0
+fi
+/bin/cat > /dev/null
+# pgroup starts the child in its own process group, where Ctrl-C is not ignored, with no
+# terminal and whichever shell sh is.
+pgroup /bin/sh "$WORK/child.sh" > /dev/null 2>&1 &
+wait $!

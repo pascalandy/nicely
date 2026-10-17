@@ -29,7 +29,8 @@ stdout '^COMMANDS\n  run:  Run one trusted task through Codex$'
 stdout '^  \$ ncly agent run "Review this branch" --tools --dry-run$'
 exec ncly agent run --help
 stdout '^  ncly agent run \[task\] \[flags\]$'
-stdout '^      --tools             Let Codex use its tools, which this command requires$'
+stdout '^      --timeout <duration>  Stop the call and Codex after this duration, 5m by default$'
+stdout '^      --tools               Let Codex use its tools, which this command requires$'
 stdout '^  -n, --dry-run '
 exec ncly describe 'agent run' --json
 stdout '"path":"agent run","summary":"Run one trusted task through Codex","source":"extension"'

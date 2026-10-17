@@ -1,0 +1,146 @@
+# A start that fails ran no task: the step turns failed with its error, and the run failed. A
+# failure once Codex started leaves the step and the run unknown, because its paid work may
+# have happened. Either way, a repeated call under that ID starts nothing, as Stops and failures
+# in spec.md defines. The stub codex appends each call to $WORK/calls.log. Under CODEX_VANISH,
+# codex --version also makes the stub no longer executable. As a task, it ends as CODEX_END
+# asks: fail exits 1, kill ends it by SIGKILL, blank writes an answer without text, and any
+# other value writes OK from the stub.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+mkdir nbin
+exec /bin/sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+env RUNS=$WORK/.local/state/nicely/runs
+
+# A Codex that is no longer executable when the task starts: RUNTIME with the run_id, whose
+# hint and next inspect the run. The step failed with its end time, the run failed, and Codex
+# ran no task
+env CODEX_VANISH=1
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f1 --json
+answer stderr RUNTIME
+stderr '"run_id":"f1"'
+stderr '"message":"Codex could not start for f1, so no task ran\.","hint":"ncly run view f1","next":\["ncly","run","view","f1"\]'
+env CODEX_VANISH=
+exec ncly run view f1 --json
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":\{"code":"RUNTIME","hint":"ncly run view f1","message":"Codex could not start for f1, so no task ran\."\},"finished_at":"[0-9TZ:-]+","id":"codex","started_at":"[0-9TZ:-]+","status":"failed"\}\]'
+stdout '"status":"failed","tools"'
+grep -count=1 '(?m)^(--version|exec )' calls.log
+
+# The record saved the intent of a paid task, so a repeated call starts nothing, even once
+# Codex runs again
+chmod 755 bin/codex
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f1 --json
+answer stderr RESUME_UNSAFE
+stderr '"hint":"ncly run view f1"'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f1 --dry-run --json
+answer stderr RESUME_UNSAFE
+grep -count=1 '(?m)^(--version|exec )' calls.log
+
+# A temporary folder that cannot be made: the same failed start
+env TMPDIR=$WORK/missing
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f2 --json
+answer stderr RUNTIME
+stderr '"message":"Codex could not start for f2, so no task ran\."'
+env TMPDIR=$WORK/.tmp
+exec ncly run view f2 --json
+stdout '"status":"failed"\}\]'
+stdout '"status":"failed","tools"'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f2 --json
+answer stderr RESUME_UNSAFE
+grep -count=2 '(?m)^(--version|exec )' calls.log
+
+# Once Codex started, a nonzero exit, an end by a signal of its own, and an answer without
+# text leave the step and the run unknown, with no end time and no artifact
+env CODEX_END=fail
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f3 --json
+answer stderr RUNTIME
+stderr '"message":"Codex failed during the task of f3, so its result is unknown\.","hint":"ncly run view f3"'
+exec ncly run view f3 --json
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":\{"code":"RUNTIME","hint":"ncly run view f3","message":"Codex failed during the task of f3, so its result is unknown\."\},"finished_at":null,"id":"codex","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+stdout '"status":"unknown","tools"'
+env CODEX_END=kill
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f4 --json
+answer stderr RUNTIME
+stderr '"message":"Codex failed during the task of f4, so its result is unknown\."'
+exec ncly run view f4 --json
+stdout '"status":"unknown","tools"'
+env CODEX_END=blank
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f5 --json
+answer stderr RUNTIME
+stderr '"message":"Codex gave no answer for f5, so its result is unknown\."'
+exec ncly run view f5 --json
+stdout '"status":"unknown","tools"'
+env CODEX_END=
+! exists $RUNS/f5/answer.txt
+grep -count=8 '(?m)^(--version|exec )' calls.log
+
+# An answer that cannot be saved, because a file holds the place of the run's folder, leaves
+# the run unknown too
+exec /bin/sh -c ': > "$RUNS/f6"'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f6 --json
+answer stderr RUNTIME
+stderr '"message":"Cannot save the answer of Codex for f6, so the run stays unknown\.","hint":"ncly run view f6"'
+exec ncly run view f6 --json
+stdout '"status":"unknown","tools"'
+grep -count=10 '(?m)^(--version|exec )' calls.log
+
+# None of these runs starts again on its own
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f3 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f4 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f5 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id f6 --json
+answer stderr RESUME_UNSAFE
+grep -count=10 '(?m)^(--version|exec )' calls.log
+grep -count=4 '(?m)^exec ' calls.log
+
+# A --timeout that is no duration above 0 is USAGE_INVALID, before any check, so no record
+# exists and Codex gets no call. A number of seconds is a duration
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --run-id t1 --timeout soon --json
+answer stderr USAGE_INVALID
+stderr '"message":"soon is no valid timeout\.","hint":"Give --timeout a duration above 0, such as 30s, 5m, or 2h, or a number of seconds\."'
+exits 2 ncly agent run 'Review this branch' --tools --timeout 0 --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this branch' --tools --timeout -5s --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this branch' --tools --timeout 1.5 --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run --tools --timeout soon --json
+answer stderr USAGE_INVALID
+stderr '"message":"soon is no valid timeout\."'
+! exists $RUNS/t1.json
+grep -count=10 '(?m)^(--version|exec )' calls.log
+exec ncly agent run 'Review this branch' --tools --model m1 --timeout 90 --dry-run --json
+stdout '"dry_run":true'
+
+# The text of these failures comes from the catalog
+env CODEX_VANISH=1
+exits 1 ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --run-id f7
+pseudo stderr f7 run view
+env CODEX_VANISH=
+chmod 755 bin/codex
+exits 2 ncly --lang en-XA agent run 'Review this branch' --tools --timeout soon
+pseudo stderr
+
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$WORK/calls.log"
+if [ "$1" = --version ]; then
+  echo "codex-cli 0.163.0"
+  if [ -n "$CODEX_VANISH" ]; then /bin/chmod -x "$0"; fi
+  exit 0
+fi
+/bin/cat > /dev/null
+out=
+while [ $# -gt 0 ]; do
+  if [ "$1" = --output-last-message ]; then out=$2; fi
+  shift
+done
+case "$CODEX_END" in
+fail) exit 1 ;;
+kill) kill -KILL $$ ;;
+blank) printf ' \n' > "$out" ;;
+*) printf 'OK from the stub' > "$out" ;;
+esac
