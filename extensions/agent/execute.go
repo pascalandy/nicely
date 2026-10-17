@@ -182,12 +182,15 @@ func launch(ctx context.Context, call extension.Call, t task, id string) ([]byte
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
 	file := filepath.Join(tmp, answerTo)
-	stderr := io.Discard
+	// Codex gets no pipe for the output that the call never reads, so a
+	// descendant that keeps it open never holds the call. Its stderr reaches
+	// the stderr of ncly only with --verbose.
+	var stderr io.Writer
 	if os.Getenv("NCLY_VERBOSE") == "1" {
 		stderr = call.Stderr
 	}
 	start := time.Now()
-	result, err := runner.Run(ctx, runner.Program{Path: t.codex, Args: t.args(file), Env: t.env, Stdin: bytes.NewReader(t.text), Stdout: io.Discard, Stderr: stderr})
+	result, err := runner.Run(ctx, runner.Program{Path: t.codex, Args: t.args(file), Env: t.env, Stdin: bytes.NewReader(t.text), Stderr: stderr})
 	duration := time.Since(start)
 	if err != nil {
 		return nil, duration, inspect(p, contract.Runtime, id, "agent.run.launch_failed", data)
