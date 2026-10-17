@@ -12,12 +12,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pascalandy/nicely/sdk/tui"
-
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/pascalandy/nicely/sdk/tui"
 	"github.com/spf13/cobra"
 )
 

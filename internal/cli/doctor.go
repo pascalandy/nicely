@@ -17,14 +17,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pascalandy/nicely/sdk/tui"
-
 	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
 	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/pascalandy/nicely/sdk/runner"
+	"github.com/pascalandy/nicely/sdk/tui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
