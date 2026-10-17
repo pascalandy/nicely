@@ -357,6 +357,14 @@ other = "{{.File}} gives the command \"{{.Path}}\" a {{.Name}} that is not a JSO
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg. programs and requires.bins are keys and stay as is."
 other = "{{.File}} declares the program \"{{.Name}}\" in programs, which must be a file name without / that the requires.bins of a command names."
 
+["extension.key_table"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a service of its keys table, such as anthropic. keys and requires.keys are keys and stay as is."
+other = "{{.File}} declares the service \"{{.Name}}\" in keys, which must be a service that the requires.keys of a command names."
+
+["extension.key_optional"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a service of its keys table, such as anthropic, whose optional, a key that stays as is, holds a value that is not a boolean. true and false stay as is."
+other = "{{.File}} gives the service \"{{.Name}}\" an optional that is neither true nor false."
+
 ["extension.code_prefix"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Prefix}} the start that the extension's codes need, such as HELLO_."
 other = "{{.File}} declares the error code {{.Code}}, which does not start with {{.Prefix}}."

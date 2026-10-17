@@ -122,6 +122,16 @@ stderr 'lists \\"grants\\" in requires.keys of the command \\"keygrants run\\", 
 exits 78 ncly keytwice --json
 stderr 'lists \\"deepgram\\" in requires.keys of the command \\"keytwice run\\"'
 
+# The keys table holds only services that a command declares in requires.keys, and its optional
+# is true or false
+exec sh broken.sh keyunused keyoptional
+exits 78 ncly keyunused --json
+answer stderr EXTENSION_INVALID
+stderr 'declares the service \\"openai\\" in keys, which must be a service that the requires.keys of a command names'
+exits 78 ncly keyoptional --json
+answer stderr EXTENSION_INVALID
+stderr 'gives the service \\"deepgram\\" an optional that is neither true nor false'
+
 # A manifest that takes --dry-run, --run-id, or the shorthand of --dry-run as an own flag is invalid
 exec sh broken.sh dryrun runid nshort
 exits 78 ncly dryrun --json
@@ -495,6 +505,38 @@ summary = "keytwice.summary"
 path = "keytwice run"
 summary = "keytwice.summary"
 requires = { keys = ["deepgram", "deepgram"] }
+-- broken/keyunused.toml --
+format_version = 1
+contract_version = 1
+domain = "keyunused"
+
+[[commands]]
+path = "keyunused"
+summary = "keyunused.summary"
+
+[[commands]]
+path = "keyunused run"
+summary = "keyunused.summary"
+requires = { keys = ["deepgram"] }
+
+[keys.openai]
+optional = true
+-- broken/keyoptional.toml --
+format_version = 1
+contract_version = 1
+domain = "keyoptional"
+
+[[commands]]
+path = "keyoptional"
+summary = "keyoptional.summary"
+
+[[commands]]
+path = "keyoptional run"
+summary = "keyoptional.summary"
+requires = { keys = ["deepgram"] }
+
+[keys.deepgram]
+optional = "yes"
 -- broken/dryrun.toml --
 format_version = 1
 contract_version = 1

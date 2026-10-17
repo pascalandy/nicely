@@ -27,7 +27,22 @@ type Manifest struct {
 	Programs []string
 	// Requirements holds the entry of each program, by name, from M05.
 	Requirements map[string]Requirement
+	// Keys holds the entry of each service of the keys table, by name, from
+	// M08.
+	Keys map[string]KeyEntry
 }
+
+// KeyEntry is a service's entry in the keys table of a manifest, as
+// Manifest in contract.md defines it.
+type KeyEntry struct {
+	// Optional marks a key that each command that declares the service
+	// runs without, such as a harness that falls back to its own login.
+	Optional bool
+}
+
+// Optional reports whether the keys table marks the key of a service
+// optional.
+func (m Manifest) Optional(service string) bool { return m.Keys[service].Optional }
 
 // Requirement is a program's entry in the programs table of a manifest, as
 // Manifest in contract.md defines it.
@@ -201,6 +216,11 @@ type manifestFile struct {
 		Exit int    `toml:"exit"`
 	} `toml:"errors"`
 	Programs map[string]Requirement `toml:"programs"`
+	// Keys reads optional as any, so that a value that is not a boolean
+	// gets its own reason.
+	Keys map[string]struct {
+		Optional any `toml:"optional"`
+	} `toml:"keys"`
 }
 
 // ParseManifest reads the manifest of the extension of a domain and checks
@@ -281,6 +301,16 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 	}
 	m.Programs = slices.Sorted(maps.Keys(file.Programs))
 	m.Requirements = file.Programs
+	for _, name := range slices.Sorted(maps.Keys(file.Keys)) {
+		optional, isBool := file.Keys[name].Optional.(bool)
+		if file.Keys[name].Optional != nil && !isBool {
+			return Manifest{}, broken("extension.key_optional", map[string]any{"Name": name})
+		}
+		if m.Keys == nil {
+			m.Keys = map[string]KeyEntry{}
+		}
+		m.Keys[name] = KeyEntry{Optional: optional}
+	}
 	if err := m.check(); err != nil {
 		return Manifest{}, err
 	}
@@ -348,6 +378,9 @@ func (m Manifest) check() error {
 		}
 	}
 	if err := m.checkPrograms(); err != nil {
+		return err
+	}
+	if err := m.checkKeys(); err != nil {
 		return err
 	}
 	return m.checkCodes()
@@ -582,6 +615,17 @@ func (m Manifest) checkPrograms() error {
 			if len(r.Install[manager]) == 0 {
 				return broken("extension.program_install", map[string]any{"Name": name, "Manager": manager})
 			}
+		}
+	}
+	return nil
+}
+
+// checkKeys checks that each service of the keys table is one that the
+// requires.keys of a command names.
+func (m Manifest) checkKeys() error {
+	for _, name := range slices.Sorted(maps.Keys(m.Keys)) {
+		if !slices.ContainsFunc(m.Commands, func(c Command) bool { return slices.Contains(c.Requires.Keys, name) }) {
+			return broken("extension.key_table", map[string]any{"Name": name})
 		}
 	}
 	return nil
