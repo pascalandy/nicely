@@ -118,8 +118,10 @@ func addDoctor(p *i18n.Printer, g command.Globals, root *cobra.Command, extensio
 			return command.Fail(*problem)
 		}
 		live, _ := c.Flags().GetBool("live")
-		probes := &prober{p: p, g: g, live: live, ctx: runner.OnSignal(), deadline: time.Now().Add(timeout)}
+		// One keychain serves the whole report, so a keychain that a status
+		// command's key found unavailable stays so for the auth component.
 		k := keychain.New(b, interactive(g, c.OutOrStdout()))
+		probes := &prober{p: p, g: g, live: live, ctx: runner.OnSignal(), deadline: time.Now().Add(timeout), keys: k}
 		components := []component{
 			{name: "core", checks: func() []check { return coreChecks(p, extensions) }},
 			{name: "auth", checks: func() []check { return probes.auth(extensions, k) }, last: true},
@@ -373,6 +375,8 @@ type prober struct {
 	live     bool
 	ctx      context.Context
 	deadline time.Time
+	// keys reads the keys that a status command needs under --live.
+	keys *keychain.Keychain
 	// spent is set once a check ran out of time, so that no other starts.
 	spent bool
 	// signal is the signal that ended a probe.
@@ -469,9 +473,29 @@ func (pr *prober) status(e *extension) []check {
 		data["Reason"] = reason
 		return failed(contract.ExtensionInvalid, pr.p.T("doctor.status_invalid", data), pr.p.T("extension.invalid_hint", data), nil)
 	}
-	left := time.Until(pr.deadline)
-	if pr.spent || left <= 0 {
+	if pr.spent || time.Until(pr.deadline) <= 0 {
 		return timedOut(pr.p.T("doctor.not_started", data))
+	}
+	// Under --live, a status command that declares live gets its granted
+	// keys, which the keychain reads within the time left of --timeout, as
+	// Required keys in core-spec.md defines. Without it, it gets none.
+	read := pr.live && slices.ContainsFunc(d.Flags, func(f contract.Flag) bool { return f.Name == "live" })
+	bounded, cancel := context.WithDeadline(pr.ctx, pr.deadline)
+	keys, err := keyVars(bounded, pr.keys, e, d.Requires.Keys, read)
+	cancel()
+	switch {
+	case err != nil && pr.ctx.Err() != nil:
+		// The signal also reaches the program that the keychain call may
+		// have started, which the call leaves running.
+		pr.signal = runner.SignalOf(pr.ctx)
+		runner.Stop(pr.signal)
+		return nil
+	case err != nil:
+		return timedOut(pr.p.T("doctor.status_key_timeout", data))
+	}
+	left := time.Until(pr.deadline)
+	if left <= 0 {
+		return timedOut(pr.p.T("doctor.status_key_timeout", data))
 	}
 	args := slices.Clone(d.Path[1:])
 	for _, f := range d.Flags {
@@ -484,10 +508,7 @@ func (pr *prober) status(e *extension) []check {
 	}
 	var stdout bytes.Buffer
 	stderr := &heldLines{dest: io.Discard}
-	// The status command gets no key yet: NCLY_MISSING_KEYS names the
-	// services that no human granted.
 	vars := extensionVars(withJSON(pr.g))
-	keys, _ := keyVars(pr.ctx, nil, e, d.Requires.Keys, false)
 	maps.Copy(vars, keys)
 	program := runner.Program{
 		Path:   e.path,

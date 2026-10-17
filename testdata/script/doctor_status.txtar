@@ -11,6 +11,10 @@ mkdir nbin
 exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
 env PATH=$WORK/bin:$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" grants.tmpl > "$STATE/grants.json"'
 
 # A warning passes as it is, after the probe, and doctor passes --timeout with the seconds
 # left, rounded up, and --live=true only when its caller sets --live
@@ -62,6 +66,39 @@ exits 78 ncly doctor hello --json
 stdout '"code":"EXTENSION_INVALID","message":"The status command of hello gave an answer that doctor rejects: it failed with OTHER_MISSING, which maps to no exit code of its domain\.",'
 ! stdout 'OTHER_MISSING","message'
 
+# hello status declares deepgram, which a human granted to hello. Without --live, it receives
+# no key, NCLY_MISSING_KEYS names no granted service, and the keychain gets no call. Under
+# --live, it receives the key from the keychain
+env STATUS=warn
+cp seed.jsonl test-keychain.jsonl
+exec ncly doctor hello --json
+grep '\ANCLY_JSON=1\nNCLY_MISSING_KEYS unset\n\z' env.txt
+cmp test-keychain.jsonl seed.jsonl
+exec ncly doctor hello --live --json
+grep '\ANCLY_JSON=1\nDEEPGRAM_API_KEY ff7506fc14da24862c1cf728498bc50ec3011e27ad4a16fbf4005281d9261db0\nNCLY_MISSING_KEYS unset\n\z' env.txt
+grep -count=1 '"call":"get","account":"deepgram"\}' test-keychain.jsonl
+
+# Under a keychain that never answers, doctor waits once, for the keychain's shortened limit,
+# before it starts the status command, which then receives KEYRING_UNAVAILABLE for the key.
+# The auth checks then find the keychain unavailable at once, without another call
+cp seed.jsonl test-keychain.jsonl
+env NCLY_TEST_KEYCHAIN=hang
+exits 78 ncly doctor --live --json
+grep '^NCLY_MISSING_KEYS=deepgram=KEYRING_UNAVAILABLE$' env.txt
+stdout '\{"id":"hello\.mood","component":"hello","status":"warn",'
+stdout '\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY",'
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"KEYRING_UNAVAILABLE",'
+grep -count=1 '"call":"get"' test-keychain.jsonl
+
+# A --timeout shorter than that limit fails hello.status with CHECK_TIMEOUT, and the command
+# never starts, so it writes no args.txt
+rm args.txt
+exits 78 ncly doctor hello --live --timeout 1s --json
+stdout '\{"id":"hello\.status","component":"hello","status":"fail","code":"CHECK_TIMEOUT","message":"The keychain did not answer within --timeout, so hello status never started\.","hint":"Run ncly doctor again with a longer --timeout\."\}\]\}$'
+! exists args.txt
+env NCLY_TEST_KEYCHAIN=
+env STATUS=
+
 # --live may reach the network through a status command, so doctor declares that effect
 exec ncly describe doctor --json
 stdout '"effects":\{"user_writes":false,"network":true,"paid":false\}'
@@ -90,6 +127,12 @@ stdout '"id":"extensions\.hello","component":"extensions","status":"fail","code"
 #!/bin/sh
 printf '%s\n' "$@" > "$WORK/args.txt"
 echo "NCLY_JSON=$NCLY_JSON" > "$WORK/env.txt"
+# The SHA-256 of the key that it receives, never the key, then NCLY_MISSING_KEYS
+if [ -n "${DEEPGRAM_API_KEY:-}" ]; then
+  if [ -x /usr/bin/sha256sum ]; then digest=$(printf '%s' "$DEEPGRAM_API_KEY" | /usr/bin/sha256sum); else digest=$(printf '%s' "$DEEPGRAM_API_KEY" | /usr/bin/shasum -a 256); fi
+  echo "DEEPGRAM_API_KEY ${digest%% *}" >> "$WORK/env.txt"
+fi
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >> "$WORK/env.txt"; else echo "NCLY_MISSING_KEYS unset" >> "$WORK/env.txt"; fi
 case "$STATUS" in
 warn)
   echo '{"ok":true,"contract_version":1,"checks":[{"id":"hello.mood","component":"hello","status":"warn","code":"HELLO_SLEEPY","message":"Hello is sleepy.","hint":"Let it rest."}]}'
@@ -141,7 +184,7 @@ path = "hello status"
 summary = "hello.status.summary"
 doctor = true
 effects = { network = true }
-requires = { bins = ["plain"] }
+requires = { bins = ["plain"], keys = ["deepgram"] }
 
 [commands.result]
 kind = "report"
@@ -172,6 +215,10 @@ other = "Check the network too"
 ["hello.status.timeout"]
 description = "Flag of hello status."
 other = "Bound the checks"
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-stored"}
+-- grants.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"hello","path":"@WORK@/bin/ncly-hello","granted_at":"2026-10-17T04:00:00Z"}]}
 -- broken.toml --
 format_version = 1
 contract_version = 1

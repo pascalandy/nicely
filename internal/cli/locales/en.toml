@@ -841,6 +841,10 @@ other = "{{.Domain}} no longer declares the key of {{.Service}}, which a grant g
 description = "Report of `ncly doctor`: message of the warning GRANT_UNUSED of auth.grants, when no installed extension of the domain is at the path that a grant names anymore. {{.Service}} is the service, {{.Domain}} the domain, and {{.Path}} the path of the grant, or the words of auth.fact_bundled."
 other = "The grant of the key of {{.Service}} to {{.Domain}} names {{.Path}}, where no extension of {{.Domain}} is now."
 
+["doctor.status_key_timeout"]
+description = "Report of `ncly doctor --live`: message of the check <domain>.status, which failed because the OS keychain did not answer the read of a key that the status command needs before the time of --timeout ended, so doctor never started the command. {{.Name}} is the command, such as transcript status. --timeout stays as is."
+other = "The keychain did not answer within --timeout, so {{.Name}} never started."
+
 ["doctor.keyring_env_only_hint"]
 description = "Report of `ncly doctor`: hint of the warning KEYRING_ENV_ONLY of auth.keychain. The human unlocks the OS keychain, or exports the environment variable of each key, whose name is the service in uppercase followed by _API_KEY, such as DEEPGRAM_API_KEY, which stays as is."
 other = "Unlock the keychain, or export the variable of each key, such as DEEPGRAM_API_KEY."
