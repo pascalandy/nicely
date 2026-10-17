@@ -6,6 +6,7 @@
 #   verify.sh start                     build ncly, prepare a run, print its folder
 #   verify.sh prepare <run> auth [--mac-keychain]
 #                                       install the fixture that declares the test service
+#   verify.sh prepare <run> agent       run just install in the scratch home, with a stub codex
 #   verify.sh step <run> <feature> <ncly args...>
 #                                       run ncly in the run's scratch folder and
 #                                       record the call in the feature's transcript
@@ -30,10 +31,10 @@ log() { echo "verify-nicely: $*" >&2; }
 # usage prints the commands of the header: on stdout for help, on stderr with exit 2 otherwise.
 usage() {
 	if [[ "${1:-}" == help ]]; then
-		sed -n '6,17p' "$0" | sed 's/^# \{0,1\}//'
+		sed -n '6,18p' "$0" | sed 's/^# \{0,1\}//'
 		exit 0
 	fi
-	sed -n '6,17p' "$0" | sed 's/^# \{0,1\}//' >&2
+	sed -n '6,18p' "$0" | sed 's/^# \{0,1\}//' >&2
 	exit 2
 }
 
@@ -142,7 +143,11 @@ test_service="verifynicely"
 prepare() {
 	local run extensions
 	run="$(run_folder "${1:-}")"
-	[[ "${2:-}" == auth ]] || die "only the auth feature has a fixture"
+	if [[ "${2:-}" == agent ]]; then
+		prepare_agent "$run"
+		return
+	fi
+	[[ "${2:-}" == auth ]] || die "only the auth and agent features have a fixture"
 	if [[ "$(uname -s)" == Darwin && "${3:-}" != --mac-keychain ]]; then
 		die "on macOS, the keychain may ask for a password, so only a human runs the auth feature there, with --mac-keychain"
 	fi
@@ -190,6 +195,51 @@ FIXTURE
 		'other = "Answer the SHA-256 of the key of the test service"' >"$extensions/ncly-verifykeys.locales/en.toml"
 	: >"$run/auth-prepared"
 	log "verifykeys declares the service $test_service, whose variable is VERIFYNICELY_API_KEY, and answers the SHA-256 of its key"
+}
+
+# prepare_agent installs ncly and the first-party extensions with just install, in the scratch
+# home, as a user installs them from a checkout. It puts a stub codex first in the wrapper's
+# PATH, so no real Codex ever starts, and points the wrapper at the installed ncly. The stub
+# appends each call to evidence/codex-calls.txt, which outlives the cleanup, answers --version
+# with codex-cli and $CODEX_STUB_VERSION, 0.163.0 by default, and appends any other call,
+# which would start a task, to evidence/codex-task.txt, then exits 1.
+prepare_agent() {
+	local run="$1" repo home stub path gocache gomodcache gopath goenv
+	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
+	repo="$(git -C "$script_dir" rev-parse --show-toplevel)" || die "run it from a checkout of nicely"
+	command -v just >/dev/null || die "just is missing: install it, such as with brew install just"
+	home="$run/scratch/home"
+	stub="$run/scratch/stub"
+	mkdir -p "$stub"
+	cat >"$stub/codex" <<'STUB'
+#!/bin/sh
+# Written by verify-nicely: a counted stub of codex, which never starts a task.
+evidence="$(dirname "$0")/../../evidence"
+echo "codex $*" >>"$evidence/codex-calls.txt"
+if [ "$1" = --version ]; then
+	echo "codex-cli ${CODEX_STUB_VERSION:-0.163.0}"
+	exit 0
+fi
+echo "codex $*" >>"$evidence/codex-task.txt"
+exit 1
+STUB
+	chmod +x "$stub/codex"
+	# The build keeps the caller's Go caches and settings, which live under the real home.
+	gocache="$(go env GOCACHE)"
+	gomodcache="$(go env GOMODCACHE)"
+	gopath="$(go env GOPATH)"
+	goenv="$(go env GOENV)"
+	log "running just install with HOME=$home"
+	(cd "$repo" && env HOME="$home" XDG_CONFIG_HOME="$home/.config" XDG_DATA_HOME="$home/.local/share" \
+		XDG_STATE_HOME="$home/.local/state" XDG_CACHE_HOME="$home/.cache" \
+		GOCACHE="$gocache" GOMODCACHE="$gomodcache" GOPATH="$gopath" GOENV="$goenv" just install) ||
+		die "just install failed"
+	[[ -x "$home/.local/bin/ncly" ]] || die "just install wrote no $home/.local/bin/ncly"
+	path="$(sed -n "s/^PATH='\(.*\)'\$/\1/p" "$run/scratch/bin/ncly")"
+	case "$stub" in *"'"*) die "the stub folder $stub holds a quote, which the wrapper cannot hold" ;; esac
+	write_wrapper "$run/scratch/bin/ncly" "$home/.local/bin/ncly" "$home" "$stub:$path"
+	: >"$run/agent-prepared"
+	log "the wrapper now runs $home/.local/bin/ncly, with the stub codex of $stub first in PATH"
 }
 
 step() {
