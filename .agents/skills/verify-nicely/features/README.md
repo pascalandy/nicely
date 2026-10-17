@@ -37,4 +37,4 @@ Each feature file starts with an H1 title and one paragraph about what the user 
 - `hello.md` covers the Go fixture installed as an external extension: discovery, help, answers, errors, reports, describe, its skill, and doctor
 - `auth.md` covers `ncly auth` against the real keychain, with a test service and a fake key: status and its grants, login, logout, grant, revoke, the masked field and the confirmations in a terminal, doctor, and the cleanup of the fake key
 - `terminal.md` covers `ncly` on a real terminal inside tmux, whose server does not answer: the version and the root help answer at once
-- `agent.md` covers `just install` in the scratch home and the installed `agent` extension, with a counted stub Codex: discovery, help, its skill, the Codex check of doctor, the dry run of `ncly agent run`, and its depth limit
+- `agent.md` covers `just install` in the scratch home and the installed `agent` extension, with a counted stub Codex: discovery, help, its skill, the Codex check of doctor, the dry run of `ncly agent run`, its depth limit, and one recorded run with its saved answer

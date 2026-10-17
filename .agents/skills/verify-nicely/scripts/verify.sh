@@ -200,9 +200,11 @@ FIXTURE
 # prepare_agent installs ncly and the first-party extensions with just install, in the scratch
 # home, as a user installs them from a checkout. It puts a stub codex first in the wrapper's
 # PATH, so no real Codex ever starts, and points the wrapper at the installed ncly. The stub
-# appends each call to evidence/codex-calls.txt, which outlives the cleanup, answers --version
-# with codex-cli and $CODEX_STUB_VERSION, 0.163.0 by default, and appends any other call,
-# which would start a task, to evidence/codex-task.txt, then exits 1.
+# appends each call to evidence/codex-calls.txt, which outlives the cleanup, and answers
+# --version with codex-cli and $CODEX_STUB_VERSION, 0.163.0 by default. It appends any other
+# call, which starts a task, to evidence/codex-task.txt, and the task that it reads on stdin to
+# evidence/codex-input.txt, then writes "OK from the stub" in the file of
+# --output-last-message.
 prepare_agent() {
 	local run="$1" repo home stub path gocache gomodcache gopath goenv
 	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
@@ -213,7 +215,7 @@ prepare_agent() {
 	mkdir -p "$stub"
 	cat >"$stub/codex" <<'STUB'
 #!/bin/sh
-# Written by verify-nicely: a counted stub of codex, which never starts a task.
+# Written by verify-nicely: a counted stub of codex, which never sends a request.
 evidence="$(dirname "$0")/../../evidence"
 echo "codex $*" >>"$evidence/codex-calls.txt"
 if [ "$1" = --version ]; then
@@ -221,7 +223,15 @@ if [ "$1" = --version ]; then
 	exit 0
 fi
 echo "codex $*" >>"$evidence/codex-task.txt"
-exit 1
+cat >>"$evidence/codex-input.txt"
+echo >>"$evidence/codex-input.txt"
+out=
+while [ $# -gt 0 ]; do
+	if [ "$1" = --output-last-message ]; then out="$2"; fi
+	shift
+done
+echo '{"type":"turn.completed"}'
+printf 'OK from the stub' >"$out"
 STUB
 	chmod +x "$stub/codex"
 	# The build keeps the caller's Go caches and settings, which live under the real home.
