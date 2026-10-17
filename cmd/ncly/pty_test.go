@@ -22,8 +22,9 @@ import (
 // of 80 columns and 24 rows, as a human at a terminal runs it:
 // pty <script> <command> [args...]. Each line of the script holds a prompt
 // and an answer, separated by a tab. pty waits until the terminal shows the
-// prompt, then types the answer and Enter, Ctrl-C when the answer is ^C, or
-// Enter alone when it is ^M. An answer that ends with \c, as in echo, is
+// prompt, then types the answer and Enter, or one control key alone when the
+// answer is a caret and a letter: Ctrl-C for ^C, Ctrl-E for ^E, which accepts
+// a suggestion, and Enter for ^M. An answer that ends with \c, as in echo, is
 // typed without Enter, so the next prompt can be what the typing shows.
 // Once the command ends, pty prints what the terminal showed on stdout, with
 // each CR LF as LF, and exits with the command's code. On stderr, it then
@@ -82,10 +83,8 @@ func runPty(args []string) int {
 		}
 		answer, typed := strings.CutSuffix(s.answer, `\c`)
 		switch {
-		case s.answer == "^C":
-			answer = "\x03"
-		case s.answer == "^M":
-			answer = "\r"
+		case len(s.answer) == 2 && s.answer[0] == '^' && 'A' <= s.answer[1] && s.answer[1] <= 'Z':
+			answer = string(rune(s.answer[1] - '@'))
 		case !typed:
 			answer += "\r"
 		}

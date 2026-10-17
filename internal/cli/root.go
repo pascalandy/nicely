@@ -3,6 +3,7 @@ package cli
 
 import (
 	"cmp"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -76,6 +77,7 @@ func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend
 	// puts them there, so the request is the first word after the flags.
 	completing := len(line.Words) > 0 && isCompletionRequest(line.Words[0])
 	broken := brokenTarget(extensions, line.Words)
+	form := command.NewForm(p, g, os.Stdin, stdout, stderr)
 	var err error
 	switch {
 	case completing:
@@ -94,19 +96,23 @@ func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend
 	case len(line.Words) > 0 && !isCommand(root, line.Words[0]):
 		err = command.Fail(command.UnknownCommand(p, root, line.Words[0]))
 	default:
-		err = root.Execute()
+		err = root.ExecuteContext(command.WithForm(context.Background(), form))
 	}
 	var (
 		extensionCall *call
 		done          *answered
+		code          int
 	)
 	switch {
 	case errors.As(err, &extensionCall):
-		return extensionCall.run(p, g, stdout, stderr)
+		code = extensionCall.run(p, g, stdout, stderr)
 	case errors.As(err, &done) && out.Err() == nil:
-		return done.print(p, g, out, stderr)
+		code = done.print(p, g, out, stderr)
+	default:
+		code = command.Finish(p, g, contract.Core, out, err, "ncly --help", stdout, stderr)
 	}
-	return command.Finish(p, g, contract.Core, out, err, "ncly --help", stdout, stderr)
+	form.PrintNext(code)
+	return code
 }
 
 // newRoot builds the command tree, with the commands of each valid

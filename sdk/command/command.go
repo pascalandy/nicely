@@ -33,7 +33,7 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 				if run == nil {
 					return nil
 				}
-				if problem := validate(p, c, d, args); problem != nil {
+				if problem := invalid(p, c, d, args); problem != nil {
 					return Fail(*problem)
 				}
 				return nil
@@ -57,6 +57,13 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 	if run == nil {
 		c.RunE = func(c *cobra.Command, _ []string) error { return c.Help() }
 	} else {
+		c.RunE = func(c *cobra.Command, args []string) error {
+			args, err := complete(p, text, c, d, args)
+			if err != nil {
+				return err
+			}
+			return run(c, args)
+		}
 		c.Annotations = effectAnnotations(d)
 		c.Annotations[runsAnnotation] = "true"
 	}
@@ -86,14 +93,6 @@ func usage(d contract.Command) string {
 			words = append(words, "["+name+"]")
 		}
 	}
-	flag := func(name string) string {
-		for _, f := range d.Flags {
-			if f.Name == name && f.Value != "" {
-				return "--" + name + " <" + f.Value + ">"
-			}
-		}
-		return "--" + name
-	}
 	grouped := map[string]bool{}
 	for _, g := range d.FlagGroups {
 		for _, name := range g.Flags {
@@ -102,21 +101,38 @@ func usage(d contract.Command) string {
 	}
 	for _, f := range d.Flags {
 		if f.Required && !grouped[f.Name] {
-			words = append(words, flag(f.Name))
+			words = append(words, flagUsage(d, f.Name))
 		}
 	}
 	for _, g := range d.FlagGroups {
-		var choices []string
-		for _, name := range g.Flags {
-			choices = append(choices, flag(name))
-		}
-		open, end := "[", "]"
-		if g.Min > 0 {
-			open, end = "(", ")"
-		}
-		words = append(words, open+strings.Join(choices, " | ")+end)
+		words = append(words, groupUsage(d, g))
 	}
 	return strings.Join(words, " ")
+}
+
+// flagUsage shows a flag as a usage line does: --name, or --name <value>
+// for a flag that takes one.
+func flagUsage(d contract.Command, name string) string {
+	for _, f := range d.Flags {
+		if f.Name == name && f.Value != "" {
+			return "--" + name + " <" + f.Value + ">"
+		}
+	}
+	return "--" + name
+}
+
+// groupUsage shows a flag group as a usage line does: in parentheses when
+// the group needs a flag, and in brackets otherwise.
+func groupUsage(d contract.Command, g contract.FlagGroup) string {
+	var choices []string
+	for _, name := range g.Flags {
+		choices = append(choices, flagUsage(d, name))
+	}
+	open, end := "[", "]"
+	if g.Min > 0 {
+		open, end = "(", ")"
+	}
+	return open + strings.Join(choices, " | ") + end
 }
 
 // effectsAnnotation keeps the effects of a command that runs, which its

@@ -216,6 +216,30 @@ other = "enter"
 description = "Key help under a form, after the name of the Enter key in form.key_enter: pressing it sends the answer."
 other = "submit"
 
+["form.up"]
+description = "Key help under a choice of a form, after the arrow key ↑: pressing it moves to the option above."
+other = "up"
+
+["form.down"]
+description = "Key help under a choice of a form, after the arrow key ↓: pressing it moves to the option below."
+other = "down"
+
+["form.filter"]
+description = "Key help under a choice of a form, after the key /: pressing it starts typing a filter that narrows the options."
+other = "filter"
+
+["form.complete"]
+description = "Key help under a text field of a form that suggests values, after the key ctrl+e: pressing it accepts the suggestion that the field shows."
+other = "complete"
+
+["form.group_title"]
+description = "Title of a choice in the form for missing values, which asks which flag of a group to set, such as --latest or --path. The description under it says how many to give."
+other = "Pick a flag"
+
+["form.next_time"]
+description = "Line after a command that the form for missing values completed, followed on the next line by the equivalent command, which stays untranslated."
+other = "Next time:"
+
 ["confirm.choices"]
 description = "End of a confirmation in a terminal, after its question: the answers, with the default, No, in uppercase. Use the letters of confirm.yes for yes."
 other = "[y/N]"

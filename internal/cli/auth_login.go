@@ -132,7 +132,7 @@ func addAuthLogin(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 			key, err = tui.AskMasked(ctx, os.Stdin, c.ErrOrStderr(), g.NoColor, tui.Masked{
 				Title:       p.T("auth.key_title", data),
 				Description: p.T("auth.key_description", data),
-				Keys:        tui.Keys{Enter: p.T("form.key_enter"), Submit: p.T("form.submit")},
+				Keys:        command.FormKeys(p),
 			})
 		}
 		switch {

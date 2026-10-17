@@ -53,11 +53,16 @@ func (o *Output) Err() error {
 	return o.err
 }
 
-// Failure carries the outcome of a command that failed, as the error that
-// the command returns.
+// Failure carries the outcome of a command that failed or that a signal
+// stopped, as the error that the command returns.
 type Failure struct{ Outcome contract.Outcome }
 
-func (f *Failure) Error() string { return string(f.Outcome.Errors[0].Code) }
+func (f *Failure) Error() string {
+	if len(f.Outcome.Errors) == 0 {
+		return "stopped by a signal"
+	}
+	return string(f.Outcome.Errors[0].Code)
+}
 
 // Fail returns the failure of a command whose errors are problems.
 func Fail(problems ...contract.Problem) *Failure {

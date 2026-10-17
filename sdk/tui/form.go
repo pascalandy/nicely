@@ -20,10 +20,14 @@ import (
 // with Ctrl-C.
 var ErrInterrupted = errors.New("tui: interrupted")
 
-// Keys is the help of a form's keys, in the active language: each key's
-// name, then what it does.
+// Keys is the help of a form's keys, in the active language: the name of
+// Enter, then what each key does.
 type Keys struct {
 	Enter, Submit string
+	// Up, Down, and Filter are what ↑, ↓, and / do in a choice.
+	Up, Down, Filter string
+	// Complete is what ctrl+e does in a text field that suggests values.
+	Complete string
 }
 
 // Masked is the masked field of a key, with its text in the active
@@ -51,6 +55,56 @@ func AskMasked(ctx context.Context, in *os.File, out io.Writer, noColor bool, m 
 	return typed, nil
 }
 
+// Text is a text field, with its text in the active language. It shows
+// the first suggestion that starts with what the human typed, and accepts
+// any other value.
+type Text struct {
+	Title       string
+	Description string
+	Suggestions []string
+	Keys        Keys
+}
+
+// AskText asks for a value in a text field, as AskMasked asks for a key, and
+// returns the typed text.
+func AskText(ctx context.Context, in *os.File, out io.Writer, noColor bool, t Text) (string, error) {
+	var typed string
+	field := huh.NewInput().Title(t.Title).Description(t.Description).Suggestions(t.Suggestions).Value(&typed)
+	if err := ask(ctx, in, out, noColor, t.Keys, field); err != nil {
+		return "", err
+	}
+	return typed, nil
+}
+
+// Choice is a choice among options, with its text in the active language.
+type Choice struct {
+	Title       string
+	Description string
+	Options     []Option
+	Keys        Keys
+}
+
+// Option is one option of a choice: what it shows, and the value that it
+// stands for.
+type Option struct {
+	Label, Value string
+}
+
+// AskChoice asks the human to pick one option of a choice, as AskMasked asks
+// for a key, and returns its value.
+func AskChoice(ctx context.Context, in *os.File, out io.Writer, noColor bool, c Choice) (string, error) {
+	var chosen string
+	options := make([]huh.Option[string], len(c.Options))
+	for i, o := range c.Options {
+		options[i] = huh.NewOption(o.Label, o.Value)
+	}
+	field := huh.NewSelect[string]().Title(c.Title).Description(c.Description).Options(options...).Value(&chosen)
+	if err := ask(ctx, in, out, noColor, c.Keys, field); err != nil {
+		return "", err
+	}
+	return chosen, nil
+}
+
 // ask runs a form of fields until the human submits it, presses Ctrl-C, or
 // ctx ends, and leaves the terminal as it found it.
 func ask(ctx context.Context, in *os.File, out io.Writer, noColor bool, keys Keys, fields ...huh.Field) error {
@@ -74,17 +128,28 @@ func ask(ctx context.Context, in *os.File, out io.Writer, noColor bool, keys Key
 func newForm(keys Keys, fields ...huh.Field) *huh.Form {
 	keymap := huh.NewDefaultKeyMap()
 	keymap.Input.Submit.SetHelp(keys.Enter, keys.Submit)
+	keymap.Input.AcceptSuggestion.SetHelp("ctrl+e", keys.Complete)
+	keymap.Select.Submit.SetHelp(keys.Enter, keys.Submit)
+	keymap.Select.Up.SetHelp("↑", keys.Up)
+	keymap.Select.Down.SetHelp("↓", keys.Down)
+	keymap.Select.Filter.SetHelp("/", keys.Filter)
 	return huh.NewForm(huh.NewGroup(fields...)).WithTheme(huh.ThemeFunc(theme)).WithKeyMap(keymap)
 }
 
 // theme is Huh's Base16 theme, whose key help is bright black instead of
-// Bubbles' grays, which the 16 colors of the terminal do not hold.
+// Bubbles' grays, which the 16 colors of the terminal do not hold, and whose
+// options that the human has not chosen keep the terminal's color instead
+// of white, which a light terminal cannot show.
 func theme(bool) *huh.Styles {
 	t := huh.ThemeBase16(true)
 	help := lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)
 	t.Help.ShortKey, t.Help.ShortDesc, t.Help.ShortSeparator = help, help, help
 	t.Help.FullKey, t.Help.FullDesc, t.Help.FullSeparator = help, help, help
 	t.Help.Ellipsis = help
+	for _, field := range []*huh.FieldStyles{&t.Focused, &t.Blurred} {
+		field.Option = field.Option.UnsetForeground()
+		field.UnselectedOption = field.UnselectedOption.UnsetForeground()
+	}
 	return t
 }
 

@@ -7,11 +7,13 @@
 chmod 755 bin/ncly-shop
 env PATH=$WORK/bin:$PATH
 
-# A required argument, then a required flag
+# A required argument, then a required flag. Outside a terminal, the hint of a missing value
+# shows the full command, with the missing value as the usage line writes it, and no next
 exits 2 ncly shop buy --store north --cash --bag --json
 ! stdout .
 answer stderr USAGE_INVALID
-stderr '"message":"The argument \\u003citem\\u003e is missing.","hint":"ncly shop buy --help","next":\["ncly","shop","buy","--help"\]'
+stderr '"message":"The argument \\u003citem\\u003e is missing.","hint":"ncly shop buy \\u003citem\\u003e --store north --cash --bag"\}'
+! stderr '"next"'
 exits 2 ncly shop buy apple --cash --bag --json
 answer stderr USAGE_INVALID
 stderr 'The flag --store is missing.'

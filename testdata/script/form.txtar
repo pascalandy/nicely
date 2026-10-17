@@ -1,0 +1,270 @@
+# In a terminal, a call that lacks a required value opens the form for missing values of
+# Modes, on stderr, which asks only for what the call lacks, one value at a time. The command
+# then runs with the typed values, and Next time: shows the equivalent command. pty runs a
+# command on a pseudo-terminal, types each answer of its script once the prompt shows, then
+# prints what the terminal showed. The fixture cafe appends each order to $WORK/ran, its
+# execution marker, and lists its drinks for completion. Inside tmux, the form takes its
+# color profile from sdk/tui, so it never runs tmux info, which the stub would log.
+env DATA=$WORK/.local/share/nicely/extensions
+chmod 755 $DATA/ncly-cafe
+chmod 755 bin/tmux
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env OPENAI_API_KEY=
+env PATH=$WORK/bin:$PATH
+env TMUX=/tmp/tmux-test/default,1,0
+env TERM=xterm-256color
+
+# A call without its argument, its required flag, and a flag of its group: the form asks for
+# the argument in a text field that suggests what completion suggests, where Ctrl-E accepts
+# the suggestion, for the flag with values in a choice, then which flag of the group to set,
+# then the value of the chosen flag. The command runs with those values, and Next time:
+# follows its answer
+exec pty order.txt ncly --no-color cafe order
+stdout '┃ drink\n┃ The drink to pour\n'
+stdout 'latte'
+stdout 'ctrl\+e complete • enter submit'
+stdout '┃ --size <size>\n┃ The size of the cup\n'
+stdout '↑ up • ↓ down • / filter • enter submit'
+stdout '┃ Pick a flag\n┃ Give exactly one of --to-go, --table\.\n'
+stdout '--to-go           Take it away'
+stdout '--table <number>  Serve it at a table'
+stdout '┃ --table <number>\n┃ Serve it at a table\n'
+stdout 'Order taken\.\nNext time:\n  ncly cafe order latte --size large --table 7\n\z'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '^cafe menu list --$' ran
+grep -count=1 '^cafe order --size=large --table=7 -- latte$' ran
+
+# The form uses Huh's Base16 theme: the bar bright black, the title cyan, the description and
+# the key help bright black. In a choice, > is yellow and the chosen value green, while the
+# other values keep the terminal's color. Next time: is bright black, and the command has no
+# style
+exec pty order-again.txt ncly cafe order
+stdout '\x1b\[90m┃'
+stdout '\x1b\[36mdrink'
+stdout '\x1b\[90mThe drink to pour'
+stdout 'moc\x1b\[7mh\x1b\[90;27ma'
+stdout '\x1b\[33m> \x1b\[32msmall\x1b\[m\n'
+stdout '┃\x1b\[m   large\n'
+stdout '\x1b\[90m↑'
+stdout '\x1b\[90msubmit'
+stdout '\x1b\[90mNext time:\x1b\[m\n  ncly cafe order mocha --size small --to-go\n\z'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '^cafe order --size=small --to-go=true -- mocha$' ran
+
+# The form asks only for what the call lacks, and Next time: keeps what the call gave
+exec pty size.txt ncly --no-color cafe order 'flat white' --to-go
+! stdout 'drink'
+! stdout 'Pick a flag'
+stdout 'Next time:\n  ncly cafe order ''flat white'' --size small --to-go\n\z'
+grep -count=1 '^cafe order --size=small --to-go=true -- flat white$' ran
+
+# A value that its type rejects fails before the form asks anything. An empty answer leaves
+# its value missing, so the call fails as without the form, with a hint that shows the full
+# command. Neither runs the command or prints Next time:
+exits 2 pty none.txt ncly --no-color cafe order latte --size huge
+stdout 'error\[USAGE_INVALID\]: The flag --size does not accept "huge"\.'
+! stdout '┃'
+exits 2 pty empty.txt ncly --no-color cafe order --size small --to-go
+stdout 'error\[USAGE_INVALID\]: The argument <drink> is missing\.'
+stdout 'hint: ncly cafe order <drink> --size small --to-go'
+! stdout 'Next time'
+grep -count=3 '^cafe order' ran
+
+# In non-interactive mode, the same calls show no form and exit 2 with USAGE_INVALID and a
+# hint that shows the full command, with each missing value in the notation of the usage line.
+# The hint does not run as is, so the answer has no next
+exits 2 ncly cafe order
+stderr 'error\[USAGE_INVALID\]: The argument <drink> is missing\.'
+stderr 'hint: ncly cafe order <drink> --size <size> \(--to-go \| --table <number>\)'
+! stderr '┃'
+exits 2 ncly cafe order latte --table 4 --json
+stderr '"message":"The flag --size is missing\.","hint":"ncly cafe order latte --size \\u003csize\\u003e --table 4"\}'
+! stderr '"next"'
+env NCLY_NO_INPUT=1
+exits 2 pty none.txt ncly cafe order latte --size small
+stdout 'hint:\x1b\[m ncly cafe order latte --size small \(--to-go \| --table <number>\)'
+! stdout '┃'
+env NCLY_NO_INPUT=
+grep -count=3 '^cafe order' ran
+
+# Ctrl-C at the form exits 130 with INTERRUPTED before the command starts, and leaves the
+# terminal as it found it
+exits 130 pty interrupt.txt ncly cafe order
+stdout 'error\[INTERRUPTED\]'
+! stdout 'Next time'
+stderr '\Aecho on\nterminal as found\n\z'
+exits 130 pty interrupt-choice.txt ncly cafe order latte
+stdout 'error\[INTERRUPTED\]'
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=3 '^cafe order' ran
+
+# ncly auth login without its service asks for it in a text field that suggests the declared
+# services, then for the key in the masked field. Its Next time: line holds the service,
+# never the key, and never --force
+exec pty login.txt ncly --no-color auth login --force
+stdout '┃ service\n'
+stdout 'openai key'
+stdout 'Stored the key of openai in the keychain\.\nNext time:\n  ncly auth login openai\n\z'
+! stdout sk-typed
+! stdout force
+stderr '\Aecho on\nterminal as found\n\z'
+grep -count=1 '"call":"set","account":"openai","key":"sk-typed"\}' test-keychain.jsonl
+exits 2 ncly auth login
+stderr 'hint: ncly auth login <service>'
+
+# The bundled extension and a Go extension started directly share the form: skill view asks
+# for the skill that completion suggests, and ncly-hello pick asks for its argument, its
+# required flag, and its group
+exec pty skill.txt ncly --no-color skill view
+stdout '┃ name\n'
+stdout 'NICELY'
+stdout 'Next time:\n  ncly skill view nicely\n\z'
+exec pty pick.txt ncly-hello --no-color pick
+stdout '┃ name\n'
+stdout '┃ --mood <word>\n'
+stdout 'Next time:\n  ncly hello pick Ada --mood calm --right\n\z'
+exists picked
+
+# Under the pseudo-locale, every word of the form comes from a catalog
+exec pty pseudo.txt ncly --lang en-XA cafe order latte --size small
+pseudo stdout --to-go --table <number> ncly cafe order latte --size small Order taken
+
+! exists tmux.log
+
+-- none.txt --
+-- order.txt --
+drink	lat\c
+latte	^E
+	^M
+--size <size>	j\c
+	^M
+Pick a flag	j\c
+	^M
+┃ --table	7
+-- order-again.txt --
+The drink to pour	moc\c
+moc	^E
+	^M
+<size>	^M
+Pick a flag	^M
+-- size.txt --
+<size>	^M
+-- empty.txt --
+drink	^M
+-- interrupt.txt --
+drink	^C
+-- interrupt-choice.txt --
+<size>	^C
+-- login.txt --
+service	ope\c
+openai	^E
+	^M
+openai key	sk-typed
+-- skill.txt --
+name	nic\c
+nicely	^E
+	^M
+-- pick.txt --
+name	Ada
+<word>	calm
+right	j\c
+	^M
+-- pseudo.txt --
+--to-go	^M
+-- bin/tmux --
+#!/bin/sh
+echo "$@" >> "$WORK/tmux.log"
+sleep 5
+-- .local/share/nicely/extensions/ncly-cafe --
+#!/bin/sh
+case "$1 $2" in
+"menu list")
+  echo "cafe $*" >> "$WORK/ran"
+  echo '{"ok":true,"contract_version":1,"drinks":[{"name":"latte"},{"name":"mocha"}]}' ;;
+"order "*)
+  echo "cafe $*" >> "$WORK/ran"
+  echo "Order taken." ;;
+esac
+-- .local/share/nicely/extensions/ncly-cafe.toml --
+format_version = 1
+contract_version = 1
+domain = "cafe"
+
+[[commands]]
+path = "cafe"
+summary = "cafe.summary"
+
+[[commands]]
+path = "cafe menu"
+summary = "cafe.menu.summary"
+
+[[commands]]
+path = "cafe menu list"
+summary = "cafe.menu.list.summary"
+effects = {}
+
+[[commands]]
+path = "cafe order"
+summary = "cafe.order.summary"
+result = { kind = "text" }
+requires = { keys = ["openai"] }
+
+[[commands.args]]
+name = "drink"
+summary = "cafe.order.drink"
+required = true
+values_from = { command = "cafe menu list", key = "drinks", field = "name" }
+
+[[commands.flags]]
+name = "size"
+value = "size"
+values = ["small", "large"]
+required = true
+summary = "cafe.order.size"
+
+[[commands.flags]]
+name = "to-go"
+summary = "cafe.order.to_go"
+
+[[commands.flags]]
+name = "table"
+value = "number"
+type = "integer"
+summary = "cafe.order.table"
+
+[[commands.flag_groups]]
+flags = ["to-go", "table"]
+min = 1
+max = 1
+-- .local/share/nicely/extensions/ncly-cafe.locales/en.toml --
+["cafe.summary"]
+description = "Summary of the cafe fixture."
+other = "Order drinks"
+
+["cafe.menu.summary"]
+description = "Summary of cafe menu."
+other = "Read the menu"
+
+["cafe.menu.list.summary"]
+description = "Summary of cafe menu list."
+other = "List the drinks"
+
+["cafe.order.summary"]
+description = "Summary of cafe order."
+other = "Order a drink"
+
+["cafe.order.drink"]
+description = "The drink argument of cafe order."
+other = "The drink to pour"
+
+["cafe.order.size"]
+description = "The --size flag of cafe order."
+other = "The size of the cup"
+
+["cafe.order.to_go"]
+description = "The --to-go flag of cafe order."
+other = "Take it away"
+
+["cafe.order.table"]
+description = "The --table flag of cafe order."
+other = "Serve it at a table"

@@ -184,6 +184,7 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 	root.SetErr(stderr)
 	root.SetHelpFunc(command.HelpFunc(p, g.NoColor))
 	codes := l.manifest.Registry()
+	form := command.NewForm(p, g, os.Stdin, stdout, stderr)
 	switch {
 	case line.Version() && !line.Help():
 		_, err = fmt.Fprintf(out, "ncly-%s %s\n", domain, command.ModuleVersion())
@@ -191,12 +192,16 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 		target, _, _ := root.Find(args)
 		err = target.Help()
 	default:
-		err = root.Execute()
+		err = root.ExecuteContext(command.WithForm(context.Background(), form))
 	}
+	code := 0
 	if selected != nil && err == nil {
-		return l.handle(*selected, p, g, codes, out, stdout, stderr)
+		code = l.handle(*selected, p, g, codes, out, stdout, stderr)
+	} else {
+		code = command.Finish(p, g, codes, out, err, "ncly "+domain+" --help", stdout, stderr)
 	}
-	return command.Finish(p, g, codes, out, err, "ncly "+domain+" --help", stdout, stderr)
+	form.PrintNext(code)
+	return code
 }
 
 // selection is the command and the call that the parser accepted.
