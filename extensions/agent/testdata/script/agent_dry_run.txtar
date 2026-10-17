@@ -177,11 +177,7 @@ pseudo stdout $WORK/bin/codex exec m1 model_reasoning_effort="medium workspace-w
 exits 78 ncly --lang en-XA agent run 'Review this branch' --model m1 --dry-run
 pseudo stderr --tools
 
-# This build runs no task yet: without --dry-run, the call prepares the task, then answers
-# CAPABILITY_UNSUPPORTED, starts no task, and records nothing
-exits 78 ncly agent run 'Review this branch' --tools --model m1 --json
-answer stderr CAPABILITY_UNSUPPORTED
-stderr '"message":"This build of the agent extension prepares a Codex task, but cannot run it yet\."'
+# Without --dry-run too, a failure of preparation comes before the record and before Codex
 exits 2 ncly agent run --tools --model m1 --json
 answer stderr USAGE_INVALID
 ! exists $TMPDIR/task.log

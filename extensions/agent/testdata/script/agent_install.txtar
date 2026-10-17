@@ -34,7 +34,7 @@ stdout '^  -n, --dry-run '
 exec ncly describe 'agent run' --json
 stdout '"path":"agent run","summary":"Run one trusted task through Codex","source":"extension"'
 stdout '"effects":\{"user_writes":true,"network":true,"paid":true\}'
-stdout '"modes":\{"dry_run":true,"recorded":false,"resume":false\}'
+stdout '"modes":\{"dry_run":true,"recorded":true,"resume":false\}'
 stdout '"requires":\{"bins":\[\{"name":"codex","version":"0\.162\.1","install":\{"brew":\["brew","install","--cask","codex"\],"pacman":\["sudo","pacman","-S","openai-codex"\]\}\}\],"keys":\[\]\}'
 exec ncly doctor extensions --json
 stdout '\{"id":"extensions\.agent","component":"extensions","status":"pass","message":"[^"]*","domain":"agent","source":"extension","path":"'${DATA@R}'/ncly-agent"\}'

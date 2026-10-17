@@ -1,0 +1,130 @@
+# ncly agent run records its one item, task, and its one paid step, codex, through the record
+# support of sdk/record: it takes the run lock, writes the record and the intent of the step
+# durably before Codex starts, then publishes the verified answer and the completion before it
+# answers success. The stub codex appends each task to $TMPDIR/task.log, copies the records
+# that exist when it starts to $TMPDIR/at-launch/, saves its stdin to $TMPDIR/task.stdin, and
+# writes $CODEX_ANSWER as its last message.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+mkdir nbin
+exec /bin/sh -c 'for c in ncly agent-external holdlock; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+env CODEX_VERSION=0.163.0
+env CODEX_ANSWER='OK from Codex'
+env STATE=$WORK/.local/state/nicely
+env RUNS=$STATE/runs
+env SUM=87b51d8466e94d496cf0c8609028f9be8132129801c6ec43501bfe5916d11f4a
+env ANSWER_SUM=8afe105bfb636084c8a98d204b98c79b124e910816e3ca330136c7d6e2920d65
+
+# A call with --run-id saves the record before Codex starts: when the stub runs, the record is
+# running and its step is unknown, with its start time and no end. The task reaches Codex on
+# stdin
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id r1 --json
+stdout '\A\{"ok":true,"contract_version":1,"answer":"OK from Codex","duration_ms":[0-9]+,"harness":"codex","model":"m1","run_id":"r1"\}\n\z'
+! stderr .
+cp stdout $TMPDIR/answer.json
+exec /bin/sh -c 'printf "Review this branch" | /usr/bin/cmp - "$TMPDIR/task.stdin"'
+grep -count=1 '(?m)^exec ' $TMPDIR/task.log
+grep '"status":"running"' $TMPDIR/at-launch/r1.json
+grep '"steps":\[\{"id":"codex","effect":"paid","status":"unknown","started_at":"[0-9TZ:-]+","finished_at":null,"artifacts":\[\],"error":null\}\]' $TMPDIR/at-launch/r1.json
+
+# The completed record holds the inputs that the call states, the values that preparation
+# picked, the version of Codex, and the answer as a verified artifact with its evidence
+grep '\A\{"format_version":1,"run_id":"r1","path":"agent run","status":"completed","started_at":"[0-9TZ:-]+","updated_at":"[0-9TZ:-]+","ncly_version":"[^"]+","attempts":1,' $RUNS/r1.json
+grep '"inputs":\{"cwd":"'${WORK@R}'","model":"m1","task_sha256":"'$SUM'","tools":true\},"resolved":\{"effort":"medium","harness":"codex","model":"m1"\},"tools":\{"codex":"0\.163\.0"\}' $RUNS/r1.json
+grep '"items":\[\{"key":"task","output_dir":"'${RUNS@R}'/r1","steps":\[\{"id":"codex","effect":"paid","status":"completed","started_at":"[0-9TZ:-]+","finished_at":"[0-9TZ:-]+","artifacts":\[\{"path":"'${RUNS@R}'/r1/answer\.txt","size_bytes":13,"sha256":"'$ANSWER_SUM'"\}\],"error":null,"evidence":\{"format_version":1,"duration_ms":[0-9]+\}\}\]\}\]\}$' $RUNS/r1.json
+exec /bin/sh -c 'printf "OK from Codex" | /usr/bin/cmp - "$RUNS/r1/answer.txt"'
+exec ncly describe 'agent run' --json
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/answer.json $TMPDIR/describe.json schema
+# The run's temporary folder is gone
+exec /bin/sh -c 'for f in "$TMPDIR"/ncly-run-*; do [ ! -e "$f" ] || exit 1; done'
+
+# Without --json, the call prints the answer. Without --run-id, the SDK generates the ID
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id r2
+stdout '\AOK from Codex\n\z'
+exec ncly agent run 'Review this branch' --tools --model m1 --json
+stdout '"run_id":"[0-9]{8}-[0-9]{6}-[0-9a-f]{6}"'
+grep -count=3 '(?m)^exec ' $TMPDIR/task.log
+
+# While another process holds the run, the call exits 75 with TEMPORARY and the run_id, whose
+# hint and next inspect the run, and starts nothing
+! exec holdlock $RUNS/r3.lock held &
+waitfile held
+exits 75 ncly agent run 'Review this branch' --tools --model m1 --run-id r3 --json
+answer stderr TEMPORARY
+stderr '"run_id":"r3"'
+stderr '"hint":"ncly run view r3","next":\["ncly","run","view","r3"\]'
+kill
+wait
+! exists $RUNS/r3.json
+grep -count=3 '(?m)^exec ' $TMPDIR/task.log
+
+# A record that cannot be read, that is no JSON, or that holds another format_version never
+# counts as absent: the call answers RESUME_UNSAFE and starts no task
+cp garbage.json $RUNS/r4.json
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r4 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the record '${RUNS@R}'/r4\.json, so this call started no task\."'
+cp version2.json $RUNS/r4.json
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r4 --json
+answer stderr RESUME_UNSAFE
+chmod 000 $RUNS/r4.json
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r4 --json
+answer stderr RESUME_UNSAFE
+chmod 600 $RUNS/r4.json
+cmp $RUNS/r4.json version2.json
+grep -count=3 '(?m)^exec ' $TMPDIR/task.log
+
+# A record that holds the ID starts no second task: this build cannot answer from it yet
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r1 --json
+answer stderr RESUME_UNSAFE
+grep -count=3 '(?m)^exec ' $TMPDIR/task.log
+
+# When the record cannot be written, the barrier fails and no task starts
+exec /bin/sh -c ': > "$RUNS/r5.lock"'
+chmod 500 $RUNS
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r5 --json
+answer stderr RUNTIME
+stderr '"message":"Cannot save the record of the run in '${RUNS@R}', so no Codex task started\.","hint":"Check that you can write in '${RUNS@R}', then make the call again\."'
+stderr '"run_id":"r5"'
+chmod 700 $RUNS
+! exists $RUNS/r5.json
+grep -count=3 '(?m)^exec ' $TMPDIR/task.log
+
+# A run ID outside the rule is USAGE_INVALID, before any lock, in a dry run too
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --run-id Bad_ID --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --run-id -x --json
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --run-id Bad_ID --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"Bad_ID is no run ID\.","hint":"Give --run-id 1 to 64 lowercase letters, digits, and hyphens, starting with a letter or a digit\."'
+! exists $RUNS/Bad_ID.lock
+
+# The text of these errors comes from the catalog
+cp garbage.json $RUNS/r4.json
+exits 1 ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --run-id r4
+pseudo stderr $RUNS/r4.json RESUME_UNSAFE --run-id
+grep -count=3 '(?m)^exec ' $TMPDIR/task.log
+
+-- garbage.json --
+{"format_version":
+-- version2.json --
+{"format_version":2,"run_id":"r4"}
+-- bin/codex --
+#!/bin/sh
+if [ "$1" = --version ]; then
+  echo "codex-cli $CODEX_VERSION"
+  exit 0
+fi
+echo "$*" >> "$TMPDIR/task.log"
+/bin/mkdir -p "$TMPDIR/at-launch"
+for f in "$STATE"/runs/*.json; do [ -e "$f" ] && /bin/cp "$f" "$TMPDIR/at-launch/"; done
+/bin/cat > "$TMPDIR/task.stdin"
+out=
+while [ $# -gt 0 ]; do
+  if [ "$1" = --output-last-message ]; then out=$2; fi
+  shift
+done
+echo '{"type":"turn.completed"}'
+printf '%s' "$CODEX_ANSWER" > "$out"
