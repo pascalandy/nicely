@@ -44,7 +44,7 @@ Add the `grok` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenar
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `extensions/agent/testdata/script/agent_opencode.txtar`
 
-Add the `opencode` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding, provider and effort selection, stdin delivery, and stdout checks for `--tools`. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
+Add the `opencode` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding, provider and effort selection, stdin delivery, and the final answer read from the JSON events for `--tools`. A zero exit without a final answer is a missing answer that exits 1. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
 
 ### M11-T4 Check unchanged
 
