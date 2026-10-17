@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"time"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -193,7 +194,7 @@ func (s Store) Open(ctx context.Context, id string) (*Run, error) {
 		return nil, err
 	}
 	r := &Run{ID: id, store: s, unlock: unlock}
-	if r.Record, err = read(s.file(id)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if r.Record, err = read(s.file(id), id); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		unlock()
 		return nil, err
 	}
@@ -202,7 +203,7 @@ func (s Store) Open(ctx context.Context, id string) (*Run, error) {
 
 // read reads the record of a file, or returns fs.ErrNotExist when no file
 // exists. Any other failure is an UnreadableError.
-func read(file string) (*Record, error) {
+func read(file, id string) (*Record, error) {
 	data, err := os.ReadFile(file)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, err
@@ -223,7 +224,42 @@ func read(file string) (*Record, error) {
 	if err := json.Unmarshal(data, &rec); err != nil {
 		return nil, &UnreadableError{File: file, Err: err}
 	}
+	if !fits(&rec, id) {
+		return nil, &UnreadableError{File: file, Err: errors.New("the record breaks its format")}
+	}
 	return &rec, nil
+}
+
+// fits reports whether rec holds every key of Record format in contract.md
+// that is not optional, each with a value of its type, and the run ID of its
+// file, so that no reader uses a record that it would misread.
+func fits(rec *Record, id string) bool {
+	if rec.RunID != id || rec.Path == "" || rec.NclyVersion == "" || rec.Attempts < 1 ||
+		!isTime(rec.StartedAt) || !isTime(rec.UpdatedAt) ||
+		!slices.Contains([]Status{Running, Completed, Failed, Interrupted, Unknown}, rec.Status) ||
+		rec.Inputs == nil || rec.Resolved == nil || rec.Tools == nil || rec.Items == nil {
+		return false
+	}
+	for _, it := range rec.Items {
+		if it.Key == "" || it.Steps == nil {
+			return false
+		}
+		for _, s := range it.Steps {
+			if s.ID == "" || s.Artifacts == nil ||
+				!slices.Contains([]StepStatus{StepPending, StepCompleted, StepFailed, StepUnknown}, s.Status) ||
+				!slices.Contains([]Effect{EffectNone, EffectRepeatable, EffectNonRepeatable, EffectPaid}, s.Effect) ||
+				s.StartedAt != nil && !isTime(*s.StartedAt) || s.FinishedAt != nil && !isTime(*s.FinishedAt) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// isTime reports whether text is a time in RFC 3339.
+func isTime(text string) bool {
+	_, err := time.Parse(time.RFC3339, text)
+	return err == nil
 }
 
 // Close releases the lock of the run.

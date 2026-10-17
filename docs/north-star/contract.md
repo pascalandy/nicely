@@ -563,6 +563,8 @@ Each item has `key`, a string that names the item, such as its URL, `output_dir`
 | `error` | object or null | The latest unsuccessful attempt's `code`, `message`, and `hint`, as in the public problem object. A preparation failure can leave the step `pending` with an error. An untouched pending or completed step has `null` |
 | `evidence` | object, optional | Data beyond `artifacts` that the domain needs to reuse the step or to answer again, with its own `format_version`. A step without such data omits the key |
 
+A reader treats a record that lacks a key of these two tables other than `evidence`, holds a value outside the type or the values that the tables give, or holds a `run_id` other than the name of its file, as a record that it cannot parse.
+
 The domain defines when its validated preparation creates the initial record, before its first user-side mutation or paid dispatch. It starts with pending steps and status `running`. A run's saved status follows this table:
 
 | Status | When written |
