@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -44,14 +45,21 @@ const (
 	answerTo = "answer.txt"
 )
 
+// store is the runs folder of the state folder.
+func store() record.Store {
+	home, _ := os.UserHomeDir()
+	return record.Store{Dir: record.Folder(config.Locate(home, os.LookupEnv).State)}
+}
+
 // execute runs the prepared task under its run ID, the one that the call
-// checked or a new one when id is empty: it persists the record
-// and the intent of the step codex before Codex starts, then publishes the
-// verified answer and the completion before it answers success.
+// checked or a new one when id is empty. It takes the run lock, decides on
+// a saved record, as Records and replay in spec.md defines, and for a new
+// task persists the record and the intent of the step codex before Codex
+// starts, then publishes the verified answer and the completion before it
+// answers success.
 func execute(ctx context.Context, call extension.Call, t task, id string) contract.Outcome {
 	p := call.Printer
-	home, _ := os.UserHomeDir()
-	runs := record.Store{Dir: record.Folder(config.Locate(home, os.LookupEnv).State)}
+	runs := store()
 	if id == "" {
 		id = record.NewID(time.Now())
 	}
@@ -62,39 +70,66 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 		return failure(&contract.Problem{Code: contract.Runtime, Message: p.T("agent.run.record_failed", dir), Hint: p.T("agent.run.record_failed_hint", dir)}, keep)
 	}
 	run, err := runs.Open(ctx, id)
-	var unreadable *record.UnreadableError
+	var bad *record.UnreadableError
 	switch {
 	case errors.Is(err, record.ErrBusy):
 		return failure(inspect(p, contract.Temporary, id, "agent.run.busy", data), keep)
-	case errors.As(err, &unreadable):
-		return failure(inspect(p, contract.ResumeUnsafe, id, "agent.run.record_unreadable", map[string]any{"File": unreadable.File}), keep)
+	case errors.As(err, &bad):
+		return failure(unreadable(p, bad.File, id), keep)
 	case ctx.Err() != nil:
 		return contract.Outcome{}
 	case err != nil:
 		return unsaved()
 	}
 	defer run.Close()
+	var resolved map[string]any
 	if run.Record != nil {
-		// Replay of a saved run arrives with M10-T2: until then, an ID that a
-		// record holds starts nothing.
-		return failure(&contract.Problem{Code: contract.ResumeUnsafe, Message: p.T("agent.run.record_exists", data), Hint: p.T("agent.run.record_exists_hint", data)}, keep)
+		completed, problem := decide(p, call, t, run.Record, id)
+		if problem != nil {
+			return failure(problem, keep)
+		}
+		if completed {
+			return savedAnswer(call, run.Record, run.File(), id, contract.NoEffect)
+		}
+		resolved = run.Record.Resolved
 	}
-	folder := run.ArtifactDir()
-	rec := record.Record{
-		Path:        call.Path,
-		NclyVersion: nclyVersion(),
-		Inputs:      inputs(call, t),
-		Resolved:    map[string]any{"harness": "codex", "model": t.model, "effort": t.effort},
-		Tools:       map[string]string{"codex": t.version},
-		Items:       []record.Item{{Key: itemKey, OutputDir: &folder, Steps: []record.Step{{ID: stepID, Effect: record.EffectPaid}}}},
+	problem := pick(ctx, call, &t, resolved)
+	if ctx.Err() != nil {
+		return contract.Outcome{}
 	}
-	if err := run.Create(rec); err != nil {
+	if problem != nil {
+		return failure(problem, keep)
+	}
+	tools := map[string]string{"codex": t.version}
+	if run.Record != nil {
+		err = run.Again(nclyVersion(), tools)
+	} else {
+		folder := run.ArtifactDir()
+		err = run.Create(record.Record{
+			Path:        call.Path,
+			NclyVersion: nclyVersion(),
+			Inputs:      inputs(call, t),
+			Resolved:    map[string]any{"harness": "codex", "model": t.model, "effort": t.effort},
+			Tools:       tools,
+			Items:       []record.Item{{Key: itemKey, OutputDir: &folder, Steps: []record.Step{{ID: stepID, Effect: record.EffectPaid}}}},
+		})
+	}
+	if err != nil {
 		return unsaved()
 	}
 	if err := run.Begin(0, 0); err != nil {
 		return unsaved()
 	}
 	text, duration, problem := launch(ctx, call, t, id)
+	if problem == nil {
+		var artifact record.Artifact
+		if artifact, err = run.Publish(answerTo, text); err == nil {
+			err = run.Complete(0, 0, []record.Artifact{artifact}, evidence{FormatVersion: 1, DurationMS: duration.Milliseconds()})
+		}
+		if err != nil {
+			problem = inspect(p, contract.Runtime, id, "agent.run.publish_failed", data)
+		}
+	}
 	if problem != nil {
 		// Codex may have started its paid work, so nothing proves that it
 		// had no effect: the step stays unknown.
@@ -103,37 +138,68 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 		o.Effect = run.Effect()
 		return o
 	}
-	ms := duration.Milliseconds()
-	artifact, err := run.Publish(answerTo, text)
-	if err == nil {
-		err = run.Complete(0, 0, []record.Artifact{artifact}, evidence{FormatVersion: 1, DurationMS: ms})
-	}
-	if err != nil {
-		problem := inspect(p, contract.Runtime, id, "agent.run.publish_failed", data)
-		_ = run.End(0, 0, record.StepUnknown, *problem, record.Unknown)
-		o := failure(problem, keep)
-		o.Effect = run.Effect()
-		return o
-	}
-	return answered(call, run, artifact, ms)
+	return savedAnswer(call, run.Record, run.File(), id, run.Effect())
 }
 
-// answered answers a completed run from its committed record and its
-// verified artifact, never from what Codex wrote before completion.
-func answered(call extension.Call, run *record.Run, artifact record.Artifact, ms int64) contract.Outcome {
-	text, err := artifact.Read()
-	if err != nil {
-		problem := inspect(call.Printer, contract.ResumeUnsafe, run.ID, "agent.run.answer_changed", map[string]any{"File": artifact.Path})
-		return failure(problem, map[string]string{"run_id": run.ID})
+// decide applies Records and replay in spec.md to the record that holds
+// the ID of the call, once the record could be read: the problem of cases
+// 2 and 5, true for a completed run, whose saved answer the call returns,
+// and false for a run whose step codex is still pending, which may run
+// again.
+func decide(p *i18n.Printer, call extension.Call, t task, saved *record.Record, id string) (bool, *contract.Problem) {
+	data := map[string]any{"ID": id}
+	if saved.Path != call.Path || !sameValues(saved.Inputs, inputs(call, t)) || len(saved.Items) != 1 || saved.Items[0].Key != itemKey {
+		return false, inspect(p, contract.UsageInvalid, id, "agent.run.other_call", data)
 	}
-	model, _ := run.Record.Resolved["model"].(string)
+	steps := saved.Items[0].Steps
+	switch {
+	case len(steps) != 1 || steps[0].ID != stepID:
+	case saved.Status == record.Completed && steps[0].Status == record.StepCompleted:
+		return true, nil
+	case steps[0].Status == record.StepPending:
+		return false, nil
+	}
+	return false, inspect(p, contract.ResumeUnsafe, id, "agent.run.effect_unknown", data)
+}
+
+// sameValues reports whether two sets of inputs hold the same values, as
+// JSON compares them, so the values of a record match those of a call.
+func sameValues(a, b map[string]any) bool {
+	x, errA := json.Marshal(a)
+	y, errB := json.Marshal(b)
+	return errA == nil && errB == nil && bytes.Equal(x, y)
+}
+
+// savedAnswer answers a completed run from its committed record: the
+// verified artifact of its step codex, the model of its resolved values,
+// and the duration of its evidence, so a repeated call answers what the
+// first call answered, and never from what Codex wrote before completion.
+func savedAnswer(call extension.Call, saved *record.Record, file, id string, effect contract.Effect) contract.Outcome {
+	p := call.Printer
+	keep := map[string]string{"run_id": id}
+	step := saved.Items[0].Steps[0]
+	var ev evidence
+	if len(step.Artifacts) != 1 || json.Unmarshal(step.Evidence, &ev) != nil || ev.FormatVersion != 1 {
+		return failure(unreadable(p, file, id), keep)
+	}
+	text, err := step.Artifacts[0].Read()
+	if err != nil {
+		return failure(inspect(p, contract.ResumeUnsafe, id, "agent.run.answer_changed", map[string]any{"File": step.Artifacts[0].Path}), keep)
+	}
+	model, _ := saved.Resolved["model"].(string)
 	if !call.JSON {
 		_, _ = call.Stdout.Write(text)
 		if !bytes.HasSuffix(text, []byte("\n")) {
 			_, _ = io.WriteString(call.Stdout, "\n")
 		}
 	}
-	return contract.Outcome{Data: answer{RunID: run.ID, Answer: string(text), Harness: "codex", Model: model, DurationMS: ms}, Effect: run.Effect()}
+	return contract.Outcome{Data: answer{RunID: id, Answer: string(text), Harness: "codex", Model: model, DurationMS: ev.DurationMS}, Effect: effect}
+}
+
+// unreadable is the RESUME_UNSAFE problem of a record that the call cannot
+// use, which never counts as an absent one.
+func unreadable(p *i18n.Printer, file, id string) *contract.Problem {
+	return inspect(p, contract.ResumeUnsafe, id, "agent.run.record_unreadable", map[string]any{"File": file})
 }
 
 // failure is an outcome with one problem, which keeps the run_id of a

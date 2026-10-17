@@ -63,14 +63,15 @@ effort = { enum = ["low", "medium", "high", "xhigh", "max", "ultra"] }
 cwd = { type = "string" }
 task_sha256 = { type = "string", pattern = "^[0-9a-f]{64}$" }
 invocation = { type = "array", items = { type = "string" } }
-environment = { type = "object", required = ["NCLY_AGENT_DEPTH"], properties = { NCLY_AGENT_DEPTH = { type = "string", pattern = "^[1-9][0-9]*$" } }, additionalProperties = { type = "string" } }
+environment = { type = "object", properties = { NCLY_AGENT_DEPTH = { type = "string", pattern = "^[1-9][0-9]*$" } }, additionalProperties = { type = "string" } }
 plan = { type = "array", items = { "$ref" = "#/$defs/item" }, minItems = 1, maxItems = 1 }
 pending_checks = { type = "array", items = { "$ref" = "#/$defs/check" } }
 
 [commands.result.dry_run_schema."$defs".item]
 type = "object"
-required = ["key", "output", "steps", "effects"]
-properties = { key = { const = "task" }, output = { type = "string" }, steps = { type = "array", items = { "$ref" = "#/$defs/step" } }, effects = { "$ref" = "#/$defs/effects" } }
+required = ["key", "steps", "effects"]
+oneOf = [{ required = ["output"] }, { required = ["output_dir"] }]
+properties = { key = { const = "task" }, output = { type = "string" }, output_dir = { type = "string" }, steps = { type = "array", items = { "$ref" = "#/$defs/step" } }, effects = { "$ref" = "#/$defs/effects" } }
 
 [commands.result.dry_run_schema."$defs".step]
 type = "object"

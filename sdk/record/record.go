@@ -146,7 +146,8 @@ type Store struct {
 	Dir string
 }
 
-func (s Store) file(id string) string { return filepath.Join(s.Dir, id+".json") }
+// File returns the path of the record of a run.
+func (s Store) File(id string) string { return filepath.Join(s.Dir, id+".json") }
 
 func (s Store) lock(id string) string { return filepath.Join(s.Dir, id+".lock") }
 
@@ -195,12 +196,27 @@ func (s Store) Open(ctx context.Context, id string) (*Run, error) {
 		return nil, err
 	}
 	r := &Run{ID: id, store: s, unlock: unlock}
-	if r.Record, err = read(s.file(id), id); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	if r.Record, err = read(s.File(id), id); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		unlock()
 		return nil, err
 	}
 	return r, nil
 }
+
+// Read reads the record of a run without its lock, for a dry run or an
+// inspection: nil when no record holds the ID, and an UnreadableError for
+// a record that it cannot use.
+func (s Store) Read(id string) (*Record, error) {
+	rec, err := read(s.File(id), id)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	return rec, err
+}
+
+// Active reports whether a process holds the run now. It never creates the
+// lock file and never holds the lock past its answer.
+func (s Store) Active(id string) (bool, error) { return platform.Held(s.lock(id)) }
 
 // read reads the record of a file, or returns fs.ErrNotExist when no file
 // exists. Any other failure is an UnreadableError.
@@ -339,7 +355,7 @@ func (r *Run) Close() { r.unlock() }
 func (r *Run) Effect() contract.Effect { return r.effect }
 
 // File returns the path of the run's record.
-func (r *Run) File() string { return r.store.file(r.ID) }
+func (r *Run) File() string { return r.store.File(r.ID) }
 
 // ArtifactDir returns the folder of the run's artifacts.
 func (r *Run) ArtifactDir() string { return r.store.ArtifactDir(r.ID) }
@@ -373,7 +389,17 @@ func (r *Run) save() error {
 	if err != nil {
 		return err
 	}
-	return platform.WriteFile(r.store.file(r.ID), append(data, '\n'), 0o600)
+	return platform.WriteFile(r.store.File(r.ID), append(data, '\n'), 0o600)
+}
+
+// Again starts a new attempt of a run whose saved intents allow it, as
+// Run IDs in contract.md defines: attempts plus one and the status running,
+// with the release of ncly and the versions of the tools that this attempt
+// uses, saved before any intent.
+func (r *Run) Again(nclyVersion string, tools map[string]string) error {
+	r.Record.Attempts++
+	r.Record.Status, r.Record.NclyVersion, r.Record.Tools = Running, nclyVersion, tools
+	return r.save()
 }
 
 // Begin persists the intent of a step before its effect: the step turns

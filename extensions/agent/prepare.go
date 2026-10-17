@@ -38,7 +38,8 @@ const depthVariable = "NCLY_AGENT_DEPTH"
 const probeLimit = 10 * time.Second
 
 // task is a task that preparation checked: the same value serves the dry
-// run and execution.
+// run and execution. prepare fills what the call states, and pick the
+// model, the effort, Codex, and its environment.
 type task struct {
 	text   []byte
 	sha256 string
@@ -53,6 +54,8 @@ type task struct {
 	// any service, with depth, the depth of Codex, in NCLY_AGENT_DEPTH.
 	env   []string
 	depth int
+	// settings are the values of [agent], which pick reads.
+	settings settings
 }
 
 // args returns the words after codex, as Codex invocation in spec.md lists
@@ -76,17 +79,17 @@ type settings struct {
 	depthFile string
 }
 
-// prepare checks the call in the order of ncly agent in spec.md, and
-// answers the first problem: the settings, the depth, the task, the
-// model, the folder, Codex, and the tools mode. It reads no stdin and
-// starts no task.
-func prepare(ctx context.Context, call extension.Call) (task, *contract.Problem) {
+// prepare checks what the call states, in the order of ncly agent in
+// spec.md, and answers the first problem: the settings, the depth, the
+// task, the folder, and the tools mode. It reads no stdin and starts no
+// task. pick then checks what a new task needs.
+func prepare(call extension.Call) (task, *contract.Problem) {
 	p := call.Printer
 	s, problem := readSettings(p)
 	if problem != nil {
 		return task{}, problem
 	}
-	var t task
+	t := task{settings: s}
 	if t.depth, problem = childDepth(p, s); problem != nil {
 		return task{}, problem
 	}
@@ -95,28 +98,39 @@ func prepare(ctx context.Context, call extension.Call) (task, *contract.Problem)
 	}
 	sum := sha256.Sum256(t.text)
 	t.sha256 = hex.EncodeToString(sum[:])
-	t.model = s.model
-	if model, given := call.Flags["model"]; given {
-		t.model = model
-	}
-	if strings.TrimSpace(t.model) == "" {
-		return task{}, usage(p, "agent.run.model_missing", "agent.run.model_missing_hint", map[string]any{"File": s.file})
-	}
-	t.effort = s.effort
-	if effort, given := call.Flags["effort"]; given {
-		t.effort = effort
-	}
 	if t.cwd, problem = workingFolder(p, call); problem != nil {
-		return task{}, problem
-	}
-	t.env = runner.Environ(os.Environ(), map[string]string{depthVariable: strconv.Itoa(t.depth)})
-	if t.codex, t.version, problem = checkCodex(ctx, p, t.env); problem != nil {
 		return task{}, problem
 	}
 	if call.Flags["tools"] != "true" {
 		return task{}, &contract.Problem{Code: contract.CapabilityUnsupported, Message: p.T("agent.run.tools_required"), Hint: p.T("agent.run.tools_required_hint")}
 	}
 	return t, nil
+}
+
+// pick checks what a new task needs, once no record forbids it: the model
+// and the effort, from the flags over the settings, or from the resolved
+// values of an earlier attempt, then Codex, through the environment that
+// Codex receives.
+func pick(ctx context.Context, call extension.Call, t *task, resolved map[string]any) *contract.Problem {
+	p := call.Printer
+	t.model, t.effort = t.settings.model, t.settings.effort
+	if model, given := call.Flags["model"]; given {
+		t.model = model
+	}
+	if effort, given := call.Flags["effort"]; given {
+		t.effort = effort
+	}
+	if resolved != nil {
+		t.model, _ = resolved["model"].(string)
+		t.effort, _ = resolved["effort"].(string)
+	}
+	if strings.TrimSpace(t.model) == "" {
+		return usage(p, "agent.run.model_missing", "agent.run.model_missing_hint", map[string]any{"File": t.settings.file})
+	}
+	t.env = runner.Environ(os.Environ(), map[string]string{depthVariable: strconv.Itoa(t.depth)})
+	var problem *contract.Problem
+	t.codex, t.version, problem = checkCodex(ctx, p, t.env)
+	return problem
 }
 
 // usage is a USAGE_INVALID problem whose message and hint come from the

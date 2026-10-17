@@ -8,13 +8,10 @@ import (
 	"embed"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/command"
-	"github.com/pascalandy/nicely/sdk/config"
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/i18n"
@@ -63,10 +60,13 @@ type dryRun struct {
 // plan is the one item of a dry run, as Dry-run answer in contract.md
 // defines it.
 type plan struct {
-	Key     string          `json:"key"`
-	Output  string          `json:"output"`
-	Steps   []step          `json:"steps"`
-	Effects map[string]bool `json:"effects"`
+	Key string `json:"key"`
+	// Output is the folder that will hold the result of a new task, and
+	// OutputDir the folder of a saved run that the call reuses.
+	Output    string          `json:"output,omitempty"`
+	OutputDir string          `json:"output_dir,omitempty"`
+	Steps     []step          `json:"steps"`
+	Effects   map[string]bool `json:"effects"`
 }
 
 type step struct {
@@ -81,14 +81,10 @@ type check struct {
 }
 
 // run prepares the task, then runs it under its run ID. A dry run shows
-// what execution would run, and starts no task.
+// what execution would do, and starts no task.
 func run(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
-	t, problem := prepare(ctx, call)
-	if ctx.Err() != nil {
-		// A signal stopped preparation, and the SDK answers it alone.
-		return contract.Outcome{}
-	}
+	t, problem := prepare(call)
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
@@ -99,7 +95,51 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	if call.Flags["dry-run"] != "true" {
 		return execute(ctx, call, t, id)
 	}
-	home, _ := os.UserHomeDir()
+	return dryRunOf(ctx, call, t, id)
+}
+
+// dryRunOf answers what execution would do, as Dry run and Records and
+// replay in spec.md define: the error that execution would answer, the
+// reuse of a completed run, or the invocation of a new task. It reads the
+// record of id without holding its lock, and writes nothing.
+func dryRunOf(ctx context.Context, call extension.Call, t task, id string) contract.Outcome {
+	p := call.Printer
+	runs := store()
+	var saved *record.Record
+	if id != "" {
+		keep := map[string]string{"run_id": id}
+		active, err := runs.Active(id)
+		if err == nil && active {
+			return failure(inspect(p, contract.Temporary, id, "agent.run.busy", map[string]any{"ID": id}), keep)
+		}
+		if err == nil {
+			saved, err = runs.Read(id)
+		}
+		if err != nil {
+			return failure(unreadable(p, runs.File(id), id), keep)
+		}
+		if saved != nil {
+			completed, problem := decide(p, call, t, saved, id)
+			if problem != nil {
+				return failure(problem, keep)
+			}
+			if completed {
+				return reused(call, t, saved, id)
+			}
+		}
+	}
+	var resolved map[string]any
+	if saved != nil {
+		resolved = saved.Resolved
+	}
+	problem := pick(ctx, call, &t, resolved)
+	if ctx.Err() != nil {
+		// A signal stopped the Codex check, and the SDK answers it alone.
+		return contract.Outcome{}
+	}
+	if problem != nil {
+		return contract.Outcome{Errors: []contract.Problem{*problem}}
+	}
 	d := dryRun{
 		DryRun:         true,
 		Harness:        "codex",
@@ -111,15 +151,57 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 		Invocation:     append([]string{t.codex}, t.args(answerFile)...),
 		Environment:    map[string]string{depthVariable: strconv.Itoa(t.depth)},
 		Plan: []plan{{
-			Key:     "task",
-			Output:  filepath.Join(config.Locate(home, os.LookupEnv).State, "runs"),
-			Steps:   []step{{ID: "codex", Action: "run"}},
+			Key:     itemKey,
+			Output:  runs.Dir,
+			Steps:   []step{{ID: stepID, Action: "run"}},
 			Effects: map[string]bool{"user_writes": true, "network": true, "paid": true},
 		}},
 		Pending: []check{{ID: "agent.login", Message: p.T("agent.run.pending_login")}},
 	}
 	if !call.JSON {
 		writeDryRun(call.Stdout, p, d)
+	}
+	return contract.Outcome{Data: d}
+}
+
+// reused is the dry run of a completed run, which execution answers from
+// its record without starting Codex: the values of the record, no
+// invocation, and no pending check.
+func reused(call extension.Call, t task, saved *record.Record, id string) contract.Outcome {
+	p := call.Printer
+	model, _ := saved.Resolved["model"].(string)
+	effort, _ := saved.Resolved["effort"].(string)
+	folder := ""
+	if dir := saved.Items[0].OutputDir; dir != nil {
+		folder = *dir
+	}
+	d := dryRun{
+		DryRun:         true,
+		Harness:        "codex",
+		HarnessVersion: saved.Tools["codex"],
+		Model:          model,
+		Effort:         effort,
+		Cwd:            t.cwd,
+		TaskSHA256:     t.sha256,
+		Invocation:     []string{},
+		Environment:    map[string]string{},
+		Plan: []plan{{
+			Key:       itemKey,
+			OutputDir: folder,
+			Steps:     []step{{ID: stepID, Action: "reuse"}},
+			Effects:   map[string]bool{"user_writes": false, "network": false, "paid": false},
+		}},
+		Pending: []check{},
+	}
+	if !call.JSON {
+		for _, line := range []string{
+			p.T("agent.run.planned_reuse", map[string]any{"ID": id}),
+			p.T("agent.run.planned_model", map[string]any{"Model": d.Model}),
+			p.T("agent.run.planned_effort", map[string]any{"Effort": d.Effort}),
+			p.T("agent.run.planned_cwd", map[string]any{"Dir": d.Cwd}),
+		} {
+			_, _ = fmt.Fprintln(call.Stdout, line)
+		}
 	}
 	return contract.Outcome{Data: d}
 }

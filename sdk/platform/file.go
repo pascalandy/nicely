@@ -132,3 +132,31 @@ func Lock(ctx context.Context, path string, wait time.Duration) (func(), error) 
 		}
 	}
 }
+
+// Held reports whether another process holds the lock file at path. It
+// tries the lock without waiting and without creating the file, and
+// releases it at once, as inspection and dry run in contract.md ask, so it
+// never makes an execution see the lock as held. A missing file is a free
+// lock, because nobody deletes a lock file that someone holds.
+func Held(path string) (bool, error) {
+	f, err := os.Open(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = f.Close() }()
+	for {
+		err := unix.Flock(int(f.Fd()), unix.LOCK_EX|unix.LOCK_NB)
+		switch {
+		case err == nil:
+			return false, nil
+		case errors.Is(err, unix.EINTR):
+			continue
+		case errors.Is(err, unix.EWOULDBLOCK):
+			return true, nil
+		}
+		return false, &fs.PathError{Op: "flock", Path: path, Err: err}
+	}
+}

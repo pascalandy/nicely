@@ -95,3 +95,30 @@ func TestLockTakesNoFreeLockOnceItsContextEnded(t *testing.T) {
 	}
 	unlock()
 }
+
+func TestHeldNeverCreatesTheFileAndNeverKeepsTheLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "runs", "r1.lock")
+	if held, err := Held(path); held || err != nil {
+		t.Fatalf("Held of a missing file returned %v, %v; want false", held, err)
+	}
+	if _, err := os.Stat(filepath.Dir(path)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("Held created the folder of the lock: %v", err)
+	}
+	unlock, err := Lock(context.Background(), path, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if held, err := Held(path); !held || err != nil {
+		t.Errorf("Held of a lock that another owner holds returned %v, %v; want true", held, err)
+	}
+	unlock()
+	if held, err := Held(path); held || err != nil {
+		t.Errorf("Held of a free lock returned %v, %v; want false", held, err)
+	}
+	// Held released the lock that it tried, so an execution takes it at once.
+	again, err := Lock(context.Background(), path, 0)
+	if err != nil {
+		t.Fatalf("Lock after Held returned %v", err)
+	}
+	again()
+}
