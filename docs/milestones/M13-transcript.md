@@ -5,26 +5,41 @@ Version: v0.13.0
 
 ## Demo
 
-`ncly transcript run youtube --no-summary` saves a transcript through the real Python program and a test transport, after a dry run that changed nothing.
+One explicit YouTube URL produces verified transcript files and an inspectable run through real `uv`, the Python program, and a test transport.
 
 ## Scope
 
-`transcript` is a first-party external extension in `extensions/transcript/`, built as `ncly-transcript`, as [extensions/transcript/spec.md](../../extensions/transcript/spec.md) defines. It needs the `deepgram` key, which a human grants to it, and it ships through the official tap of [M12](M12-taps.md), like `agent`. This milestone brings the transcribe step. The summary arrives in [M14](M14-transcript-summary.md), resume in [M15](M15-resume.md), and Zoom, prompts, and the spinner in [M16](M16-transcript-finish.md).
+`transcript` is a first-party external extension in `extensions/transcript/`, built as `ncly-transcript`.
+It ships through the official tap of [M12](M12-taps.md).
+The [transcript spec](../../extensions/transcript/spec.md) defines one YouTube video and one `transcribe` step.
+A human grants its required Deepgram key.
 
-Copy the Python transcript CLI from `authoring/andy/transcript/` in `pascalandy/skills` into `extensions/transcript/python/`, with its prompts, tests, and README. From then on, fixes land in Nicely first. Embed it with `go:embed`. On first run, extract it to `~/.cache/nicely/python/<version>/` through a temporary folder and a rename, then run it with `uv`.
+Copy the existing program from `authoring/andy/transcript/` in `pascalandy/skills`, with its tests and license material.
+Embed it with `go:embed`, extract it atomically into Nicely's cache, and run it through `uv`.
+Keep its existing transcription and Arc cookie path.
+Leave its other source features unexposed; this milestone does not port them to Go.
 
-Scenarios use the test keychain and stubs for failure injection and counted calls. One path runs the actual Go, the real `uv`, and the actual Python with a fake Deepgram transport that test code supplies. No scenario starts a real paid service, and production gains no endpoint override or fixture CLI. Stubs exercise failures, while the real Python program must separately prove that it honors the protocol.
+The first command retains durable intent before paid dispatch, verified artifacts, run locks, cancellation, and replay of verified results.
+An incomplete run never causes a second upload under the same run ID.
+Summary, multi-step resume, and extra transcript features are in
+[M99](M99-parking-lot.md#transcript-summary), [M99](M99-parking-lot.md#resume), and
+[M99](M99-parking-lot.md#transcript-extras).
+
+Scenarios use the test keychain and stubs for failure injection and counted calls.
+One path uses actual Go, real `uv`, and the actual Python program with a test-only Deepgram transport.
+No scenario sends a paid request or adds a production endpoint override.
+These are implementation requirements; this planned milestone has no runtime proof yet.
 
 ## Open questions
 
 Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.
 
-- How `just check` runs ruff, pyright, and pytest on `extensions/transcript/python/` through `uv`
-- How the test transport reaches the real Python program in a scenario without a production endpoint override
-- Whether two URLs of the same video count once, as the transcript CLI does by video ID, with a warning that names the duplicates, or fail with `USAGE_INVALID`, as the spec says today of a URL given twice
-- Which files the program writes besides the three transcripts, such as its metadata, and when, so that resume treats them as known files
-- Which programs the download path needs from an empty cache besides `uv` and Python, such as `ffmpeg` and a JavaScript runtime that the `yt-dlp` README lists, so that transcript's manifest declares them in `programs`, and `ncly doctor transcript` checks them, as [Required programs](../north-star/core-spec.md#required-programs) defines
-- How a resume proves that a reserved result folder belongs to its run, such as with a receipt inside it that names the run. Go records the candidate path under the output resource lock before it creates the folder, as [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies) says, so after a crash another run can create that folder first, and a resume would then write into it
+- Which source revision to copy, and how `just check` runs its ruff, pyright, and pytest checks through `uv`
+- How a test-only transport reaches the actual Python program without a production endpoint override
+- Which files the program writes besides the three transcripts, and when, so recorded completion covers its actual outputs
+- Which download dependencies an empty-cache execution needs, including any `ffmpeg` or JavaScript runtime requirement, and their manifest checks
+- Which source cookie behavior proves one useful YouTube path, including Arc on macOS, without requiring a browser matrix
+- How Go verifies usable transcript content and complete artifact evidence after a lost final protocol message
 
 ## Cards
 
@@ -33,7 +48,7 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 | M13-T1 | Python program | agent | — | todo |
 | M13-T2 | Protocol and dry run | agent | M13-T1 | todo |
 | M13-T3 | Transcription with a record | agent | M13-T2 | todo |
-| M13-T4 | Failures | agent | M13-T3 | todo |
+| M13-T4 | Failures and replay | agent | M13-T3 | todo |
 | M13-T5 | Interruption and contenders | agent | M13-T3 | todo |
 
 ### M13-T1 Python program
@@ -41,32 +56,54 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 - **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program)
 - **Proves:** `extensions/transcript/python/`, whose tests run in `just check`
 
-Copy the program, and make `just check` run ruff, pyright, and pytest on it through `uv`. Python's tests save a transcript through a fake Deepgram transport supplied in test code only.
+Copy the program and wire its checks through `uv`.
+Its tests save a transcript through the test-only Deepgram transport.
+Preserve the existing transcription path while adding the JSON protocol that the wrapper needs.
 
 ### M13-T2 Protocol and dry run
 
-- **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Dry-run answer](../north-star/contract.md#dry-run-answer), [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
+- **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Dry-run answer](../north-star/contract.md#dry-run-answer), [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies)
 - **Proves:** `extensions/transcript/testdata/script/transcript_protocol.txtar`, `extensions/transcript/testdata/script/transcript_dry_run.txtar`
 
-Embed and extract the program, run it with the `uv` flags of the spec, and exchange `request` and `plan`. A stub `uv` proves that Go handles the protocol. The real program and the real `uv` prove a dry run from an empty cache. Compare user files, config, keychain, and state before and after the dry run: only documented cache writes, no key read, paid call, harness start, or new user folder. Detect a new empty result folder explicitly, because `snapshot` ignores folders.
+Embed and extract the program, then exchange one `request` and `plan` through `uv`.
+A stub proves Go's protocol handling; real `uv` and Python prove an empty-cache dry run.
+Compare user files, config, keychain, and state before and after.
+Only documented cache preparation is allowed: no key read, download, paid request, record, or result folder.
+Check empty result folders explicitly because `snapshot` ignores folders.
 
 ### M13-T3 Transcription with a record
 
-- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Record format](../north-star/contract.md#record-format)
+- **Read:** [Records and replay](../../extensions/transcript/spec.md#records-and-replay), [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Record format](../north-star/contract.md#record-format)
 - **Proves:** `extensions/transcript/testdata/script/transcript_run.txtar`, `extensions/transcript/testdata/script/transcript_barrier.txtar`, `extensions/transcript/testdata/script/transcript_keys.txtar`
 
-Record the validated items before any user-side write or paid dispatch. Go records each destination before reserving it and completes the persistence barrier before sending `ack`; a failed barrier sends no `ack` and starts no upload. Complete one run through the actual Go, the real `uv`, the actual Python, the test transport, verified artifacts, and a record inspected in a new process with `ncly run view`. Answers use `results` for one item and for many. A missing key exits 78 with `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, and a granted key in the environment works when the keychain is unavailable.
+Record the one validated item before user-side writes or paid dispatch.
+Persist its destination and intent before reservation, then complete the persistence barrier before sending `ack`.
+A failed barrier sends no acknowledgement and starts no upload.
+Prove one run through actual Go, real `uv`, Python, the test transport, and independently verified artifacts.
+Inspect its record in a new process with `ncly run view`.
+The answer contains one `results` item.
+Prove missing keys and grants, and a granted environment key when the keychain is unavailable.
 
-### M13-T4 Failures
+### M13-T4 Failures and replay
 
-- **Read:** [Steps and resume](../../extensions/transcript/spec.md#steps-and-resume), [Retry safety](../north-star/contract.md#retry-safety), [Output](../north-star/contract.md#output)
-- **Proves:** `extensions/transcript/testdata/script/transcript_failures.txtar`, `extensions/transcript/testdata/script/transcript_protocol_errors.txtar`
+- **Read:** [Records and replay](../../extensions/transcript/spec.md#records-and-replay), [Retry safety](../north-star/contract.md#retry-safety), [Output](../north-star/contract.md#output)
+- **Proves:** `extensions/transcript/testdata/script/transcript_failures.txtar`, `extensions/transcript/testdata/script/transcript_protocol_errors.txtar`, `extensions/transcript/testdata/script/transcript_replay.txtar`
 
-Stop before paid dispatch, and after dispatch but before the response. A failure before the intent keeps its cause as the pending step's code, message, and hint. A 504 after upload counts exactly one request, so transport retries are off, and ends with exit 1 and an unknown transcription. Malformed Python messages and timeouts fail as the spec defines. Item codes are causes; only the overall exit can permit a retry.
+Stop before paid dispatch and after dispatch but before the response.
+A 504 after upload counts exactly one request and leaves transcription unknown with exit 1.
+Keep pending failure causes, and handle malformed messages and timeouts as specified.
+After a paid intent, a repeated call with the same run ID returns only verified completed work.
+Complete recorded artifacts may resolve a lost final message locally, without another upload.
+Changed or incomplete evidence is refused; no override bypasses that refusal.
+A changed URL or explicit output argument fails before effects.
+Prove that invocation and replay refusals omit attempted results and keep their top-level code, while a failed transcription item uses the shared batch verdict.
 
 ### M13-T5 Interruption and contenders
 
 - **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Records and evidence](../north-star/contract.md#records-and-evidence)
 - **Proves:** `extensions/transcript/testdata/script/transcript_cancel.txtar`, `extensions/transcript/testdata/script/transcript_contenders.txtar`
 
-Ctrl-C stops the whole tree, keeps the result folder and its finished file, and answers `INTERRUPTED` with `output_dir`. A signal takes precedence over partial batch errors. Two contenders against one destination and one record keep every artifact, and the locks and the overall exit follow Retry safety after earlier effects.
+Ctrl-C stops the process tree, preserves completed files, and returns `INTERRUPTED` with the available result paths.
+Two callers using one run ID never start two uploads.
+Two new runs choosing the same output parent never share a result folder.
+Lock failures use the overall retry verdict required by the effects already made.

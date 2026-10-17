@@ -7,7 +7,7 @@ This file says how Nicely is built: its layers, who owns each part, and where ea
 Nicely is a small core, and everything it does for a user is an extension, in the spirit of Pi v1: a minimal host that is easy to extend and to compose.
 
 - **Core** is the host: dispatch, help, completion, `describe`, `doctor`, `auth` with grants, `run`, and `tap`. It knows no domain.
-- **Extensions** add domains, such as `transcript`. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill. An **external** extension is an executable named `ncly-<domain>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository, and Pascal's personal tools, such as fleet sync, live in his private tap.
+- **Extensions** add domains, such as `transcript`. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill. An **external** extension is an executable named `ncly-<domain>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository. Personal tools can use the same extension format.
 
 ## Layers
 
@@ -20,7 +20,7 @@ flowchart TB
   accDescr: Taps and extensions sit on top of Nicely's layered core: the host, services, the contract, and the platform. Each layer depends only on the layers below it.
 
   subgraph top["Built on top, by anyone"]
-    taps["<b>Taps</b><br/>Git repositories of skills and extensions<br/><i>Distribution unit</i>"]
+    taps["<b>Taps</b><br/>Repositories of extension releases<br/><i>Distribution unit</i>"]
     ext["<b>4 · Extensions</b><br/>Domains that compose through the CLI<br/><i>Composition</i>"]
   end
 
@@ -54,7 +54,7 @@ Each part has one owner: one package and one spec section.
 
 | Layer | Part | Owns | Package | Spec |
 |---|---|---|---|---|
-| 4 | Each extension | Its domain's preparation, business steps, result verification, resume evidence, catalog, and skill | `extensions/<name>/` | Its `spec.md` |
+| 4 | Each extension | Its domain's preparation, business steps, result verification, catalog, skill, and recovery evidence when supported | `extensions/<name>/` | Its `spec.md` |
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
 | 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/` | [SDK](contract.md#sdk) |
@@ -87,12 +87,12 @@ The other folders:
 | `describe` | Describes installed commands and their capabilities | core |
 | `doctor` | Checks tools, keys, extensions, and components | core |
 | `auth` | Stores keys and grants them to extensions | core |
-| `run` | Lists, inspects, and explicitly resumes recorded operations | core |
-| `tap` | Adds and syncs repositories of skills and extensions | core |
+| `run` | Lists and inspects recorded operations | core |
+| `tap` | Installs and lists selected extensions from a GitHub tap | core |
 | `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled |
-| `agent` | Runs a task through a harness and a profile | external |
-| `transcript` | Transcribes YouTube and Zoom audio, then summarizes it | external |
-| `markdown`, `video`, `image` | Everyday tasks that need no configuration | external |
-| `docs` | Gathers project docs into one private site | external |
+| `agent` | Runs one trusted Codex task with model and effort settings | external |
+| `transcript` | Transcribes one selected YouTube video | external |
+| `markdown` | First candidate for a useful everyday task selected in M17 | external |
+| `docs` | Shows selected project docs in one local site | external |
 
-[Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key. First impressions come from the everyday domains.
+[Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key. M17 chooses one useful everyday task. Additional media domains remain in [M99](../milestones/M99-parking-lot.md#everyday-domains), alongside other deferred variants.

@@ -5,11 +5,15 @@ Version: v0.22.0
 
 ## Demo
 
-`ncly` and its first-party extensions speak Canadian French, while the agent contract stays exactly the same.
+`ncly` and its shipped first-party extensions speak Canadian French, while the agent contract stays exactly the same.
 
 ## Scope
 
-Translate core's catalog, the SDK's catalog, and the catalog of each first-party extension as they stand when this milestone starts. Later milestones add their own `fr-CA` entries as they go. Each command's scenarios have run once under the pseudo-locale since M00, so most missing strings surfaced in the milestone that added them.
+Translate core's catalog, the SDK's catalog, and the catalogs of first-party extensions that have actually shipped when this milestone starts.
+Parked commands and specifications require no translation.
+Keep the existing catalog parity requirement unchanged.
+Later milestones add their own `fr-CA` entries as they go.
+Each command's scenarios have run once under the pseudo-locale since M00, so most missing strings surfaced in the milestone that added them.
 
 Repeat until the parity test passes: an agent lists the keys missing from `fr-CA`, then translates each one, using the description of the entry for context.
 
@@ -36,7 +40,7 @@ stderr '"next":\["ncly","auth","login","deepgram"\]'
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M22-T1 | Translate core | agent | — | todo |
-| M22-T2 | Translate the first-party extensions | agent | M22-T1 | todo |
+| M22-T2 | Translate shipped first-party extensions | agent | M22-T1 | todo |
 | M22-T3 | Formats and README | agent | M22-T1 | todo |
 
 ### M22-T1 Translate core
@@ -46,12 +50,13 @@ stderr '"next":\["ncly","auth","login","deepgram"\]'
 
 A complete `fr-CA` catalog for core and for the SDK, which renders the help pages, the global flags, and the error labels of every command, each passing the parity test against `en`. The system language selects them.
 
-### M22-T2 Translate the first-party extensions
+### M22-T2 Translate shipped first-party extensions
 
 - **Read:** [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/language_fr_extensions.txtar`
 
-A complete `fr-CA` catalog for each first-party extension. The agent contract stays the same under English, the pseudo-locale, and French.
+A complete `fr-CA` catalog for each shipped first-party extension.
+The agent contract stays the same under English, the pseudo-locale, and French.
 
 ### M22-T3 Formats and README
 

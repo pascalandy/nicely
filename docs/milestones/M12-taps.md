@@ -1,102 +1,58 @@
-# M12 Taps
+# M12 Install an extension from a tap
 
 Status: planned
 Version: v0.12.0
 
 ## Demo
 
-`ncly tap add` brings a Git repository's skills and extensions to this machine, and installs `agent` from the official tap.
+A user without a source checkout installs one selected first-party extension from the official tap and calls it through `ncly`.
 
 ## Scope
 
-A tap is a Git repository that carries skills and extensions, like a Pi package. The nicely repository is the official tap of the first-party extensions.
+The first tap supports installation of one explicitly selected extension from a GitHub `owner/repo`. Its executable, manifest, catalogs, and skill form one installation. Record the source and resolved revision, and validate the complete installation before exposing it to discovery.
 
-```
-ncly tap add <owner/repo | git-url> [--dry-run]
-ncly tap list [--json]
-ncly tap sync [<tap>] [--dry-run]
-ncly tap remove <tap> [--dry-run] [--force]
-ncly skill link [<name>] [--harness <name>] [--dry-run]
-```
+Keep `ncly tap add` and `ncly tap list` for this path. The make-ready spec defines selection of the extension and the release artifact. Use the user's existing Git or download authentication. Nicely adds no credential manager.
 
-- `owner/repo` means a GitHub repository. Any Git URL works
-- A tap has a canonical source identity that distinguishes hosts and repositories. Record its resolved revision and each extension's origin. Two executables with the same domain do not share an identity merely because their names match
-- The shared config lists the taps. `add` writes the tap into it and clones the tap below `~/.local/share/nicely/taps/`, keyed by its canonical source identity, with the user's own Git credentials. Nicely handles no Git authentication
-- `add` lists the keys that the tap's extensions declare and asks the human to grant each one. Without a terminal, `add` grants nothing, and `--force` never grants a key
-- `sync` stages updates for the configured taps, validates their manifests, and publishes each managed destination under a lock, as [D035](../north-star/decisions/D035-sync-ownership.md) decides. It records the resolved revisions. Each destination has its own atomic publication boundary; unrelated taps are not one transaction. Local edits are preserved and reported as conflicts. When an update declares a new key, the extension receives nothing for it until a human grants it, as [Grants](../north-star/contract.md#grants) defines
-- `remove` takes the tap out of the shared config and moves its clone to the trash
-- Without `--json`, `list` prints one line per tap, in aligned columns: the tap, its source identity, and its revision, with the extensions that it brings on the lines under it, indented, each with its domain and path. This is the look that Pascal picked in [M07](M07-forms.md), whatever names the spec gives the fields
-- A tap holds `skills/<name>/SKILL.md` and `extensions/ncly-<domain>` with `extensions/ncly-<domain>.toml`, `.locales/`, and `.skill/`. An extension's executable, manifest, catalogs, and skill publish together, as one destination. A skill keeps its requirements in `nicely.toml` beside its `SKILL.md`, in the format of the manifest's requirements, which [M03](M03-describe.md) and [M05](M05-doctor.md) define
-- Explicit `[skill] paths` win in their configured order, followed by taps in shared configuration order after local overrides. `ncly skill view <tap>/<name>` selects a tap skill. Discovery reports its origin, revision, and any shadowing
-- `ncly skill view --json` adds the sources that the shown skill hides and, for a linked skill, each harness link and its target, so an agent sees which copy a harness reads. It describes files, never what a running harness session has loaded. `list` stays one line per skill
-- `skill link` symlinks skills into the skill folder of each harness, one line per harness in `[skill.link]`, such as `claude = "~/.claude/skills"`. Linking twice leaves the same managed links. A source switch updates only a link that Nicely owns and that the user has not changed. An existing user file or unmanaged link is a conflict. Tap removal checks its links first: a user-modified link blocks removal, and unchanged managed links go with the tap. Dry run lists these effects before any config edit or trash operation
+A repeat add of the same installed revision is a no-op. An existing different installation or user-owned destination is a conflict. Do not overwrite it or silently upgrade it. A failed installation leaves no partially discoverable extension.
 
-`link` joins the verb table of [Usage](../north-star/contract.md#usage). A public registry of extensions and signed extensions stay out of scope.
+Installing never grants a key. The user calls the existing `ncly auth grant` separately after reviewing the installed extension. Grants retain the discovery-path identity of M08. A tap-specific grant identity is unnecessary for this first immutable installation.
 
-Scenarios build a local Git repository as a fixture tap and add it with a file path URL. A counted extension stub and filesystem checks prove dry run and retry behavior. Metadata alone does not prove conformance.
+[Taps beyond installation](M99-parking-lot.md#taps) hold arbitrary Git URLs, sync, remove, upgrades, tap skills, skill linking, source precedence, fleet migration, and cross-tap conflicts. No card below implements those operations or a transaction engine for them. `just install` remains the developer path.
 
 ## Open questions
 
-Settle each one in a new `ncly tap` section of [core-spec.md](../north-star/core-spec.md), then delete this section.
+Settle these in a bounded `ncly tap` section of [core-spec.md](../north-star/core-spec.md) before making this milestone ready.
 
-- The canonical tap ID for arbitrary Git URLs, avoiding collisions between hosts, and its mapping to local storage
-- The editor for config files. `tomledit` keeps comments and formatting
-- Recovery of an interrupted tap, config, or link update, with ownership evidence and retry rules for the whole invocation
-- How a tap ships a Go extension: a binary published for each system, or a build on the user's machine
-- How `ncly` finds the first-party extensions in the official tap, and how `just install` gives way to it
-- How one call reads a single revision of an extension while `sync` publishes another, such as through a pinned generation or a reader lock. The host reads the manifest, then the catalogs, then starts the executable by its path, so a publication between those reads mixes two revisions. Its card proves the answer with a scenario that publishes between manifest loading and process launch
-- How the canonical identity of a tap becomes the source of a grant, which is the path of the extension until taps, as [Grants](../north-star/contract.md#grants) defines
-- How Pascal's Python scripts move from the `{"ok":false,"errors":["…"]}` strings of his script-output convention to the error objects of D027
+- How the call selects one extension and its versioned release artifact, with the required architecture and platform metadata.
+- How the official repository publishes that artifact. Prefer its release binaries; compare with a local build only if release packaging cannot serve the first install.
+- Where a staged installation lives and how one rename makes its executable, manifest, catalogs, and skill visible together.
+- Where source and revision receipts live, so an interrupted add and a repeated add cannot overwrite an unmanaged destination.
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M12-T1 | Tap add and list | agent | — | todo |
-| M12-T2 | Tap sync and remove | agent | M12-T1 | todo |
-| M12-T3 | Extensions and skills from taps | agent | M12-T1 | todo |
-| M12-T4 | Skill link | agent | M12-T3 | todo |
-| M12-T5 | The official tap | agent | M12-T3 | todo |
+| M12-T1 | Add and list one extension | agent | — | todo |
+| M12-T2 | Publish a complete installation | agent | M12-T1 | todo |
+| M12-T3 | Official extension install | agent | M12-T2 | todo |
 
-### M12-T1 Tap add and list
+### M12-T1 Add and list one extension
 
-- **Read:** [Configuration](../north-star/contract.md#configuration), [Grants](../north-star/contract.md#grants)
+- **Read:** [Scope](#scope), [Configuration](../north-star/contract.md#configuration), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/tap_add.txtar`
 
-`ncly tap add` clones a fixture tap, writes it into the shared config, and asks for each declared key in a terminal. `ncly tap list` shows each tap's identity and revision.
+Implement the settled selection, source receipt, and `list` result in `internal/cli`. A local fixture represents the download without requiring another service. Dry run describes the selected extension and destination without changing user files, config, or grants. Reject an unmanaged destination.
 
-### M12-T2 Tap sync and remove
+### M12-T2 Publish a complete installation
 
-- **Read:** [D035](../north-star/decisions/D035-sync-ownership.md)
-- **Proves:** `testdata/script/tap_sync.txtar`, `testdata/script/tap_remove.txtar`
-
-`sync` publishes each destination under its lock, preserves local edits as conflicts, and survives a repeated or interrupted sync. `remove` moves the clone to the trash.
-Add the trash helper to `sdk/platform/` for tap removal.
-
-### M12-T3 Extensions and skills from taps
-
-- **Read:** [Extensions](../north-star/contract.md#extensions), [ncly skill](../../extensions/skill/spec.md#ncly-skill)
+- **Read:** [Scope](#scope), [Discovery](../north-star/contract.md#discovery), [Grants](../north-star/contract.md#grants)
 - **Proves:** `testdata/script/tap_extensions.txtar`
 
-A tap's extensions become domains and its skills join `ncly skill list`, with deterministic precedence. Two taps that publish the same domain are reported, and an update that declares a new key gets nothing until a human grants it.
+Stage and validate the extension as one installation before publication. An interrupted add leaves either the complete previous state or the complete new installation. Repeating an unchanged add is a no-op. A different installed revision is a conflict, with no mixed manifest and executable. Keys reach the installed extension only after its own explicit grant.
 
-### M12-T4 Skill link
+### M12-T3 Official extension install
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill)
-- **Proves:** `extensions/skill/testdata/script/skill_link.txtar`
-
-`ncly skill link` with managed links, conflicts, and the checks that tap removal makes first.
-
-### M12-T5 The official tap
-
-- **Read:** [Extensions](../north-star/contract.md#extensions)
+- **Read:** [Scope](#scope), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `testdata/script/tap_official.txtar`
 
-A user without the repository installs `agent` from the official tap, and `just install` gives way to it, as the `ncly tap` section settles. Every later first-party extension, such as `transcript`, ships the same way.
-
-## After this milestone
-
-These steps live outside this repository and block no card. Pascal decides when.
-
-- An agent turns Pascal's `sync-fleet` script into `ncly-fleet` in his private tap, his first personal extension, and Pascal runs `ncly fleet sync` on macOS and on Omarchy
-- `ncly skill link` replaces `just install-skills` on one machine, and the `sync`, `install-skills`, and `sync-fleet` recipes of `pascalandy/skills` retire
+Publish and install the `agent` artifact through the chosen official path. Verify `ncly agent --help`, `describe`, and doctor from an installation without the source checkout. Later first-party extensions reuse this packaging. Do not add sync or a private-fleet migration to this proof.

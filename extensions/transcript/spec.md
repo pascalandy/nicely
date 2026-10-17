@@ -1,212 +1,234 @@
 # transcript extension spec
 
-`transcript` is a first-party external extension, built as `ncly-transcript` from this folder. It transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through the [agent extension](../agent/spec.md), which it calls through the CLI. It embeds a Python program while that program moves to Go. It follows the [contract](../../docs/north-star/contract.md). [M13](../../docs/milestones/M13-transcript.md) builds transcription, [M14](../../docs/milestones/M14-transcript-summary.md) the summary, [M15](../../docs/milestones/M15-resume.md) resume, and [M16](../../docs/milestones/M16-transcript-finish.md) the rest.
+`transcript` is a first-party external extension, built as `ncly-transcript` from this folder.
+It transcribes one YouTube video with Deepgram through the existing Python program.
+It follows the [contract](../../docs/north-star/contract.md).
+[M13](../../docs/milestones/M13-transcript.md) builds this command.
+[M16](../../docs/milestones/M16-transcript-finish.md) adds its doctor checks, skill, and fresh-session proof.
+
+The program comes from `authoring/andy/transcript/` in `pascalandy/skills`.
+Copy its transcription implementation; do not rewrite it in Go for this milestone.
+Other source features remain unexposed.
+Summary awaits a verified tools-off path under [D028](../../docs/north-star/decisions/D028-outside-text.md).
+It is parked in [M99](../../docs/milestones/M99-parking-lot.md#transcript-summary), alongside
+[resume](../../docs/milestones/M99-parking-lot.md#resume) and
+[transcript extras](../../docs/milestones/M99-parking-lot.md#transcript-extras).
+
+This specification describes planned behavior.
+The open questions in M13 and M16 must be resolved before their implementation is ready.
 
 ## ncly transcript
 
-Transcribes YouTube videos and Zoom recordings with Deepgram, then summarizes the result through an agent profile.
+Transcribes one explicitly selected YouTube video with Deepgram.
 
 ```
-ncly transcript run youtube --url <url>... [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
-ncly transcript run zoom (--latest | --path <folder>) [--prompt <name>] [--profile <name>] [--no-summary] [--output <folder>] [--open] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
-ncly transcript summary run <source-run-id> [--key <key>]... [--prompt <name>] [--profile <name>] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
-ncly transcript prompt list [--json]
+ncly transcript run youtube --url <url> [--output <folder>] [--run-id <id>] [--timeout <duration>] [--dry-run] [--json]
 ```
 
-- `--url` repeats, once per video, and the items run one at a time, in the order of the URLs
-- In interactive mode, a run shows one line on stderr while it works: the MiniDot spinner of Bubbles, in cyan, the step under way, such as `Transcribing`, the rank of the item, such as `1 of 2`, its title, and the time since the item started, in bright black. The line clears when the run ends. `--json` and non-interactive mode show no spinner
-- `ncly transcript run` needs the `deepgram` key, which a human grants to transcript. The manifest declares the `deepgram` service in the `requires.keys` of `transcript run youtube` and `transcript run zoom`, so `ncly auth status` and the `auth` component of `ncly doctor` check it. Without it, the command exits 78 with `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, as [Keys](../../docs/north-star/contract.md#keys) and [Grants](../../docs/north-star/contract.md#grants) define.
-- `--profile` names an [agent profile](../agent/spec.md#profiles) for the summary. Without a profile, the run saves the transcript, skips the summary, and adds `TRANSCRIPT_SUMMARY_SKIPPED`, whose hint shows a profile to add. `--no-summary` skips the summary without a warning. It cannot combine with `--profile` or `--prompt`; these are two optional exclusive flag groups
-- `--dry-run` follows the [global definition](../../docs/north-star/contract.md#global-flags): it validates the plan without a key, a paid request, or a change to the user's files, and answers as [Dry-run answer](../../docs/north-star/contract.md#dry-run-answer) defines, with the shapes of [Dry-run examples](#dry-run-examples).
-- `--timeout` covers preparation and execution, 570 seconds by default, with at most 15 additional seconds for process cleanup. An agent gives its shell a longer limit than that total, with a margin, or chooses a shorter `ncly` timeout. No universal shell limit or default is assumed. A batch may need a longer timeout
-- `--open` opens each result folder as soon as it appears, through `open` on macOS and `xdg-open` on Linux, detached as [Normal end](../../docs/north-star/contract.md#programs-that-ncly-runs) allows. Dry run never opens it
-- Exit 75 follows Retry safety, including any local writes. Never rerun an exit 1 automatically, because work may be partial or already billed
-- The extension's Go code owns the summary step and runs it through `"$NCLY_BIN" agent run --json`, with the prompt as `--task-file`, a copy of the verified transcript in the run's temporary folder as `--input`, the item's recorded `output_dir` as `--cwd`, the recorded profile as `--harness`, `--model`, `--effort`, and `--provider`, and a child run ID as `--run-id`. Tools therefore stay off, a resume from any folder repeats the call with the recorded profile and the same absolute `--cwd`, so it matches the child's record, a lost answer stays recoverable, and the [agent extension](../agent/spec.md) owns profiles, adapters, and the depth limit. Python stops at the transcript and returns its verified artifacts
-- A recorded run returns `run_id`. Its normal execution answer always contains `results`, even for one item, as [Output](../../docs/north-star/contract.md#output) describes. `summary run` and resume use that same item shape. This is a declared batch result; the object answers of core remain unchanged
-- Each item carries `url` or the Zoom `recording` folder, `output_dir`, `transcript`, and `summary`. The last three are paths or `null` until available. An unsuccessful item adds its `errors`; a saved transcript remains referenced when its summary fails. A URL given twice is `USAGE_INVALID` before any effect, because each item key names one item
+- `--url` selects one video using the normal scalar-flag rules.
+  Use the download program's single-video mode.
+  A playlist-only URL is invalid; a watch URL with playlist parameters still selects only that video.
+- The manifest declares `deepgram` in the command's `requires.keys`.
+  A human must grant the key to transcript.
+  Missing credentials or grants use `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, as
+  [Keys](../../docs/north-star/contract.md#keys) and [Grants](../../docs/north-star/contract.md#grants) define.
+- `--dry-run` uses the same local preparation as execution.
+  It reads no key and starts no audio download or paid request.
+  It creates no user file, result folder, or run record.
+  Only the dependency cache preparation described below may write or use the network.
+- `--timeout` covers preparation and execution, with a default of 570 seconds and up to 15 additional seconds for cleanup.
+  A caller gives its shell enough time for that total or chooses a shorter command timeout.
+- The command uses the existing plain-text output style.
+  It declares no progress display.
+- An attempted transcription returns `run_id` and `results` with one item, including on execution failure.
+  The existing `batch` result envelope is retained; its use does not enable multiple inputs.
+  The item holds `ok`, `url`, `output_dir`, and `transcript`.
+  The last two are paths or `null` until available.
+  An unsuccessful item adds `errors`, and verified files remain referenced.
+- Invocation, preparation, and replay refusals attempt no item and omit `results`.
+  Their top-level code is the actual refusal, such as `USAGE_INVALID`, `KEY_NOT_GRANTED`, or `RESUME_UNSAFE`.
+  Include `run_id` when the refusal concerns an existing record; earlier preparation creates none.
+  A successful replay returns the one verified item.
+  The schema permits absent `results` on a refusal and requires one item on success.
+  A failed attempted item instead uses the batch verdict: top-level `RUNTIME`, `TEMPORARY`, or the signal code,
+  with the specific cause inside its item. Do not change the shared answer contract.
+- Overall exit 75 alone permits an automatic repeat.
+  A paid request or result-folder reservation excludes 75 for that invocation.
+  Preserve the full answer and inspect its run before choosing another operation.
 
-Preparation validates all arguments and local inputs before effects. When a summary is selected, it resolves the prompt and runs `ncly agent run --dry-run --json` with the profile and the prompt as `--task-file`, without `--input`, since no transcript exists yet. That dry run resolves the profile for the record and checks depth, harness version, and tools-off support before transcription dispatch. No harness starts to check its login; that remains pending. Without the agent extension, a selected summary fails with `PREREQ_MISSING` before any effect, and its hint shows how to install `agent` or how to add `--no-summary`. `--no-summary` resolves no prompt or profile and needs no agent. A preparation refusal creates no record and bills nothing.
+Preparation validates the selected URL, output parent, configuration, and required programs before user-side effects.
+A preparation refusal creates no record and bills nothing.
+Execution checks the granted key before download or output reservation.
+The command needs no agent extension, profile, or summary prompt.
 
-An attempted item's error stays in `results`. The overall verdict follows Output across all attempted items. A human-action cause after transcription therefore does not authorize repeating the original paid command. Each recorded failure's recovery hint names inspection or explicit resume; a summary refused with `RESUME_UNSAFE` names the explicit new summary operation.
+### Output and cookies
 
-### Output, prompts, and cookies
+The result folder holds `raw_transcript.txt`, `raw_sentences.txt`, and `raw_transcript.json`.
+These are the required transcript artifacts.
+M13 must establish any other output files of the copied program before implementation is ready.
 
-Each item gets its own result folder inside the output folder. The folder holds `raw_transcript.txt`, `raw_sentences.txt`, `raw_transcript.json`, and any summary. `--output` names the output folder. Without it, the config decides, and the current folder is the default, as with `yt-dlp` and `gh run download`. In every JSON key, `output` names an output folder, and `output_dir` names a result folder.
+`--output` selects the output parent.
+Without it, `transcript.youtube.output` selects the parent, or the current folder when no value is configured.
+In JSON, `output` names the parent and `output_dir` names the result folder.
 
 ```toml
 [transcript]
 browser = "arc"
-prompt_paths = ["~/code/prompts"]
 
 [transcript.youtube]
 output = "~/Documents/transcripts"
-prompt = "follow_along_note"
-
-[transcript.zoom]
-recordings = "~/Documents/Zoom"
-output = "~/Documents/meetings"
-prompt = "short_summary"
 ```
 
-| Key | Default | Meaning |
-|---|---|---|
-| `browser` | none | The browser whose YouTube cookies the download uses: `arc`, on macOS only, or a browser that `yt-dlp` reads, such as `chrome`, `chromium`, `brave`, `firefox`, or `safari`. Without it, the download uses anonymous access, which YouTube often refuses |
-| `prompt_paths` | none | Folders searched before the bundled prompts. A prompt is `<name>.md`, or `<name>/prompt.md` |
-| `youtube.output`, `zoom.output` | the current folder | The output folder of each source |
-| `youtube.prompt` | `follow_along_note` | The default prompt for YouTube |
-| `zoom.recordings` | `~/Documents/Zoom` | The folder where Zoom saves recordings. `--latest` picks the newest meeting folder, and `--path` takes a folder name or a full path |
-| `zoom.prompt` | `short_summary` | The default prompt for Zoom |
+Machine-specific paths belong in local config.
+The retained cookie integration is the source program's Arc path on macOS.
+`browser = "arc"` selects it.
+Without a browser setting, use anonymous access.
+The supported path and its dependencies need the evidence listed in M13.
+Additional browser integrations are not required for this release.
 
-Go reserves each new result folder, named after the video title or meeting, or `<name>-2`, `<name>-3`, and so on when taken. Under the output resource lock, it records the candidate path before creating it and rechecks any collision. Creating the directory reserves its name; two new transcriptions never share a folder or write into an existing one. A failure after reservation exits 1 for the new transcription, even if no audio was sent, because a new run reserves another folder. Explicit resume reuses the recorded folder instead. Only effects of the current invocation decide retry safety, not paid work reused from an earlier attempt, as [Retry safety](../../docs/north-star/contract.md#retry-safety) defines.
+Unreadable configured cookies fall back to anonymous access with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` in the answer's top-level `warnings`.
+Anonymous access can still fail to download the video; the warning never means transcription succeeded.
+The Arc adapter checks the `yt-dlp` function it adapts.
+A missing function produces the same fallback warning.
+M16 makes `ncly doctor transcript` report the cookie problem as `warn`.
 
-A `transcript run` call that starts a new run transcribes and bills Deepgram again, in a new folder. A call under an existing run ID follows [Run IDs](../../docs/north-star/contract.md#run-ids) instead, keeping the recorded folder and verified work. Resume and `summary run` reuse the recorded folder too. Every summary uses `<prompt-name>-<run-id>.md`, including the initial summary, so a new operation preserves every earlier record's artifact fingerprint.
+Go selects a result-folder name from the video title, adding `-2`, `-3`, and so on when taken.
+Under the output resource lock, it records the candidate path and intent, then creates the folder while rechecking collisions.
+Two new runs never share a result folder or write into an existing one.
+After an interrupted reservation, another invocation does not write into that folder.
+Verified-result replay only reads its existing artifacts.
+A new run selects a new folder and may bill Deepgram again.
 
-`ncly transcript prompt list --json` returns `prompts`, sorted by name, each with `name`, `path`, and `source`, which is `config` for a folder of `prompt_paths` and `bundled` otherwise. A name appears once. The first folder of `prompt_paths` that holds it wins, then the bundled prompts. Inside one folder, `<name>.md` wins over `<name>/prompt.md`, because the file comes before the folder.
+Extract the embedded Python program through a temporary folder and atomic rename into `~/.cache/nicely/python/<version>/`, following XDG overrides.
+Run it with `uv run --script --upgrade-package yt-dlp --no-python-downloads --cache-dir <folder>`.
+Here, `<folder>` is `uv` inside Nicely's cache, such as `~/.cache/nicely/uv`.
+The explicit flag overrides an inherited `UV_CACHE_DIR`.
+Python 3.12 or later must already be installed; `uv` never downloads it.
 
-Machine paths belong in the local config. A Zoom meeting folder starts with its date and time, such as `2026-05-03 14.46.55`, and the rest of its name, which Zoom writes in the user's language, becomes the title.
+The program uses the newest `yt-dlp` release at or above its declared minimum and pins its other Python dependencies.
+Declare every actual download dependency in the manifest; M13 must prove that set from an empty cache.
+Do not assume that `uv` and Python alone suffice.
+A dry run may contact the package index to prepare Nicely's cache.
+Dependency preparation failure returns `RUNTIME` with a setup hint.
+Doctor probes installed tools without upgrading them.
+The source CLI's `--output-dir` becomes `--output`; debug output uses `NCLY_DEBUG`.
 
-When the configured browser's cookies cannot be read, the download falls back to anonymous access and the answer adds `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`. In a batch, the warning appears once in the top-level `warnings`, because the browser setting covers the whole run. `ncly doctor transcript` reports the same problem as `warn`. The Arc adapter checks the `yt-dlp` function that it changes, instead of an exact `yt-dlp` version. When that function is missing, the adapter reports the problem and the download falls back the same way.
+### Records and replay
 
-The extension runs the program with `uv run --script --upgrade-package yt-dlp --no-python-downloads --cache-dir <folder>`, where the folder is `uv` inside Nicely's cache, such as `~/.cache/nicely/uv`. The flag wins over an inherited `UV_CACHE_DIR`, so uv writes only inside Nicely's cache, as a dry run requires. uv never downloads a Python. A missing Python 3.12 or later is `PREREQ_MISSING`, and the hint of `ncly doctor transcript` gives its install command. Each Python invocation uses the newest `yt-dlp` release at or above the minimum that the program names, so a fix reaches users without an `ncly` release. The program pins its other dependencies. A dry run may contact the package index to prepare that cache; it is not an offline guarantee. Failed dependency preparation returns `RUNTIME` with a setup hint; the command's own timeout follows Programs. Doctor reads installed versions without upgrading packages.
+Each run has one item and one `transcribe` step, which declares the `paid` effect.
+The manifest supports recorded execution and dry run; domain resume remains unimplemented.
+Use the SDK for records, locks, and publication, as [Operations](../../docs/north-star/contract.md#operations) defines.
 
-These options of the transcript CLI change:
+Python emits the single-item plan before user-side effects.
+Go validates it and durably creates the initial record with a pending step.
+The step becomes unknown before result-folder reservation or upload.
+Go records completion only after independently verifying and syncing the required artifacts.
 
-| Transcript CLI | ncly |
-|---|---|
-| `--output-dir` | `--output` |
-| `--timeout`, a budget for each URL | `--timeout`, one budget for the whole invocation, 570 seconds by default |
-| `--debug`, `TRANSCRIPT_DEBUG` | `NCLY_DEBUG=1` |
-| `--provider`, `--model`, `--effort` | A profile in the config |
-| `--no-progress` | Removed, because `--json` and non-interactive mode already hide the spinner |
-| `--preview` | Removed, because `ncly markdown view` renders a summary from M18 |
-| `list prompts` | `ncly transcript prompt list` |
-| `list profiles` | `ncly agent profile list` |
-| `list models` | Removed. `ncly agent model list` is in the [M99 parking lot](../../docs/milestones/M99-parking-lot.md) |
-| `doctor --source` | `ncly doctor transcript` |
+- A download failure before intent leaves the step pending with its code, message, and hint.
+- After acknowledgement, a known pre-upload transport failure or a received 4xx refusal makes the step failed.
+  A 5xx response or lost connection after sending audio leaves it unknown.
+  Upload retries, including SDK retries, are disabled.
+  One acknowledgement permits at most one upload request.
+- The record keeps the program and `yt-dlp` versions reported by the intent.
+  Its item key is the URL exactly as supplied.
+- A repeated call uses the run lock and input checks of [Run IDs](../../docs/north-star/contract.md#run-ids).
+  A different command, URL, or explicit output argument is `USAGE_INVALID` before effects.
+  A busy run returns `TEMPORARY` with a `run view` hint and starts no program.
+- A completed run returns its verified saved result without Python, a dependency upgrade, or a Deepgram request.
+  Check every required path, size, hash, and usable transcript format before returning success.
+  Missing, changed, or unsupported evidence returns `RESUME_UNSAFE`.
+- Complete, already recorded artifact evidence may resolve a lost final protocol message locally.
+  Under the run lock, Go verifies that complete set and persists completion before returning success.
+  This never writes transcript artifacts or starts another upload.
+  Dry run reports reuse without changing the record.
+  Unrecorded files alone prove nothing.
+- Before any intent, the shared run-ID rules may safely retry preparation.
+  After a paid intent, incomplete or uncertain work is refused with `RESUME_UNSAFE`.
+  A missing response never proves the request was free.
+  No flag authorizes replay of an uncertain upload.
+- A refusal preserves available artifacts and names `ncly run view <run-id>` in its hint and `next`.
+  Starting a new run is an explicit choice that may incur another charge.
 
-### Steps and resume
-
-Each transcription item has `transcribe`, then `summarize` unless skipped. Both steps declare the `paid` effect. Python prepares the complete item set before emitting its initial plan. Go validates that set and creates the initial `running` record with pending steps before allowing any user-side mutation. Temporary audio preparation may overlap that validation after Python sends the plan. `started_at` is the invocation's start time and stays unchanged on resume. A step reaches `completed` only after Go independently verifies its required files, syncs them, and durably records their fingerprints.
-
-- `transcribe` turns `unknown` before result-folder reservation and upload, as the protocol below requires. A download failure before intent leaves it `pending` with a saved problem. After acknowledgement, it turns `failed` only when transport failed before any audio was sent or Deepgram returned a 4xx refusal. Any 5xx status and any transport timeout or lost connection after sending audio leave it `unknown`. The transport disables automatic upload retries, including SDK retries; one acknowledgement permits at most one request
-- `summarize` turns `unknown` before `ncly agent run` starts, and its intent records the child run ID that transcript chose for that call, as [Run IDs](../../docs/north-star/contract.md#run-ids) defines. Each attempt of the step chooses a new child ID. The step turns `failed` only when the attempt's first call, under its new child ID, exits 2 or 78, because the agent extension exits with those codes only before its harness starts. Any other end without a saved summary leaves the step `unknown`, because the harness may already have billed
-- The record keeps the `inputs` and the `resolved` values that the tables below list. It keeps as tools the program and `yt-dlp` versions that the `intent` reports. The child agent run keeps its harness version in its own record
-- Resume takes the URL, selected Zoom folder, and absolute output folder from the record. It never selects `--latest` again. It rereads the prompt and refuses a changed fingerprint. For Zoom, it verifies the recorded audio and compares the program's `audio` in `plan` and `intent` before acknowledgement. Resume uses the recorded profile without resolving it again; `summary run --profile` changes it. Only programs needed by `run` steps require a current version check, so a summary-only resume needs no `uv` or Deepgram key. A version above its minimum does not block resume; below it returns `PREREQ_MISSING`. Unsupported record or protocol versions return `RESUME_UNSAFE`
-- Resume verifies the recorded inputs and artifacts, reuses completed steps, and runs pending or failed ones. For an unknown transcription only, the complete recorded artifact set of `raw_transcript.txt`, `raw_sentences.txt`, and `raw_transcript.json` may establish local completion after a lost final message. Go independently verifies every path, size, hash, and usable transcript format. Dry run plans reuse without rewriting the record; explicit resume persists the reconciled completion without another upload
-- For an unknown summary, resume first reads the child's run with `ncly run view <child-run-id> --json`, and only an existing record permits repeating the agent call with the recorded child run ID, as [Run IDs](../../docs/north-star/contract.md#run-ids) defines. A completed child returns its saved answer, which transcript verifies and publishes as the summary without a new request. A child run that another process holds keeps the summary `unknown` and fails the item with `TEMPORARY`, whose `next` is `ncly run view <child-run-id>`, and a later resume repeats the check. A missing child record, or any other answer of the repeated call, including exit 2 or 78, keeps it `unknown` with `RESUME_UNSAFE`
-- An unanswered transcription without that complete evidence, a summary refused as above, a changed input or artifact, or an unexpected file at a path that resume would write returns `RESUME_UNSAFE`, retaining the available artifacts. Such a refusal fails its item and lets the other items continue, while a changed prompt refuses the whole run. `--force` overrides none of these refusals. The existence of an unrecorded file alone never proves paid completion
-- A summary refused with `RESUME_UNSAFE` names `ncly transcript summary run <source-run-id> --key <item key>` in its hint and its `next`, so that the new operation covers that item alone. An `unknown` `transcribe` step names `ncly run view <run-id>`, because a new transcription may bill Deepgram again
-
-The transcript domain defines these `inputs` keys, which hold what the call states, as [Records and evidence](../../docs/north-star/contract.md#records-and-evidence) defines. A call with the same run ID compares them, and the item keys that it states: the URLs of a YouTube run, and the keys of a summary run, which `--key` selects or which default to every item of the source run. The meeting folder of a Zoom run is an item key that preparation picked, so it comes from the record and is not compared:
+The domain records these `inputs`, as [Records and evidence](../../docs/north-star/contract.md#records-and-evidence) defines:
 
 | Key | Type | Meaning |
 |---|---|---|
-| `source` | string | `youtube` or `zoom` |
-| `output` | string or null | `transcript run` only. The absolute folder that `--output` gives, or `null` without it, because the config then picks the folder, or the current folder when it names none |
-| `recording` | string or null | `transcript run zoom` only. The value of `--path`, a folder name as given or a full path made absolute, or `null` for `--latest` |
-| `summary` | boolean | `transcript run` only. `false` for `--no-summary` |
-| `prompt` | string or null | The prompt name that `--prompt` gives, or `null` without it |
-| `profile` | string or null | The profile name that `--profile` gives, or `null` without it |
-| `source_run` | string | `summary run` only. The run ID of the source run |
+| `source` | string | Always `youtube` |
+| `output` | string or null | The absolute parent explicitly supplied through `--output`, or `null` when configuration selects it |
 
-It defines these `resolved` keys, which hold what preparation picked from the config or the machine. No call compares them to decide whether it is the same call, and every later attempt reads them from the record:
+The item key records the one URL.
+The domain records these `resolved` values, without using them to compare a repeated call:
 
 | Key | Type | Meaning |
 |---|---|---|
-| `output` | string | `transcript run` only. The absolute output folder that the run uses |
-| `audio` | object | `transcript run zoom` only. The `path`, `size_bytes`, and `sha256` of the first `*.m4a` of the meeting folder in name order, selected once by Python. A folder without one is `NOT_FOUND` |
-| `prompt` | object or null | The prompt `name` and the `sha256` of its text, or `null` when the summary is skipped |
-| `profile` | object or null | The resolved profile: `name`, or `null` when it has none, `harness`, `provider`, a key omitted when there is none, `model`, and `effort`. `null` when the summary is skipped |
+| `output` | string | The absolute output parent selected during preparation |
+| `browser` | string or null | `arc` when selected, otherwise `null` |
 
-A Zoom run of `ncly transcript run zoom --latest --output /Users/me/meetings --profile everyday` records this:
-
-```json
-{
-  "format_version": 1,
-  "run_id": "20261007-214501-3f9a2c",
-  "path": "transcript run zoom",
-  "status": "completed",
-  "started_at": "2026-10-07T21:45:01Z",
-  "updated_at": "2026-10-07T21:49:12Z",
-  "ncly_version": "v0.1.0",
-  "attempts": 1,
-  "inputs": {
-    "source": "zoom",
-    "output": "/Users/me/meetings",
-    "recording": null,
-    "summary": true,
-    "prompt": null,
-    "profile": "everyday"
-  },
-  "resolved": {
-    "output": "/Users/me/meetings",
-    "audio": {"path": "/Users/me/Documents/Zoom/2026-05-03 14.46.55 Weekly sync/audio1.m4a", "size_bytes": 48213504, "sha256": "<sha256>"},
-    "prompt": {"name": "short_summary", "sha256": "<sha256>"},
-    "profile": {"name": "everyday", "harness": "claude", "model": "<model id>", "effort": "medium"}
-  },
-  "tools": {"transcript": "4.1.0", "yt-dlp": "2026.7.4", "claude": "2.1.291"},
-  "items": [
-    {
-      "key": "/Users/me/Documents/Zoom/2026-05-03 14.46.55 Weekly sync",
-      "output_dir": "/Users/me/meetings/Weekly_sync",
-      "steps": [
-        {"id": "transcribe", "status": "completed", "started_at": "2026-10-07T21:45:20Z", "finished_at": "2026-10-07T21:47:58Z", "artifacts": [
-          {"path": "/Users/me/meetings/Weekly_sync/raw_transcript.txt", "size_bytes": 51234, "sha256": "<sha256>"},
-          {"path": "/Users/me/meetings/Weekly_sync/raw_sentences.txt", "size_bytes": 52011, "sha256": "<sha256>"},
-          {"path": "/Users/me/meetings/Weekly_sync/raw_transcript.json", "size_bytes": 403877, "sha256": "<sha256>"}
-        ], "error": null},
-        {"id": "summarize", "status": "completed", "started_at": "2026-10-07T21:47:59Z", "finished_at": "2026-10-07T21:49:12Z", "artifacts": [{"path": "/Users/me/meetings/Weekly_sync/short_summary-20261007-214501-3f9a2c.md", "size_bytes": 4096, "sha256": "<sha256>"}], "error": null}
-      ]
-    }
-  ]
-}
-```
-
-### ncly transcript summary run
-
-`ncly transcript summary run <source-run-id>` summarizes saved transcripts as a new recorded operation. It resolves its profile first: `--profile`, then the source run's recorded profile, then the current `default_profile`. If none applies, a form asks in interactive mode; otherwise it exits 2 with `USAGE_INVALID` and a hint showing `--profile`. Until a profile is known it reads no item, writes no record, and bills nothing.
-
-Before reading items, execution takes the source run lock. It holds the lock while it checks each item's eligibility and records the new run with the verified transcript references, then releases it before the first summary starts, so a long summary never blocks the source. A busy source returns 75 with `TEMPORARY` and a `run view` hint, before effects. Dry run only checks ownership and never holds or reserves the source for execution.
-
-`--key` selects the source items to summarize, once per item, so a new summary of one item never bills the others again. Without it, every item is selected. A key that the source run lacks is `NOT_FOUND` before effects. The selected items keep the order of the source.
-
-Its prompt name comes from `--prompt`, the recorded source prompt, then the source's current default, such as `youtube.prompt`. It reads the current prompt text: a missing prompt is `NOT_FOUND` before effects; a changed hash is allowed and stored in the new record. This is a new operation, while resume preserves the recorded prompt fingerprint.
-
-An item is eligible when its transcription is completed or locally reconciles from the complete recorded artifact set defined in Steps and resume. Any other selected item fails in `results` with `RESUME_UNSAFE`. If none is eligible, the failed answer includes `source_run` and `results` but no `run_id`; no record or harness starts.
-
-The new record holds each selected item in source order, with one `summarize` step. An eligible item's step starts `pending`, and its evidence holds the transcript that it summarizes: the source run ID, and the path, size, and `sha256` of each transcript artifact. The record has no `transcribe` step, because this run transcribed nothing. An ineligible item's step is `failed`, with its `RESUME_UNSAFE` problem and its source `output_dir`, possibly `null`, and never becomes executable in this operation. Resume reproduces its saved error while continuing eligible pending or failed summaries; including the rejected item later requires a new operation.
-
-The new record keeps `source_run` in its `inputs` for provenance, and its own resolved prompt and profile in its `resolved`. It copies no transcript content or source audio dependency.
-
-When a new record is created, normal execution returns `run_id`, `source_run`, and `results` with the transcript item shape. Each summary goes to the recorded result folder as `<prompt-name>-<new-run-id>.md`, preserving source artifacts. `run resume` supports this record: it verifies the transcript that each step's evidence names, and continues eligible pending or failed summaries without transcribing again. An unknown summary resolves through its child agent run, as in Steps and resume, and a `RESUME_UNSAFE` refusal hints `ncly transcript summary run <source-run-id> --key <item key>`. This new operation may bill and starts only on an explicit call.
+A configuration change never redirects a saved result.
+The recorded output folder and verified artifacts determine replay.
+A saved run keeps its original `started_at`; local completion reconciliation starts no new execution attempt.
 
 ### Protocol with the Python program
 
-The extension extracts the program to `~/.cache/nicely/python/<version>/` and runs it through `uv`, with the flags that [Output, prompts, and cookies](#output-prompts-and-cookies) lists. The program reads JSON Lines on stdin and writes JSON Lines on stdout. Its stderr carries diagnostics, which Go shows only under `--verbose` or `NCLY_DEBUG`. Here, Go is the extension's Go code. Each message is one JSON object with `protocol_version`, `1`, and `type`. A message with another version or an unknown type is a protocol failure.
+The Go wrapper runs the embedded program through `uv`, as [Output and cookies](#output-and-cookies) defines.
+The program reads JSON Lines on stdin and writes JSON Lines on stdout.
+Its stderr carries diagnostics, shown only under `--verbose` or `NCLY_DEBUG`.
+Each message has `protocol_version: 1` and `type`.
+An unsupported version or unknown type is a protocol failure.
+
+The wrapper retains the existing message shapes with one selected item.
+The unused `zoom` request field stays `null`; it exposes no Zoom command.
 
 | Message | Sender | Keys besides `protocol_version` and `type` |
 |---|---|---|
-| `request` | Go | `source`: `youtube` or `zoom`; `urls`: ordered URLs, empty for Zoom; `zoom`: `latest`, `path`, and `recordings`, or `null`; `output`: absolute output parent; `temp_dir`: Go-owned temporary folder; `browser` or `null`; `dry_run`: boolean; `deadline`: UTC RFC 3339 execution deadline |
-| `plan` | program | `items`: the complete resolved item set, in input order. Each has `item`, `output`, and, for Zoom, selected `audio` with `path`, `size_bytes`, and `sha256`. On preparation failure, `items` is empty and `code` and `detail` identify the program failure |
-| `intent` | program | `item`, `step`, `name`: proposed result-folder basename, `tools`: actual program and `yt-dlp` versions, and, for Zoom, the unchanged `audio` from `plan`. No user-side output has been created |
-| `ack` | Go | `item` and `step` from the intent, plus `output_dir`: the final reserved or recorded result folder |
+| `request` | Go | `source`: `youtube`; `urls`: an array containing the one URL; `zoom`: `null`; `output`: absolute output parent; `temp_dir`: Go-owned temporary folder; `browser`: `arc` or `null`; `dry_run`: boolean; `deadline`: UTC RFC 3339 execution deadline |
+| `plan` | program | `items`: one object with `item` and `output`. On preparation failure, `items` is empty, and `code` and `detail` identify the failure |
+| `intent` | program | `item`, `step`, `name`: proposed result-folder basename, `tools`: actual program and `yt-dlp` versions. No user-side output has been created |
+| `ack` | Go | `item` and `step` from the intent, plus `output_dir`: the final reserved result folder |
 | `artifact` | program | `item`, `step`, `path`, `size_bytes`, and `sha256` |
-| `step` | program | `item`, `step`, `status`, `code`, which is `null` for `completed`, `warnings`, a list of program warning codes, and `detail`, a diagnostic that Go shows only under `--verbose` |
+| `step` | program | `item`, `step`, `status`, `code`, which is `null` for `completed`, `warnings`: program warning codes, and `detail`: a verbose diagnostic |
 
-`item` is the URL as given or the absolute Zoom meeting folder selected once in `plan`. `step` is `transcribe`. The key travels in `DEEPGRAM_API_KEY`, never in a message. Python puts all temporary audio and child scratch files under `temp_dir`, so Go can remove them after killing a child. It derives phase timeouts from the remaining `deadline` and starts no upload once that deadline has expired. Go owns the overall timeout verdict and process cleanup.
+`item` is the URL as supplied, and `step` is `transcribe`.
+The key travels in `DEEPGRAM_API_KEY`, never in a message.
+Python puts temporary audio and child scratch files under `temp_dir`.
+It derives phase timeouts from the remaining `deadline` and starts no upload after that deadline.
+Go owns the overall timeout verdict and process cleanup.
 
-1. Go sends one `request`. Python returns exactly one initial `plan` in both modes, before downloads, output reservation, or paid calls. A preparation failure reports its code and exits 0 without effects or final item steps
-2. Go validates the complete expected item set, order, uniqueness, selected Zoom audio, and output parent. A new Zoom selection is fixed for this execution. Resume passes the recorded folder with `latest: false`, and verifies the stored audio. Dry run creates no record or user directory and starts no download or service call. Python exits after its plan; dependency cache preparation follows the documented exception
-3. For execution, Go durably creates the initial record from the validated plan, with pending steps. After emitting its plan, Python may prepare audio only in `temp_dir` while Go validates and records that plan. This free temporary work needs no second handshake. Before any user-side write or upload, Python sends `intent` and waits for `ack`
-4. Go validates the intent against the fixed plan. For a new result folder, it selects and durably records the candidate `output_dir` and unknown step before reserving the directory under the resource lock. For resume, it revalidates and uses the recorded folder. It completes the persistence barrier before sending `ack` with that final folder. Failure prevents acknowledgement. Python stops before writing outputs or uploading when stdin closes or no matching acknowledgement arrives within 10 seconds
-5. After saving files only under the acknowledged folder, Python sends one `artifact` per required file, then `step` with status `completed`. Artifact paths are absolute within that folder, sizes are nonnegative byte integers, and hashes are 64 lowercase hexadecimal characters. Go independently verifies those files and the complete required set, syncs them, and durably records completion. Each artifact's verified evidence is persisted when received, so a lost final step can reconcile only a complete recorded set
-6. A failed item sends `step` with its status and program code: `pending` before intent, otherwise `failed` or `unknown` as the table defines. Go keeps its public code, message, and recovery hint on the record, including pending preparation failures. Exactly one terminal step is required for each planned item. Python exits 0 whatever their outcomes; Go derives the verdict. On Ctrl-C or SIGTERM, Python stops its children within 10 seconds and reports open steps when possible
+1. Go sends one request.
+   Python returns one initial plan before downloads, output reservation, or paid calls.
+   Preparation failure reports its code and exits 0 without effects or a terminal item step.
+2. Go verifies the one expected item and its output parent.
+   Dry run creates no record or user directory and starts no download or service call.
+   Python exits after its plan.
+   Dependency preparation follows the cache exception above.
+3. For execution, Go durably records the validated plan with its pending step.
+   After sending the plan, Python may prepare audio only in `temp_dir`.
+   Before user-side writes or upload, Python sends `intent` and waits for `ack`.
+4. Go validates the intent against the fixed plan.
+   Under the output resource lock, it durably records the candidate `output_dir` and unknown step before reserving the folder.
+   Complete the persistence barrier before sending `ack` with the final folder.
+   A failed barrier prevents acknowledgement and upload.
+   Python stops before effects if stdin closes or a matching acknowledgement does not arrive within 10 seconds.
+5. Python saves files only inside the acknowledged folder.
+   It sends one artifact message per required file, then a completed step.
+   Paths are absolute within that folder; sizes are nonnegative byte integers; hashes are 64 lowercase hexadecimal characters.
+   Go independently verifies each file and persists its evidence as received.
+   Go verifies the complete required set and syncs it before durably recording completion.
+6. A failure sends the step's status and program code.
+   Go preserves its public code, message, and recovery hint, including for pending preparation failures.
+   Exactly one terminal step message is required after a successful plan.
+   Python exits 0 for a reported item outcome; Go derives the command verdict.
+   On Ctrl-C or SIGTERM, Python stops its children within 10 seconds and reports the open step when possible.
 
-A nonzero exit, missing initial plan, unexpected or duplicate item, illegal message order, missing final step, or malformed message is a protocol failure. Go keeps verified evidence, leaves acknowledged unresolved effects unknown, and exits 1 with `RUNTIME`. Untouched pending steps stay pending with their failure cause. Cancellation and timeout retain the verdict from [Programs that ncly runs](../../docs/north-star/contract.md#programs-that-ncly-runs). A dry-run plan or zero exit alone never proves that execution completed an item.
+A nonzero exit, missing plan, wrong item, illegal ordering, duplicate message, missing terminal step, or malformed message is a protocol failure.
+Go preserves verified evidence, leaves acknowledged unresolved effects unknown, and exits 1 with `RUNTIME`.
+An untouched step stays pending with its failure cause.
+Cancellation and timeout keep the verdict required by
+[Programs that ncly runs](../../docs/north-star/contract.md#programs-that-ncly-runs).
+A dry-run plan or zero exit alone never proves execution succeeded.
 
 | Program code | Step status | Error code | Catalog ID |
 |---|---|---|---|
-| `recording_not_found` | `pending` | `NOT_FOUND` | `transcript.recording_not_found` |
 | `download_temporary` | `pending` | `TEMPORARY` | `transcript.download_temporary` |
 | `download_failed` | `pending` | `TRANSCRIPT_DOWNLOAD_FAILED` | `transcript.download_failed` |
 | `deepgram_unreachable` | `failed` | `TEMPORARY` | `transcript.deepgram_unreachable` |
@@ -214,13 +236,20 @@ A nonzero exit, missing initial plan, unexpected or duplicate item, illegal mess
 | `deepgram_failed` | `failed` | `RUNTIME` | `transcript.deepgram_failed` |
 | `deepgram_unknown` | `unknown` | `RUNTIME` | `transcript.deepgram_unknown` |
 | `transcript_unusable` | `unknown` | `RUNTIME` | `transcript.transcript_unusable` |
-| `write_failed` | `pending` before the intent, `unknown` after it | `RUNTIME` | `transcript.write_failed` |
+| `write_failed` | `pending` before intent, `unknown` after it | `RUNTIME` | `transcript.write_failed` |
 
-The only program warning code is `browser_cookies_skipped`, which Go maps to `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` with the catalog ID `transcript.browser_cookies_skipped`.
+`browser_cookies_skipped` is the only program warning.
+Go maps it to `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` with catalog ID `transcript.browser_cookies_skipped`.
 
-`deepgram_unreachable` means transport failed before audio was sent, such as a refused connection, DNS or TLS failure, or a received HTTP refusal with status 408 or 429. A received HTTP 408 response is distinct from a transport timeout without a response. `deepgram_key_rejected` means 401 or 403; `deepgram_failed` means any other 4xx refusal. Any 5xx status, including 503, or a timeout or lost connection after sending audio is `deepgram_unknown`.
+`deepgram_unreachable` covers transport failure before audio was sent, such as refused connections, DNS or TLS failures, and received HTTP 408 or 429 refusals.
+A received HTTP 408 differs from a transport timeout without a response.
+`deepgram_key_rejected` means 401 or 403; other 4xx refusals use `deepgram_failed`.
+Any 5xx status, timeout, or lost connection after sending audio uses `deepgram_unknown`.
 
-The item's `TEMPORARY` describes its cause. Only the overall exit 75 permits repeating the whole invocation. After a reserved result folder, started paid request, or unknown effect, the normal answer retains that item cause in `results` and carries a top-level `RUNTIME` with exit 1. Inspect the saved run before choosing resume or a new operation.
+The item's `TEMPORARY` describes its cause.
+After result-folder reservation, paid dispatch, or an unknown effect, the overall runtime failure exits 1 with `RUNTIME`.
+The item retains its cause in `results`.
+Only the overall exit 75 permits repeating the invocation.
 
 ## Dry-run examples
 
@@ -230,43 +259,40 @@ A new transcription reports its output parent without reserving a result folder:
 {"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output":"/Users/me/transcripts","steps":[{"id":"transcribe","action":"run"}],"effects":{"user_writes":true,"network":true,"paid":true}}],"pending_checks":[{"id":"auth.deepgram","message":"Authentication is checked only during execution."}]}
 ```
 
-A summary alone, from `ncly transcript summary run <source-run-id> --dry-run --json`, summarizes the saved transcript and leaves the harness login to execution:
+The same call with an existing completed run ID verifies its saved artifacts and plans reuse only:
 
 ```json
-{"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output_dir":"/Users/me/transcripts/Video_title","steps":[{"id":"summarize","action":"run"}],"effects":{"user_writes":true,"network":true,"paid":true}}],"pending_checks":[{"id":"agent.claude","message":"The harness login is checked when the summary starts."}]}
+{"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output_dir":"/Users/me/transcripts/Video_title","steps":[{"id":"transcribe","action":"reuse"}],"effects":{"user_writes":false,"network":false,"paid":false}}],"pending_checks":[]}
 ```
 
-A resume that reuses every step, from `ncly run resume <run-id> --dry-run --json`, has nothing pending:
-
-```json
-{"ok":true,"contract_version":1,"dry_run":true,"plan":[{"key":"https://www.youtube.com/watch?v=VIDEO_ID","output_dir":"/Users/me/transcripts/Video_title","steps":[{"id":"transcribe","action":"reuse"},{"id":"summarize","action":"reuse"}],"effects":{"user_writes":false,"network":false,"paid":false}}],"pending_checks":[]}
-```
+A refusal during replay fails its dry run with the same `RESUME_UNSAFE`, without changing the record.
 
 ## Codes
 
-Transcript answers with core's codes and these of its own. For exit 1, `RESUME_UNSAFE` leads, then `TRANSCRIPT_DOWNLOAD_FAILED`, then `RUNTIME`.
+Transcript uses core's codes and the following domain code.
+`RESUME_UNSAFE` is a top-level replay refusal with no attempted item. `TRANSCRIPT_DOWNLOAD_FAILED` is an item cause; a failed attempted transcription uses the shared batch verdict, never that cause as its top-level lead.
 
 | Code | Exit | When | Since |
 |---|---|---|---|
-| `TRANSCRIPT_DOWNLOAD_FAILED` | 1 | `yt-dlp` could not fetch the audio of a video, for a reason other than the network | M13 |
+| `TRANSCRIPT_DOWNLOAD_FAILED` | 1 | `yt-dlp` could not fetch the video's audio for a reason other than a temporary network failure | M13 |
 
 | Warning | When | Since |
 |---|---|---|
-| `TRANSCRIPT_SUMMARY_SKIPPED` | No profile applies, so a transcript run saved the transcript without a summary | M14 |
-| `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | The configured browser's cookies could not be read, so the download used anonymous access | M16 |
+| `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | The configured cookies could not be read, so download attempted anonymous access | M13 |
 
 ## Examples
 
 ```bash
-# Plan a transcription without a key, a paid request, or a user-file write
+# Plan one video without a key, paid request, or user-file write
 ncly transcript run youtube --url "https://www.youtube.com/watch?v=VIDEO_ID" --dry-run --json
 
-# Keep the full successful answer and run ID before extracting paths
-ncly transcript run youtube --url "$URL" --json > answer.json 2> diagnostics.txt
+# Choose the ID before execution and preserve the complete answer
+ncly transcript run youtube --url "$URL" --run-id video-notes-1 --json > answer.json 2> diagnostics.txt
 jq -r '.run_id, .results[].output_dir' answer.json
 
-# A missing key, seen by a script
-ncly transcript run youtube --url "$URL" --json
-# stderr: {"ok":false,"contract_version":1,"errors":[{"code":"AUTH_MISSING","message":"No Deepgram key found.","hint":"ncly auth login deepgram","next":["ncly","auth","login","deepgram"]}]}
-# exit code: 78
+# Inspect after a lost answer or an uncertain outcome
+ncly run view video-notes-1 --json
+
+# The same call returns verified completion or refuses uncertain work
+ncly transcript run youtube --url "$URL" --run-id video-notes-1 --json
 ```

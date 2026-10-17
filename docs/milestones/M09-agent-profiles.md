@@ -1,59 +1,51 @@
-# M09 Agent profiles
+# M09 Codex preparation
 
 Status: ready
 Version: v0.9.0
 
 ## Demo
 
-`ncly agent run --dry-run` with a task shows the selected profile and the redacted claude or pi invocation, without starting a harness.
+`ncly agent run "Review this branch" --tools --dry-run` checks Codex and shows its invocation without starting a task.
 
 ## Scope
 
-`agent` is the first real external extension: Nicely needs no agent to operate, so it ships outside the binary. It lives in `extensions/agent/`, builds as `ncly-agent`, and owns profiles, harness adapters, tools-off mode, and the depth limit, as [extensions/agent/spec.md](../../extensions/agent/spec.md) defines. This milestone reads profiles and prepares runs. Execution and its records arrive in [M10](M10-agent-run.md), and the other harnesses in [M11](M11-harnesses.md).
+`agent` is an external extension in `extensions/agent/`, built as `ncly-agent` on the existing SDK. It prepares one trusted task for Codex. [Its spec](../../extensions/agent/spec.md) defines the command, settings, and tools policy. Execution and records arrive in [M10](M10-agent-run.md).
 
-Before taps exist, `just install` puts `ncly` in `~/.local/bin/` and the first-party extensions in the data folder's `extensions/` directory. A user without the repository waits for the official tap of [M12](M12-taps.md).
+Use Codex's existing login. The extension declares no API key and forwards none. [M08](M08-grants.md) still serves extensions that need a key, such as transcript. A Codex API key and additional harnesses stay in [M99](M99-parking-lot.md#agent-extras).
+
+One model and effort can come from flags or `[agent]` defaults. Named profiles, providers, a model catalog, and a generic adapter registry stay in M99. There is one Codex invocation to implement.
+
+Before distribution in [M12](M12-taps.md), `just install` puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. This developer install remains available after M12.
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M09-T1 | Extension and install | agent | — | todo |
-| M09-T2 | Profiles | agent | M09-T1 | todo |
-| M09-T3 | Claude adapter dry run | agent | M09-T2 | todo |
-| M09-T4 | Pi adapter dry run | agent | M09-T3 | todo |
-| M09-T5 | Depth limit | agent | M09-T3 | todo |
+| M09-T2 | Codex dry run | agent | M09-T1 | todo |
+| M09-T3 | Depth limit | agent | M09-T2 | todo |
 
 ### M09-T1 Extension and install
 
-- **Read:** [extensions/agent/spec.md](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions)
+- **Read:** [agent spec](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions), [Required programs](../north-star/core-spec.md#required-programs)
 - **Proves:** `extensions/agent/testdata/script/agent_install.txtar`
 
-Add the manifest, catalogs, `SKILL.md`, and `ncly-agent` binary in `extensions/agent/`, built on `sdk/`. `just install` puts `ncly` in `~/.local/bin/` and the extension's files in the data folder's `extensions/` directory. With `~/.local/bin/` on `PATH`, `ncly agent --help` reaches the extension through core.
+Add the manifest, catalogs, skill, and binary in `extensions/agent/`. Add `just install` with the paths above. Declare Codex as a required program, with its minimum version and local version probe. Existing doctor behavior then checks `agent.codex`; no separate profile scanner or status command is needed.
 
-### M09-T2 Profiles
+Prove that `ncly agent --help` reaches the installed extension. A missing or old Codex fails `ncly doctor agent` with `PREREQ_MISSING` and its install hint. A counted stub proves that doctor starts no task.
 
-- **Read:** [Profiles](../../extensions/agent/spec.md#profiles)
-- **Proves:** `extensions/agent/testdata/script/agent_profile.txtar`
+### M09-T2 Codex dry run
 
-`[agent.profiles]` and `default_profile` in the config, with `ncly agent profile list` and `ncly agent profile view <name>`. `--harness`, `--model`, `--effort`, and `--provider` describe a profile without reading the config. An unknown profile exits 2 with `NOT_FOUND`, and completion suggests profile names from `ncly agent profile list`, as [Completion values](../north-star/contract.md#completion-values) defines. A profile's semantic constraint fails with `CONFIG_INVALID` only when a command selects that profile.
-
-### M09-T3 Claude adapter dry run
-
-- **Read:** [Adapters](../../extensions/agent/spec.md#adapters), [ncly agent](../../extensions/agent/spec.md#ncly-agent)
+- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Settings](../../extensions/agent/spec.md#settings), [Codex invocation](../../extensions/agent/spec.md#codex-invocation), [Operations](../north-star/contract.md#operations)
 - **Proves:** `extensions/agent/testdata/script/agent_dry_run.txtar`
 
-The `claude` adapter checks the harness version, 2.1.291 or later, and `--dry-run` shows the profile, the requested mode, and the redacted invocation with its tools-off flags, which apply unless `--tools` is set. The task comes from the argument or `--task-file`, and material from `--input`, with stdin read only for `--input -`, so a dry run under an open pipe never waits. `--tools` with `--input` is `USAGE_INVALID`. A stub harness in `PATH` proves that the harness never starts. A harness older than its minimum is `PREREQ_MISSING`. A profile for a harness without an adapter fails with `CAPABILITY_UNSUPPORTED`.
+Resolve the model, effort, trusted task, and working directory. Check Codex's version and the requested tools mode through `sdk/runner`. Show the redacted invocation without launching a task. Missing model, unreadable task file, and invalid settings fail before launch.
 
-### M09-T4 Pi adapter dry run
+Require explicit `--tools`. Without it, including in a dry run, answer `CAPABILITY_UNSUPPORTED`. The MVP accepts no `--input`, harness selector, or provider selector. Preserve the filtering of API keys. A stub verifies stdin delivery preparation, the sandbox flags, and that dry run never starts a task or reads stdin.
 
-- **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
-- **Proves:** `extensions/agent/testdata/script/agent_dry_run_pi.txtar`
-
-The `pi` adapter, version 1.0.4 or later, with its provider, its efforts, and its tools-off flags, under the same checks as `claude`.
-
-### M09-T5 Depth limit
+### M09-T3 Depth limit
 
 - **Read:** [Depth limit](../../extensions/agent/spec.md#depth-limit)
 - **Proves:** `extensions/agent/testdata/script/agent_depth.txtar`
 
-At `[agent] max_depth`, 2 by default, `ncly agent run` exits 2 with `AGENT_DEPTH_LIMIT` before preparing a harness. A launched harness receives `NCLY_AGENT_DEPTH` plus one.
+At `[agent] max_depth`, 2 by default, preparation fails with `AGENT_DEPTH_LIMIT`. A launched Codex receives `NCLY_AGENT_DEPTH` plus one. Check this bound before preparing a child invocation.

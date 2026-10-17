@@ -23,7 +23,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D015](D015-macos-and-linux.md) | Target macOS and Linux with the same paths |
 | [D016](D016-local-ci.md) | Run CI locally and release by hand |
 | [D017](D017-testscript-scenarios.md) | Write acceptance criteria as testscript scenarios |
-| [D018](D018-agent-extension.md) | Run agents through the `agent` extension with one profile registry |
+| [D018](D018-agent-extension.md) | Run agents through the `agent` extension |
 | [D019](D019-transcript-extension.md) | Ship transcript as a first-party extension |
 | [D020](D020-host-first.md) | Build the extension host before any domain |
 | [D021](D021-skill-requirements-file.md) | Move skill requirements to a file |
@@ -66,3 +66,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D058](D058-grants-by-path.md) | Grant a key to an extension at its path, and let the extension answer what it lacks |
 | [D059](D059-no-buttons.md) | Let a human type each answer, and show no button |
 | [D060](D060-style-the-plain-text.md) | Style the text that a pipe gets, and let the terminal wrap it |
+| [D061](D061-smallest-useful-capability.md) | Ship the smallest useful capability before its variants |

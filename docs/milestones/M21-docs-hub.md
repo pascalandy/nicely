@@ -5,98 +5,65 @@ Version: v0.21.0
 
 ## Demo
 
-`ncly docs` gathers the docs of every project into one private local site, after a check for keys before anything is published.
+`ncly docs serve <project...>` shows the docs of a small, explicit set of projects in one local site.
 
 ## Scope
 
-Each project keeps its own `docs/` folder, and the `docs` extension gathers them, as [D022](../north-star/decisions/D022-private-docs.md) decides.
+Each selected project keeps its own `docs/` folder.
+The extension reads those folders and combines their rendered pages, as [D022](../north-star/decisions/D022-private-docs.md) decides.
 
 ```
-ncly docs scan <dir> [--dry-run]
-ncly docs list [--json]
-ncly docs sync [--dry-run]
-ncly docs serve
-ncly docs check [--json]
+ncly docs serve <project...>
 ```
 
-- `scan` finds every repository under `<dir>` that has a `docs/` folder and adds it to the config as `private`. It names the config file it changed, and `--dry-run` shows the change
-- `list` shows each project, its path, and its visibility
-- `sync` stages each included project's docs and publishes its managed copy under a lock, then rebuilds navigation. Atomic replacement applies per project and to navigation separately. The run record identifies completed and pending work if publication stops between them
-- `serve` opens a local preview in the browser. Nothing leaves the machine
-- `check` runs gitleaks, with any rules the user adds locally, on the hub before anything is published. It is a report command. A leak exits 78 with `DOCS_LEAK_FOUND`, because a human must review and fix it before anything moves
+Pass the project roots explicitly on each invocation.
+The command uses one existing renderer, builds only in Nicely's disposable cache, and prints its loopback URL.
+It serves until cancelled, then stops its process tree and removes only its own temporary build.
+The source folders remain unchanged.
 
-`scan`, `serve`, and `check` join the verb table of [Usage](../north-star/contract.md#usage).
+Keep project names and navigation sufficient to distinguish the selected sources.
+Serve only the selected documentation and the generated cache.
+Reject paths or symlinks that would expose files outside those roots.
+Bind to loopback, and disable renderer behavior that executes project code or fetches remote content.
 
-```toml
-[docs]
-hub = "~/code/docs-hub"
-default = "private"
-
-[docs.projects]
-transcript = { path = "~/code/transcript", visibility = "public" }
-client-x   = { path = "~/code/client-x" }
-old-test   = { path = "~/code/old-test", visibility = "exclude" }
-```
-
-| Visibility | In the hub | In a future public build |
-|---|---|---|
-| `public` | yes | yes |
-| `private` | yes | no |
-| `exclude` | no | no |
-
-**Ownership and repeatability.** Keep an inventory of generated copies and their fingerprints. A repeat sync with unchanged sources is a no-op. Delete stale generated copies when a source disappears or becomes `exclude`, using the trash rule. Preserve a locally edited destination and report the conflict. A source path is never a cleanup target. The configured hub must not overlap any source docs folder. Machine-specific paths belong in local config, and every config-writing command names its target file before changing it.
-
-**Partial work.** Sync uses the operation contract. Revalidate sources, ownership, and artifacts before a resume. The overall verdict covers earlier published projects and navigation too. Dry run reports copies, replacements, removals, and unresolved conflicts without editing config or the run record.
+There is no persistent hub mirror or project registry.
+Scanning, synchronization, visibility management, publishing, and search remain in
+[M99](M99-parking-lot.md#docs-hub).
+This milestone changes no core mechanism.
 
 ## Open questions
 
 Settle each one in `extensions/docs/spec.md`, then delete this section.
 
-- The rendering engine for `serve`. The hub stays plain Markdown, so Obsidian opens it as a vault. Mintlify's local preview is the first candidate, but it needs Node, so weigh it against an engine that a stranger can run with nothing but `ncly` installed
-- The scenarios: include a project and then exclude it, remove a source file, edit a generated destination, and interrupt publication before navigation is updated
-- Whether `ncly docs search <text> --json` lets an agent find a passage across projects, with its project, path, heading, and a bounded excerpt, so that docs serve agents as well as the browser
-- Should `sync` publish the whole hub as one generation? The generation includes docs, navigation, and any search index. This would replace per-project publication and keep the previous hub whole after an interrupted sync. It would remove an excluded project from every surface at once. If yes, replace the per-project Scope rule
+- Which existing renderer supports multiple explicit docs roots with simple setup, useful navigation, and the required local-only behavior
+- Which installed programs and versions it requires, and which doctor checks and install hints describe that setup
+- How its build, serving, path boundaries, port selection, and cancellation are proven with two real project docs folders
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M21-T1 | Scan and list | agent | — | todo |
-| M21-T2 | Sync | agent | M21-T1 | todo |
-| M21-T3 | Serve | agent | M21-T2 | todo |
-| M21-T4 | Check | agent | M21-T2 | todo |
+| M21-T1 | Serve selected docs | agent | — | todo |
+| M21-T2 | Paths and lifecycle | agent | M21-T1 | todo |
 
-### M21-T1 Scan and list
+### M21-T1 Serve selected docs
 
-- **Read:** [Scope](#scope)
-- **Proves:** `extensions/docs/testdata/script/docs_scan.txtar`
-
-`scan` adds projects as `private` and names the config file it changed. `list` shows each project's path and visibility.
-
-### M21-T2 Sync
-
-- **Read:** [Scope](#scope), [D035](../north-star/decisions/D035-sync-ownership.md)
-- **Proves:** `extensions/docs/testdata/script/docs_sync.txtar`
-
-`sync` never copies an excluded project, preserves user edits and source files, and resumes an interrupted publication whose navigation references only published copies.
-
-### M21-T3 Serve
-
-- **Read:** [Scope](#scope)
+- **Read:** [Scope](#scope), [D022](../north-star/decisions/D022-private-docs.md)
 - **Proves:** `extensions/docs/testdata/script/docs_serve.txtar`
 
-`serve` previews the hub locally with the chosen engine.
+Use the chosen renderer to serve two explicitly supplied projects with useful navigation.
+Print the local URL, and report missing docs or dependencies before starting the server.
+Keep sources unchanged and generated files inside disposable cache.
 
-### M21-T4 Check
+### M21-T2 Paths and lifecycle
 
-- **Read:** [Scope](#scope)
-- **Proves:** `extensions/docs/testdata/script/docs_check.txtar`
+- **Read:** [Scope](#scope), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
+- **Proves:** `extensions/docs/testdata/script/docs_serve_boundaries.txtar`
 
-`check` reports a planted fake key on stdout and exits 78 with `DOCS_LEAK_FOUND`.
+Prove that the listener is loopback-only and that served paths cannot escape the selected documentation.
+Stop the renderer and server on cancellation.
+A failed build leaves sources unchanged and needs no publication recovery.
 
 ## After this milestone
 
-These steps wait on Pascal and block no card. Pascal decides when.
-
-- Pascal reads the docs of all his projects in one local site
-- Pascal's global agent instructions say that "docs" means `ncly docs`
+Pascal reads a small selection of his project docs in the local site and judges whether the aggregation saves time.

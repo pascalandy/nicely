@@ -5,67 +5,70 @@ Version: v0.16.0
 
 ## Demo
 
-`ncly transcript` handles Zoom, prompts, and `--open` with a spinner, and a fresh agent session uses it with only the `nicely` skill.
+A fresh agent session discovers, checks, and runs the one-video transcript command, then recovers its verified result by run ID.
 
 ## Scope
 
-The rest of [extensions/transcript/spec.md](../../extensions/transcript/spec.md): Zoom, prompts, `--open`, the doctor checks, browser cookies, the spinner in the look Pascal picked in M07, and the transcript skill.
+Finish the YouTube path of [M13](M13-transcript.md) with doctor checks, the transcript skill, and fresh-session evidence.
+The [transcript spec](../../extensions/transcript/spec.md) owns its behavior.
+Zoom, prompt discovery, `--open`, progress displays, and additional browser support remain in
+[M99](M99-parking-lot.md#transcript-extras).
 
 ## Open questions
 
 Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.
 
-- The spec of `ncly transcript status`, the [status command](../north-star/contract.md#status-command) that M16-T3 adds: its flags, and the id and code of each check
-- What the transcript skill says beyond the `nicely` skill, such as the lines about repeating a transcription and about `summary run`
+- The flags, check IDs, and codes of `ncly transcript status`, limited to the selected YouTube path and its proven dependencies
+- Which free Deepgram endpoint can verify authentication under `--live`, with no upload or bill
+- The transcript skill's minimal guidance on result files, chosen run IDs, inspection, and refusal of uncertain paid work
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M16-T1 | Zoom | agent | — | todo |
-| M16-T2 | Prompts and open | agent | — | todo |
-| M16-T3 | Doctor and cookies | agent | — | todo |
-| M16-T4 | Spinner and transcript skill | agent | M16-T1, M16-T2 | todo |
-| M16-T5 | Fresh-session check | agent | M16-T3, M16-T4 | todo |
+| M16-T1 | Doctor for YouTube | agent | — | todo |
+| M16-T2 | Transcript skill | agent | — | todo |
+| M16-T3 | Fresh-session check | agent | M16-T1, M16-T2 | todo |
 
-### M16-T1 Zoom
+### M16-T1 Doctor for YouTube
 
-- **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
-- **Proves:** `extensions/transcript/testdata/script/transcript_zoom.txtar`
-
-`ncly transcript run zoom` with `--latest` or `--path`. Python selects the audio once and Go records its fingerprint. A meeting folder without audio is `NOT_FOUND`, and the folder's name becomes the title.
-
-### M16-T2 Prompts and open
-
-- **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies)
-- **Proves:** `extensions/transcript/testdata/script/transcript_prompt.txtar`, `extensions/transcript/testdata/script/transcript_open.txtar`
-
-`ncly transcript prompt list` with the precedence of `prompt_paths` over the bundled prompts. `--open` opens each result folder as it appears, never during a dry run. Completion suggests profiles and prompts.
-
-### M16-T3 Doctor and cookies
-
-- **Read:** [Output, prompts, and cookies](../../extensions/transcript/spec.md#output-prompts-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract.md#status-command)
+- **Read:** [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract.md#status-command)
 - **Proves:** `extensions/transcript/testdata/script/transcript_doctor.txtar`, `extensions/transcript/testdata/script/transcript_cookies.txtar`
 
-`ncly transcript status`, the status command of the transcript domain, takes over the checks of the transcript CLI's `doctor --source`, so `ncly doctor transcript` lists them: `uv`, Python 3.12 or later with its install command, and the browser cookies. Without `--live`, it stays on the machine, so it finds Python with a local probe, such as `uv python find`, never with `uv run`, which may contact the package index. `--live` checks the key against a free Deepgram endpoint. Unreadable cookies fall back to anonymous access with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`, once in a batch's top-level `warnings`.
+Add `ncly transcript status` so `ncly doctor transcript` reports the dependencies established in M13 and the selected cookie path.
+Without `--live`, use installed-version probes only, including a local Python probe.
+Never start `uv run` to check installation because it may contact the package index.
+Under `--live`, check authentication only through the chosen free Deepgram endpoint.
+Unreadable configured cookies produce the specified warning.
 
-### M16-T4 Spinner and transcript skill
+### M16-T2 Transcript skill
 
-- **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Output](../north-star/contract.md#output)
-- **Proves:** `extensions/transcript/testdata/script/transcript_spinner.txtar`, `extensions/transcript/SKILL.md`
+- **Read:** [ncly transcript](../../extensions/transcript/spec.md#ncly-transcript), [Records and replay](../../extensions/transcript/spec.md#records-and-replay)
+- **Proves:** `extensions/transcript/SKILL.md`
 
-A run shows one spinner on a terminal, in the picked look, and none in JSON or non-interactive mode. Write the transcript skill.
+Teach the one-video command and its result files.
+Choose a run ID before execution, preserve the full answer, and inspect a failed run before another action.
+Explain verified-result replay and why an unknown paid outcome cannot be retried.
+Use only commands that have shipped.
 
-### M16-T5 Fresh-session check
+### M16-T3 Fresh-session check
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Inspection and explicit resume](../north-star/contract.md#inspection-and-explicit-resume)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Records and replay](../../extensions/transcript/spec.md#records-and-replay)
 - **Proves:** the session's transcript, attached to the pull request
 
-An agent in a fresh session, given only the line that points to `ncly skill view nicely`, discovers a command, plans it, runs it under a run ID that it chose, inspects a recorded failure without full transcripts or logs, then dry-runs and explicitly resumes supported work without repeating a paid step. Fix the skills until it does.
+Give a fresh agent only the line that points to `ncly skill view nicely`.
+It discovers the transcript command, plans one URL, and runs it under a chosen run ID.
+It inspects a recorded failure without reading full transcripts or logs.
+It retrieves a verified result after lost stdout and refuses an unknown paid outcome.
+Use the established test transport for counted calls; claim live service proof only when that separate check actually ran.
+Fix the skills until the session succeeds.
 
 ## After this milestone
 
 These steps wait on Pascal and block no card. Pascal decides when.
 
-- Pascal moves his key once per machine, `chezmoi secret keyring get --service=deepgram --user=api_key | ncly auth login deepgram --stdin`, grants it to transcript, then runs the paid end-to-end check from the transcript README against its listed test video, on macOS, from a local session on the Mac. Omarchy waits for [#23](https://github.com/pascalandy/nicely/issues/23)
-- In `pascalandy/skills`, the `transcript` skill points to `ncly`, the `transcript` and `transcript-cli` recipes retire, `verify-transcript` checks `ncly`, and the Python copy there is deleted
+- Pascal moves and grants his Deepgram key on each machine, then runs the paid check against the README's test video locally on macOS.
+  Omarchy's live check waits for [#23](https://github.com/pascalandy/nicely/issues/23).
+- Keep the existing Python CLI and its skills for every workflow Nicely does not yet cover.
+  Retire or redirect them only after Pascal confirms that Nicely covers his actually required uses.
+  The narrower YouTube milestone alone does not establish migration parity.

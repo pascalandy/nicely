@@ -14,9 +14,9 @@ Nicely runs on macOS and Linux. Omarchy, which is based on Arch, is the referenc
 
 Agents operate `ncly`. Every command runs without a terminal, answers in JSON on request, and fails with an error code and a fix. [contract.md](contract.md#output) lists the few exceptions, such as `--help`. Any agent with a shell can use Nicely, so `ncly` never needs to know which agent calls it.
 
-`ncly` also runs agents, through the `agent` extension. Profiles in the config name a harness, a model, and an effort. Other extensions use agents through `ncly agent run`, as transcript does for its summary.
+`ncly` also runs agents, through the `agent` extension. Its first capability runs one trusted Codex task, with model and effort settings. Additional harnesses and named profiles remain in [M99](../milestones/M99-parking-lot.md#agent-extras). Other extensions compose through the same CLI when their own workflow needs it. [Transcript summary](../milestones/M99-parking-lot.md#transcript-summary) remains deferred until a verified tools-off path exists.
 
-Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, then read the bundled `nicely` skill with `ncly skill view nicely`. They discover a command with `ncly describe`. They dry-run a command that writes or bills: the dry run checks what that invocation needs. For a recorded command, they choose a [run ID](contract.md#run-ids) before the call, so that a lost answer costs nothing. `ncly doctor` checks the whole machine, during setup or when a dry run reports a problem that the agent cannot explain. Each extension ships a skill that teaches agents its own commands.
+Agents set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`, then read the bundled `nicely` skill with `ncly skill view nicely`. They discover a command with `ncly describe`. They dry-run a command that writes or bills: the dry run checks what that invocation needs. For a recorded command, they choose a [run ID](contract.md#run-ids) before the call, so that a lost answer never causes an automatic second charge. `ncly doctor` checks the whole machine, during setup or when a dry run reports a problem that the agent cannot explain. Each extension ships a skill that teaches agents its own commands.
 
 Every extension extends the same loop instead of adding one: its commands appear in `ncly describe`, its skill in `ncly skill list`, and its codes in its manifest. An agent that knows the loop uses a new extension without learning anything else.
 
@@ -27,9 +27,8 @@ Every extension extends the same loop instead of adding one: its commands appear
 | [Dry run](contract.md#operations) | The invocation's plan, its readiness, and the checks that only execution can make |
 | [Run inspection](core-spec.md#ncly-run) | Saved step evidence and `active`, which reports whether a process holds the run lock |
 | Artifacts | The full output files, referenced by path and verified fingerprints |
-| [Explicit resume](contract.md#inspection-and-explicit-resume) | The saved outputs that current verification permits the extension to reuse |
-| [Run ID](contract.md#run-ids) | The one run that a call names, so that repeating the call continues that run instead of starting another |
+| [Run ID](contract.md#run-ids) | The one run that a call names, so a repeated call verifies saved work before any further effect |
 
 Commands with paid work or reusable partial results keep records. An agent inspects a recorded failure before choosing a recovery action. Overall exit 75 alone permits an automatic repeat of the same invocation. A saved status describes the operation's last recorded outcome; the execution lock establishes whether a process owns the run now.
 
-Records and verified outputs retain useful work across sessions. Explicit resume reuses that work and runs only safe remaining steps. The SDK's record support owns records, locks, and result publication; the extension decides what to reuse or execute. Nicely needs no memory daemon, workflow interpreter, or generic engine for future domains. A record does not keep a process alive, and Nicely has no background worker or scheduler.
+Records and verified outputs retain useful work across sessions. The first recorded commands save one item and one paid step, with inspection and verified completion replay. [Explicit resume](../milestones/M99-parking-lot.md#resume) waits for a workflow with reusable partial work. The SDK's record support owns records, locks, and result publication; the extension decides what to reuse or execute. Nicely needs no memory daemon, workflow interpreter, or generic engine for future domains. A record does not keep a process alive, and Nicely has no background worker or scheduler.

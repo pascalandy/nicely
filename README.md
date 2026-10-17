@@ -19,7 +19,11 @@ The current build implements help, the version, shell completion, and `ncly desc
 
 ## Planned commands
 
-Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It finds extensions named `ncly-<domain>`, and it bundles one extension, `skill`, which agents use to learn Nicely. Everything else is an extension, including the first ones: `agent`, which runs a task through Claude Code, Pi, and other harnesses, and `transcript`, which transcribes YouTube and Zoom audio and summarizes it through `agent`. Taps arrive between the two, so `transcript` installs from the official tap. Everyday domains such as `markdown` and `video`, a private docs hub, and Canadian French follow. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
+Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It bundles `skill`, which agents use to learn Nicely. Other domains use external extensions named `ncly-<domain>`.
+
+The first `agent` command runs one trusted task through Codex. The first `transcript` command transcribes one explicitly selected YouTube video. Tap installation distributes one selected extension from the official repository. Each capability starts with its smallest useful path; additional harnesses, transcript summaries, and broader tap management remain in [M99](docs/milestones/M99-parking-lot.md).
+
+The plan also keeps an everyday task chosen from real use, a local view of selected project docs, and Canadian French. Markdown is the first everyday candidate. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
 
 In a terminal, a form asks a human for each missing value. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 
@@ -31,7 +35,7 @@ Add one line to your agent instructions, such as `AGENTS.md` or `CLAUDE.md`, to 
 Before using ncly, run ncly skill view nicely
 ```
 
-The bundled `nicely` skill teaches only what this release can do: find a command with `ncly describe`, dry-run it when it writes or bills, check the machine with `ncly doctor` when a problem has no explanation, and act on the stable `code` of each error and on the exit code, which says who acts. When the hint names a command that runs as is, `next` holds that command as words. Each extension ships a skill for its own commands, which `ncly skill list` lists. Later releases add [run IDs](docs/north-star/contract.md#run-ids), inspection, and explicit resume to the skill, so that a lost answer costs nothing. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules.
+The bundled `nicely` skill teaches only what this release can do: find a command with `ncly describe`, dry-run it when it writes or bills, check the machine with `ncly doctor` when a problem has no explanation, and act on the stable `code` of each error and on the exit code, which says who acts. When the hint names a command that runs as is, `next` holds that command as words. Each extension ships a skill for its own commands, which `ncly skill list` lists. Later releases add [run IDs](docs/north-star/contract.md#run-ids), inspection, and verified result replay to the skill. An uncertain paid result never permits an automatic second charge. [Explicit resume](docs/milestones/M99-parking-lot.md#resume) waits for a workflow that needs it. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules.
 
 ## Install
 

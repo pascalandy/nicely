@@ -112,11 +112,11 @@ The contract suite exercises behavior, not the spelling of source code. Each gua
 | Partial results and retry | Direct tests of the actual shared verdict and rendering components retain successful items and reject 75 after non-repeatable writes, paid dispatch, or unknown effects. Reverse error arrival order to prove the verdict stays the same | `agent run` in M10 and transcript in M13 inject failures around real operation boundaries and verify effects, not just fields |
 | Compatibility | Independent consumer cases cover types, nullability, required fields, defined array order, and ignored optional fields | Extensions in M01 and the transcript Python program in M13 test incompatible messages before any new effect |
 | Dry run | Define the shared preparation/result contract and its conformance cases, including the bounded cache exception | Auth in M06 and transcript in M13 compare user files, config, keychain, run records, and external calls before and after dry run |
-| Cancellation and resume | Define the signal verdicts and required partial-result representation | M01 checks process cleanup on an extension. M10, M13, and M15 check persisted evidence, lost stdout, and explicit resume |
+| Cancellation and resume | Define the signal verdicts and required partial-result representation | M01 checks process cleanup on an extension. M10 and M13 check persisted evidence and lost stdout; explicit resume waits in [M99](M99-parking-lot.md#resume) |
 
 No M00 key carries a unit, so the first key with one, such as `duration_ms`, adds its own consumer case. The only M00 enum is `code`, which every milestone and extension extends, so its consumer case waits for the reader rule that [M01](M01-extension-host.md) settles in [Error codes](../north-star/contract.md#error-codes). The scenario commands `snapshot` and `unchanged` are the dry-run conformance check: they compare the content or link target of every file under `$HOME`, except in Nicely's cache and the scenario's temporary folder.
 
-Direct component tests are justified where M00 exposes no real command that reaches the behavior. Test support stays in tests and calls production components. It does not implement an alternate CLI. Effects and resume are not marked verified until the first real command exercises them, from M10 to M15.
+Direct component tests are justified where M00 exposes no real command that reaches the behavior. Test support stays in tests and calls production components. It does not implement an alternate CLI. Effects are not marked verified until a real command exercises them in M10 or M13. Explicit resume remains unverified and deferred in M99.
 
 ## CLI examples
 
