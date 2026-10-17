@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"math"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -238,8 +240,8 @@ var durationUnits = []struct {
 }{{"duration.milliseconds", time.Millisecond}, {"duration.seconds", time.Second}, {"duration.minutes", time.Minute}, {"duration.hours", time.Hour}}
 
 // Duration formats d in the largest unit, up to the hour, that keeps the
-// number at 1 or more, with at most one decimal, such as 1.5 s or 2 min.
-// Milliseconds take no decimal.
+// number at 1 or more, with at most one decimal, such as 1.5 s or 2 min,
+// in the plural form of that number. Milliseconds take no decimal.
 func (p *Printer) Duration(d time.Duration) string {
 	unit := 0
 	for unit < len(durationUnits)-1 && d >= durationUnits[unit+1].length {
@@ -250,7 +252,14 @@ func (p *Printer) Duration(d time.Duration) string {
 		decimals = 0
 	}
 	value := float64(d) / float64(durationUnits[unit].length)
-	return p.T(durationUnits[unit].id, map[string]any{"N": p.Number(value, decimals)})
+	// The plural form follows the number as it shows, such as 1 or 1.5, which
+	// the plural rules read in plain digits.
+	shown := math.Round(value*math.Pow10(decimals)) / math.Pow10(decimals)
+	return p.localize(&goi18n.LocalizeConfig{
+		MessageID:    durationUnits[unit].id,
+		PluralCount:  strconv.FormatFloat(shown, 'f', -1, 64),
+		TemplateData: map[string]any{"N": p.Number(value, decimals)},
+	})
 }
 
 // Date formats a day as ISO 8601, such as 2026-10-06, in every language:
