@@ -95,14 +95,6 @@ cp stdout codes.txt
 mentions $DATA/ncly-agent.skill/SKILL.md describe.json codes.txt
 ! exists external.log
 
-# This build prepares no task yet: agent run starts the installed extension, which answers
-# CAPABILITY_UNSUPPORTED, a code of the SDK's registry with exit 78, and starts no codex
-exits 78 ncly agent run 'Review this branch' --tools --dry-run --json
-! stdout .
-answer stderr CAPABILITY_UNSUPPORTED
-exists external.log
-! exists task.log
-
 -- want-probes.log --
 --version
 --version

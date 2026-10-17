@@ -32,10 +32,134 @@ other = "The reasoning effort, instead of effort in [agent]"
 description = "Help of `ncly agent run`: the --cwd flag, the folder where Codex works."
 other = "The folder where Codex works, the current one by default"
 
-["agent.run.unavailable"]
-description = "Error CAPABILITY_UNSUPPORTED of `ncly agent run` in a build that cannot prepare or run a task yet. Codex is the name of a program and stays as is."
-other = "This build of the agent extension cannot prepare or run a Codex task yet."
+["agent.run.execution_unavailable"]
+description = "Error CAPABILITY_UNSUPPORTED of `ncly agent run` without --dry-run, once preparation passed, in a build that prepares a task but cannot run it yet. Codex is the name of a program and stays as is."
+other = "This build of the agent extension prepares a Codex task, but cannot run it yet."
 
-["agent.run.unavailable_hint"]
-description = "Hint under the error agent.run.unavailable: what the user does next."
-other = "Install a build of Nicely that runs Codex tasks."
+["agent.run.execution_unavailable_hint"]
+description = "Hint under the error agent.run.execution_unavailable: what the user does next. --dry-run is a flag and stays as is."
+other = "Add --dry-run to check the task, or install a build of Nicely that runs Codex tasks."
+
+["agent.run.planned"]
+description = "ncly agent run --dry-run, human text: the line before the command that execution would run, which follows on the next line. {{.Version}} is the version of Codex, such as 0.163.0. Codex is the name of a program and stays as is."
+other = "Would run Codex {{.Version}} with this command, and give it the task on its input:"
+
+["agent.run.planned_model"]
+description = "ncly agent run --dry-run, human text: the model that Codex would use. {{.Model}} is a model ID, which stays as is."
+other = "model: {{.Model}}"
+
+["agent.run.planned_effort"]
+description = "ncly agent run --dry-run, human text: the reasoning effort that Codex would use. {{.Effort}} is a value such as medium, which stays as is."
+other = "effort: {{.Effort}}"
+
+["agent.run.planned_cwd"]
+description = "ncly agent run --dry-run, human text: the folder where Codex would work. {{.Dir}} is an absolute path."
+other = "folder: {{.Dir}}"
+
+["agent.run.pending"]
+description = "ncly agent run --dry-run, human text: one check that only execution makes. {{.ID}} is its id, such as agent.login, which stays as is, and {{.Message}} what it checks."
+other = "pending  {{.ID}}  {{.Message}}"
+
+["agent.run.pending_login"]
+description = "ncly agent run --dry-run: the message of the pending check agent.login. A dry run starts no task, so only execution finds out whether the login of Codex works. Codex is the name of a program and stays as is."
+other = "Codex checks its login only when it runs the task."
+
+["agent.run.task_missing"]
+description = "Error USAGE_INVALID of `ncly agent run` when the call gives neither a task argument nor --task-file."
+other = "The task is missing."
+
+["agent.run.task_twice"]
+description = "Error USAGE_INVALID of `ncly agent run` when the call gives both a task argument and --task-file."
+other = "Give the task either as an argument or with --task-file, not both."
+
+["agent.run.task_empty"]
+description = "Error USAGE_INVALID of `ncly agent run` when the task holds nothing but spaces and line breaks."
+other = "The task is empty."
+
+["agent.run.task_hint"]
+description = "Hint under a USAGE_INVALID error about the task of `ncly agent run`: the two forms of the call. <task> and <file> are placeholders, and the rest is a command that stays as is."
+other = "ncly agent run (<task> | --task-file <file>) --tools"
+
+["agent.run.task_unreadable"]
+description = "Error USAGE_INVALID of `ncly agent run` when the file of --task-file cannot be read, such as a missing file or a folder. {{.File}} is the path that the call gave."
+other = "Cannot read the task file {{.File}}."
+
+["agent.run.task_unreadable_hint"]
+description = "Hint under the error agent.run.task_unreadable: what the user does next. --task-file is a flag and stays as is."
+other = "Give --task-file a file that you can read."
+
+["agent.run.model_missing"]
+description = "Error USAGE_INVALID of `ncly agent run` when neither --model nor model in the [agent] table of the config gives a model, or gives an empty one. [agent] and model stay as is."
+other = "No model is set for Codex."
+
+["agent.run.model_missing_hint"]
+description = "Hint under the error agent.run.model_missing. --model, <id>, model, and [agent] stay as is. {{.File}} is the path of the shared config file."
+other = "Add --model <id> to the call, or set model in the [agent] table of {{.File}}."
+
+["agent.run.cwd_invalid"]
+description = "Error USAGE_INVALID of `ncly agent run` when --cwd names no folder that exists. {{.Dir}} is the path that the call gave."
+other = "{{.Dir}} is not a folder."
+
+["agent.run.cwd_invalid_hint"]
+description = "Hint under the error agent.run.cwd_invalid: what the user does next. --cwd is a flag and stays as is."
+other = "Give --cwd a folder that exists."
+
+["agent.run.tools_required"]
+description = "Error CAPABILITY_UNSUPPORTED of `ncly agent run` without --tools: Codex has no verified switch that turns all its tools off, such as running commands, so the command runs only with them. Codex is the name of a program and stays as is."
+other = "Codex cannot run a task with its tools turned off."
+
+["agent.run.tools_required_hint"]
+description = "Hint under the error agent.run.tools_required: what the user does next. --tools is a flag and stays as is."
+other = "Add --tools to the call when Codex may use its tools."
+
+["agent.run.manifest"]
+description = "Error RUNTIME of `ncly agent run` when the extension cannot read its own manifest, which never happens in a build that passed its tests."
+other = "The agent extension cannot read its own manifest."
+
+["agent.config_invalid"]
+description = "Error CONFIG_INVALID of `ncly agent run` when a config file cannot be read or is invalid, with no line number. {{.File}} is the path of the file."
+other = "{{.File}} is not a valid config file."
+
+["agent.config_invalid_line"]
+description = "Error CONFIG_INVALID of `ncly agent run` when a config file has an error on a known line. {{.File}} is the path of the file, and {{.Line}} a line number."
+other = "{{.File}} has an error on line {{.Line}}."
+
+["agent.config_value"]
+description = "Error CONFIG_INVALID of `ncly agent run` when a key of the [agent] table holds a value of the wrong type, such as a number for model. {{.Key}} is the key, such as model, and {{.File}} the path of the file. [agent] stays as is."
+other = "{{.Key}} in the [agent] table of {{.File}} is not text."
+
+["agent.config_effort"]
+description = "Error CONFIG_INVALID of `ncly agent run` when effort in the [agent] table is no known reasoning effort. {{.Effort}} is the value of the file, {{.Efforts}} lists the known ones, such as low, medium, high, and {{.File}} is the path of the file. effort and [agent] stay as is."
+other = "effort in the [agent] table of {{.File}} is {{.Effort}}, which is none of {{.Efforts}}."
+
+["agent.config_hint"]
+description = "Hint under a CONFIG_INVALID error of `ncly agent run`: what the user does next. {{.File}} is the path of the config file."
+other = "Fix {{.File}}."
+
+["agent.codex_missing"]
+description = "Error PREREQ_MISSING of `ncly agent run` when no folder of PATH holds codex. codex is the name of a program and stays as is."
+other = "codex is not installed."
+
+["agent.codex_old"]
+description = "Error PREREQ_MISSING of `ncly agent run` when codex is older than the oldest version that works. {{.Found}} is the version that it printed, and {{.Version}} the oldest version that works. codex stays as is."
+other = "codex {{.Found}} is older than {{.Version}}."
+
+["agent.codex_probe_failed"]
+description = "Error PREREQ_MISSING of `ncly agent run` when the version probe of codex exited with an error. {{.Probe}} is the command that ran, such as codex --version, which stays as is, and {{.Exit}} its exit code."
+other = "{{.Probe}} exited with {{.Exit}}, so its version is unknown."
+
+["agent.codex_no_version"]
+description = "Error PREREQ_MISSING of `ncly agent run` when the version probe of codex printed no version number. {{.Probe}} is the command that ran, such as codex --version, which stays as is."
+other = "{{.Probe}} printed no version."
+
+["agent.codex_timed_out"]
+description = "Error PREREQ_MISSING of `ncly agent run` when the version probe of codex did not answer in time, so ncly stopped it. {{.Probe}} is the command that ran, such as codex --version, which stays as is."
+other = "{{.Probe}} did not answer in time, so its version is unknown."
+
+["agent.codex_timed_out_hint"]
+description = "Hint under the error agent.codex_timed_out: what the user does next. {{.Probe}} is the command that ran, such as codex --version, which stays as is."
+other = "Check that {{.Probe}} answers, then make the call again."
+
+["agent.codex_hint"]
+description = "Hint under a PREREQ_MISSING error about codex when no install command is known for this machine. codex is the name of a program and stays as is."
+other = "Install codex."

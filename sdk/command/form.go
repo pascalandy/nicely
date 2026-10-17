@@ -243,7 +243,7 @@ func commandLine(c *cobra.Command, d contract.Command, args []string, lacks []la
 	arguments := make([]string, 0, len(args))
 	dashed := false
 	for _, a := range args {
-		arguments = append(arguments, quote(a))
+		arguments = append(arguments, Quote(a))
 		dashed = dashed || strings.HasPrefix(a, "-")
 	}
 	var flags []string
@@ -268,7 +268,7 @@ func commandLine(c *cobra.Command, d contract.Command, args []string, lacks []la
 			}
 		case flag.Changed:
 			for _, v := range FlagValues(flag) {
-				flags = append(flags, "--"+f.Name, quote(v))
+				flags = append(flags, "--"+f.Name, Quote(v))
 			}
 		case slices.ContainsFunc(lacks, func(l lack) bool { return l.flag != nil && l.flag.Name == f.Name }):
 			flags = append(flags, flagUsage(d, f.Name))
@@ -288,9 +288,9 @@ func commandLine(c *cobra.Command, d contract.Command, args []string, lacks []la
 // plainWord is a word that a POSIX shell reads as is.
 var plainWord = regexp.MustCompile(`^[A-Za-z0-9_@%+=:,./-]+$`)
 
-// quote returns a word as a POSIX shell reads it back: as is when it needs
+// Quote returns a word as a POSIX shell reads it back: as is when it needs
 // no quotes, and between single quotes otherwise.
-func quote(word string) string {
+func Quote(word string) string {
 	if plainWord.MatchString(word) {
 		return word
 	}
