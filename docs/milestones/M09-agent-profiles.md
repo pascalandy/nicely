@@ -1,6 +1,6 @@
 # M09 Agent profiles
 
-Status: planned
+Status: ready
 Version: v0.9.0
 
 ## Demo
@@ -11,13 +11,7 @@ Version: v0.9.0
 
 `agent` is the first real external extension: Nicely needs no agent to operate, so it ships outside the binary. It lives in `extensions/agent/`, builds as `ncly-agent`, and owns profiles, harness adapters, tools-off mode, and the depth limit, as [extensions/agent/spec.md](../../extensions/agent/spec.md) defines. This milestone reads profiles and prepares runs. Execution and its records arrive in [M10](M10-agent-run.md), and the other harnesses in [M11](M11-harnesses.md).
 
-Before taps exist, `just install` builds the first-party extensions and puts them where core finds them. A user without the repository waits for the official tap of [M12](M12-taps.md).
-
-## Open questions
-
-Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), then delete this section.
-
-- The answer keys of `ncly agent run` that transcript records: `run_id`, `answer`, `profile`, `harness`, the harness version, `model`, and `duration_ms`
+Before taps exist, `just install` builds `ncly` and the first-party extensions into one location where core finds them. A user without the repository waits for the official tap of [M12](M12-taps.md).
 
 ## Cards
 
@@ -34,7 +28,7 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md), t
 - **Read:** [extensions/agent/spec.md](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `extensions/agent/testdata/script/agent_install.txtar`
 
-Create `extensions/agent/` with its manifest, spec, and `SKILL.md`, built as `ncly-agent` on `sdk/`. `just install` builds it into the data folder, and `ncly agent --help` reaches it through core.
+Add the manifest, `SKILL.md`, and `ncly-agent` binary in `extensions/agent/`, built on `sdk/`. `just install` builds `ncly` and `ncly-agent` into the data folder, and `ncly agent --help` reaches the extension through core.
 
 ### M09-T2 Profiles
 
