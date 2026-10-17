@@ -162,13 +162,25 @@ answer stderr INTERRUPTED
 stderr '"answer":"OK from the stub"'
 stderr '"run_id":"k9"'
 stderr '"message":"A signal stopped the call after the run k9 saved the answer of Codex, so the run is complete\.","hint":"ncly run view k9","next":\["ncly","run","view","k9"\]'
+
+# Ctrl-C after the timeout ended during the save of the answer still answers the signal, with
+# the inspection of the run
+rm paused
+exec exitcode exit.txt ncly agent run 'Review this branch' --tools --model m1 --run-id k10 --timeout 1s --json &
+waitfile paused
+exec /bin/sleep 1.5
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"message":"A signal stopped the call after the run k10 saved the answer of Codex, so the run is complete\.","hint":"ncly run view k10","next":\["ncly","run","view","k10"\]'
 env CODEX_QUICK= NCLY_TEST_BOUNDARY=
 exec ncly run view k9 --json
 stdout '"status":"completed","tools"'
 exec ncly agent run 'Review this branch' --tools --model m1 --run-id k9 --json
 stdout '"answer":"OK from the stub".*"run_id":"k9"'
-grep -count=15 '(?m)^(--version|exec )' calls.log
-grep -count=5 '(?m)^exec ' calls.log
+grep -count=17 '(?m)^(--version|exec )' calls.log
+grep -count=6 '(?m)^exec ' calls.log
 
 -- child.sh --
 # child.sh writes its process ID once its traps are set, then runs until a signal ends it,

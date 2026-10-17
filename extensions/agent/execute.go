@@ -57,8 +57,9 @@ func store() record.Store {
 // a saved record, as Records and replay in spec.md defines, and for a new
 // task persists the record and the intent of the step codex before Codex
 // starts, then publishes the verified answer and the completion before it
-// answers success.
-func execute(ctx context.Context, call extension.Call, t task, id string) contract.Outcome {
+// answers success. ctx ends with the timeout or a signal, and signals with a
+// signal alone.
+func execute(ctx, signals context.Context, call extension.Call, t task, id string) contract.Outcome {
 	p := call.Printer
 	runs := store()
 	if id == "" {
@@ -148,10 +149,11 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 		return o
 	}
 	o := savedAnswer(call, run.Record, run.File(), id, run.Effect())
-	if ctx.Err() != nil && !timedOut(ctx) && o.Errors == nil {
-		// A signal came once Codex had answered: the answer and the
-		// completion stay saved, and the signal still decides the exit code.
-		o.Errors = []contract.Problem{*inspect(p, stopCode(ctx), id, "agent.run.stopped_after", data)}
+	if signals.Err() != nil && o.Errors == nil {
+		// A signal came once Codex had answered, even after the timeout: the
+		// answer and the completion stay saved, and the signal still decides
+		// the exit code.
+		o.Errors = []contract.Problem{*inspect(p, stopCode(signals), id, "agent.run.stopped_after", data)}
 	}
 	return o
 }

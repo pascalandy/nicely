@@ -100,7 +100,10 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	if !valid {
 		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.timeout_invalid", "agent.run.timeout_invalid_hint", map[string]any{"Value": value})}}
 	}
-	ctx, cancel := context.WithTimeoutCause(ctx, limit, errTimedOut)
+	// signals ends with Ctrl-C or SIGTERM alone, so it still tells a signal
+	// once the timeout has ended ctx.
+	signals := ctx
+	ctx, cancel := context.WithTimeoutCause(signals, limit, errTimedOut)
 	defer cancel()
 	t, problem := prepare(call)
 	if problem != nil {
@@ -112,7 +115,7 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.run_id_invalid", "agent.run.run_id_invalid_hint", map[string]any{"ID": id})}}
 	}
 	if call.Flags["dry-run"] != "true" {
-		return execute(ctx, call, t, id)
+		return execute(ctx, signals, call, t, id)
 	}
 	return dryRunOf(ctx, call, t, id)
 }
