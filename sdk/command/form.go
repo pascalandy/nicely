@@ -144,7 +144,7 @@ func (f *Form) ask(text *i18n.Printer, c *cobra.Command, d contract.Command, arg
 		default:
 			for setFlags(c, *l.group) < l.group.Min {
 				name, err := f.pick(ctx, text, c, d, *l.group)
-				if err != nil {
+				if err != nil || name == "" {
 					return args, stopped(err)
 				}
 				i := slices.IndexFunc(d.Flags, func(flag contract.Flag) bool { return flag.Name == name })

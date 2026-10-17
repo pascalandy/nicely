@@ -114,6 +114,12 @@ stdout 'error\[USAGE_INVALID\]: The flag --size is missing\.'
 stderr '\Aecho on\nterminal as found\n\z'
 exec pty dumb-text.txt ncly cafe order --size small --to-go
 stdout '\Adrink latte\n'
+exits 2 pty dumb-group.txt ncly cafe order latte --size small
+stdout 'error\[USAGE_INVALID\]: Give exactly one of --to-go, --table\.'
+stdout 'hint: ncly cafe order latte --size small \(--to-go \| --table <number>\)'
+exits 2 pty dumb-group-eof.txt ncly cafe order latte --size small
+stdout 'error\[USAGE_INVALID\]: Give exactly one of --to-go, --table\.'
+stderr '\Aecho on\nterminal as found\n\z'
 env TERM=xterm-256color
 grep -count=5 '^cafe order' ran
 
@@ -182,6 +188,10 @@ drink	^C
 1 to 2:	^D
 -- dumb-text.txt --
 drink	latte
+-- dumb-group.txt --
+1 to 2:	9
+-- dumb-group-eof.txt --
+1 to 2:	^D
 -- login.txt --
 service	ope\c
 openai	^E
