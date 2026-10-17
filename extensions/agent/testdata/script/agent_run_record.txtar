@@ -97,11 +97,6 @@ answer stderr RESUME_UNSAFE
 stderr '"message":"Cannot read the record '${RUNS@R}'/r9\.json, so this call started no task\."'
 grep -count=3 '(?m)^exec ' $TMPDIR/task.log
 
-# A record that holds the ID starts no second task: this build cannot answer from it yet
-exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r1 --json
-answer stderr RESUME_UNSAFE
-grep -count=3 '(?m)^exec ' $TMPDIR/task.log
-
 # When the record cannot be written, the barrier fails and no task starts
 exec /bin/sh -c ': > "$RUNS/r5.lock"'
 chmod 500 $RUNS

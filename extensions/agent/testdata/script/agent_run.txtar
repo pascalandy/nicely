@@ -1,0 +1,178 @@
+# ncly agent run runs Codex once per run ID, and answers a repeated call from the record, as
+# Records and replay in spec.md defines. The stub codex appends each call to $TMPDIR/calls.log
+# and each task to $TMPDIR/task.log, saves the depth and any key that the task receives in
+# $TMPDIR/task.env, waits for $TMPDIR/release once it wrote $TMPDIR/started when CODEX_WAIT is
+# set, exits 1 when CODEX_FAIL is set, and otherwise writes $CODEX_ANSWER as its last message.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+mkdir nbin
+exec /bin/sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+env CODEX_ANSWER='OK from Codex'
+env RUNS=$WORK/.local/state/nicely/runs
+env SUM=87b51d8466e94d496cf0c8609028f9be8132129801c6ec43501bfe5916d11f4a
+mkdir .config/nicely
+cp m1.toml .config/nicely/config.toml
+
+# The task runs through sdk/runner: Codex gets the depth plus one and no key. The model comes
+# from [agent], so the stated inputs hold no model
+env NCLY_AGENT_DEPTH=1 OPENAI_API_KEY=sk-test-openai CODEX_API_KEY=sk-test-codex
+exec ncly agent run 'Review this branch' --tools --run-id r1 --json
+stdout '"answer":"OK from Codex".*"model":"m1","run_id":"r1"'
+cp stdout $TMPDIR/first.json
+cmp $TMPDIR/task.env want-task.env
+env NCLY_AGENT_DEPTH= OPENAI_API_KEY= CODEX_API_KEY=
+grep '"inputs":\{"cwd":"'${WORK@R}'","task_sha256":"'$SUM'","tools":true\},"resolved":\{"effort":"medium","harness":"codex","model":"m1"\}' $RUNS/r1.json
+grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# After a change of the config, the same call answers what the first call answered, from the
+# record, with its model and its duration, and Codex gets no call at all, not even the probe
+cp m2.toml .config/nicely/config.toml
+exec ncly agent run 'Review this branch' --tools --run-id r1 --json
+cmp stdout $TMPDIR/first.json
+! stderr .
+grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# Without Codex in PATH, as text, the saved answer stays
+env PATH=$WORK/nbin
+exec ncly agent run 'Review this branch' --tools --run-id r1
+stdout '\AOK from Codex\n\z'
+
+# A dry run of that call shows the reuse of the saved run, with the values of the record, no
+# invocation, no variable, and no pending check, and Codex gets no call
+exec ncly agent run 'Review this branch' --tools --run-id r1 --dry-run --json
+stdout '"effort":"medium","environment":\{\},"harness":"codex","harness_version":"0\.163\.0","invocation":\[\],"model":"m1","pending_checks":\[\],"plan":\[\{"key":"task","output_dir":"'${RUNS@R}'/r1","steps":\[\{"id":"codex","action":"reuse"\}\],"effects":\{"network":false,"paid":false,"user_writes":false\}\}\]'
+cp stdout $TMPDIR/reuse.json
+exec ncly describe 'agent run' --json
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/reuse.json $TMPDIR/describe.json dry_run_schema
+exec ncly agent run 'Review this branch' --tools --run-id r1 --dry-run
+cmpenv stdout want-reuse.txt
+env PATH=$WORK/bin:$WORK/nbin
+grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# Another task, folder, model, or effort under that ID names another call: USAGE_INVALID, in a
+# dry run too, and no Codex call
+exits 2 ncly agent run 'Review this other branch' --tools --run-id r1 --json
+answer stderr USAGE_INVALID
+stderr '"run_id":"r1"'
+stderr '"message":"The run r1 holds another call, with another task, folder, or flag, so this call started no task\.","hint":"ncly run view r1","next":\["ncly","run","view","r1"\]'
+mkdir other
+exits 2 ncly agent run 'Review this branch' --tools --run-id r1 --cwd other --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this branch' --tools --run-id r1 --model m1 --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this branch' --tools --run-id r1 --effort high --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this other branch' --tools --run-id r1 --dry-run --json
+answer stderr USAGE_INVALID
+grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# A saved answer that changed never answers
+exec /bin/sh -c 'printf "Edited" > "$RUNS/r1/answer.txt"'
+exits 1 ncly agent run 'Review this branch' --tools --run-id r1 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"'${RUNS@R}'/r1/answer\.txt changed since the run saved it\."'
+grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# A failed Codex and a missing answer leave the step unknown, and a repeated call starts no
+# second task: RESUME_UNSAFE, which a dry run answers too
+env CODEX_FAIL=1
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id u1 --json
+answer stderr RUNTIME
+env CODEX_FAIL=
+grep '"status":"unknown"' $RUNS/u1.json
+env CODEX_ANSWER=
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id u2 --json
+answer stderr RUNTIME
+stderr '"message":"Codex gave no answer for u2, so its result is unknown\."'
+env CODEX_ANSWER='OK from Codex'
+grep '"steps":\[\{"id":"codex","effect":"paid","status":"unknown",' $RUNS/u2.json
+grep -count=6 '(?m)^(--version|exec )' $TMPDIR/calls.log
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id u1 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"The run u1 may have started a paid Codex task without saving its answer, so this call started no task\.","hint":"ncly run view u1","next":\["ncly","run","view","u1"\]'
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id u2 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id u2 --dry-run --json
+answer stderr RESUME_UNSAFE
+grep -count=6 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# A record whose step is still pending saved no intent, so the call runs the task again under
+# its ID, with the model and the effort of the record, and counts one more attempt
+exec /bin/sh -c 'printf "%s\n" "{\"format_version\":1,\"run_id\":\"p1\",\"path\":\"agent run\",\"status\":\"running\",\"started_at\":\"2026-10-17T00:00:00Z\",\"updated_at\":\"2026-10-17T00:00:00Z\",\"ncly_version\":\"v0.0.1\",\"attempts\":1,\"inputs\":{\"cwd\":\"$WORK\",\"task_sha256\":\"$SUM\",\"tools\":true},\"resolved\":{\"effort\":\"high\",\"harness\":\"codex\",\"model\":\"m-saved\"},\"tools\":{\"codex\":\"0.162.9\"},\"items\":[{\"key\":\"task\",\"output_dir\":\"$RUNS/p1\",\"steps\":[{\"id\":\"codex\",\"effect\":\"paid\",\"status\":\"pending\",\"started_at\":null,\"finished_at\":null,\"artifacts\":[],\"error\":null}]}]}" > "$RUNS/p1.json"'
+exec ncly agent run 'Review this branch' --tools --run-id p1 --dry-run --json
+stdout '"model":"m-saved"'
+stdout '"action":"run"'
+exec ncly agent run 'Review this branch' --tools --run-id p1 --json
+stdout '"model":"m-saved","run_id":"p1"'
+grep '(?m)^exec --model m-saved -c model_reasoning_effort="high" ' $TMPDIR/task.log
+grep '"status":"completed",.*"attempts":2,.*"tools":\{"codex":"0\.163\.0"\}' $RUNS/p1.json
+grep -count=9 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# A record of another command under the ID names another call
+exec /bin/sh -c '/usr/bin/sed "s/\"path\":\"agent run\"/\"path\":\"transcript run youtube\"/" "$RUNS/p1.json" > "$RUNS/t1.json"'
+exits 2 ncly agent run 'Review this branch' --tools --run-id t1 --json
+answer stderr USAGE_INVALID
+
+# Two calls under one ID start one task: while the first one holds the run, the second one,
+# and its dry run, exit 75 with TEMPORARY and start nothing
+env CODEX_WAIT=1
+exec ncly agent run 'Review this branch' --tools --run-id c1 --json &
+waitfile $TMPDIR/started
+exits 75 ncly agent run 'Review this branch' --tools --run-id c1 --json
+answer stderr TEMPORARY
+exits 75 ncly agent run 'Review this branch' --tools --run-id c1 --dry-run --json
+answer stderr TEMPORARY
+exec /bin/sh -c ': > "$TMPDIR/release"'
+wait
+stdout '"answer":"OK from Codex".*"run_id":"c1"'
+env CODEX_WAIT=
+grep -count=11 '(?m)^(--version|exec )' $TMPDIR/calls.log
+grep -count=5 '(?m)^exec ' $TMPDIR/task.log
+
+# A dry run with an ID that no record holds plans a new task, and creates neither the record
+# nor the lock file
+exec ncly agent run 'Review this branch' --tools --run-id n1 --dry-run --json
+stdout '"action":"run"'
+! exists $RUNS/n1.json
+! exists $RUNS/n1.lock
+
+-- m1.toml --
+[agent]
+model = "m1"
+-- m2.toml --
+[agent]
+model = "m2"
+effort = "high"
+-- want-task.env --
+NCLY_AGENT_DEPTH=2
+-- want-reuse.txt --
+Would answer from the saved run r1, and start no Codex.
+model: m1
+effort: medium
+folder: $WORK
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$TMPDIR/calls.log"
+if [ "$1" = --version ]; then
+  echo "codex-cli 0.163.0"
+  exit 0
+fi
+echo "$*" >> "$TMPDIR/task.log"
+/usr/bin/env | /usr/bin/grep -E '^(NCLY_AGENT_DEPTH|[A-Z_]*API_KEY)=' > "$TMPDIR/task.env"
+/bin/cat > /dev/null
+if [ -n "$CODEX_WAIT" ]; then
+  : > "$TMPDIR/started"
+  while [ ! -e "$TMPDIR/release" ]; do /bin/sleep 0.05; done
+fi
+if [ -n "$CODEX_FAIL" ]; then
+  exit 1
+fi
+out=
+while [ $# -gt 0 ]; do
+  if [ "$1" = --output-last-message ]; then out=$2; fi
+  shift
+done
+echo '{"type":"turn.completed"}'
+if [ -n "$CODEX_ANSWER" ]; then printf '%s' "$CODEX_ANSWER" > "$out"; fi
