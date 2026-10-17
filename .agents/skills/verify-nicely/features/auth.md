@@ -1,6 +1,6 @@
 # auth
 
-`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, and says whether its key comes from its environment variable or from the OS keychain, without printing any key. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. `ncly auth grant` lets an extension receive a key once a human confirms it in a terminal, and `ncly auth revoke` takes the grant back. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. It never touches the key of a real service.
+`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, and says whether its key comes from its environment variable or from the OS keychain, without printing any key. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. `ncly auth grant` lets an extension receive a key once a human confirms it in a terminal, and `ncly auth revoke` takes the grant back. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. Its fixture `verifykeys` declares that service, and `ncly verifykeys digest` answers the SHA-256 of the key that it receives, never the key. It never touches the key of a real service.
 
 ## Sub-features
 
@@ -8,6 +8,9 @@
 - `auth-grant-dry-run` plans the grant of the test service to the fixture, with the confirmation pending, without a terminal
 - `auth-grant-terminal` refuses to grant without a terminal, and names the command that a human runs in one
 - `auth-revoke-missing` answers `NOT_FOUND` for a grant that does not exist
+- `auth-not-granted` keeps the stored key from the fixture, which answers `KEY_NOT_GRANTED` with the grant command as its `next`
+- `auth-grant` grants the key to the fixture after a typed `y` on a real terminal, which shows the path of the fixture as a fact. A second grant answers `unchanged`
+- `auth-key-reaches` passes the key from the keychain to the fixture once granted, which answers its SHA-256, and stops once revoked
 - `auth-missing` fails the report with `AUTH_MISSING` for the test service when neither its variable nor the keychain holds its key
 - `auth-env` reads the key from the variable, and never prints it
 - `auth-login-dry-run` plans the login without asking the keychain anything
@@ -29,6 +32,8 @@
 - `ncly auth logout <service>`, `--force`, and `--dry-run`
 - `ncly auth grant <service> <domain>` and `--dry-run`
 - `ncly auth revoke <service> <domain>` and `--force`
+- `ncly auth grant <service> <domain>` in a terminal, through `just verify tmux`
+- `ncly verifykeys digest`, the fixture's command that needs the key
 - `ncly auth login <service>` and `ncly auth logout <service>` in a terminal, through `just verify tmux`
 - `ncly auth login` without a service, in a terminal and in a pipe
 - `ncly doctor auth`, and `ncly doctor` without a component
@@ -55,6 +60,11 @@ Preconditions:
 - **Login.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"action":"login","service":"verifynicely"}`.
 - **Key from the keychain.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth auth status --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"keychain":"available","services":[{"service":"verifynicely","configured":true,"source":"keychain"}]}`.
 - **Doctor with the key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth doctor auth --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"checks":[{"id":"auth.keychain","component":"auth","status":"pass","message":"The keychain answers."},{"id":"auth.verifynicely","component":"auth","status":"pass","message":"The key comes from the keychain."}]}`.
+- **Fixture without a grant.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth verifykeys digest --json`. Exit 78, stdout is empty, and stderr is one line, an answer whose first error is `KEY_NOT_GRANTED`, with the hint `ncly auth grant verifynicely verifykeys` and the same command in `next`: the keychain holds the fake key, and still it does not reach the fixture.
+- **Grant in a terminal.** Run `just verify tmux "$run" auth --answer '[y/N]' y auth grant verifynicely verifykeys`. Exit 0. Before Enter, the terminal shows `? Grant the key of verifynicely to verifykeys?`, then `  Path  ` followed by the fixture's path, which ends in `/scratch/home/.local/share/nicely/extensions/ncly-verifykeys`, then `  [y/N] y`. After Enter, it also shows `Granted the key of verifynicely to verifykeys.`, and no `Next time:` line.
+- **Fixture with the grant.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth verifykeys digest --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"sha256":"<digest>"}`. Compute the digest of the fake key without printing the key, with `printf '%s' "$fake" | sha256sum`, or `shasum -a 256` on macOS, and check that the two match: the fixture received the fake key from the keychain.
+- **Grant again.** Run `just verify step "$run" auth auth grant verifynicely verifykeys --json`. Exit 0 without a terminal, and stdout is `{"ok":true,"contract_version":1,"action":"unchanged","domain":"verifykeys","path":"<path>","service":"verifynicely"}`, where `<path>` is the path that the step Grant in a terminal showed.
+- **Revoke.** Run `just verify step "$run" auth auth revoke verifynicely verifykeys --force --json`. Exit 0, and stdout holds `"action":"revoke"`. Then run `VERIFYNICELY_API_KEY= just verify step "$run" auth verifykeys digest --json`. Exit 78, with `KEY_NOT_GRANTED` again.
 - **Replacement.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --json`. Exit 2, and stderr ends with an answer whose first error is `CONFIRMATION_REQUIRED`, with the hint `ncly auth login verifynicely --stdin --force`.
 - **Login as text.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force`. Exit 0, and stdout is `Stored the key of verifynicely in the keychain.`
 - **Logout dry run.** Run `just verify step "$run" auth auth logout verifynicely --dry-run --json`. Exit 0, and stdout holds `"dry_run":true`, the plan `{"key":"verifynicely","action":"logout","effects":{"user_writes":true,"network":false,"paid":false}}`, and the pending check `auth.keychain`.
@@ -80,4 +90,5 @@ Preconditions:
 - Quote each `--answer` as written: the shell would expand the brackets of `[y/N]` otherwise
 - `"keychain":"unavailable"` on Linux means that no Secret Service answers, such as gnome-keyring outside a desktop session: report it, because the steps that expect `available` then fail with `KEYRING_UNAVAILABLE`
 - `prepare` refuses to run on macOS without `--mac-keychain`, which only a human passes
+- `just verify step` has no terminal, and `grant` takes no `--force`, so only the `tmux` step grants the key. Never print the fake key to compare digests: pipe it straight into `sha256sum`
 - The cleanup logs the fake key out after a failed run too. When it cannot, because the keychain does not answer, it keeps the scratch folder and exits 1: run `just verify cleanup "$run"` again once the keychain answers, and report it if it still fails
