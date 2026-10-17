@@ -93,6 +93,8 @@ describe         Describe installed commands and their capabilities
 doctor           Check this machine's config, tools, and extensions
 hello            Greet people
 hello run        Greet someone by name
+run              Inspect the records of runs
+run list         List the runs that the state folder records
 skill            Find the skills that teach agents
 skill list       List the skills of every source
 skill status     Check the skill folders, names, and files

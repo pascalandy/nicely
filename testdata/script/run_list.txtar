@@ -1,0 +1,137 @@
+# ncly run list reads the records of the state folder directly, with no index: newest first,
+# then by run ID, with the filters before the limit, and a bounded preview of item keys. A
+# record that it cannot use never counts as absent: unreadable names it, whatever the filters.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+mkdir nbin
+exec /bin/sh -c 'for c in ncly holdlock; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/nbin
+env RUNS=$WORK/.local/state/nicely/runs
+
+# Without a runs folder, no run matches
+exec ncly run list --json
+stdout '\A\{"ok":true,"contract_version":1,"more":false,"runs":\[\],"unreadable":\[\]\}\n\z'
+! stderr .
+exec ncly run list
+stdout '\ANo run matches\.\n\z'
+! exists $RUNS
+
+# The list holds every record, newest first, a1 before a2 at the same time, while another
+# process holds a3. A file that holds no valid run ID is no record, and a record that is no
+# JSON, that holds another format_version, or whose started_at is no time is unreadable
+mkdir $RUNS
+cp t1.json $RUNS/t1.json
+cp a1.json $RUNS/a1.json
+cp a2.json $RUNS/a2.json
+cp a3.json $RUNS/a3.json
+cp garbage.json $RUNS/bad.json
+cp v2.json $RUNS/v2.json
+cp badtime.json $RUNS/badtime.json
+cp a1.json $RUNS/Bad_ID.json
+cp a1.json $RUNS/.a1.json.tmp-123
+cp a1.json $RUNS/a1.txt
+! exec holdlock $RUNS/a3.lock held &
+waitfile held
+exec ncly run list --json
+stdout '\A\{"ok":true,"contract_version":1,"more":false,"runs":\[\{"run_id":"a3","path":"agent run","status":"running","started_at":"2026-10-05T12:00:00Z","updated_at":"2026-10-05T12:00:01Z","active":true,"item_count":1,"keys":\["task"\]\},\{"run_id":"a1","path":"agent run","status":"unknown","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:01:00Z","active":false,"item_count":1,"keys":\["task"\]\},\{"run_id":"a2","path":"agent run","status":"completed","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:02:00Z","active":false,"item_count":1,"keys":\["task"\]\},\{"run_id":"t1","path":"transcript run youtube","status":"completed","started_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:05:00Z","active":false,"item_count":5,"keys":\["u1","u2","u3"\]\}\],"unreadable":\["bad","badtime","v2"\]\}\n\z'
+! stderr .
+cp stdout list.json
+exec ncly describe 'run list' --json
+cp stdout describe.json
+schema list.json describe.json schema
+
+# As text: a header, one row per run with the date of started_at, its keys under it, the
+# legend of the active run, and the records that it cannot read
+exec ncly run list
+cmp stdout want-list.txt
+! stderr .
+
+# A terminal, or CLICOLOR_FORCE, gets a bold header and a green dot
+env CLICOLOR_FORCE=1
+exec ncly run list
+stdout '\x1b\[1mRUN\x1b\[m'
+stdout '^\x1b\[32m●\x1b\[m a3 '
+env CLICOLOR_FORCE=
+kill
+wait
+
+# The filters combine before the limit: the command path, any item key, even past the
+# preview, and a start at or after a time, in any offset
+exec ncly run list --path 'agent run' --json
+stdout '"runs":\[\{"run_id":"a3",[^]]*\]\},\{"run_id":"a1",[^]]*\]\},\{"run_id":"a2",[^]]*\]\}\],'
+# Once its holder ends, a3 is no longer active
+stdout '"run_id":"a3","path":"agent run","status":"running","started_at":"2026-10-05T12:00:00Z","updated_at":"2026-10-05T12:00:01Z","active":false,'
+exec ncly run list --key u5 --json
+stdout '"runs":\[\{"run_id":"t1",.*"item_count":5,"keys":\["u1","u2","u3"\]\}\],'
+exec ncly run list --since 2026-10-03T10:00:00+01:00 --json
+stdout '"runs":\[\{"run_id":"a3",[^]]*\]\},\{"run_id":"a1",[^]]*\]\},\{"run_id":"a2",[^]]*\]\}\],'
+exec ncly run list --path 'agent run' --key u1 --json
+stdout '"runs":\[\],'
+stdout '"unreadable":\["bad","badtime","v2"\]'
+
+# The limit bounds the matching runs, and more says that others match
+exec ncly run list --path 'agent run' --limit 2 --json
+stdout '\A\{"ok":true,"contract_version":1,"more":true,"runs":\[\{"run_id":"a3",[^]]*\]\},\{"run_id":"a1",[^]]*\]\}\],'
+exec ncly run list --path 'agent run' --limit 3 --json
+stdout '"more":false'
+exec ncly run list --limit 1
+cmp stdout want-limit.txt
+
+# A count that is no whole number from 1 and a time that is no RFC 3339 time are USAGE_INVALID
+exits 2 ncly run list --limit 0 --json
+answer stderr USAGE_INVALID
+stderr '"message":"0 is not a count of runs: give --limit a whole number from 1\."'
+exits 2 ncly run list --limit two --json
+answer stderr USAGE_INVALID
+exits 2 ncly run list --since yesterday --json
+answer stderr USAGE_INVALID
+stderr '"message":"yesterday is no RFC 3339 time: give --since a time such as 2026-10-07T00:00:00Z\."'
+
+# A runs folder that cannot be read answers RUNTIME
+chmod 000 $RUNS
+exits 1 ncly run list --json
+answer stderr RUNTIME
+stderr '"message":"Cannot read the records in '${RUNS@R}'\."'
+chmod 700 $RUNS
+
+# The text of the list comes from the catalog
+exec ncly --lang en-XA run list
+pseudo stdout a3 a1 a2 t1 bad badtime v2 running unknown completed agent transcript youtube task u1 u2 u3 2026-10-05 2026-10-03 2026-10-01 ncly run view <run-id> ●
+exec ncly --lang en-XA run list --path nothing
+pseudo stdout
+
+-- want-list.txt --
+  RUN  STATUS     STARTED     COMMAND                 ITEMS
+● a3   running    2026-10-05  agent run               1
+    task
+  a1   unknown    2026-10-03  agent run               1
+    task
+  a2   completed  2026-10-03  agent run               1
+    task
+  t1   completed  2026-10-01  transcript run youtube  5
+    u1
+    u2
+    u3
+    and 2 more
+
+● A process holds this run now.
+Cannot read the records of bad, badtime, v2: ncly run view <run-id> says why.
+-- want-limit.txt --
+  RUN  STATUS   STARTED     COMMAND    ITEMS
+  a3   running  2026-10-05  agent run  1
+    task
+Cannot read the records of bad, badtime, v2: ncly run view <run-id> says why.
+More runs match: raise --limit, or narrow the filters.
+-- t1.json --
+{"format_version":1,"run_id":"t1","path":"transcript run youtube","status":"completed","started_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:05:00Z","ncly_version":"v0.13.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"u1","output_dir":null,"steps":[]},{"key":"u2","output_dir":null,"steps":[]},{"key":"u3","output_dir":null,"steps":[]},{"key":"u4","output_dir":null,"steps":[]},{"key":"u5","output_dir":null,"steps":[]}]}
+-- a1.json --
+{"format_version":1,"run_id":"a1","path":"agent run","status":"unknown","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:01:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
+-- a2.json --
+{"format_version":1,"run_id":"a2","path":"agent run","status":"completed","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:02:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
+-- a3.json --
+{"format_version":1,"run_id":"a3","path":"agent run","status":"running","started_at":"2026-10-05T12:00:00Z","updated_at":"2026-10-05T12:00:01Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
+-- garbage.json --
+{"format_version":
+-- v2.json --
+{"format_version":2,"run_id":"v2"}
+-- badtime.json --
+{"format_version":1,"run_id":"badtime","path":"agent run","status":"completed","started_at":"yesterday","updated_at":"yesterday","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[]}
