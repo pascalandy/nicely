@@ -142,7 +142,7 @@ pseudo stdout openai auth login n
 -- none.txt --
 -- type-key.txt --
 openai key	sk-typed\c
-********	^M
+*	^M
 -- type-other.txt --
 mistral key	sk-other
 -- decline.txt --
