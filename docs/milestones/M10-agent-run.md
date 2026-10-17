@@ -1,6 +1,6 @@
 # M10 Agent run
 
-Status: planned
+Status: ready
 Version: v0.10.0
 
 ## Demo
@@ -10,12 +10,6 @@ Version: v0.10.0
 ## Scope
 
 `ncly agent run` can bill, so it records its execution before the harness starts. It is the first and simplest consumer of run records: one item and one step. It brings `--run-id` too, as [Run IDs](../north-star/contract.md#run-ids) defines, which links transcript's summary step to its child run in [M14](M14-transcript-summary.md). Record support starts in `sdk/`, as [Records and evidence](../north-star/contract.md#records-and-evidence) defines, and core inspects them with [ncly run](../north-star/core-spec.md#ncly-run) `list` and `view`. Resume waits for [M15](M15-resume.md). `run list` and `run view` use the looks that Pascal picked in M07.
-
-## Open questions
-
-Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) and [Record format](../north-star/contract.md#record-format), then delete this section.
-
-- The item key of an agent run, which `ncly run list --key` filters on and a call with the same run ID compares
 
 ## Cards
 
@@ -33,6 +27,8 @@ Settle each one in [extensions/agent/spec.md](../../extensions/agent/spec.md) an
 - **Proves:** `extensions/agent/testdata/script/agent_run.txtar`, `extensions/agent/testdata/script/agent_run_record.txtar`, `testdata/script/record_retry_safety.txtar`
 
 `ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer, which it also saves as the step's artifact in `runs/<run-id>/`. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
+
+The record has one item with the key `task`. The task's fingerprint in `inputs` identifies what a call with the same run ID must match.
 
 With `--run-id`, the caller's ID reaches `ncly-agent` through dispatch and names its record, `runs/<id>.json`. The same call again returns the saved answer, and the counted stub harness runs once. After the config changes the model of the profile that the call names, the same call still returns the saved answer, with the first call's `model` and `duration_ms`, and starts no harness, because the record keeps the resolved profile under `resolved`, which that call does not compare. The same ID with another task is `USAGE_INVALID`, the ID of a run whose paid step left `pending` without completing is `RESUME_UNSAFE`, and both start no harness. Two calls with one new ID at the same time start one harness: while the first holds the run lock, the second exits 75 with `TEMPORARY`. A record file that cannot be read, and one that cannot be parsed, each make the same call answer `RESUME_UNSAFE`, and no harness starts.
 
