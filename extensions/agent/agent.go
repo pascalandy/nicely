@@ -119,7 +119,7 @@ func dryRunOf(ctx context.Context, call extension.Call, t task, id string) contr
 			return failure(unreadable(p, runs.File(id), id), keep)
 		}
 		if saved != nil {
-			completed, problem := decide(p, call, t, saved, id)
+			completed, problem := decide(p, call, t, saved, runs.File(id), id)
 			if problem != nil {
 				return failure(problem, keep)
 			}

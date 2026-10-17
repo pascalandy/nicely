@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -84,7 +85,7 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 	defer run.Close()
 	var resolved map[string]any
 	if run.Record != nil {
-		completed, problem := decide(p, call, t, run.Record, id)
+		completed, problem := decide(p, call, t, run.Record, run.File(), id)
 		if problem != nil {
 			return failure(problem, keep)
 		}
@@ -146,8 +147,11 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 // 2 and 5, true for a completed run, whose saved answer the call returns,
 // and false for a run whose step codex is still pending, which may run
 // again.
-func decide(p *i18n.Printer, call extension.Call, t task, saved *record.Record, id string) (bool, *contract.Problem) {
+func decide(p *i18n.Printer, call extension.Call, t task, saved *record.Record, file, id string) (bool, *contract.Problem) {
 	data := map[string]any{"ID": id}
+	if !resolvable(saved.Resolved) {
+		return false, unreadable(p, file, id)
+	}
 	if saved.Path != call.Path || !sameValues(saved.Inputs, inputs(call, t)) || len(saved.Items) != 1 || saved.Items[0].Key != itemKey {
 		return false, inspect(p, contract.UsageInvalid, id, "agent.run.other_call", data)
 	}
@@ -160,6 +164,15 @@ func decide(p *i18n.Printer, call extension.Call, t task, saved *record.Record, 
 		return false, nil
 	}
 	return false, inspect(p, contract.ResumeUnsafe, id, "agent.run.effect_unknown", data)
+}
+
+// resolvable reports whether the resolved values of a record hold what a
+// repeated call reads from them, as case 1 of Records and replay in spec.md
+// lists them: the harness codex, a model, and a known effort.
+func resolvable(resolved map[string]any) bool {
+	model, _ := resolved["model"].(string)
+	effort, _ := resolved["effort"].(string)
+	return resolved["harness"] == "codex" && model != "" && slices.Contains(efforts, effort)
 }
 
 // sameValues reports whether two sets of inputs hold the same values, as
@@ -196,15 +209,18 @@ func savedAnswer(call extension.Call, saved *record.Record, file, id string, eff
 // A dry run and execution share it, so they decide alike.
 func verified(p *i18n.Printer, saved *record.Record, file, id string) ([]byte, evidence, *contract.Problem) {
 	step := saved.Items[0].Steps[0]
-	var ev evidence
-	if len(step.Artifacts) != 1 || json.Unmarshal(step.Evidence, &ev) != nil || ev.FormatVersion != 1 {
-		return nil, ev, unreadable(p, file, id)
+	var ev struct {
+		FormatVersion int    `json:"format_version"`
+		DurationMS    *int64 `json:"duration_ms"`
+	}
+	if len(step.Artifacts) != 1 || json.Unmarshal(step.Evidence, &ev) != nil || ev.FormatVersion != 1 || ev.DurationMS == nil || *ev.DurationMS < 0 {
+		return nil, evidence{}, unreadable(p, file, id)
 	}
 	text, err := step.Artifacts[0].Read()
 	if err != nil {
-		return nil, ev, inspect(p, contract.ResumeUnsafe, id, "agent.run.answer_changed", map[string]any{"File": step.Artifacts[0].Path})
+		return nil, evidence{}, inspect(p, contract.ResumeUnsafe, id, "agent.run.answer_changed", map[string]any{"File": step.Artifacts[0].Path})
 	}
-	return text, ev, nil
+	return text, evidence{FormatVersion: 1, DurationMS: *ev.DurationMS}, nil
 }
 
 // unreadable is the RESUME_UNSAFE problem of a record that the call cannot

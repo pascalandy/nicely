@@ -107,6 +107,14 @@ grep -count=6 '(?m)^(--version|exec )' $TMPDIR/calls.log
 # A record whose step is still pending saved no intent, so the call runs the task again under
 # its ID, with the model and the effort of the record, and counts one more attempt
 exec /bin/sh -c 'printf "%s\n" "{\"format_version\":1,\"run_id\":\"p1\",\"path\":\"agent run\",\"status\":\"running\",\"started_at\":\"2026-10-17T00:00:00Z\",\"updated_at\":\"2026-10-17T00:00:00Z\",\"ncly_version\":\"v0.0.1\",\"attempts\":1,\"inputs\":{\"cwd\":\"$WORK\",\"task_sha256\":\"$SUM\",\"tools\":true},\"resolved\":{\"effort\":\"high\",\"harness\":\"codex\",\"model\":\"m-saved\"},\"tools\":{\"codex\":\"0.162.9\"},\"items\":[{\"key\":\"task\",\"output_dir\":\"$RUNS/p1\",\"steps\":[{\"id\":\"codex\",\"effect\":\"paid\",\"status\":\"pending\",\"started_at\":null,\"finished_at\":null,\"artifacts\":[],\"error\":null}]}]}" > "$RUNS/p1.json"'
+# A record whose resolved values cannot be used starts no task, even with its step pending
+exec /bin/sh -c '/usr/bin/sed -e "s/\"effort\":\"high\"/\"effort\":null/" -e "s/\"run_id\":\"p1\"/\"run_id\":\"e1\"/" "$RUNS/p1.json" > "$RUNS/e1.json"'
+exits 1 ncly agent run 'Review this branch' --tools --run-id e1 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the record '${RUNS@R}'/e1\.json, so this call started no task\.","hint":"ncly run view e1"'
+exits 1 ncly agent run 'Review this branch' --tools --run-id e1 --dry-run --json
+answer stderr RESUME_UNSAFE
+grep -count=6 '(?m)^(--version|exec )' $TMPDIR/calls.log
 exec ncly agent run 'Review this branch' --tools --run-id p1 --dry-run --json
 stdout '"model":"m-saved"'
 stdout '"action":"run"'
@@ -114,6 +122,21 @@ exec ncly agent run 'Review this branch' --tools --run-id p1 --json
 stdout '"model":"m-saved","run_id":"p1"'
 grep '(?m)^exec --model m-saved -c model_reasoning_effort="high" ' $TMPDIR/task.log
 grep '"status":"completed",.*"attempts":2,.*"tools":\{"codex":"0\.163\.0"\}' $RUNS/p1.json
+grep -count=9 '(?m)^(--version|exec )' $TMPDIR/calls.log
+
+# A completed record without a model, or whose evidence lacks the duration, answers nothing
+exec /bin/sh -c '/usr/bin/sed -e "s/\"model\":\"m-saved\"/\"model\":null/" -e "s/\"run_id\":\"p1\"/\"run_id\":\"e2\"/" "$RUNS/p1.json" > "$RUNS/e2.json"'
+exits 1 ncly agent run 'Review this branch' --tools --run-id e2 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly agent run 'Review this branch' --tools --run-id e2 --dry-run --json
+answer stderr RESUME_UNSAFE
+exec /bin/sh -c '/usr/bin/sed -e "s/,\"duration_ms\":[0-9]*//" -e "s/\"run_id\":\"p1\"/\"run_id\":\"e3\"/" "$RUNS/p1.json" > "$RUNS/e3.json"'
+! grep duration_ms $RUNS/e3.json
+exits 1 ncly agent run 'Review this branch' --tools --run-id e3 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the record '${RUNS@R}'/e3\.json, so this call started no task\."'
+exits 1 ncly agent run 'Review this branch' --tools --run-id e3 --dry-run --json
+answer stderr RESUME_UNSAFE
 grep -count=9 '(?m)^(--version|exec )' $TMPDIR/calls.log
 
 # A record of another command under the ID names another call

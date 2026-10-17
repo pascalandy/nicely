@@ -98,9 +98,9 @@ Save `answer.txt` under `runs/<run-id>/` in the state directory. Record its path
 
 [Run IDs](../../docs/north-star/contract.md#run-ids) governs locking and replay. A call whose ID a record holds takes the first case that applies, before the model and the Codex check:
 
-1. A record that cannot be read, or that holds another `format_version`: `RESUME_UNSAFE`
+1. A record that cannot be read, that holds another `format_version`, or whose `resolved` lacks the `harness` `codex`, a model, or a known effort: `RESUME_UNSAFE`
 2. A record of another command path, other `inputs`, or other item keys: `USAGE_INVALID`, because the ID names another call
-3. A completed run: its verified saved answer, with the `model` of its `resolved` and the `duration_ms` of its evidence, without any call to Codex, even if the configuration or the installed Codex changed since. An `answer.txt` whose size or SHA-256 differs from its artifact answers `RESUME_UNSAFE`
+3. A completed run: its verified saved answer, with the `model` of its `resolved` and the `duration_ms` of its evidence, without any call to Codex, even if the configuration or the installed Codex changed since. An `answer.txt` whose size or SHA-256 differs from its artifact answers `RESUME_UNSAFE`, and so does evidence without `format_version` 1 and a `duration_ms` of 0 or more
 4. A run whose step `codex` is still `pending`, because its intent was never saved: the call runs the task again under the same ID, with the `model` and the `effort` of the record's `resolved`, after a new Codex check. It writes `attempts` plus one, `running`, and the version of Codex in `tools` before the intent
 5. Any other run, such as one whose step is `unknown` or `failed`: `RESUME_UNSAFE`, because Codex may have done paid work
 
