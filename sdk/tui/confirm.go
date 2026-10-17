@@ -23,11 +23,19 @@ var (
 // by picking a button, with its text in the active language.
 type Confirmation struct {
 	Question string
+	// Facts are what the answer rests on, each on a labeled line under the
+	// question, such as the path of an extension that a grant names.
+	Facts []Fact
 	// Choices shows the answers and the default, such as [y/N].
 	Choices string
 	// Yes holds the answers that confirm, separated by commas, such as
 	// "y, yes".
 	Yes string
+}
+
+// Fact is one fact of a confirmation: a label, such as Path, and its value.
+type Fact struct {
+	Label, Value string
 }
 
 // Confirm asks c on out, then reads the answer from in, a terminal whose
@@ -37,8 +45,7 @@ type Confirmation struct {
 // error.
 func Confirm(ctx context.Context, in io.Reader, out io.Writer, noColor bool, c Confirmation) (bool, error) {
 	yes := yesWords(c.Yes)
-	prompt := questionMark.Styled("?") + " " + question.Styled(c.Question) + " " + choices.Styled(c.Choices) + " "
-	if _, err := io.WriteString(Output(out, noColor), prompt); err != nil {
+	if _, err := io.WriteString(Output(out, noColor), prompt(c)); err != nil {
 		return false, err
 	}
 	line, err := readLine(ctx, in)
@@ -51,6 +58,28 @@ func Confirm(ctx context.Context, in io.Reader, out io.Writer, noColor bool, c C
 		return false, err
 	}
 	return slices.Contains(yes, strings.ToLower(strings.TrimSpace(line))), nil
+}
+
+// prompt lays out c as Modes in contract.md describes: ? and the question,
+// then [y/N] at the end of its line. Facts go under the question, indented
+// by two spaces, with their values aligned, and [y/N] then takes a line of
+// its own, indented as they are.
+func prompt(c Confirmation) string {
+	head := questionMark.Styled("?") + " " + question.Styled(c.Question)
+	if len(c.Facts) == 0 {
+		return head + " " + choices.Styled(c.Choices) + " "
+	}
+	width := 0
+	for _, f := range c.Facts {
+		width = max(width, ansi.StringWidth(f.Label))
+	}
+	var b strings.Builder
+	b.WriteString(head + "\n")
+	for _, f := range c.Facts {
+		b.WriteString("  " + muted.Styled(f.Label) + strings.Repeat(" ", width-ansi.StringWidth(f.Label)+2) + f.Value + "\n")
+	}
+	b.WriteString("  " + choices.Styled(c.Choices) + " ")
+	return b.String()
 }
 
 // yesWords splits the comma-separated words that confirm.
