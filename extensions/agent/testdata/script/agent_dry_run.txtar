@@ -1,0 +1,228 @@
+# ncly agent run --dry-run prepares one trusted task for Codex and starts none: it resolves the
+# model, the effort, the task, and the folder, checks Codex with its version probe, requires
+# --tools, then shows the invocation that execution would run. The stub codex appends each
+# call to $TMPDIR/codex.log and its environment to $TMPDIR/codex.env, answers --version, and
+# appends any other call, which would start a task, to $TMPDIR/task.log. The snapshot of a dry
+# run skips $TMPDIR, so these logs never count as a write.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+chmod 755 bin/pacman
+chmod 755 bin/brew
+# PATH keeps ncly, the program of the installed extension, and the stubs alone, so no real
+# codex or package manager counts
+mkdir nbin
+exec sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+# The installed launcher appends to $TMPDIR/external.log instead of $WORK/external.log, so the
+# snapshot of a dry run, which skips $TMPDIR, sees no write of the test setup
+cp launcher $DATA/ncly-agent
+chmod 755 $DATA/ncly-agent
+env CODEX_VERSION=0.163.0
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+env RUNS=$WORK/.local/state/nicely/runs
+env SUM=87b51d8466e94d496cf0c8609028f9be8132129801c6ec43501bfe5916d11f4a
+
+# Without --tools, even in a dry run, the call answers CAPABILITY_UNSUPPORTED: Codex has no
+# verified switch that turns its tools off
+exits 78 ncly agent run 'Review this branch' --model m1 --dry-run --json
+! stdout .
+answer stderr CAPABILITY_UNSUPPORTED
+stderr '"message":"Codex cannot run a task with its tools turned off\.","hint":"Add --tools to the call when Codex may use its tools\."'
+! exists $TMPDIR/task.log
+
+# The dry run shows the resolved settings and the invocation, whose last word sends the task on
+# stdin, with the sandbox of Codex kept on. It answers with the schema that describe gives,
+# reads no byte of stdin, writes nothing outside the cache, and only probes the version
+rm $TMPDIR/codex.log
+snapshot before
+exec /bin/sh -c 'printf "left for the caller\n" | { ncly agent run "Review this branch" --tools --model m1 --dry-run --json; /bin/cat > "$TMPDIR/rest.txt"; }'
+unchanged before
+stdout '\A\{"ok":true,"contract_version":1,"cwd":"'${WORK@R}'","dry_run":true,"effort":"medium","harness":"codex","harness_version":"0\.163\.0","invocation":\["'${WORK@R}'/bin/codex","exec","--model","m1","-c","model_reasoning_effort=\\"medium\\"","--sandbox","workspace-write","--skip-git-repo-check","--cd","'${WORK@R}'","--json","--output-last-message","\\u003canswer-file\\u003e","-"\],"model":"m1","pending_checks":\[\{"id":"agent\.login","message":"Codex checks its login only when it runs the task\."\}\],"plan":\[\{"key":"task","output":"'${RUNS@R}'","steps":\[\{"id":"codex","action":"run"\}\],"effects":\{"network":true,"paid":true,"user_writes":true\}\}\],"task_sha256":"'$SUM'"\}\n\z'
+! stderr .
+cp stdout $TMPDIR/dry.json
+cmp $TMPDIR/rest.txt want-rest.txt
+exec ncly describe 'agent run' --json
+cp stdout $TMPDIR/describe.json
+schema $TMPDIR/dry.json $TMPDIR/describe.json dry_run_schema
+cmp $TMPDIR/codex.log want-probe.log
+! exists $TMPDIR/task.log
+! exists $RUNS
+
+# The probe gets the environment of ncly without the key of any service, and the answer
+# never holds a key
+env OPENAI_API_KEY=sk-never-passed
+env CODEX_API_KEY=sk-never-passed-either
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+! stdout sk-never
+! grep sk-never $TMPDIR/codex.env
+grep '^CODEX_VERSION=0\.163\.0$' $TMPDIR/codex.env
+env OPENAI_API_KEY=
+env CODEX_API_KEY=
+
+# The model and the effort come from [agent], and a flag overrides each of them
+cp agent.toml $CFG/config.toml
+exec ncly agent run 'Review this branch' --tools --dry-run --json
+stdout '"effort":"high",.*"model":"m2",'
+stdout '"-c","model_reasoning_effort=\\"high\\""'
+exec ncly agent run 'Review this branch' --tools --model m1 --effort low --dry-run --json
+stdout '"effort":"low",.*"model":"m1",'
+cp local.toml $CFG/config.local.toml
+exec ncly agent run 'Review this branch' --tools --dry-run --json
+stdout '"effort":"high",.*"model":"m3",'
+rm $CFG/config.local.toml
+
+# A missing or empty model is USAGE_INVALID, whose hint names --model and the config file
+rm $CFG/config.toml
+exits 2 ncly agent run 'Review this branch' --tools --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"No model is set for Codex\.","hint":"Add --model \\u003cid\\u003e to the call, or set model in the \[agent\] table of '${CFG@R}'/config\.toml\."\}'
+exits 2 ncly agent run 'Review this branch' --tools --model '' --dry-run --json
+answer stderr USAGE_INVALID
+cp empty-model.toml $CFG/config.toml
+exits 2 ncly agent run 'Review this branch' --tools --dry-run --json
+answer stderr USAGE_INVALID
+stderr 'No model is set for Codex'
+
+# An invalid configured value is CONFIG_INVALID, and an invalid explicit flag USAGE_INVALID
+cp bad-effort.toml $CFG/config.toml
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr CONFIG_INVALID
+stderr '"message":"effort in the \[agent\] table of '${CFG@R}'/config\.toml is turbo, which is none of low, medium, high, xhigh, max, ultra\.","hint":"Fix '${CFG@R}'/config\.toml\."'
+cp number-model.toml $CFG/config.toml
+exits 78 ncly agent run 'Review this branch' --tools --dry-run --json
+answer stderr CONFIG_INVALID
+stderr '"message":"model in the \[agent\] table of '${CFG@R}'/config\.toml is not text\."'
+cp broken.toml $CFG/config.toml
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr CONFIG_INVALID
+stderr 'has an error on line 2'
+rm $CFG/config.toml
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --effort turbo --dry-run --json
+answer stderr USAGE_INVALID
+
+# The task comes from exactly one of its argument and --task-file, which reads from the current
+# folder, holds more than whitespace, and counts by its SHA-256
+exec ncly agent run --task-file task.md --tools --model m1 --dry-run --json
+stdout '"task_sha256":"9c21f964a1895eda8afce2c541023d9eb8e93dd22e726937a5a4d5225956addb"'
+exits 2 ncly agent run --task-file missing.md --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"Cannot read the task file missing\.md\.","hint":"Give --task-file a file that you can read\."'
+exits 2 ncly agent run --task-file nbin --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+exits 2 ncly agent run 'Review this branch' --task-file task.md --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"Give the task either as an argument or with --task-file, not both\.","hint":"ncly agent run \(\\u003ctask\\u003e \| --task-file \\u003cfile\\u003e\) --tools"\}'
+exits 2 ncly agent run --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"The task is missing\."'
+exits 2 ncly agent run ' ' --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"The task is empty\."'
+exits 2 ncly agent run --task-file blank.md --tools --model m1 --dry-run --json
+answer stderr USAGE_INVALID
+
+# --cwd names an existing folder, from the current one, and Codex gets its absolute path
+mkdir project
+exec ncly agent run 'Review this branch' --tools --model m1 --cwd project --dry-run --json
+stdout '"cwd":"'${WORK@R}'/project",'
+stdout '"--cd","'${WORK@R}'/project",'
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --cwd nothere --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"nothere is not a folder\.","hint":"Give --cwd a folder that exists\."'
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --cwd task.md --dry-run --json
+answer stderr USAGE_INVALID
+
+# A missing, older, or silent Codex fails before any task with PREREQ_MISSING, whose hint and
+# next hold the install command of this machine, as doctor gives it
+[linux] env INSTALL='"hint":"sudo pacman -S openai-codex","next":\["sudo","pacman","-S","openai-codex"\]'
+[darwin] env INSTALL='"hint":"brew install --cask codex","next":\["brew","install","--cask","codex"\]'
+env CODEX_VERSION=0.162.0
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+answer stderr PREREQ_MISSING
+stderr '"message":"codex 0\.162\.0 is older than 0\.162\.1\.",'$INSTALL
+env CODEX_VERSION=unknown
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stderr '"message":"codex --version printed no version\.",'$INSTALL
+env CODEX_VERSION=0.163.0
+mv bin/codex codex.stub
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stderr '"message":"codex is not installed\.",'$INSTALL
+mv codex.stub bin/codex
+! exists $TMPDIR/task.log
+
+# Without --json, the dry run prints the invocation as a shell reads it back, then the settings
+# and the pending check
+exec ncly agent run 'Review this branch' --tools --model m1 --dry-run
+cmpenv stdout want-dry-run.txt
+! stderr .
+exec ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --dry-run
+pseudo stdout $WORK/bin/codex exec m1 model_reasoning_effort="medium workspace-write $WORK agent.login
+exits 78 ncly --lang en-XA agent run 'Review this branch' --model m1 --dry-run
+pseudo stderr --tools
+
+# This build runs no task yet: without --dry-run, the call prepares the task, then answers
+# CAPABILITY_UNSUPPORTED, starts no task, and records nothing
+exits 78 ncly agent run 'Review this branch' --tools --model m1 --json
+answer stderr CAPABILITY_UNSUPPORTED
+stderr '"message":"This build of the agent extension prepares a Codex task, but cannot run it yet\."'
+exits 2 ncly agent run --tools --model m1 --json
+answer stderr USAGE_INVALID
+! exists $TMPDIR/task.log
+! exists $RUNS
+
+-- want-rest.txt --
+left for the caller
+-- want-probe.log --
+--version
+-- want-dry-run.txt --
+Would run Codex 0.163.0 with this command, and give it the task on its input:
+  $WORK/bin/codex exec --model m1 -c 'model_reasoning_effort="medium"' --sandbox workspace-write --skip-git-repo-check --cd $WORK --json --output-last-message '<answer-file>' -
+model: m1
+effort: medium
+folder: $WORK
+pending  agent.login  Codex checks its login only when it runs the task.
+-- task.md --
+Fix the bug
+-- blank.md --
+
+
+-- agent.toml --
+[agent]
+model = "m2"
+effort = "high"
+-- local.toml --
+[agent]
+model = "m3"
+-- empty-model.toml --
+[agent]
+model = ""
+-- bad-effort.toml --
+[agent]
+effort = "turbo"
+-- number-model.toml --
+[agent]
+model = 5
+-- broken.toml --
+[agent]
+model =
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$TMPDIR/codex.log"
+/usr/bin/env > "$TMPDIR/codex.env"
+if [ "$1" = --version ]; then
+  echo "codex-cli $CODEX_VERSION"
+  exit 0
+fi
+echo "$*" >> "$TMPDIR/task.log"
+exit 1
+-- launcher --
+#!/bin/sh
+echo agent >> "$TMPDIR/external.log"
+exec agent-external "$@"
+-- bin/pacman --
+#!/bin/sh
+echo pacman >> "$WORK/ran"
+-- bin/brew --
+#!/bin/sh
+echo brew >> "$WORK/ran"
