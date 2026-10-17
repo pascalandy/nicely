@@ -67,7 +67,7 @@ func execute(ctx context.Context, call extension.Call, t task, id string) contra
 	case errors.Is(err, record.ErrBusy):
 		return failure(inspect(p, contract.Temporary, id, "agent.run.busy", data), keep)
 	case errors.As(err, &unreadable):
-		return failure(&contract.Problem{Code: contract.ResumeUnsafe, Message: p.T("agent.run.record_unreadable", map[string]any{"File": unreadable.File}), Hint: p.T("agent.run.record_unreadable_hint")}, keep)
+		return failure(inspect(p, contract.ResumeUnsafe, id, "agent.run.record_unreadable", map[string]any{"File": unreadable.File}), keep)
 	case ctx.Err() != nil:
 		return contract.Outcome{}
 	case err != nil:

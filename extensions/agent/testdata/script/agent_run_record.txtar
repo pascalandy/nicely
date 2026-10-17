@@ -65,7 +65,7 @@ grep -count=3 '(?m)^exec ' $TMPDIR/task.log
 cp garbage.json $RUNS/r4.json
 exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r4 --json
 answer stderr RESUME_UNSAFE
-stderr '"message":"Cannot read the record '${RUNS@R}'/r4\.json, so this call started no task\."'
+stderr '"message":"Cannot read the record '${RUNS@R}'/r4\.json, so this call started no task\.","hint":"ncly run view r4","next":\["ncly","run","view","r4"\]'
 cp version2.json $RUNS/r4.json
 exits 1 ncly agent run 'Review this branch' --tools --model m1 --run-id r4 --json
 answer stderr RESUME_UNSAFE
@@ -125,7 +125,7 @@ stderr '"message":"Bad_ID is no run ID\.","hint":"Give --run-id 1 to 64 lowercas
 # The text of these errors comes from the catalog
 cp garbage.json $RUNS/r4.json
 exits 1 ncly --lang en-XA agent run 'Review this branch' --tools --model m1 --run-id r4
-pseudo stderr $RUNS/r4.json RESUME_UNSAFE --run-id
+pseudo stderr $RUNS/r4.json RESUME_UNSAFE run view r4
 grep -count=3 '(?m)^exec ' $TMPDIR/task.log
 
 -- garbage.json --

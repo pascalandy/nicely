@@ -209,10 +209,6 @@ other = "Another process runs {{.ID}} now, so this call started nothing."
 description = "Error RESUME_UNSAFE of `ncly agent run` when the record of the run cannot be read or holds an unknown format, so the call starts no task. {{.File}} is the path of the record."
 other = "Cannot read the record {{.File}}, so this call started no task."
 
-["agent.run.record_unreadable_hint"]
-description = "Hint under the error agent.run.record_unreadable: what the user does next. A new run ID starts a new paid task, which only a human chooses. --run-id stays as is."
-other = "Inspect the file. Only a human decides whether a new --run-id may start another task."
-
 ["agent.run.record_exists"]
 description = "Error RESUME_UNSAFE of `ncly agent run` in a build that cannot answer from a saved run yet, when a record already holds the run ID. {{.ID}} is the run ID, which stays as is."
 other = "A record already holds the run {{.ID}}, and this build cannot answer from it yet, so this call started no task."
