@@ -28,9 +28,11 @@ The docs form layers like the code: the glossary fixes the words, the vision and
 
 Use these writing practices from ASD-STE100 Simplified Technical English, Issue 9 (January 15, 2025), for English prose. In procedures, give one instruction per sentence and use the imperative form. Limit procedural sentences to 20 words. In descriptive text, give each sentence one topic and limit it to 25 words. Keep command syntax and code identifiers exact.
 
-## Wait for Pascal's review before a merge
+## Merge on the brigade's rule or Pascal's word
 
-Open each pull request ready for review, then stop. Merge only after Pascal has reviewed the pull request and says "merge", even when a plan, a milestone, or an earlier answer lets you merge. The project is new, and Pascal prefers to go slower so that he reviews the code.
+Open each pull request ready for review. In a `brigade-mode` run, the brigade decides when to merge. Otherwise, merge only when Pascal says "merge" for that pull request.
 
-- When later work depends on an open pull request, stack it on that pull request instead of merging the lower one.
-- Fix each review finding on the branch of its pull request, with a scenario that fails first, and reply on the pull request with the commit that fixes it.
+- When later work depends on an open pull request, stack it on that pull request.
+- Fix each review finding on the branch of its pull request, with a scenario that fails first. Reply on the pull request with the commit that fixes it.
+
+To merge, ask for no confirmation. Stop only on a real blocker, and report it. Rebase the branch onto `origin/main`. Run `git push --force-with-lease`. Run `just signoff`. Then run `git push origin <branch>:main`, so `main` keeps the commit that was checked.

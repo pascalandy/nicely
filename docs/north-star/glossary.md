@@ -264,7 +264,6 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: one pull request of a milestone, with its owner, its dependencies, what to read, and what proves it
 - Stack
   - Def.: a chain of pull requests that build on each other, as `gh stack` manages them
-  - Project note: later work stacks on an open pull request, as [dev-preferences.md](dev-preferences.md#wait-for-pascals-review-before-a-merge) asks
 - Principle
   - Def.: a rule that shapes every design choice, in [principles.md](principles.md)
 - Decision

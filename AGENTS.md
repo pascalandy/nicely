@@ -4,10 +4,9 @@ This file tells an agent how to change Nicely. [README.md](README.md) describes 
 
 ## Read in this order
 
-1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), and [architecture.md](docs/north-star/architecture.md), at the start of every session.
-2. [dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session: how Pascal wants changes made, such as deciding the look with a published mockup, keeping the docs a tower, and waiting for his review before a merge.
-3. Run `just next` on a checkout of the latest `origin/main`, or of the top of the stack you are extending, because it reads the plan of the checkout. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
-4. A decision in [decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
+1. [vision.md](docs/north-star/vision.md), [principles.md](docs/north-star/principles.md), [architecture.md](docs/north-star/architecture.md), and [dev-preferences.md](docs/north-star/dev-preferences.md), at the start of every session.
+2. Run `just next` on a checkout of the latest `origin/main`, or of the top of the stack you are extending, because it reads the plan of the checkout. It prints the one card to do, or the step that unblocks it. Read what the card links under **Read**: sections of [contract.md](docs/north-star/contract.md) and [core-spec.md](docs/north-star/core-spec.md) for core, and of `extensions/<name>/spec.md` for an extension.
+3. A decision in [decisions/](docs/north-star/decisions/README.md), only when a rule blocks your card.
 
 Take rules only from these files and the specs that your card links. `docs/archived/` holds history, such as the design chat. `just status` shows every milestone and the cards of the current one.
 
@@ -57,7 +56,7 @@ Copy this checklist into the pull request and tick each step when its condition 
 
 ## Make a milestone ready
 
-When `just next` names a planned milestone with open questions, make it ready in one pull request, which Pascal reviews like any other:
+When `just next` names a planned milestone with open questions, make it ready in one pull request:
 
 1. Settle each open question in the spec that it names, then delete the **Open questions** section. Ask Pascal only what is his to decide, such as a look, a cost, or a principle.
 2. Finish the cards. Trace each card through the [code map](docs/north-star/architecture.md#code-map): name the package that it changes, and check that this package may reach what the card needs. A part that the package may not import, such as the host's discovery for an extension, is reached through the CLI, after the milestone that adds its command. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. A milestone has at most five agent cards: split a bigger one into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.
@@ -74,7 +73,7 @@ A milestone file holds `Status`, `Version`, and the sections **Demo**, an option
 - Prefer end-to-end testscript scenarios. Write a unit test only for logic that a scenario cannot reach.
 - Write code, comments, docs, and commit messages in English.
 - Stay inside your card. Write any other idea as one line in [M99](docs/milestones/M99-parking-lot.md), then continue.
-- To change a principle or the contract, add or fix a decision in [decisions/](docs/north-star/decisions/README.md). Ask Pascal before merging, unless Pascal asked for the change.
+- To change a principle or the contract, add or fix a decision in [decisions/](docs/north-star/decisions/README.md).
 - Use placeholders such as `/Users/me`, `host-a`, and `example.com` in code, tests, and docs. The pre-commit hook runs gitleaks with generic rules for home paths and private IP ranges. Rules that name Pascal's hosts live in `lefthook-local.yml`, which git ignores.
 
 ## Code
@@ -102,12 +101,6 @@ Run `lefthook install` once per clone, so the hooks format, lint, and scan each 
 
 Write each commit message as `<emoji> <type>: <scope>: <summary>`, such as `📚 docs: glossary: add the report command term`. The `commit` skill lists the types and the body format.
 
-## Merge
-
-"Merge" means ship: commit, push, sign off, and merge the pull request into origin/main. Merge only after Pascal has reviewed the pull request and says "merge", as [dev-preferences.md](docs/north-star/dev-preferences.md#wait-for-pascals-review-before-a-merge) asks. Until then, stop at an open pull request. Once Pascal says "merge", don't ask for confirmation at any step, except the one that the contract rule in [Rules](#rules) requires. Stop only on a real blocker, and report it.
-
-Keep the history linear. Rebase the branch onto origin/main, sign off its head, then push that head to `main` with `git push origin <branch>:main`. GitHub marks the pull request merged, and `main` keeps the commit that was checked.
-
 ## Release
 
 Release only when Pascal asks. A release is never a card, so it never blocks a milestone. Milestone `M<n>` ships in `v0.<n>.0`, M00 in v0.0.1, and a fix between two milestones takes the next patch number, as [D043](docs/north-star/decisions/D043-milestone-versions.md) decides.
@@ -122,4 +115,4 @@ GitHub Actions runs only when started this way. After the first release, Pascal 
 
 1. Run `gh pr checkout <number>`.
 2. Compare the diff with its card and the specs that the card reads.
-3. Run `just signoff`. The signoff status is a required check on `main`, so the pull request merges only after this step.
+3. Run `just signoff`.
