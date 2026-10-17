@@ -223,7 +223,7 @@ func writeRuns(w io.Writer, p *i18n.Printer, list runList) error {
 				b.WriteString("    " + key + "\n")
 			}
 			if more := e.ItemCount - len(e.Keys); more > 0 {
-				b.WriteString("    " + p.T("run.list.more_keys", map[string]any{"Count": p.Number(float64(more), 0)}) + "\n")
+				b.WriteString("    " + p.N("run.list.more_keys", more) + "\n")
 			}
 		}
 		if active {

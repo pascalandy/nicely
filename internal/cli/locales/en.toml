@@ -934,7 +934,8 @@ description = "ncly run list, human text: the header of the column of item count
 other = "ITEMS"
 
 ["run.list.more_keys"]
-description = "ncly run list, human text: the line under the previewed item keys of a run that holds more items. {{.Count}} is the number of items that the list does not show."
+description = "ncly run list, human text: the line under the previewed item keys of a run that holds more items. {{.Count}} is the number of items that the list does not show, already formatted."
+one = "and {{.Count}} more"
 other = "and {{.Count}} more"
 
 ["run.list.active_legend"]
