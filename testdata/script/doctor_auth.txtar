@@ -1,8 +1,9 @@
-# The auth component of ncly doctor checks the keychain, then each service that the manifests
-# declare, with the verdict that ncly auth status gives it. Doctor runs it last, after every
-# other check, and lists it after core. The test keychain is the file
+# The auth component of ncly doctor checks the keychain, then the grants, then each service
+# that the manifests declare, with the verdict that ncly auth status gives it. Doctor runs it
+# last, after every other check, and lists it after core. The test keychain is the file
 # $HOME/test-keychain.jsonl. The shell fixture requires the program plain and the keys of
-# deepgram and openai, and appends to $WORK/ran when it runs, which it never may.
+# deepgram and openai, which a human granted to it, and appends to $WORK/ran when it runs,
+# which it never may. grant_status.txtar proves the grants.
 chmod 755 bin/plain
 mkdir nbin
 exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
@@ -11,15 +12,18 @@ env PATH=$WORK/bin:$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
 env OPENAI_API_KEY=
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
 
-# With no declared service, the component holds auth.keychain alone
+# With no declared service, the component holds auth.keychain and auth.grants alone
 exec ncly doctor auth --json
-stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\}\]\}\n\z'
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"auth\.grants","component":"auth","status":"pass","message":"Every grant is in use\."\}\]\}\n\z'
 ! stderr .
 cp stdout $TMPDIR/alone.json
 exec ncly describe doctor --json
 cp stdout $TMPDIR/describe.json
 schema $TMPDIR/alone.json $TMPDIR/describe.json schema
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" grants.tmpl > "$STATE/grants.json"'
 
 # A key from the variable and one from the keychain pass, with messages that name the source
 # and never the key
@@ -27,7 +31,7 @@ chmod 755 bin/ncly-hello
 cp seed.jsonl test-keychain.jsonl
 env DEEPGRAM_API_KEY=dg-from-env
 exec ncly doctor auth --json
-stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"auth\.deepgram","component":"auth","status":"pass","message":"The key comes from DEEPGRAM_API_KEY\."\},\{"id":"auth\.openai","component":"auth","status":"pass","message":"The key comes from the keychain\."\}\]\}\n\z'
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"auth\.grants","component":"auth","status":"pass","message":"Every grant is in use\."\},\{"id":"auth\.deepgram","component":"auth","status":"pass","message":"The key comes from DEEPGRAM_API_KEY\."\},\{"id":"auth\.openai","component":"auth","status":"pass","message":"The key comes from the keychain\."\}\]\}\n\z'
 ! stdout 'dg-from-env|sk-from-keychain'
 exec ncly doctor auth
 cmp stdout pass.txt
@@ -44,7 +48,7 @@ schema $TMPDIR/missing.json $TMPDIR/describe.json schema
 
 # Doctor and ncly auth status give each service the same verdict
 exits 78 ncly auth status --json
-stdout '\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\},\{"service":"openai","configured":true,"source":"keychain"\}'
+stdout '\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\],"grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}'
 
 # An unavailable keychain with every key in the environment warns with KEYRING_ENV_ONLY and
 # exits 0, and with an empty variable the service fails with KEYRING_UNAVAILABLE and no next
@@ -52,7 +56,7 @@ env NCLY_TEST_KEYCHAIN=unavailable
 env DEEPGRAM_API_KEY=dg-from-env
 env OPENAI_API_KEY=oa-from-env
 exec ncly doctor auth --json
-stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY","message":"The keychain does not answer, so keys come only from the environment\.","hint":"Unlock the keychain, or export the variable of each key, such as DEEPGRAM_API_KEY\."\},\{"id":"auth\.deepgram",[^]]*"status":"pass"[^]]*\{"id":"auth\.openai",[^]]*"status":"pass"'
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"warn","code":"KEYRING_ENV_ONLY","message":"The keychain does not answer, so keys come only from the environment\.","hint":"Unlock the keychain, or export the variable of each key, such as DEEPGRAM_API_KEY\."\},\{"id":"auth\.grants",[^}]*"status":"pass"[^}]*\},\{"id":"auth\.deepgram",[^]]*"status":"pass"[^]]*\{"id":"auth\.openai",[^]]*"status":"pass"'
 ! stdout '"next"'
 env OPENAI_API_KEY=
 exits 78 ncly doctor auth --json
@@ -124,14 +128,14 @@ env NCLY_TEST_KEYCHAIN=
 
 # Without a component, doctor lists the auth checks after core and before the extensions
 exec ncly doctor --json
-stdout '"checks":\[\{"id":"core\.config",[^}]*\},\{"id":"auth\.keychain",[^}]*\},\{"id":"auth\.deepgram",[^}]*\},\{"id":"auth\.openai",[^}]*\},\{"id":"extensions\.hello",'
+stdout '"checks":\[\{"id":"core\.config",[^}]*\},\{"id":"auth\.keychain",[^}]*\},\{"id":"auth\.grants",[^}]*\},\{"id":"auth\.deepgram",[^}]*\},\{"id":"auth\.openai",[^}]*\},\{"id":"extensions\.hello",'
 
 # Under the pseudo-locale, every word comes from the catalog
 exec ncly --lang en-XA doctor auth
-pseudo stdout auth.keychain auth.deepgram auth.openai DEEPGRAM_API_KEY
+pseudo stdout auth.keychain auth.grants auth.deepgram auth.openai DEEPGRAM_API_KEY
 env DEEPGRAM_API_KEY=
 exits 78 ncly --lang en-XA doctor auth
-pseudo stdout auth.keychain auth.deepgram auth.openai auth login deepgram
+pseudo stdout auth.keychain auth.grants auth.deepgram auth.openai auth login deepgram
 
 ! exists ran
 
@@ -139,8 +143,11 @@ pseudo stdout auth.keychain auth.deepgram auth.openai auth login deepgram
 {"call":"set","account":"openai","key":"sk-from-keychain"}
 -- pass.txt --
 pass  auth.keychain  The keychain answers.
+pass  auth.grants    Every grant is in use.
 pass  auth.deepgram  The key comes from DEEPGRAM_API_KEY.
 pass  auth.openai    The key comes from the keychain.
+-- grants.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"hello","path":"@WORK@/bin/ncly-hello","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"hello","path":"@WORK@/bin/ncly-hello","granted_at":"2026-10-17T04:00:00Z"}]}
 -- bin/plain --
 #!/bin/sh
 exit 0

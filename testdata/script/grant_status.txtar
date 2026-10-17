@@ -1,0 +1,174 @@
+# Each entry of ncly auth status lists the grants of its service: one object per domain whose
+# extension declares it, in name order. status and the auth.<service> check of doctor fail with
+# KEY_NOT_GRANTED when the key is there and an extension that needs it lacks a grant, and doctor
+# checks the grants in auth.grants, as Required keys defines. alpha declares deepgram and
+# openai, beta deepgram alone. The test keychain is the file $HOME/test-keychain.jsonl. The
+# fixtures append to $WORK/ran when they run, which they never may.
+env STATE=$WORK/.local/state/nicely
+chmod 755 bin/ncly-alpha
+chmod 755 bin/ncly-beta
+mkdir nbin
+exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
+env PATH=$WORK/bin:$WORK/nbin
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=dg-env
+env OPENAI_API_KEY=
+cp seed.jsonl test-keychain.jsonl
+mkdir $STATE
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" every.tmpl > "$STATE/grants.json"'
+
+# A key with every grant passes: each grant says granted, and doctor's auth.grants finds every
+# grant in use
+exec ncly auth status --json
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":true,"source":"env","grants":\[\{"domain":"alpha","granted":true,"optional":false\},\{"domain":"beta","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"alpha","granted":true,"optional":false\}\]\}\]\}\n\z'
+! stderr .
+cp stdout every.json
+exec ncly describe 'auth status' --json
+cp stdout describe-status.json
+schema every.json describe-status.json schema
+exec ncly auth status
+cmp stdout every.txt
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"auth\.grants","component":"auth","status":"pass","message":"Every grant is in use\."\},\{"id":"auth\.deepgram","component":"auth","status":"pass","message":"The key comes from DEEPGRAM_API_KEY\."\},\{"id":"auth\.openai","component":"auth","status":"pass","message":"The key comes from the keychain\."\}\]\}\n\z'
+cp stdout doctor-every.json
+exec ncly describe doctor --json
+cp stdout describe-doctor.json
+schema doctor-every.json describe-doctor.json schema
+
+# Without the grant of one of the two extensions that declare it, the key fails both reports
+# with KEY_NOT_GRANTED, whose hint and next grant it to that extension
+exec ncly auth revoke deepgram beta --force --json
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":true,"source":"env","code":"KEY_NOT_GRANTED","message":"The key of deepgram is not granted to beta\.","hint":"ncly auth grant deepgram beta","next":\["ncly","auth","grant","deepgram","beta"\],"grants":\[\{"domain":"alpha","granted":true,"optional":false\},\{"domain":"beta","granted":false,"optional":false\}\]\}'
+stdout '\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"alpha","granted":true,"optional":false\}\]\}'
+! stdout '"errors"'
+cp stdout one.json
+schema one.json describe-status.json schema
+exits 78 ncly auth status
+cmp stdout one.txt
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"KEY_NOT_GRANTED","message":"The key of deepgram is not granted to beta\.","hint":"ncly auth grant deepgram beta","next":\["ncly","auth","grant","deepgram","beta"\]\},\{"id":"auth\.openai","component":"auth","status":"pass",'
+
+# Without both grants, status names the first domain in name order, and doctor lists one entry
+# for each extension, in name order
+exec ncly auth revoke deepgram alpha --force --json
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":true,"source":"env","code":"KEY_NOT_GRANTED","message":"The key of deepgram is not granted to alpha\.","hint":"ncly auth grant deepgram alpha","next":\["ncly","auth","grant","deepgram","alpha"\],"grants":\[\{"domain":"alpha","granted":false,"optional":false\},\{"domain":"beta","granted":false,"optional":false\}\]\}'
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"KEY_NOT_GRANTED","message":"The key of deepgram is not granted to alpha\.","hint":"ncly auth grant deepgram alpha","next":\["ncly","auth","grant","deepgram","alpha"\]\},\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"KEY_NOT_GRANTED","message":"The key of deepgram is not granted to beta\.","hint":"ncly auth grant deepgram beta","next":\["ncly","auth","grant","deepgram","beta"\]\},\{"id":"auth\.openai",'
+exits 78 ncly doctor auth
+cmp stdout doctor-two.txt
+
+# A missing key without its grant reports AUTH_MISSING alone, in status and in doctor, because
+# the key comes before its grants
+env DEEPGRAM_API_KEY=
+exits 78 ncly auth status --json
+stdout '\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\],"grants":\[\{"domain":"alpha","granted":false,"optional":false\},\{"domain":"beta","granted":false,"optional":false\}\]\}'
+! stdout KEY_NOT_GRANTED
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\},\{"id":"auth\.openai",'
+! stdout KEY_NOT_GRANTED
+env DEEPGRAM_API_KEY=dg-env
+
+# A grant whose service the extension no longer declares, and one whose path no longer holds
+# the extension, are each a GRANT_UNUSED warning of auth.grants, whose hint and next revoke it.
+# A warning never fails the report, and status lists no unused grant
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" unused.tmpl > "$STATE/grants.json"'
+exec ncly doctor auth --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"auth\.keychain",[^}]*\},\{"id":"auth\.grants","component":"auth","status":"warn","code":"GRANT_UNUSED","message":"alpha no longer declares the key of mistral, which a grant gives it\.","hint":"ncly auth revoke mistral alpha","next":\["ncly","auth","revoke","mistral","alpha"\]\},\{"id":"auth\.grants","component":"auth","status":"warn","code":"GRANT_UNUSED","message":"The grant of the key of openai to gamma names '${WORK@R}'/bin/ncly-gamma, where no extension of gamma is now\.","hint":"ncly auth revoke openai gamma","next":\["ncly","auth","revoke","openai","gamma"\]\},\{"id":"auth\.deepgram","component":"auth","status":"pass",'
+cp stdout unused.json
+schema unused.json describe-doctor.json schema
+exec ncly auth status --json
+! stdout 'mistral|gamma'
+exec ncly doctor auth
+stdout '^warn  auth\.grants    alpha no longer declares the key of mistral, which a grant gives it\.\n      GRANT_UNUSED   hint: ncly auth revoke mistral alpha\n'
+stdout '^warn  auth\.grants    The grant of the key of openai to gamma names '${WORK@R}'/bin/ncly-gamma, where no extension of gamma is now\.\n      GRANT_UNUSED   hint: ncly auth revoke openai gamma\n'
+
+# A grants file that core cannot read fails status with CONFIG_INVALID, whose hint names the
+# file, and fails auth.grants with the same code, while the checks of the services judge their
+# keys alone
+chmod 000 $STATE/grants.json
+exits 78 ncly auth status --json
+answer stderr CONFIG_INVALID
+stderr '"hint":"Fix '${STATE@R}'/grants\.json, or remove it, which revokes every grant\."'
+! stdout .
+exits 78 ncly doctor auth --json
+stdout '\{"id":"auth\.grants","component":"auth","status":"fail","code":"CONFIG_INVALID","message":"The grants file '${STATE@R}'/grants\.json cannot be read\.","hint":"Fix '${STATE@R}'/grants\.json, or remove it, which revokes every grant\."\},\{"id":"auth\.deepgram","component":"auth","status":"pass","message":"The key comes from DEEPGRAM_API_KEY\."\},\{"id":"auth\.openai","component":"auth","status":"pass",'
+chmod 644 $STATE/grants.json
+
+# Under the pseudo-locale, every word of both reports comes from the catalog
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" every.tmpl > "$STATE/grants.json"'
+exec ncly auth revoke deepgram beta --force --json
+exits 78 ncly --lang en-XA auth status
+pseudo stdout keychain deepgram openai alpha beta auth grant
+exits 78 ncly --lang en-XA doctor auth
+pseudo stdout auth.keychain auth.grants auth.deepgram auth.openai DEEPGRAM_API_KEY auth grant deepgram beta
+
+! exists ran
+
+-- seed.jsonl --
+{"call":"set","account":"openai","key":"sk-stored"}
+-- every.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"alpha","path":"@WORK@/bin/ncly-alpha","granted_at":"2026-10-17T04:00:00Z"},{"service":"deepgram","domain":"beta","path":"@WORK@/bin/ncly-beta","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"alpha","path":"@WORK@/bin/ncly-alpha","granted_at":"2026-10-17T04:00:00Z"}]}
+-- unused.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"alpha","path":"@WORK@/bin/ncly-alpha","granted_at":"2026-10-17T04:00:00Z"},{"service":"deepgram","domain":"beta","path":"@WORK@/bin/ncly-beta","granted_at":"2026-10-17T04:00:00Z"},{"service":"mistral","domain":"alpha","path":"@WORK@/bin/ncly-alpha","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"alpha","path":"@WORK@/bin/ncly-alpha","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"gamma","path":"@WORK@/bin/ncly-gamma","granted_at":"2026-10-17T04:00:00Z"}]}
+-- every.txt --
+keychain  available
+
+deepgram  env       alpha: granted, beta: granted
+openai    keychain  alpha: granted
+-- one.txt --
+keychain  available
+
+deepgram  env       alpha: granted, beta: not granted
+          fail[KEY_NOT_GRANTED] The key of deepgram is not granted to beta.
+          hint: ncly auth grant deepgram beta
+openai    keychain  alpha: granted
+-- doctor-two.txt --
+pass  auth.keychain    The keychain answers.
+pass  auth.grants      Every grant is in use.
+fail  auth.deepgram    The key of deepgram is not granted to alpha.
+      KEY_NOT_GRANTED  hint: ncly auth grant deepgram alpha
+fail  auth.deepgram    The key of deepgram is not granted to beta.
+      KEY_NOT_GRANTED  hint: ncly auth grant deepgram beta
+pass  auth.openai      The key comes from the keychain.
+-- bin/ncly-alpha --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-alpha.toml --
+format_version = 1
+contract_version = 1
+domain = "alpha"
+
+[[commands]]
+path = "alpha"
+summary = "alpha.summary"
+
+[[commands]]
+path = "alpha run"
+summary = "alpha.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- bin/ncly-alpha.locales/en.toml --
+["alpha.summary"]
+description = "Summary of the alpha fixture."
+other = "Do alpha things"
+-- bin/ncly-beta --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- bin/ncly-beta.toml --
+format_version = 1
+contract_version = 1
+domain = "beta"
+
+[[commands]]
+path = "beta"
+summary = "beta.summary"
+
+[[commands]]
+path = "beta run"
+summary = "beta.summary"
+requires = { keys = ["deepgram"] }
+-- bin/ncly-beta.locales/en.toml --
+["beta.summary"]
+description = "Summary of the beta fixture."
+other = "Do beta things"

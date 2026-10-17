@@ -3,7 +3,7 @@
 # Markdown through Glamour, in the style of the help, and a pipe gets the file as it is. pty
 # runs a command on a pseudo-terminal of 80 columns and prints what the terminal showed, and
 # plain writes that text without its escape sequences. The test keychain is the file
-# $HOME/test-keychain.jsonl, which holds no key here.
+# $HOME/test-keychain.jsonl, which holds no key here. A human granted both keys to the fixture.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env CFG=$WORK/.config/nicely
 mkdir $CFG
@@ -13,6 +13,9 @@ chmod 755 $DATA/ncly-hello
 env DEEPGRAM_API_KEY=dg-from-env
 env OPENAI_API_KEY=
 env TERM=xterm-256color
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+exec sh -c 'sed "s|@WORK@|$WORK|g" grants.tmpl > "$STATE/grants.json"'
 
 # skill list prints each name and a colon, then its description, aligned as the help aligns
 # its commands. On a terminal, the names are bold, and the text is the same
@@ -25,14 +28,14 @@ stdout '^\x1b\[1mnicely:\x1b\[m  Use before '
 plain stdout shown.txt
 cmpenv shown.txt list.txt
 
-# auth status prints the keychain and its state, an empty line, then each service in bold and
-# its source, with a problem under its line, in the column of its source, with the label
-# styles of an error
+# auth status prints the keychain and its state, an empty line, then each service in bold, its
+# source, and its grants, with a problem under its line, in the column of its source, with the
+# label styles of an error
 exits 78 ncly auth status
 cmp stdout status.txt
 ! stdout '\x1b'
 exits 78 pty none.txt ncly auth status
-stdout '^\x1b\[1mdeepgram\x1b\[m  env$'
+stdout '^\x1b\[1mdeepgram\x1b\[m  env   hello: granted$'
 stdout '^          \x1b\[1;31mfail\[AUTH_MISSING\]\x1b\[m No key for openai '
 stdout '^          \x1b\[1;36mhint:\x1b\[m ncly auth login openai$'
 plain stdout shown.txt
@@ -120,7 +123,7 @@ stdout '^\x1b\[1mNICELY\x1b\[m$'
 # Under the pseudo-locale, every word of the reports comes from the catalog, and so does the
 # folder label of the view, whose skill keeps the words of its author
 exits 78 pty none.txt ncly --lang en-XA auth status
-pseudo stdout keychain deepgram openai auth login AUTH_MISSING
+pseudo stdout keychain deepgram openai hello auth login AUTH_MISSING
 exec pty none.txt ncly --lang en-XA skill view alpha
 stdout '\A\x1b\[90m⟦[^⟧]+⟧\x1b\[m  '${WORK@R}'/skills/alpha\n'
 
@@ -140,10 +143,12 @@ nicely:  Use before running any ncly command.
 -- status.txt --
 keychain  available
 
-deepgram  env
-openai    none
+deepgram  env   hello: granted
+openai    none  hello: granted
           fail[AUTH_MISSING] No key for openai in OPENAI_API_KEY or the keychain.
           hint: ncly auth login openai
+-- grants.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"hello","path":"@WORK@/.local/share/nicely/extensions/ncly-hello","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"hello","path":"@WORK@/.local/share/nicely/extensions/ncly-hello","granted_at":"2026-10-17T04:00:00Z"}]}
 -- bare.txt --
 keychain  available
 -- doctor-core.txt --
@@ -151,6 +156,7 @@ warn  core.config         $WORK/.config/nicely/config.toml holds the unknown key
       CONFIG_UNKNOWN_KEY  hint: Remove or rename colour in $WORK/.config/nicely/config.toml.
 -- doctor-auth.txt --
 pass  auth.keychain  The keychain answers.
+pass  auth.grants    Every grant is in use.
 pass  auth.deepgram  The key comes from DEEPGRAM_API_KEY.
 fail  auth.openai    No key for openai in OPENAI_API_KEY or the keychain.
       AUTH_MISSING   hint: ncly auth login openai

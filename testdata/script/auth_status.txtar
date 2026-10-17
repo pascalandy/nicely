@@ -3,7 +3,9 @@
 # keychain. It asks the keychain once whether it answers, then reads only the entry of a
 # service whose variable is empty. The test keychain is the file $HOME/test-keychain.jsonl,
 # which logs each call on its own line. Two commands of the shell fixture declare deepgram,
-# a third openai, and the fixture appends to $WORK/ran when it runs, which it never may.
+# a third openai, and the fixture appends to $WORK/ran when it runs, which it never may. A
+# human granted both keys to it, so each entry lists that grant. grant_status.txtar proves
+# the grants and KEY_NOT_GRANTED.
 env DATA=$WORK/.local/share/nicely/extensions
 # PATH keeps ncly alone, so the other commands of the test binary are no extensions here
 mkdir nbin
@@ -13,6 +15,9 @@ env PATH=$WORK/nbin
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
 env OPENAI_API_KEY=
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" grants.tmpl > "$STATE/grants.json"'
 
 # No declared service answers an empty services, after one question to the keychain
 exec ncly auth status --json
@@ -30,7 +35,7 @@ chmod 755 $DATA/ncly-hello
 cp seed.jsonl test-keychain.jsonl
 env DEEPGRAM_API_KEY=dg-from-env
 exec ncly auth status --json
-stdout '\A\{"ok":true,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":true,"source":"env"\},\{"service":"openai","configured":true,"source":"keychain"\}\]\}\n\z'
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":true,"source":"env","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
 ! stderr .
 cp stdout found.json
 schema found.json describe.json schema
@@ -44,7 +49,7 @@ cmp stdout found.txt
 # A key in neither fails the report with AUTH_MISSING and exit 78, on stdout, without errors
 env DEEPGRAM_API_KEY=
 exits 78 ncly auth status --json
-stdout '\A\{"ok":false,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\},\{"service":"openai","configured":true,"source":"keychain"\}\]\}\n\z'
+stdout '\A\{"ok":false,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\],"grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
 ! stdout '"errors"'
 ! stderr .
 cp stdout missing.json
@@ -58,14 +63,14 @@ env NCLY_TEST_KEYCHAIN=unavailable
 env DEEPGRAM_API_KEY=dg-from-env
 env OPENAI_API_KEY=oa-from-env
 exec ncly auth status --json
-stdout '\A\{"ok":true,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env"\},\{"service":"openai","configured":true,"source":"env"\}\]\}\n\z'
+stdout '\A\{"ok":true,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"env","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
 ! stderr .
 
 # An unavailable keychain with an empty variable fails with KEYRING_UNAVAILABLE, whose hint
 # names the variable, and no next
 env OPENAI_API_KEY=
 exits 78 ncly auth status --json
-stdout '\A\{"ok":false,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env"\},\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE","message":"The keychain does not answer, and OPENAI_API_KEY is empty\.","hint":"Export OPENAI_API_KEY, or unlock the keychain\."\}\]\}\n\z'
+stdout '\A\{"ok":false,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE","message":"The keychain does not answer, and OPENAI_API_KEY is empty\.","hint":"Export OPENAI_API_KEY, or unlock the keychain\.","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
 ! stdout '"next"'
 cp stdout unavailable.json
 schema unavailable.json describe.json schema
@@ -118,16 +123,16 @@ env NCLY_TEST_KEYCHAIN=
 chmod 755 $DATA/ncly-broken
 env DEEPGRAM_API_KEY=dg-from-env
 exec ncly auth status --json
-stdout '"services":\[\{"service":"deepgram",[^]]*\{"service":"openai",[^]]*\]\}\n\z'
+cmp stdout found.json
 ! stdout zoom
 
 # No key appears on stdout or stderr, under the pseudo-locale either
 exec ncly --lang en-XA auth status
-pseudo stdout keychain deepgram openai
+pseudo stdout keychain deepgram openai hello
 ! stderr .
 env DEEPGRAM_API_KEY=
 exits 78 ncly --lang en-XA auth status
-pseudo stdout keychain deepgram openai auth login
+pseudo stdout keychain deepgram openai hello auth login
 exec ncly --lang en-XA auth --help
 pseudo stdout auth status login logout grant revoke deepgram transcript stdin
 exits 78 ncly auth status --json
@@ -140,15 +145,17 @@ exits 78 ncly auth status --json
 -- found.txt --
 keychain  available
 
-deepgram  env
-openai    keychain
+deepgram  env       hello: granted
+openai    keychain  hello: granted
 -- missing.txt --
 keychain  available
 
-deepgram  none
+deepgram  none      hello: granted
           fail[AUTH_MISSING] No key for deepgram in DEEPGRAM_API_KEY or the keychain.
           hint: ncly auth login deepgram
-openai    keychain
+openai    keychain  hello: granted
+-- grants.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"hello","path":"@WORK@/.local/share/nicely/extensions/ncly-hello","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"hello","path":"@WORK@/.local/share/nicely/extensions/ncly-hello","granted_at":"2026-10-17T04:00:00Z"}]}
 -- .local/share/nicely/extensions/ncly-hello --
 #!/bin/sh
 echo "$0" >> "$WORK/ran"

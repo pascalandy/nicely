@@ -19,7 +19,7 @@ exec ncly describe 'auth login' --json
 cp stdout $TMPDIR/describe.json
 schema $TMPDIR/login.json $TMPDIR/describe.json schema
 exits 78 ncly auth status --json
-stdout '\{"service":"deepgram","configured":true,"source":"keychain"\}'
+stdout '\{"service":"deepgram","configured":true,"source":"keychain",'
 
 # A replacement without a terminal keeps the old key and exits 2 with CONFIRMATION_REQUIRED,
 # whose hint adds --force, and replaces it with --force, from the final newline of echo
@@ -90,7 +90,7 @@ stderr '"hint":"Check the key of deepgram with ncly auth status\.","next":\["ncl
 ! stderr dg-late
 env NCLY_TEST_KEYCHAIN=
 exits 78 ncly auth status --json
-stdout '\{"service":"deepgram","configured":true,"source":"keychain"\}'
+stdout '\{"service":"deepgram","configured":true,"source":"keychain",'
 grep '"call":"set","account":"deepgram","key":"dg-late"\}' test-keychain.jsonl
 
 # For a service that no installed extension declares, the hint names Nicely's entry in the

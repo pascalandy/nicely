@@ -13,7 +13,7 @@ mkdir $CFG
 # Without a config file, core.config passes, and doctor exits 0 with its checks on stdout
 exec ncly doctor --json
 answer stdout ok
-stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\},\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"extensions\.'
+stdout '"checks":\[\{"id":"core\.config","component":"core","status":"pass","message":"The config files are valid\."\},\{"id":"auth\.keychain","component":"auth","status":"pass","message":"The keychain answers\."\},\{"id":"auth\.grants","component":"auth","status":"pass","message":"Every grant is in use\."\},\{"id":"extensions\.'
 ! stderr .
 cp stdout pass.json
 exec ncly describe doctor --json

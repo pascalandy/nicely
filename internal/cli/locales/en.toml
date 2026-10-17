@@ -809,6 +809,38 @@ other = "The grants file {{.File}} could not be written, and it may hold the cha
 description = "Hint of RUNTIME in ncly auth grant or revoke after a failed write of the grants file: the human reads the file before running the command again. {{.File}} is the path of the file."
 other = "Read {{.File}} before you run the command again."
 
+["auth.not_granted"]
+description = "Message of KEY_NOT_GRANTED in ncly auth status and in the check of a service in ncly doctor: the key exists, and the extension of a domain needs it, but no human granted it to that extension. {{.Service}} is the service, such as deepgram, and {{.Domain}} the domain, such as transcript."
+other = "The key of {{.Service}} is not granted to {{.Domain}}."
+
+["auth.grant_granted"]
+description = "ncly auth status, human text: one grant of a service, after its source, when a human granted the key to the extension of the domain. {{.Domain}} is the domain, such as transcript."
+other = "{{.Domain}}: granted"
+
+["auth.grant_not_granted"]
+description = "ncly auth status, human text: one grant of a service, after its source, when no human granted the key to the extension of the domain. {{.Domain}} is the domain."
+other = "{{.Domain}}: not granted"
+
+["auth.grant_granted_optional"]
+description = "ncly auth status, human text: one grant of a service whose key the extension of the domain marks optional, when a human granted the key to it. {{.Domain}} is the domain."
+other = "{{.Domain}}: granted, optional"
+
+["auth.grant_not_granted_optional"]
+description = "ncly auth status, human text: one grant of a service whose key the extension of the domain marks optional, when no human granted the key to it. {{.Domain}} is the domain."
+other = "{{.Domain}}: not granted, optional"
+
+["auth.grants_in_use"]
+description = "Report of `ncly doctor`: message of the auth.grants check when every grant names a service that the extension of its domain declares, at the path where that extension is."
+other = "Every grant is in use."
+
+["auth.grant_unused_service"]
+description = "Report of `ncly doctor`: message of the warning GRANT_UNUSED of auth.grants, when the extension of the domain no longer declares the service of a grant. {{.Domain}} is the domain, and {{.Service}} the service."
+other = "{{.Domain}} no longer declares the key of {{.Service}}, which a grant gives it."
+
+["auth.grant_unused_source"]
+description = "Report of `ncly doctor`: message of the warning GRANT_UNUSED of auth.grants, when no installed extension of the domain is at the path that a grant names anymore. {{.Service}} is the service, {{.Domain}} the domain, and {{.Path}} the path of the grant, or the words of auth.fact_bundled."
+other = "The grant of the key of {{.Service}} to {{.Domain}} names {{.Path}}, where no extension of {{.Domain}} is now."
+
 ["doctor.keyring_env_only_hint"]
 description = "Report of `ncly doctor`: hint of the warning KEYRING_ENV_ONLY of auth.keychain. The human unlocks the OS keychain, or exports the environment variable of each key, whose name is the service in uppercase followed by _API_KEY, such as DEEPGRAM_API_KEY, which stays as is."
 other = "Unlock the keychain, or export the variable of each key, such as DEEPGRAM_API_KEY."

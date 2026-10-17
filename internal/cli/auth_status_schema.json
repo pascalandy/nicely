@@ -8,7 +8,7 @@
   "$defs": {
     "service": {
       "type": "object",
-      "required": ["service", "configured", "source"],
+      "required": ["service", "configured", "source", "grants"],
       "properties": {
         "service": {"type": "string"},
         "configured": {"type": "boolean"},
@@ -16,7 +16,17 @@
         "code": {"type": "string"},
         "message": {"type": "string"},
         "hint": {"type": "string"},
-        "next": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+        "next": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "grants": {"type": "array", "items": {"$ref": "#/$defs/grant"}}
+      }
+    },
+    "grant": {
+      "type": "object",
+      "required": ["domain", "granted", "optional"],
+      "properties": {
+        "domain": {"type": "string"},
+        "granted": {"type": "boolean"},
+        "optional": {"type": "boolean"}
       }
     }
   }
