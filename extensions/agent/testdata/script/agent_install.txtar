@@ -1,0 +1,123 @@
+# just install puts ncly-agent in the extensions folder of the data folder, with its manifest,
+# catalogs, and skill beside it. The setup of these scenarios installs the same files there,
+# from the extension's embedded value, as $DATA/ncly-agent, a script that appends agent to
+# $WORK/external.log each time it starts. ncly finds the installed extension and shows its help
+# from the manifest without starting it. Doctor checks the codex that PATH holds as a required
+# program. The stub codex appends each call to $WORK/codex.log, answers --version, and appends
+# any other call, which would start a task, to $WORK/task.log.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+chmod 755 bin/pacman
+chmod 755 bin/brew
+# PATH keeps ncly, the program of the installed extension, codes, and the stubs alone, so no
+# real codex or package manager counts
+mkdir nbin
+exec sh -c 'for c in ncly agent-external codes; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
+env PATH=$WORK/bin:$WORK/nbin
+
+# The installed files sit where discovery looks first
+exists $DATA/ncly-agent
+exists $DATA/ncly-agent.toml
+exists $DATA/ncly-agent.locales/en.toml
+exists $DATA/ncly-agent.skill/SKILL.md
+
+# Help reaches the installed extension through its manifest and catalogs, and starts nothing
+exec ncly --help
+stdout '^  agent:  Run trusted tasks through Codex$'
+exec ncly agent --help
+stdout '^COMMANDS\n  run:  Run one trusted task through Codex$'
+stdout '^  \$ ncly agent run "Review this branch" --tools --dry-run$'
+exec ncly agent run --help
+stdout '^  ncly agent run \[task\] \[flags\]$'
+stdout '^      --tools             Let Codex use its tools, which this command requires$'
+stdout '^  -n, --dry-run '
+exec ncly describe 'agent run' --json
+stdout '"path":"agent run","summary":"Run one trusted task through Codex","source":"extension"'
+stdout '"effects":\{"user_writes":true,"network":true,"paid":true\}'
+stdout '"modes":\{"dry_run":true,"recorded":false,"resume":false\}'
+stdout '"requires":\{"bins":\[\{"name":"codex","version":"0\.162\.1","install":\{"brew":\["brew","install","--cask","codex"\],"pacman":\["sudo","pacman","-S","openai-codex"\]\}\}\],"keys":\[\]\}'
+exec ncly doctor extensions --json
+stdout '\{"id":"extensions\.agent","component":"extensions","status":"pass","message":"[^"]*","domain":"agent","source":"extension","path":"'${DATA@R}'/ncly-agent"\}'
+! exists external.log
+! exists codex.log
+
+# Doctor checks a recent codex with its version probe alone, and starts neither the extension
+# nor a task. The oldest version that works passes too
+env CODEX_VERSION=0.163.0
+exec ncly doctor agent --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"agent\.codex","component":"agent","status":"pass","message":"codex 0\.163\.0 found at '${WORK@R}'/bin/codex\."\}\]\}\n\z'
+! stderr .
+env CODEX_VERSION=0.162.1
+exec ncly doctor agent
+stdout '\Apass  agent\.codex  codex 0\.162\.1 found at '${WORK@R}'/bin/codex\.\n\z'
+cmp codex.log want-probes.log
+! exists task.log
+! exists external.log
+! exists ran
+
+# An older codex fails with PREREQ_MISSING, and its hint and next hold the install command of
+# the first package manager of this system that PATH holds: pacman on Linux, brew on macOS
+[linux] env INSTALL='"hint":"sudo pacman -S openai-codex","next":\["sudo","pacman","-S","openai-codex"\]'
+[darwin] env INSTALL='"hint":"brew install --cask codex","next":\["brew","install","--cask","codex"\]'
+env CODEX_VERSION=0.162.0
+exits 78 ncly doctor agent --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex 0\.162\.0 is older than 0\.162\.1\.",'$INSTALL'\}\]\}\n\z'
+exits 78 ncly doctor agent
+stdout '^fail  agent\.codex     codex 0\.162\.0 is older than 0\.162\.1\.\n      PREREQ_MISSING  hint: (sudo pacman -S openai-codex|brew install --cask codex)$'
+
+# A probe that prints no version fails the same way
+env CODEX_VERSION=unknown
+exits 78 ncly doctor agent --json
+stdout '"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex --version printed no version\.",'$INSTALL
+
+# A missing codex fails with PREREQ_MISSING and the same install command
+mv bin/codex codex.stub
+exits 78 ncly doctor agent --json
+stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex is not installed\.",'$INSTALL'\}\]\}\n\z'
+exits 78 ncly --lang en-XA doctor agent
+pseudo stdout agent.codex codex PREREQ_MISSING sudo pacman -S openai-codex brew install --cask
+mv codex.stub bin/codex
+! exists task.log
+! exists external.log
+! exists ran
+
+# The text of the extension comes from its catalog under the pseudo-locale too
+exec ncly --lang en-XA agent run --help
+pseudo stdout ncly agent run task --cwd --dry-run --effort --model --task-file --tools --help --json --lang --no-color --no-input --verbose --version dir level id file tag -n -h -v [task] [flags] Review this branch task.md
+
+# The skill installed beside the extension teaches only commands and codes that this ncly has
+exec ncly skill view agent --json
+stdout '"name":"agent","path":"'${DATA@R}'/ncly-agent\.skill","source":"extension"'
+exec ncly describe --json
+cp stdout describe.json
+exec codes
+cp stdout codes.txt
+mentions $DATA/ncly-agent.skill/SKILL.md describe.json codes.txt
+! exists external.log
+
+# This build prepares no task yet: agent run starts the installed extension, which answers
+# CAPABILITY_UNSUPPORTED, a code of the SDK's registry with exit 78, and starts no codex
+exits 78 ncly agent run 'Review this branch' --tools --dry-run --json
+! stdout .
+answer stderr CAPABILITY_UNSUPPORTED
+exists external.log
+! exists task.log
+
+-- want-probes.log --
+--version
+--version
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$WORK/codex.log"
+if [ "$1" = --version ]; then
+  echo "codex-cli $CODEX_VERSION"
+  exit 0
+fi
+echo "$*" >> "$WORK/task.log"
+exit 1
+-- bin/pacman --
+#!/bin/sh
+echo pacman >> "$WORK/ran"
+-- bin/brew --
+#!/bin/sh
+echo brew >> "$WORK/ran"
