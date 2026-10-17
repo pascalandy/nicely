@@ -191,7 +191,7 @@ For `grant` and `revoke`, `--dry-run` works the same way: it needs no terminal, 
 Their dry-run JSON has `dry_run: true`, `plan`, an array with one entry, or none when nothing would change, containing the service `key`, `action` (`login`, `logout`, `grant`, or `revoke`), `domain` for `grant` and `revoke`, and `effects` (`user_writes: true`, `network: false`, `paid: false`), plus `pending_checks`, whose entries have `id` and `message`. The check `auth.keychain` covers availability, existing keys, and any replacement confirmation. A successful login or logout answers `service` and `action`, never a key.
 
 ```json
-{"ok":false,"contract_version":1,"keychain":"available","services":[{"service":"deepgram","configured":true,"source":"keychain","grants":[{"domain":"transcript","granted":true,"optional":false}]},{"service":"openai","configured":false,"source":"none","code":"AUTH_MISSING","message":"No OpenAI key found.","hint":"ncly auth login openai","next":["ncly","auth","login","openai"],"grants":[{"domain":"agent","granted":false,"optional":false}]}]}
+{"ok":false,"contract_version":1,"keychain":"available","services":[{"service":"deepgram","configured":true,"source":"keychain","grants":[{"domain":"transcript","granted":true,"optional":false}]},{"service":"openai","configured":false,"source":"none","code":"AUTH_MISSING","message":"No OpenAI key found.","hint":"ncly auth login openai","next":["ncly","auth","login","openai"],"grants":[{"domain":"example","granted":false,"optional":false}]}]}
 ```
 
 `keychain` is `available` or `unavailable`. To move a key from another secret store, pipe it once: `<command that prints the key> | ncly auth login deepgram --stdin`.
