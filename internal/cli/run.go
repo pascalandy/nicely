@@ -192,7 +192,7 @@ func writeRuns(w io.Writer, p *i18n.Printer, list runList) error {
 		header := []string{p.T("run.list.column_run"), p.T("run.list.column_status"), p.T("run.list.column_started"), p.T("run.list.column_command"), p.T("run.list.column_items")}
 		rows := [][]string{}
 		for _, e := range list.Runs {
-			rows = append(rows, []string{e.RunID, e.Status, p.Date(e.started.UTC()), e.Path, strconv.Itoa(e.ItemCount)})
+			rows = append(rows, []string{e.RunID, e.Status, p.Date(e.started.UTC()), e.Path, p.Number(float64(e.ItemCount), 0)})
 		}
 		widths := make([]int, len(header))
 		for _, row := range append([][]string{header}, rows...) {
