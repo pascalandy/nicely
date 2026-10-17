@@ -11,6 +11,7 @@
 - `hello-report` answers a failed report on stdout with exit 78
 - `hello-describe` describes `hello run` with the source `extension`
 - `hello-skill` serves the skill installed beside the extension
+- `hello-form` asks for a missing skill name in the form for missing values on a real terminal, then prints `Next time:` and the full command, and fails with that command as its hint outside a terminal
 - `hello-doctor` reports where `hello` runs from
 
 ## How to get to it (user POV)
@@ -19,6 +20,7 @@
 - `ncly hello run <name>`, `ncly hello check`
 - `ncly describe hello run`
 - `ncly skill view hello`, in a pipe and in a terminal
+- `ncly skill view` without a name, in a terminal and in a pipe
 - `ncly doctor extensions`
 
 ## Driving it with verify.sh
@@ -37,6 +39,8 @@ Preconditions:
 - **Describe.** Run `just verify step "$run" hello describe hello run --json`. Exit 0, and the one entry of `commands` has the path `hello run` and the source `extension`.
 - **Skill.** Run `just verify step "$run" hello skill view hello`. Exit 0, and its first line names the skill folder `<run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, followed by the file of the skill `hello` as it is, frontmatter and Markdown included, because only a terminal renders it.
 - **Skill in a terminal.** Run `just verify tmux "$run" hello skill view hello`. Exit 0. The terminal shows `folder  <run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, an empty line, `HELLO`, then the sentence of the skill, indented by two spaces, without its backticks. It shows no `---` and no `name: hello`, because the view removes the frontmatter. tmux drops the styles, which `styles.txtar` proves.
+- **Skill from the form.** Run `just verify tmux "$run" hello --answer 'The name of the skill' hello skill view`. Exit 0. Before Enter, the terminal shows the form for missing values: `┃ name`, `┃ The name of the skill, as ncly skill list gives it`, `┃ > hello`, then `ctrl+e complete • enter submit`. After Enter, the form is gone, and the terminal shows the skill as in the step above, then `Next time:` and `  ncly skill view hello`.
+- **Missing name.** Run `just verify step "$run" hello skill view`. Exit 2, stdout is empty, and stderr starts with `error[USAGE_INVALID]: The argument <name> is missing.`, with the hint `ncly skill view <name>`.
 - **Proof.** Run `just verify step "$run" hello doctor extensions --json`. Exit 0, and the check `extensions.hello` is a `pass` with the source `extension` and the path `<run>/scratch/home/.local/share/nicely/extensions/ncly-hello`.
 
 ## Gotchas

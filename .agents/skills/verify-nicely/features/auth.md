@@ -14,6 +14,7 @@
 - `auth-logout-dry-run` plans the logout without asking the keychain anything
 - `auth-logout` refuses to remove the key without `--force`, removes it with `--force`, and answers `NOT_FOUND` once it is gone
 - `auth-terminal` asks for the key in the masked field on a real terminal, never shows it, and erases the field once answered. A declined replacement keeps the key, Ctrl-C at the field stores nothing, and a confirmed logout removes the key
+- `auth-form` asks for a missing service in the form for missing values on a real terminal, then for the key in the masked field, and prints `Next time:` with the service, never the key. Outside a terminal, the call fails with the full command as its hint
 - `auth-doctor` gives the test service the verdict of `ncly auth status` in the `auth` component of `ncly doctor`
 - `auth-cleanup` logs the fake key out during the cleanup, after a failed run too, and checks that it is gone
 
@@ -24,6 +25,7 @@
 - `ncly auth login <service> --stdin`, `--force`, and `--dry-run`
 - `ncly auth logout <service>`, `--force`, and `--dry-run`
 - `ncly auth login <service>` and `ncly auth logout <service>` in a terminal, through `just verify tmux`
+- `ncly auth login` without a service, in a terminal and in a pipe
 - `ncly doctor auth`, and `ncly doctor` without a component
 - `just verify cleanup "$run"`, which logs the fake key out
 
@@ -58,6 +60,8 @@ Preconditions:
 - **Logout in a terminal.** Run `just verify tmux "$run" auth --answer '[y/N]' y auth logout verifynicely`. Exit 0. The terminal shows `? Remove the key of verifynicely from the keychain? [y/N] y`, then `Removed the key of verifynicely from the keychain.`
 - **Doctor without the key.** Run `VERIFYNICELY_API_KEY= just verify step "$run" auth doctor --json`. Exit 78, stderr is empty, and stdout lists `core.config`, then `auth.keychain` as a `pass`, then `{"id":"auth.verifynicely","component":"auth","status":"fail","code":"AUTH_MISSING", ...}` with the hint and `next` of the status entry, then the `extensions` checks, each a `pass`.
 - **Nothing to remove.** Run `just verify step "$run" auth auth logout verifynicely --force --json`. Exit 2, and stderr ends with an answer whose first error is `NOT_FOUND`, with the hint and `next` `ncly auth status`.
+- **Missing service.** Run `just verify step "$run" auth auth login`. Exit 2, stdout is empty, and stderr starts with `error[USAGE_INVALID]: The argument <service> is missing.`, with the hint `ncly auth login <service>`.
+- **Login from the form.** Run `just verify tmux "$run" auth --answer 'Service of the key' verifynicely --answer 'verifynicely key' "$fake" auth login`. Exit 0. Before the first Enter, the terminal shows the form for missing values: `┃ service`, `┃ Service of the key, such as deepgram`, and `┃ > verifynicely`. Before the second, it shows the masked field of the step Login in a terminal. After it, both are gone, and the terminal shows `Stored the key of verifynicely in the keychain.`, then `Next time:` and `  ncly auth login verifynicely`, never the key.
 - **Login for the cleanup.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force --json`. Exit 0, so the cleanup has a key to log out.
 - **Proof.** Run `grep -c "$fake" "$run/evidence/auth.txt"` after the steps. It prints `0` and exits 1, grep's code for no match: no transcript holds the fake key, not even the one that the terminal steps typed.
 - **Cleanup.** Run `just verify cleanup "$run"`, as SKILL.md says. Exit 0, stderr says `logged the fake key of verifynicely out of the keychain`, and `$run/evidence/cleanup.txt` holds an `ncly auth logout verifynicely --force --json` that exits 0, then an `ncly auth status --json` with `"keychain":"available"`, whose entry of `verifynicely` has `"source":"none"` and `"code":"AUTH_MISSING"`.
