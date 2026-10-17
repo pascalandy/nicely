@@ -1,0 +1,41 @@
+# English catalog of the agent extension. Each entry needs a description of where the text appears.
+
+["agent.summary"]
+description = "Summary of the agent domain in `ncly --help`. Codex is the name of a program and stays as is."
+other = "Run trusted tasks through Codex"
+
+["agent.run.summary"]
+description = "Summary of `ncly agent run`. Codex is the name of a program and stays as is."
+other = "Run one trusted task through Codex"
+
+["agent.run.task"]
+description = "Help of `ncly agent run`: the task argument, the instructions that Codex receives."
+other = "The task for Codex, as text"
+
+["agent.run.task_file"]
+description = "Help of `ncly agent run`: the --task-file flag, a file that holds the task instead of the task argument."
+other = "Read the task from a file"
+
+["agent.run.tools"]
+description = "Help of `ncly agent run`: the --tools switch, which lets Codex use its tools, such as running commands. The command requires it."
+other = "Let Codex use its tools, which this command requires"
+
+["agent.run.model"]
+description = "Help of `ncly agent run`: the --model flag, which overrides model in the [agent] table of the config. [agent] stays as is."
+other = "The model of Codex, instead of model in [agent]"
+
+["agent.run.effort"]
+description = "Help of `ncly agent run`: the --effort flag, a reasoning effort, which overrides effort in the [agent] table of the config. [agent] stays as is."
+other = "The reasoning effort, instead of effort in [agent]"
+
+["agent.run.cwd"]
+description = "Help of `ncly agent run`: the --cwd flag, the folder where Codex works."
+other = "The folder where Codex works, the current one by default"
+
+["agent.run.unavailable"]
+description = "Error CAPABILITY_UNSUPPORTED of `ncly agent run` in a build that cannot prepare or run a task yet. Codex is the name of a program and stays as is."
+other = "This build of the agent extension cannot prepare or run a Codex task yet."
+
+["agent.run.unavailable_hint"]
+description = "Hint under the error agent.run.unavailable: what the user does next."
+other = "Install a build of Nicely that runs Codex tasks."

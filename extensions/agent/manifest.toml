@@ -1,0 +1,50 @@
+format_version = 1
+contract_version = 1
+domain = "agent"
+
+[[commands]]
+path = "agent"
+summary = "agent.summary"
+examples = ["ncly agent run \"Review this branch\" --tools --dry-run", "ncly doctor agent"]
+
+[[commands]]
+path = "agent run"
+summary = "agent.run.summary"
+examples = ["ncly agent run \"Review this branch\" --tools --effort high --dry-run", "ncly agent run --task-file task.md --tools --dry-run --json"]
+effects = { user_writes = true, network = true, paid = true }
+modes = { dry_run = true }
+config = ["agent.model", "agent.effort"]
+requires = { bins = ["codex"] }
+
+[[commands.args]]
+name = "task"
+summary = "agent.run.task"
+
+[[commands.flags]]
+name = "task-file"
+value = "file"
+summary = "agent.run.task_file"
+
+[[commands.flags]]
+name = "tools"
+summary = "agent.run.tools"
+
+[[commands.flags]]
+name = "model"
+value = "id"
+summary = "agent.run.model"
+
+[[commands.flags]]
+name = "effort"
+value = "level"
+values = ["low", "medium", "high", "xhigh", "max", "ultra"]
+summary = "agent.run.effort"
+
+[[commands.flags]]
+name = "cwd"
+value = "dir"
+summary = "agent.run.cwd"
+
+[programs.codex]
+version = "0.162.1"
+install = { brew = ["brew", "install", "--cask", "codex"], pacman = ["sudo", "pacman", "-S", "openai-codex"] }
