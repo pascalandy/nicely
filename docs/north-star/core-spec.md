@@ -282,12 +282,12 @@ It installs each `ncly-<domain>` archive that the file lists for this system. A 
 After an `ncly` upgrade, `ncly tap sync pascalandy/nicely` selects that installed version's tag and archives. The manifest check supplies compatibility without another version mechanism.
 The existing release workflow publishes first-party extension archives, `agent` first, alongside core's archives. Homebrew installs only `ncly`.
 
-README.md and the bundled `nicely` skill invite users to install the recommended first-party extensions with `ncly tap add pascalandy/nicely`.
-The skill teaches this command only from the release that supports it. An interactive invitation stays in [M99](../milestones/M99-parking-lot.md).
+README.md and the bundled `nicely` skill invite users to install the recommended first-party extensions with `ncly tap add pascalandy/nicely`, as [ncly skill](../../extensions/skill/spec.md#ncly-skill) defines for the skill.
+An interactive invitation stays in [M99](../milestones/M99-parking-lot.md).
 
 ### Publication and recovery
 
-Each tap publication is a complete installed tree in its own immutable folder. Its extensions each contain the executable, manifest, catalogs, and skill together.
+Each tap publication is a complete installed tree in its own immutable folder.
 Nicely stages and validates the tree before an atomic replacement of that tap's `current` link selects it, under the publication lock.
 The publication includes its ownership evidence: tap ID, resolved revisions, and each managed path's type, file hash, executable mode, or link target.
 Sync keeps the selected publication and the previous one. It deletes an older one that matches its evidence and reports a changed one as a conflict.
