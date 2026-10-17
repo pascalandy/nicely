@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/command"
@@ -45,16 +46,17 @@ const answerFile = "<answer-file>"
 // dryRun is the answer of ncly agent run --dry-run, as Dry run in spec.md
 // defines it.
 type dryRun struct {
-	DryRun         bool     `json:"dry_run"`
-	Harness        string   `json:"harness"`
-	HarnessVersion string   `json:"harness_version"`
-	Model          string   `json:"model"`
-	Effort         string   `json:"effort"`
-	Cwd            string   `json:"cwd"`
-	TaskSHA256     string   `json:"task_sha256"`
-	Invocation     []string `json:"invocation"`
-	Plan           []plan   `json:"plan"`
-	Pending        []check  `json:"pending_checks"`
+	DryRun         bool              `json:"dry_run"`
+	Harness        string            `json:"harness"`
+	HarnessVersion string            `json:"harness_version"`
+	Model          string            `json:"model"`
+	Effort         string            `json:"effort"`
+	Cwd            string            `json:"cwd"`
+	TaskSHA256     string            `json:"task_sha256"`
+	Invocation     []string          `json:"invocation"`
+	Environment    map[string]string `json:"environment"`
+	Plan           []plan            `json:"plan"`
+	Pending        []check           `json:"pending_checks"`
 }
 
 // plan is the one item of a dry run, as Dry-run answer in contract.md
@@ -106,6 +108,7 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 		Cwd:            t.cwd,
 		TaskSHA256:     t.sha256,
 		Invocation:     append([]string{t.codex}, t.args(answerFile)...),
+		Environment:    map[string]string{depthVariable: strconv.Itoa(t.depth)},
 		Plan: []plan{{
 			Key:     "task",
 			Output:  filepath.Join(config.Locate(home, os.LookupEnv).State, "runs"),
@@ -133,6 +136,7 @@ func writeDryRun(w io.Writer, p *i18n.Printer, d dryRun) {
 		p.T("agent.run.planned_model", map[string]any{"Model": d.Model}),
 		p.T("agent.run.planned_effort", map[string]any{"Effort": d.Effort}),
 		p.T("agent.run.planned_cwd", map[string]any{"Dir": d.Cwd}),
+		p.T("agent.run.planned_environment", map[string]any{"Variable": depthVariable, "Value": d.Environment[depthVariable]}),
 	} {
 		_, _ = fmt.Fprintln(w, line)
 	}

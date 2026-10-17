@@ -13,7 +13,7 @@ summary = "agent.run.summary"
 examples = ["ncly agent run \"Review this branch\" --tools --effort high --dry-run", "ncly agent run --task-file task.md --tools --dry-run --json"]
 effects = { user_writes = true, network = true, paid = true }
 modes = { dry_run = true }
-config = ["agent.model", "agent.effort"]
+config = ["agent.model", "agent.effort", "agent.max_depth"]
 requires = { bins = ["codex"] }
 
 [[commands.args]]
@@ -47,7 +47,7 @@ summary = "agent.run.cwd"
 
 [commands.result.dry_run_schema]
 type = "object"
-required = ["dry_run", "harness", "harness_version", "model", "effort", "cwd", "task_sha256", "invocation", "plan", "pending_checks"]
+required = ["dry_run", "harness", "harness_version", "model", "effort", "cwd", "task_sha256", "invocation", "environment", "plan", "pending_checks"]
 
 [commands.result.dry_run_schema.properties]
 dry_run = { const = true }
@@ -58,6 +58,7 @@ effort = { enum = ["low", "medium", "high", "xhigh", "max", "ultra"] }
 cwd = { type = "string" }
 task_sha256 = { type = "string", pattern = "^[0-9a-f]{64}$" }
 invocation = { type = "array", items = { type = "string" } }
+environment = { type = "object", required = ["NCLY_AGENT_DEPTH"], properties = { NCLY_AGENT_DEPTH = { type = "string", pattern = "^[1-9][0-9]*$" } }, additionalProperties = { type = "string" } }
 plan = { type = "array", items = { "$ref" = "#/$defs/item" }, minItems = 1, maxItems = 1 }
 pending_checks = { type = "array", items = { "$ref" = "#/$defs/check" } }
 
@@ -84,3 +85,7 @@ properties = { id = { type = "string" }, message = { type = "string" } }
 [programs.codex]
 version = "0.162.1"
 install = { brew = ["brew", "install", "--cask", "codex"], pacman = ["sudo", "pacman", "-S", "openai-codex"] }
+
+[[errors]]
+code = "AGENT_DEPTH_LIMIT"
+exit = 2

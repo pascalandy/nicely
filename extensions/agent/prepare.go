@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,13 @@ var efforts = []string{"low", "medium", "high", "xhigh", "max", "ultra"}
 // defaultEffort applies when neither --effort nor [agent] effort sets one.
 const defaultEffort = "medium"
 
+// defaultMaxDepth applies when [agent] max_depth sets no depth.
+const defaultMaxDepth = 2
+
+// depthVariable holds how many agents run above this call, 0 when unset.
+// Codex receives one more, as Depth limit in spec.md defines.
+const depthVariable = "NCLY_AGENT_DEPTH"
+
 // probeLimit bounds codex --version during preparation.
 const probeLimit = 10 * time.Second
 
@@ -42,8 +50,9 @@ type task struct {
 	codex   string
 	version string
 	// env is the environment of Codex: the one of ncly, without the key of
-	// any service.
-	env []string
+	// any service, with depth, the depth of Codex, in NCLY_AGENT_DEPTH.
+	env   []string
+	depth int
 }
 
 // args returns the words after codex, as Codex invocation in spec.md lists
@@ -58,15 +67,19 @@ func (t task) args(answer string) []string {
 
 // settings are the values of [agent] in the config files.
 type settings struct {
-	model  string
-	effort string
-	// file is the shared config file, which a hint names.
-	file string
+	model    string
+	effort   string
+	maxDepth int64
+	// file is the shared config file, which a hint names, and depthFile
+	// the file that set max_depth.
+	file      string
+	depthFile string
 }
 
 // prepare checks the call in the order of ncly agent in spec.md, and
-// answers the first problem: the settings, the task, the model, the
-// folder, Codex, and the tools mode. It reads no stdin and starts no task.
+// answers the first problem: the settings, the depth, the task, the
+// model, the folder, Codex, and the tools mode. It reads no stdin and
+// starts no task.
 func prepare(ctx context.Context, call extension.Call) (task, *contract.Problem) {
 	p := call.Printer
 	s, problem := readSettings(p)
@@ -74,6 +87,9 @@ func prepare(ctx context.Context, call extension.Call) (task, *contract.Problem)
 		return task{}, problem
 	}
 	var t task
+	if t.depth, problem = childDepth(p, s); problem != nil {
+		return task{}, problem
+	}
 	if t.text, problem = readTask(p, call); problem != nil {
 		return task{}, problem
 	}
@@ -93,7 +109,7 @@ func prepare(ctx context.Context, call extension.Call) (task, *contract.Problem)
 	if t.cwd, problem = workingFolder(p, call); problem != nil {
 		return task{}, problem
 	}
-	t.env = runner.Environ(os.Environ(), nil)
+	t.env = runner.Environ(os.Environ(), map[string]string{depthVariable: strconv.Itoa(t.depth)})
 	if t.codex, t.version, problem = checkCodex(ctx, p, t.env); problem != nil {
 		return task{}, problem
 	}
@@ -109,13 +125,14 @@ func usage(p *i18n.Printer, message, hint string, data map[string]any) *contract
 	return &contract.Problem{Code: contract.UsageInvalid, Message: p.T(message, data), Hint: p.T(hint, data)}
 }
 
-// readSettings reads model and effort from [agent], each defaulting when
-// no file sets it. A file that cannot be read, a value of another type, and
-// an unknown effort answer CONFIG_INVALID, whose hint names the file.
+// readSettings reads model, effort, and max_depth from [agent], each
+// defaulting when no file sets it. A file that cannot be read, a value of
+// another type, an unknown effort, and a max_depth below 1 answer
+// CONFIG_INVALID, whose hint names the file.
 func readSettings(p *i18n.Printer) (settings, *contract.Problem) {
 	home, _ := os.UserHomeDir()
 	paths := config.Locate(home, os.LookupEnv)
-	s := settings{effort: defaultEffort, file: paths.Shared}
+	s := settings{effort: defaultEffort, maxDepth: defaultMaxDepth, file: paths.Shared}
 	invalid := func(id string, data map[string]any) *contract.Problem {
 		return &contract.Problem{Code: contract.ConfigInvalid, Message: p.T(id, data), Hint: p.T("agent.config_hint", data)}
 	}
@@ -139,8 +156,41 @@ func readSettings(p *i18n.Printer) (settings, *contract.Problem) {
 	if !slices.Contains(efforts, s.effort) {
 		return s, invalid("agent.config_effort", map[string]any{"File": set.Source, "Effort": s.effort, "Efforts": strings.Join(efforts, ", ")})
 	}
+	set, err = values.Decode("agent.max_depth", &s.maxDepth)
+	if err != nil || s.maxDepth < 1 {
+		return s, invalid("agent.config_max_depth", map[string]any{"File": set.Source})
+	}
+	s.depthFile = set.Source
 	return s, nil
 }
+
+// childDepth returns the depth of Codex: one more than NCLY_AGENT_DEPTH, 0
+// when unset. A call that runs at max_depth or deeper answers
+// AGENT_DEPTH_LIMIT before any other check, so a chain of agents stops
+// before it prepares another one. A value that is no whole number from 0
+// answers USAGE_INVALID.
+func childDepth(p *i18n.Printer, s settings) (int, *contract.Problem) {
+	value := os.Getenv(depthVariable)
+	depth := 0
+	if value != "" {
+		var err error
+		if depth, err = strconv.Atoi(value); err != nil || depth < 0 {
+			return 0, usage(p, "agent.run.depth_invalid", "agent.run.depth_invalid_hint", map[string]any{"Value": value})
+		}
+	}
+	if int64(depth) >= s.maxDepth {
+		data := map[string]any{"Max": p.Number(float64(s.maxDepth), 0), "File": s.file}
+		if s.depthFile != config.Default {
+			data["File"] = s.depthFile
+		}
+		return 0, &contract.Problem{Code: codeDepthLimit, Message: p.N("agent.run.depth_limit", depth, data), Hint: p.T("agent.run.depth_limit_hint", data)}
+	}
+	return depth + 1, nil
+}
+
+// codeDepthLimit is the extension's own code for a call at max_depth, as
+// its manifest declares.
+const codeDepthLimit contract.Code = "AGENT_DEPTH_LIMIT"
 
 // isInput reports whether info is the input of ncly, such as /dev/stdin
 // when a regular file feeds it, which this command never reads.

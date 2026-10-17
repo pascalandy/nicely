@@ -56,6 +56,10 @@ other = "effort: {{.Effort}}"
 description = "ncly agent run --dry-run, human text: the folder where Codex would work. {{.Dir}} is an absolute path."
 other = "folder: {{.Dir}}"
 
+["agent.run.planned_environment"]
+description = "ncly agent run --dry-run, human text: a variable that Nicely sets for Codex. {{.Variable}} is its name, such as NCLY_AGENT_DEPTH, and {{.Value}} its value, both of which stay as is."
+other = "environment: {{.Variable}}={{.Value}}"
+
 ["agent.run.pending"]
 description = "ncly agent run --dry-run, human text: one check that only execution makes. {{.ID}} is its id, such as agent.login, which stays as is, and {{.Message}} what it checks."
 other = "pending  {{.ID}}  {{.Message}}"
@@ -175,3 +179,24 @@ other = "Check that {{.Probe}} answers, then make the call again."
 ["agent.codex_hint"]
 description = "Hint under a PREREQ_MISSING error about codex when no install command is known for this machine. codex is the name of a program and stays as is."
 other = "Install codex."
+
+["agent.run.depth_limit"]
+description = "Error AGENT_DEPTH_LIMIT of `ncly agent run` when the call already runs inside as many agents as max_depth of the [agent] table allows, so it starts no Codex. {{.Count}} is the number of agents above the call, from NCLY_AGENT_DEPTH, and {{.Max}} the limit. max_depth and [agent] stay as is."
+one = "This call already runs inside {{.Count}} agent, and max_depth in [agent] allows {{.Max}}."
+other = "This call already runs inside {{.Count}} agents, and max_depth in [agent] allows {{.Max}}."
+
+["agent.run.depth_limit_hint"]
+description = "Hint under the error agent.run.depth_limit: what the user does next. A human decides whether a deeper chain of agents may run. max_depth and [agent] stay as is, and {{.File}} is the path of the config file."
+other = "Run the task from a shell outside the agents, or ask a human to raise max_depth in the [agent] table of {{.File}}."
+
+["agent.run.depth_invalid"]
+description = "Error USAGE_INVALID of `ncly agent run` when the variable NCLY_AGENT_DEPTH holds no whole number from 0, such as -1 or two. {{.Value}} is its value. NCLY_AGENT_DEPTH stays as is."
+other = "NCLY_AGENT_DEPTH holds {{.Value}}, which is no whole number from 0."
+
+["agent.run.depth_invalid_hint"]
+description = "Hint under the error agent.run.depth_invalid: what the user does next. NCLY_AGENT_DEPTH stays as is."
+other = "Unset NCLY_AGENT_DEPTH, or set it to the number of agents above this call."
+
+["agent.config_max_depth"]
+description = "Error CONFIG_INVALID of `ncly agent run` when max_depth in the [agent] table is no whole number from 1, such as 0, -1, or text. {{.File}} is the path of the file. max_depth and [agent] stay as is."
+other = "max_depth in the [agent] table of {{.File}} is not a whole number from 1."
