@@ -145,14 +145,19 @@ stderr 'gives the flag \\"loud\\" of the command \\"switchdefault run\\" a defau
 exits 78 ncly nandefault --json
 stderr 'gives the flag \\"limit\\" of the command \\"nandefault run\\" a default'
 
-# Accepted values sit on an argument or a flag that takes a value, each once, and fit its type
-exec sh broken.sh switchvalues typevalues twicevalues
+# Accepted values sit on an argument or a flag that takes a value, hold at least one value,
+# each nonempty and once, and fit its type
+exec sh broken.sh switchvalues typevalues twicevalues novalues blankvalue
 exits 78 ncly switchvalues --json
 stderr 'gives \\"loud\\" of the command \\"switchvalues run\\" values that do not fit it'
 exits 78 ncly typevalues --json
 stderr 'gives \\"count\\" of the command \\"typevalues run\\" values that do not fit it'
 exits 78 ncly twicevalues --json
 stderr 'gives \\"size\\" of the command \\"twicevalues run\\" values that do not fit it'
+exits 78 ncly novalues --json
+stderr 'gives \\"size\\" of the command \\"novalues run\\" values that do not fit it'
+exits 78 ncly blankvalue --json
+stderr 'gives \\"size\\" of the command \\"blankvalue run\\" values that do not fit it'
 exits 78 ncly group --json
 stderr 'the group of flags --left, --nope'
 exits 78 ncly bin --json
@@ -674,6 +679,42 @@ name = "size"
 value = "size"
 values = ["small", "small"]
 summary = "twicevalues.summary"
+-- broken/novalues.toml --
+format_version = 1
+contract_version = 1
+domain = "novalues"
+
+[[commands]]
+path = "novalues"
+summary = "novalues.summary"
+
+[[commands]]
+path = "novalues run"
+summary = "novalues.summary"
+
+[[commands.flags]]
+name = "size"
+value = "size"
+values = []
+summary = "novalues.summary"
+-- broken/blankvalue.toml --
+format_version = 1
+contract_version = 1
+domain = "blankvalue"
+
+[[commands]]
+path = "blankvalue"
+summary = "blankvalue.summary"
+
+[[commands]]
+path = "blankvalue run"
+summary = "blankvalue.summary"
+
+[[commands.flags]]
+name = "size"
+value = "size"
+values = ["", "large"]
+summary = "blankvalue.summary"
 -- broken/switchdefault.toml --
 format_version = 1
 contract_version = 1
