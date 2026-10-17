@@ -70,12 +70,16 @@ answer stderr RESUME_UNSAFE
 cmp $RUNS/v2.json v2.json
 
 # So is a record that breaks Record format, such as one whose started_at is no time, which run
-# list counts as unreadable, and one that lacks keys
+# list counts as unreadable, one that lacks keys, and one whose item lacks output_dir
 cp badtime.json $RUNS/badtime.json
 exits 1 ncly run view badtime --json
 answer stderr RESUME_UNSAFE
 cp partial.json $RUNS/partial.json
 exits 1 ncly run view partial --json
+answer stderr RESUME_UNSAFE
+exec /bin/sh -c '/usr/bin/sed -e "s/,\"output_dir\":\"[^\"]*\"//" -e "s/\"run_id\":\"c1\"/\"run_id\":\"nodir\"/" "$RUNS/c1.json" > "$RUNS/nodir.json"'
+! grep output_dir $RUNS/nodir.json
+exits 1 ncly run view nodir --json
 answer stderr RESUME_UNSAFE
 
 # A run whose lock cannot be read is RESUME_UNSAFE, because its active would be a guess
