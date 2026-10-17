@@ -105,11 +105,13 @@ func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 			return grantsFailure(context.Background(), p, err)
 		}
 		dryRun, _ := c.Flags().GetBool(contract.DryRunFlag.Name)
-		if existing := findGrant(grants, service, domain); existing != nil {
+		path := sourceOf(e)
+		existing := findGrant(grants, service, domain)
+		if existing != nil && sameSource(existing.Path, path) {
 			if dryRun {
 				return plannedGrantChange(p, nil, nil, p.T("auth.planned_nothing", data))
 			}
-			return grantAnswer(p, grantChange{Service: service, Domain: domain, Path: existing.Path, Action: "unchanged"}, "auth.grant_unchanged")
+			return grantAnswer(p, grantChange{Service: service, Domain: domain, Path: path, Action: "unchanged"}, "auth.grant_unchanged")
 		}
 		if dryRun {
 			plan := []plannedGrant{{Key: service, Action: "grant", Domain: domain, Effects: plannedEffects{UserWrites: true}}}
@@ -122,11 +124,15 @@ func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 		if !human {
 			return command.Fail(contract.Problem{Code: contract.TerminalRequired, Message: p.T("auth.grant_terminal_required", data), Hint: p.T("auth.terminal_required_hint", data), Next: call})
 		}
-		path := sourceOf(e)
 		ctx := runner.OnSignal()
+		facts := pathFacts(p, path)
+		if existing != nil {
+			// The grant moves from another source, so the human sees both.
+			facts = replacedFacts(p, path, existing.Path)
+		}
 		question := confirmation{
 			question: p.T("auth.grant_question", data),
-			facts:    pathFacts(p, path),
+			facts:    facts,
 			declined: p.T("auth.grant_declined", data),
 			hint:     p.T("auth.grant_again_hint", data),
 		}
@@ -135,10 +141,13 @@ func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 		}
 		answer := grantChange{Service: service, Domain: domain, Path: path, Action: "grant"}
 		err = changeGrants(ctx, file, func(current []grant) ([]grant, error) {
-			if existing := findGrant(current, service, domain); existing != nil {
-				answer.Path, answer.Action = existing.Path, "unchanged"
+			if found := findGrant(current, service, domain); found != nil && sameSource(found.Path, path) {
+				answer.Action = "unchanged"
 				return nil, nil
 			}
+			// A grant at another source gives way to this one, which the
+			// human confirmed.
+			current = slices.DeleteFunc(current, func(g grant) bool { return g.Service == service && g.Domain == domain })
 			granted := grant{Service: service, Domain: domain, Path: path, GrantedAt: time.Now().UTC().Format(time.RFC3339)}
 			return append(current, granted), nil
 		})
@@ -267,6 +276,22 @@ func pathFacts(p *i18n.Printer, path *string) []tui.Fact {
 		return nil
 	}
 	return []tui.Fact{{Label: p.T("auth.fact_path"), Value: *path}}
+}
+
+// replacedFacts shows the new and the old source of a grant that moves to
+// another source. A bundled extension's source has no path, so it shows
+// as bundled.
+func replacedFacts(p *i18n.Printer, path, old *string) []tui.Fact {
+	shown := func(path *string) string {
+		if path == nil {
+			return p.T("auth.fact_bundled")
+		}
+		return *path
+	}
+	return []tui.Fact{
+		{Label: p.T("auth.fact_new_path"), Value: shown(path)},
+		{Label: p.T("auth.fact_old_path"), Value: shown(old)},
+	}
 }
 
 // grantsFailure answers a failure to read or change the grants file:

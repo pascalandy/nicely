@@ -38,14 +38,15 @@ func lookupKey(ctx context.Context, k *keychain.Keychain, service string) (key, 
 
 // keyVars returns the variables that carry the keys of one command of an
 // extension, as Grants in contract.md defines: the variable of each service
-// that the command declares and that a human granted to the extension, and
-// NCLY_MISSING_KEYS, which names each declared service whose key it does
-// not pass, in the order of the declaration, or is empty when it passes
-// every one, which removes a value that ncly inherited. With read false, as
-// for a dry run, a status command without --live=true, and a list command
-// that completion runs, it reads no key, and names only the services that
-// no human granted. A grants file that core cannot read grants nothing. It
-// returns the error of ctx when ctx ends during a keychain read.
+// that the command declares and that a human granted to the extension at
+// its source, and NCLY_MISSING_KEYS, which names each declared service
+// whose key it does not pass, in the order of the declaration, or is empty
+// when it passes every one, which removes a value that ncly inherited. With
+// read false, as for a dry run, a status command without --live=true, and a
+// list command that completion runs, it reads no key, and names only the
+// services that no human granted. A grants file that core cannot read
+// grants nothing. It returns the error of ctx when ctx ends during a
+// keychain read.
 func keyVars(ctx context.Context, k *keychain.Keychain, e *extension, services []string, read bool) (map[string]string, error) {
 	vars := map[string]string{missingKeysVariable: ""}
 	if len(services) == 0 {
@@ -55,8 +56,10 @@ func keyVars(ctx context.Context, k *keychain.Keychain, e *extension, services [
 	var missing []string
 	for _, s := range services {
 		var code contract.Code
-		switch {
-		case findGrant(grants, s, e.domain) == nil:
+		switch g := findGrant(grants, s, e.domain); {
+		case g == nil || !sameSource(g.Path, sourceOf(e)):
+			// A grant binds the key to the source of the extension, so
+			// another extension of the same domain inherits nothing.
 			code = contract.KeyNotGranted
 		case read:
 			key, _, absent, err := lookupKey(ctx, k, s)

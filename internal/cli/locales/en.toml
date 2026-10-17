@@ -701,6 +701,18 @@ other = "Grant the key of {{.Service}} to {{.Domain}}?"
 description = "Label of a fact of the confirmation of `ncly auth grant` or `ncly auth revoke`, in a terminal: the path of the extension's executable that the grant names, which follows the label."
 other = "Path"
 
+["auth.fact_new_path"]
+description = "Label of a fact of the confirmation of `ncly auth grant` in a terminal, when the grant moves from another source: the path of the extension's executable that the grant will name, which follows the label."
+other = "New path"
+
+["auth.fact_old_path"]
+description = "Label of a fact of the confirmation of `ncly auth grant` in a terminal, when the grant moves from another source: the path that the grant names now, which the new grant replaces."
+other = "Old path"
+
+["auth.fact_bundled"]
+description = "Value of a fact of the confirmation of `ncly auth grant`, in place of a path, for an extension that ncly bundles, which has no path of its own."
+other = "bundled with ncly"
+
 ["auth.grant_declined"]
 description = "Message of CONFIRMATION_REQUIRED in ncly auth grant, after the human did not answer yes: no grant changed. {{.Domain}} is the domain, and {{.Service}} the service."
 other = "{{.Domain}} does not receive the key of {{.Service}}."

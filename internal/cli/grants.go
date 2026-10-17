@@ -154,7 +154,18 @@ func strict(raw json.RawMessage, v any) error {
 	return json.Unmarshal(raw, v)
 }
 
-// findGrant returns the grant of a service to a domain, or nil.
+// sameSource reports whether a grant's source, path, is the source of an
+// extension: the same path where discovery found it, or nil for both when
+// the extension is bundled.
+func sameSource(path, source *string) bool {
+	if path == nil || source == nil {
+		return path == nil && source == nil
+	}
+	return *path == *source
+}
+
+// findGrant returns the grant of a service to a domain, whatever its
+// source, or nil.
 func findGrant(grants []grant, service, domain string) *grant {
 	i := slices.IndexFunc(grants, func(g grant) bool { return g.Service == service && g.Domain == domain })
 	if i < 0 {

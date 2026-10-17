@@ -1,0 +1,286 @@
+# A grant binds the key of a service to the domain of an extension and to its source: the path
+# where discovery found it, links unresolved, as Grants defines. Core passes the key only to the
+# extension at that path. The shell fixture spy, in bin and as a copy in early, and brew, a link
+# into a Cellar, write the names of the key variables that they receive, each with the SHA-256 of
+# its value, never the key, then NCLY_MISSING_KEYS, to $WORK/<folder>-<domain>.log. pty runs a
+# command on a pseudo-terminal and types each answer of its script once the prompt shows.
+env STATE=$WORK/.local/state/nicely
+chmod 755 bin/ncly-spy
+chmod 755 early/ncly-spy
+chmod 755 cellar/1.0/ncly-brew
+chmod 755 cellar/2.0/ncly-brew
+symlink bin/ncly-brew -> ../cellar/1.0/ncly-brew
+symlink bin/ncly-brew.toml -> ../cellar/1.0/ncly-brew.toml
+symlink bin/ncly-brew.locales -> ../cellar/1.0/ncly-brew.locales
+env PATH=$WORK/bin:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env TERM=xterm-256color
+env DEEPGRAM_API_KEY=dg-env
+env OPENAI_API_KEY=oa-env
+env MISTRAL_API_KEY=ms-env
+
+# Granted at bin/ncly-spy, both keys reach the fixture there
+exec pty yes.txt ncly auth grant deepgram spy
+exec pty yes.txt ncly auth grant openai spy
+exec ncly spy run --json
+cmp bin-spy.log want-both.log
+
+# A copy under the same name earlier in PATH runs instead, and receives none of the keys granted
+# to the first: NCLY_MISSING_KEYS names both with KEY_NOT_GRANTED
+env PATH=$WORK/early:$WORK/bin:$PATH
+exec ncly spy run --json
+cmp early-spy.log want-none.log
+
+# A grant to that copy asks for a confirmation that shows both paths, the new one first, and a
+# dry run plans it with the confirmation pending. A declined one keeps the old grant
+exec ncly auth grant deepgram spy --dry-run --json
+stdout '"pending_checks":\[\{"id":"auth\.confirmation",.*"plan":\[\{"key":"deepgram","action":"grant","domain":"spy",'
+cp $STATE/grants.json before.json
+exits 2 pty no.txt ncly --no-color auth grant deepgram spy
+stdout '\A\? Grant the key of deepgram to spy\?\n  New path  '${WORK@R}'/early/ncly-spy\n  Old path  '${WORK@R}'/bin/ncly-spy\n  \[y/N\] n\n'
+stdout 'error\[CONFIRMATION_REQUIRED\]'
+cmp $STATE/grants.json before.json
+
+# A confirmed one replaces the old grant, and the bright black labels keep the values aligned.
+# Only the copy then receives the key, and the first one loses it
+exec pty yes.txt ncly auth grant deepgram spy
+stdout '\n  \x1b\[90mNew path\x1b\[m  '${WORK@R}'/early/ncly-spy\n  \x1b\[90mOld path\x1b\[m  '${WORK@R}'/bin/ncly-spy\n'
+stdout '\nGranted the key of deepgram to spy\.\n\z'
+exec ncly auth grant deepgram spy --json
+stdout '"action":"unchanged","domain":"spy","path":"'${WORK@R}'/early/ncly-spy"'
+exec ncly spy run --json
+cmp early-spy.log want-deepgram.log
+env PATH=$WORK/bin:$PATH
+exec ncly spy run --json
+cmp bin-spy.log want-openai.log
+
+# A new version at the same path, with a new manifest, keeps its grants. A service that it
+# declares for the first time reaches it only after a grant
+cp spy-2.toml bin/ncly-spy.toml
+exec ncly spy run --json
+cmp bin-spy.log want-new-service.log
+exec pty yes.txt ncly auth grant mistral spy
+stdout '  \x1b\[90mPath\x1b\[m  '${WORK@R}'/bin/ncly-spy\n'
+exec ncly spy run --json
+cmp bin-spy.log want-mistral.log
+
+# A link in PATH whose target changes, as a Homebrew upgrade relinks bin, keeps its grant,
+# because the grant holds the path of the link, never its target
+exec pty yes.txt ncly auth grant deepgram brew
+grep '"service":"deepgram","domain":"brew","path":"'${WORK@R}'/bin/ncly-brew"' $STATE/grants.json
+exec ncly brew run --json
+cmp bin-brew.log want-brew-1.log
+rm bin/ncly-brew
+rm bin/ncly-brew.toml
+rm bin/ncly-brew.locales
+symlink bin/ncly-brew -> ../cellar/2.0/ncly-brew
+symlink bin/ncly-brew.toml -> ../cellar/2.0/ncly-brew.toml
+symlink bin/ncly-brew.locales -> ../cellar/2.0/ncly-brew.locales
+exec ncly brew run --json
+cmp bin-brew.log want-brew-2.log
+
+# Under the pseudo-locale, the labels of both paths come from the catalog
+env PATH=$WORK/early:$WORK/bin:$PATH
+exec ncly auth revoke openai spy --force --json
+exec pty yes.txt ncly auth grant openai spy
+env PATH=$WORK/bin:$PATH
+exits 2 pty pseudo-no.txt ncly --lang en-XA auth grant openai spy
+pseudo stdout openai spy $WORK/bin/ncly-spy $WORK/early/ncly-spy auth grant n
+
+# The logs hold digests only, never a key
+! grep 'dg-env|oa-env|ms-env' bin-spy.log
+! grep 'dg-env|oa-env|ms-env' early-spy.log
+! exists test-keychain.jsonl
+
+-- yes.txt --
+[y/N]	y
+-- no.txt --
+[y/N]	n
+-- pseudo-no.txt --
+Ñ]	n
+-- want-both.log --
+DEEPGRAM_API_KEY 4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064
+OPENAI_API_KEY d7e729fce430523b660c97589557f940cea821145447ffad36db338c84e88021
+NCLY_MISSING_KEYS unset
+-- want-none.log --
+NCLY_MISSING_KEYS=deepgram=KEY_NOT_GRANTED,openai=KEY_NOT_GRANTED
+-- want-deepgram.log --
+DEEPGRAM_API_KEY 4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064
+NCLY_MISSING_KEYS=openai=KEY_NOT_GRANTED
+-- want-openai.log --
+OPENAI_API_KEY d7e729fce430523b660c97589557f940cea821145447ffad36db338c84e88021
+NCLY_MISSING_KEYS=deepgram=KEY_NOT_GRANTED
+-- want-new-service.log --
+OPENAI_API_KEY d7e729fce430523b660c97589557f940cea821145447ffad36db338c84e88021
+NCLY_MISSING_KEYS=deepgram=KEY_NOT_GRANTED,mistral=KEY_NOT_GRANTED
+-- want-mistral.log --
+MISTRAL_API_KEY b602eee394e8564720c45d0862e6a0c52000cd89943953ca524a7bba113ea1fb
+OPENAI_API_KEY d7e729fce430523b660c97589557f940cea821145447ffad36db338c84e88021
+NCLY_MISSING_KEYS=deepgram=KEY_NOT_GRANTED
+-- want-brew-1.log --
+VERSION 1.0
+DEEPGRAM_API_KEY 4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064
+NCLY_MISSING_KEYS unset
+-- want-brew-2.log --
+VERSION 2.0
+DEEPGRAM_API_KEY 4408774d91e2bfaaba25e37ed6078366f76ad858bfa88d2e0997ba7cc91eb064
+NCLY_MISSING_KEYS unset
+-- bin/ncly-spy --
+#!/bin/sh
+# Writes the names of the key variables that it receives, each with the SHA-256 of its value,
+# then NCLY_MISSING_KEYS, to $WORK/<folder>-<domain>.log.
+dir="${0%/*}"
+log="$WORK/${dir##*/}-${0##*/ncly-}.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+: >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+echo '{"ok":true,"contract_version":1}'
+-- bin/ncly-spy.toml --
+format_version = 1
+contract_version = 1
+domain = "spy"
+
+[[commands]]
+path = "spy"
+summary = "spy.summary"
+
+[[commands]]
+path = "spy run"
+summary = "spy.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- spy-2.toml --
+format_version = 1
+contract_version = 1
+domain = "spy"
+
+[[commands]]
+path = "spy"
+summary = "spy.summary"
+
+[[commands]]
+path = "spy run"
+summary = "spy.summary"
+requires = { keys = ["deepgram", "openai", "mistral"] }
+-- bin/ncly-spy.locales/en.toml --
+["spy.summary"]
+description = "Summary of the spy fixture."
+other = "Record the keys that arrive"
+-- early/ncly-spy --
+#!/bin/sh
+# Writes the names of the key variables that it receives, each with the SHA-256 of its value,
+# then NCLY_MISSING_KEYS, to $WORK/<folder>-<domain>.log.
+dir="${0%/*}"
+log="$WORK/${dir##*/}-${0##*/ncly-}.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+: >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+echo '{"ok":true,"contract_version":1}'
+-- early/ncly-spy.toml --
+format_version = 1
+contract_version = 1
+domain = "spy"
+
+[[commands]]
+path = "spy"
+summary = "spy.summary"
+
+[[commands]]
+path = "spy run"
+summary = "spy.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- early/ncly-spy.locales/en.toml --
+["spy.summary"]
+description = "Summary of the spy fixture."
+other = "Record the keys that arrive"
+-- cellar/1.0/ncly-brew --
+#!/bin/sh
+# Version 1.0 of brew: writes its version, then the names of the key variables that it receives,
+# each with the SHA-256 of its value, then NCLY_MISSING_KEYS, to $WORK/bin-brew.log.
+log="$WORK/bin-brew.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+echo "VERSION 1.0" >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+echo '{"ok":true,"contract_version":1}'
+-- cellar/1.0/ncly-brew.toml --
+format_version = 1
+contract_version = 1
+domain = "brew"
+
+[[commands]]
+path = "brew"
+summary = "brew.summary"
+
+[[commands]]
+path = "brew run"
+summary = "brew.summary"
+requires = { keys = ["deepgram"] }
+-- cellar/1.0/ncly-brew.locales/en.toml --
+["brew.summary"]
+description = "Summary of the brew fixture."
+other = "Brew things"
+-- cellar/2.0/ncly-brew --
+#!/bin/sh
+# Version 2.0 of brew: writes its version, then the names of the key variables that it receives,
+# each with the SHA-256 of its value, then NCLY_MISSING_KEYS, to $WORK/bin-brew.log.
+log="$WORK/bin-brew.log"
+digest() {
+	if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d' ' -f1
+}
+echo "VERSION 2.0" >"$log"
+for name in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p' | sort); do
+	eval "value=\${$name}"
+	printf '%s %s\n' "$name" "$(printf '%s' "$value" | digest)" >>"$log"
+done
+if [ "${NCLY_MISSING_KEYS+set}" = set ]; then
+	echo "NCLY_MISSING_KEYS=$NCLY_MISSING_KEYS" >>"$log"
+else
+	echo "NCLY_MISSING_KEYS unset" >>"$log"
+fi
+echo '{"ok":true,"contract_version":1}'
+-- cellar/2.0/ncly-brew.toml --
+format_version = 1
+contract_version = 1
+domain = "brew"
+
+[[commands]]
+path = "brew"
+summary = "brew.summary"
+
+[[commands]]
+path = "brew run"
+summary = "brew.summary"
+requires = { keys = ["deepgram"] }
+-- cellar/2.0/ncly-brew.locales/en.toml --
+["brew.summary"]
+description = "Summary of the brew fixture."
+other = "Brew things"
