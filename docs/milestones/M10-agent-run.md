@@ -1,6 +1,6 @@
 # M10 Agent run
 
-Status: ready
+Status: active
 Version: v0.10.0
 
 ## Demo
@@ -19,7 +19,7 @@ Core keeps `run list` and `run view`: a human can recover a generated ID after l
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M10-T1 | One-step records | agent | — | todo |
+| M10-T1 | One-step records | agent | — | done |
 | M10-T2 | Codex execution and replay | agent | M10-T1 | todo |
 | M10-T3 | Run list | agent | M10-T1 | todo |
 | M10-T4 | Run view | agent | M10-T1 | todo |
@@ -27,21 +27,21 @@ Core keeps `run list` and `run view`: a human can recover a generated ID after l
 
 ### M10-T1 One-step records
 
-- **Read:** [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Run IDs](../north-star/contract.md#run-ids), [Records and replay](../../extensions/agent/spec.md#records-and-replay)
+- **Read:** [Records and evidence](../north-star/contract.md#records-and-evidence), [Record format](../north-star/contract.md#record-format), [Run IDs](../north-star/contract.md#run-ids), [Records and replay](../../extensions/agent/spec.md#records-and-replay), [Codex invocation](../../extensions/agent/spec.md#codex-invocation)
 - **Proves:** `extensions/agent/testdata/script/agent_run_record.txtar`
 
-Add record support in `sdk/`, using the durable writes and locks of `sdk/platform/`. Record one `task` item and one `paid` step. Persist intent and complete the durability barrier before a counted fixture effect. A failed barrier starts nothing. Publish verified `answer.txt` and completion before returning success.
+Add record support in `sdk/`, using the durable writes and locks of `sdk/platform/`. Record one `task` item and one `paid` step, and run one Codex task under that record through `sdk/runner`, with the preparation of M09. A counted stub Codex stands for it in the scenario. Persist intent and complete the durability barrier before the stub starts. A failed barrier starts nothing. Publish verified `answer.txt` and completion before returning success.
 
-Prove the run lock, unsupported or unreadable record refusal, and saved artifact fingerprints. Keep the shared record format; no generic workflow executor or multi-step fixture belongs to this card.
+Prove the run lock, unsupported or unreadable record refusal, and saved artifact fingerprints. Keep the shared record format; no generic workflow executor or multi-step fixture belongs to this card. Until M10-T2, a call whose run ID a record holds starts nothing.
 
 ### M10-T2 Codex execution and replay
 
 - **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Records and replay](../../extensions/agent/spec.md#records-and-replay), [Run IDs](../north-star/contract.md#run-ids), [Retry safety](../north-star/contract.md#retry-safety)
 - **Proves:** `extensions/agent/testdata/script/agent_run.txtar`
 
-Run Codex through `sdk/runner`, with the preparation of M09 and the record support of M10-T1. Save and return its answer. The same completed invocation and run ID return the verified saved result after a configuration change, with no second harness call.
+Answer a repeated call from the record of M10-T1. The same completed invocation and run ID return the verified saved result after a configuration change, with no second harness call, not even the version probe.
 
-Different stated inputs under that ID fail with `USAGE_INVALID`. Unknown paid work fails with `RESUME_UNSAFE`. Concurrent calls under one ID start at most one task; the contender exits 75 while the run lock is held. Never infer from a missing answer that no effect occurred.
+Different stated inputs under that ID fail with `USAGE_INVALID`. Unknown paid work fails with `RESUME_UNSAFE`. Concurrent calls under one ID start at most one task; the contender exits 75 while the run lock is held. Never infer from a missing answer that no effect occurred. Prove that the task receives `NCLY_AGENT_DEPTH` plus one, as [Depth limit](../../extensions/agent/spec.md#depth-limit) defines, and no key.
 
 ### M10-T3 Run list
 
