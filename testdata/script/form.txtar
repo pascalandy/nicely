@@ -42,7 +42,7 @@ exec pty order-again.txt ncly cafe order
 stdout '\x1b\[90m┃'
 stdout '\x1b\[36mdrink'
 stdout '\x1b\[90mThe drink to pour'
-stdout 'moc\x1b\[7mh\x1b\[90;27ma'
+stdout 'm\x1b\[7mo\x1b\[90;27mcha'
 stdout '\x1b\[33m> \x1b\[32msmall\x1b\[m\n'
 stdout '┃\x1b\[m   large\n'
 stdout '\x1b\[90m↑'
@@ -142,8 +142,8 @@ Pick a flag	j\c
 	^M
 ┃ --table	7
 -- order-again.txt --
-The drink to pour	moc\c
-moc	^E
+The drink to pour	m\c
+cha	^E
 	^M
 <size>	^M
 Pick a flag	^M
