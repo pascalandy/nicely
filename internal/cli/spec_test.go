@@ -70,7 +70,7 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 }
 
 // shipped lists the milestones whose commands core declares.
-var shipped = []string{"M00", "M03", "M05", "M06"}
+var shipped = []string{"M00", "M03", "M05", "M06", "M08"}
 
 // TestCommandsAgreeWithTheSpec compares the declared commands with the
 // entries of the command tree that shipped, such as
@@ -117,6 +117,9 @@ func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	}
 	slices.Sort(got)
 	slices.Sort(want)
+	// Two lines of the tree, such as auth login|logout|status and auth
+	// grant|revoke, share a group.
+	want = slices.Compact(want)
 	if !slices.Equal(got, want) {
 		t.Errorf("core-spec.md lists the commands %q up to %s, ncly declares %q", want, shipped[len(shipped)-1], got)
 	}

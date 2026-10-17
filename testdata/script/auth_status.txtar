@@ -129,7 +129,7 @@ env DEEPGRAM_API_KEY=
 exits 78 ncly --lang en-XA auth status
 pseudo stdout keychain deepgram openai auth login
 exec ncly --lang en-XA auth --help
-pseudo stdout auth status login logout deepgram stdin
+pseudo stdout auth status login logout grant revoke deepgram transcript stdin
 exits 78 ncly auth status --json
 ! stdout 'dg-from-env|oa-from-env|sk-from-keychain'
 

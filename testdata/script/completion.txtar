@@ -235,8 +235,36 @@ stdout '\Aopenai\n:4\n\z'
 exec ncly __complete auth logout deepgram ''
 stdout '\A:4\n\z'
 ! stdout zoom
+
+# After grant and revoke, the service completes the same way. After grant, the domain completes
+# from the extensions that declare that service, and after revoke, from the grants that the
+# grants file holds for it, even for a domain that no installed extension has anymore. A typed
+# prefix narrows both, and no extension starts
+chmod 755 bin/ncly-kiosk
+exec ncly __complete auth grant ''
+stdout '\Adeepgram\ndropbox\nopenai\n:4\n\z'
+exec ncly __complete auth grant d
+stdout '\Adeepgram\ndropbox\n:4\n\z'
+exec ncly __complete auth grant deepgram ''
+stdout '\Akeys\nkiosk\n:4\n\z'
+exec ncly __complete auth grant deepgram ki
+stdout '\Akiosk\n:4\n\z'
+exec ncly __complete auth grant dropbox ''
+stdout '\Akeys\n:4\n\z'
+exec ncly __complete auth grant zoom ''
+stdout '\A:4\n\z'
+exec ncly __complete auth grant deepgram keys ''
+stdout '\A:4\n\z'
+exec ncly __complete auth revoke o
+stdout '\Aopenai\n:4\n\z'
+exec ncly __complete auth revoke deepgram ''
+stdout '\Agone\nkeys\n:4\n\z'
+exec ncly __complete auth revoke deepgram g
+stdout '\Agone\n:4\n\z'
+exec ncly __complete auth revoke dropbox ''
+stdout '\A:4\n\z'
 ! exists test-keychain.jsonl
-! grep 'keys|broken' ran
+! grep 'keys|broken|kiosk' ran
 
 -- bin/ncly-keys --
 #!/bin/sh
@@ -263,6 +291,24 @@ requires = { keys = ["dropbox", "deepgram"] }
 ["keys.summary"]
 description = "Summary of the keys fixture."
 other = "Use some keys"
+-- bin/ncly-kiosk --
+#!/bin/sh
+echo "kiosk $*" >> "$WORK/ran"
+-- bin/ncly-kiosk.toml --
+format_version = 1
+contract_version = 1
+domain = "kiosk"
+
+[[commands]]
+path = "kiosk"
+summary = "kiosk.summary"
+requires = { keys = ["deepgram"] }
+-- bin/ncly-kiosk.locales/en.toml --
+["kiosk.summary"]
+description = "Summary of the kiosk fixture."
+other = "Sell things"
+-- .local/state/nicely/grants.json --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"keys","path":"/Users/me/bin/ncly-keys","granted_at":"2026-10-17T04:00:00Z"},{"service":"deepgram","domain":"gone","path":"/Users/me/bin/ncly-gone","granted_at":"2026-10-17T04:00:00Z"},{"service":"openai","domain":"keys","path":"/Users/me/bin/ncly-keys","granted_at":"2026-10-17T04:00:00Z"}]}
 -- bin/ncly-broken --
 #!/bin/sh
 echo "broken $*" >> "$WORK/ran"

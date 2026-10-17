@@ -522,7 +522,7 @@ description = "Help page and ncly describe: summary of `ncly auth login`, which 
 other = "Store the key of a service in the keychain"
 
 ["auth.service"]
-description = "Help page: the service argument of `ncly auth login` and `ncly auth logout`, the name of the service whose key changes."
+description = "Help page: the service argument of `ncly auth login`, `ncly auth logout`, `ncly auth grant`, and `ncly auth revoke`, the name of the service whose key or grant changes."
 other = "Service of the key, such as deepgram"
 
 ["auth.login.stdin"]
@@ -664,6 +664,138 @@ other = "Would remove the key of {{.Service}} from the keychain."
 ["auth.pending_logout"]
 description = "ncly auth logout --dry-run: the message of the pending check auth.keychain, which only the real run makes, because a dry run asks the OS keychain nothing. {{.Service}} is the service."
 other = "Whether the keychain answers, and whether it holds a key for {{.Service}} to remove."
+
+["auth.grant.summary"]
+description = "Help page and ncly describe: summary of `ncly auth grant`, which lets the installed extension of a domain receive the key of a service, once a human confirms it in a terminal."
+other = "Let an extension receive the key of a service"
+
+["auth.revoke.summary"]
+description = "Help page and ncly describe: summary of `ncly auth revoke`, which takes back the grant of a service's key to the extension of a domain."
+other = "Stop giving the key of a service to an extension"
+
+["auth.domain"]
+description = "Help page: the domain argument of `ncly auth grant` and `ncly auth revoke`, the domain of the extension that receives the key, such as transcript, which stays as is."
+other = "Domain of the extension, such as transcript"
+
+["auth.revoke.force"]
+description = "Help page: the --force flag of `ncly auth revoke`, which removes the grant without asking for a confirmation."
+other = "Revoke the grant without asking"
+
+["auth.no_domain"]
+description = "Message of NOT_FOUND in ncly auth grant: no installed extension has the domain that the human named. {{.Domain}} is that domain."
+other = "No installed extension has the domain {{.Domain}}."
+
+["auth.not_declared"]
+description = "Message of NOT_FOUND in ncly auth grant: no command of the extension of the domain declares the service, so it never needs that key. {{.Domain}} is the domain, and {{.Service}} the service."
+other = "The commands of {{.Domain}} declare no key for {{.Service}}."
+
+["auth.grant_terminal_required"]
+description = "Message of TERMINAL_REQUIRED in ncly auth grant: only a human at a terminal can confirm a grant, and nothing else, not even --force, replaces that answer."
+other = "Only a human at a terminal can grant a key, by confirming it there."
+
+["auth.grant_question"]
+description = "Question of the confirmation of `ncly auth grant` in a terminal. The path of the extension follows it as a fact, then [y/N], and only an answer among the words of confirm.yes grants the key. {{.Service}} is the service, and {{.Domain}} the domain of the extension."
+other = "Grant the key of {{.Service}} to {{.Domain}}?"
+
+["auth.fact_path"]
+description = "Label of a fact of the confirmation of `ncly auth grant` or `ncly auth revoke`, in a terminal: the path of the extension's executable that the grant names, which follows the label."
+other = "Path"
+
+["auth.grant_declined"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth grant, after the human did not answer yes: no grant changed. {{.Domain}} is the domain, and {{.Service}} the service."
+other = "{{.Domain}} does not receive the key of {{.Service}}."
+
+["auth.grant_again_hint"]
+description = "Hint of CONFIRMATION_REQUIRED in ncly auth grant, after the human did not answer yes. {{.Command}} is the command, such as ncly auth grant deepgram transcript, which stays untranslated."
+other = "Run `{{.Command}}` again to grant the key."
+
+["auth.granted"]
+description = "ncly auth grant, human text: the extension of the domain now receives the key of the service. {{.Domain}} is the domain, and {{.Service}} the service; the key itself never appears."
+other = "Granted the key of {{.Service}} to {{.Domain}}."
+
+["auth.grant_unchanged"]
+description = "ncly auth grant, human text: a grant of the service to the domain already existed, so nothing changed. {{.Domain}} is the domain, and {{.Service}} the service."
+other = "{{.Domain}} already receives the key of {{.Service}}."
+
+["auth.planned_grant"]
+description = "ncly auth grant --dry-run, human text: the change that the command would make once a human confirms it. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Would grant the key of {{.Service}} to {{.Domain}}."
+
+["auth.planned_nothing"]
+description = "ncly auth grant --dry-run, human text: the grant already exists, so the command would change nothing. {{.Domain}} is the domain, and {{.Service}} the service."
+other = "Would change nothing: {{.Domain}} already receives the key of {{.Service}}."
+
+["auth.pending_grant"]
+description = "ncly auth grant --dry-run: the message of the pending check auth.confirmation, the answer that only a human at a terminal gives. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Whether a human at a terminal confirms the grant of the key of {{.Service}} to {{.Domain}}."
+
+["auth.revoke_question"]
+description = "Question of the confirmation of `ncly auth revoke` in a terminal. The path of the grant follows it as a fact, then [y/N], and only an answer among the words of confirm.yes removes the grant. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Revoke the key of {{.Service}} from {{.Domain}}?"
+
+["auth.revoke_required"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth revoke without a terminal: removing the grant needs a confirmation, which only --force gives there. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Revoking the key of {{.Service}} from {{.Domain}} needs a confirmation."
+
+["auth.revoke_declined"]
+description = "Message of CONFIRMATION_REQUIRED in ncly auth revoke, after the human did not answer yes: the grant stays. {{.Domain}} is the domain, and {{.Service}} the service."
+other = "{{.Domain}} still receives the key of {{.Service}}."
+
+["auth.revoke_none"]
+description = "Message of NOT_FOUND in ncly auth revoke: the grants file holds no grant of the service to the domain. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "No grant gives the key of {{.Service}} to {{.Domain}}."
+
+["auth.revoked"]
+description = "ncly auth revoke, human text: the extension of the domain no longer receives the key of the service. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Revoked the key of {{.Service}} from {{.Domain}}."
+
+["auth.planned_revoke"]
+description = "ncly auth revoke --dry-run, human text: the change that the command would make. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Would revoke the key of {{.Service}} from {{.Domain}}."
+
+["auth.pending_revoke"]
+description = "ncly auth revoke --dry-run without --force: the message of the pending check auth.confirmation, the answer that only a human gives. {{.Service}} is the service, and {{.Domain}} the domain."
+other = "Whether a human confirms the revocation of the key of {{.Service}} from {{.Domain}}."
+
+["auth.grants_unreadable"]
+description = "Message of CONFIG_INVALID in ncly auth: the system refused to read the grants file, such as for its permissions, so it grants nothing. {{.File}} is the path of the file."
+other = "The grants file {{.File}} cannot be read."
+
+["auth.grants_invalid"]
+description = "Message of CONFIG_INVALID in ncly auth: the grants file is not the JSON that ncly writes, so it grants nothing. {{.File}} is the path of the file."
+other = "The grants file {{.File}} holds invalid JSON or a value of the wrong type."
+
+["auth.grants_version"]
+description = "Message of CONFIG_INVALID in ncly auth: the grants file holds a format_version that this version of ncly does not read, such as one that a newer ncly wrote, so it grants nothing. {{.File}} is the path of the file, and {{.Version}} the number. format_version stays as is."
+other = "The grants file {{.File}} holds format_version {{.Version}}, which this ncly does not read."
+
+["auth.grants_hint"]
+description = "Hint of CONFIG_INVALID for the grants file: the human fixes the file, or removes it, which takes back every grant. {{.File}} is the path of the file."
+other = "Fix {{.File}}, or remove it, which revokes every grant."
+
+["auth.grants_no_state"]
+description = "Message of CONFIG_INVALID in ncly auth: ncly finds no state folder for the grants file, because HOME is not an absolute path and XDG_STATE_HOME is not set. HOME and XDG_STATE_HOME stay as is."
+other = "No state folder holds the grants file: HOME is not an absolute path, and XDG_STATE_HOME is not set."
+
+["auth.grants_no_state_hint"]
+description = "Hint of CONFIG_INVALID in ncly auth when ncly finds no state folder for the grants file. HOME and XDG_STATE_HOME stay as is."
+other = "Set HOME or XDG_STATE_HOME to an absolute path."
+
+["auth.grants_busy"]
+description = "Message of TEMPORARY in ncly auth grant or revoke: another ncly held the lock of the grants file for too long, so nothing changed."
+other = "Another ncly is changing the grants, so nothing changed."
+
+["auth.grants_busy_hint"]
+description = "Hint of TEMPORARY in ncly auth grant or revoke: nothing changed, so the human or the agent runs the same command again."
+other = "Run the same command again."
+
+["auth.grants_unwritten"]
+description = "Message of RUNTIME in ncly auth grant or revoke: writing the grants file failed, so the file may or may not hold the change. {{.File}} is the path of the file."
+other = "The grants file {{.File}} could not be written, and it may hold the change."
+
+["auth.grants_unwritten_hint"]
+description = "Hint of RUNTIME in ncly auth grant or revoke after a failed write of the grants file: the human reads the file before running the command again. {{.File}} is the path of the file."
+other = "Read {{.File}} before you run the command again."
 
 ["doctor.keyring_env_only_hint"]
 description = "Report of `ncly doctor`: hint of the warning KEYRING_ENV_ONLY of auth.keychain. The human unlocks the OS keychain, or exports the environment variable of each key, whose name is the service in uppercase followed by _API_KEY, such as DEEPGRAM_API_KEY, which stays as is."

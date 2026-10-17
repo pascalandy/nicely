@@ -24,6 +24,7 @@ func TestMain(m *testing.M) {
 		// codes lists the registry of sdk/contract, one code per line,
 		// because no command of ncly lists its codes.
 		"codes":          printCodes,
+		"holdlock":       holdLock,
 		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the

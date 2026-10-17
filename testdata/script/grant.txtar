@@ -1,0 +1,273 @@
+# ncly auth grant lets the extension of a domain receive the key of a service, once a human
+# confirms it in a terminal, and ncly auth revoke takes the grant back. Both keep the grants in
+# grants.json in the state folder. pty runs a command on a pseudo-terminal, types each answer of
+# its script once the prompt shows, prints what the terminal showed, then says whether the
+# command left the terminal as it found it. Neither command reads a key, so the test keychain
+# gets no call, and neither starts an extension, which would append its name to $WORK/ran.
+env DATA=$WORK/.local/share/nicely/extensions
+env STATE=$WORK/.local/state/nicely
+chmod 755 $DATA/ncly-hello
+chmod 755 $DATA/ncly-other
+chmod 755 $DATA/ncly-broken
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env TERM=xterm-256color
+
+# In a terminal, grant asks for a confirmation on stderr, in the look that Modes describes: ? in
+# cyan, the question in bold, the path of the extension as a fact under it, with its label in
+# bright black, then [y/N] in bright black on a line of its own. A confirmed grant creates the
+# grants file, which holds the grant with the path where discovery found the fixture
+! exists $STATE/grants.json
+exec pty yes.txt ncly auth grant deepgram hello
+stdout '\A\x1b\[36m\?\x1b\[m \x1b\[1mGrant the key of deepgram to hello\?\x1b\[m\n  \x1b\[90mPath\x1b\[m  '${DATA@R}'/ncly-hello\n  \x1b\[90m\[y/N\]\x1b\[m y\n'
+stdout '\nGranted the key of deepgram to hello\.\n\z'
+! stdout 'Next time'
+stderr '\Aecho on\nterminal as found\n\z'
+grep '\A\{"format_version":1,"grants":\[\{"service":"deepgram","domain":"hello","path":"'${DATA@R}'/ncly-hello","granted_at":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ"\}\]\}\n\z' $STATE/grants.json
+cp $STATE/grants.json granted.json
+
+# Without color, the confirmation keeps its text and shows no style
+exits 2 pty no.txt ncly --no-color auth grant openai hello
+stdout '\A\? Grant the key of openai to hello\?\n  Path  '${DATA@R}'/ncly-hello\n  \[y/N\] n\n'
+! stdout '\x1b\[[0-9;]*m'
+
+# A declined grant changes nothing and exits 2 with CONFIRMATION_REQUIRED, whose hint asks to
+# run the same command again
+exits 2 pty no.txt ncly auth grant openai hello
+stdout '\[y/N\]\x1b\[m n\n'
+stdout 'error\[CONFIRMATION_REQUIRED\]:\x1b\[m hello does not receive the key of openai\.'
+stdout 'Run `ncly auth grant openai hello` again to grant the key\.'
+stderr '\Aecho on\nterminal as found\n\z'
+cmp $STATE/grants.json granted.json
+
+# Ctrl-C at the confirmation exits 130 with INTERRUPTED, changes nothing, and leaves the
+# terminal as it found it
+exits 130 pty interrupt.txt ncly auth grant openai hello
+stdout 'error\[INTERRUPTED\]'
+stderr '\Aecho on\nterminal as found\n\z'
+cmp $STATE/grants.json granted.json
+
+# A grant that exists answers unchanged at once, without asking, in a terminal and without one
+exec pty none.txt ncly auth grant deepgram hello
+! stdout 'y/N'
+stdout '\Ahello already receives the key of deepgram\.\n\z'
+exec ncly auth grant deepgram hello --json
+stdout '\A\{"ok":true,"contract_version":1,"action":"unchanged","domain":"hello","path":"'${DATA@R}'/ncly-hello","service":"deepgram"\}\n\z'
+! stderr .
+cp stdout unchanged.json
+exec ncly describe 'auth grant' --json
+cp stdout describe-grant.json
+schema unchanged.json describe-grant.json schema
+cmp $STATE/grants.json granted.json
+
+# Without a terminal, any other grant exits 78 with TERMINAL_REQUIRED, whose next only a human
+# runs, and --no-input on a terminal is no terminal either
+exits 78 ncly auth grant openai hello --json
+answer stderr TERMINAL_REQUIRED
+stderr '"hint":"Run `ncly auth grant openai hello` in a terminal","next":\["ncly","auth","grant","openai","hello"\]'
+exits 78 pty none.txt ncly --no-input auth grant openai hello
+! stdout 'y/N'
+stdout 'error\[TERMINAL_REQUIRED\]'
+cmp $STATE/grants.json granted.json
+
+# grant takes no --force: only a human's yes grants a key
+exits 2 ncly auth grant openai hello --force --json
+answer stderr USAGE_INVALID
+stderr '"message":"Unknown flag --force\."'
+exits 2 ncly auth grant openai hello -f --json
+answer stderr USAGE_INVALID
+
+# An unknown domain, a domain that no extension has, and a service that the domain does not
+# declare exit 2 with NOT_FOUND and the next ncly auth status, before the terminal, and an
+# extension whose manifest is invalid exits 78 with EXTENSION_INVALID
+exits 2 ncly auth grant deepgram nowhere --json
+answer stderr NOT_FOUND
+stderr '"message":"No installed extension has the domain nowhere\.","hint":"ncly auth status","next":\["ncly","auth","status"\]'
+exits 2 pty none.txt ncly auth grant deepgram nowhere
+stdout 'error\[NOT_FOUND\]'
+! stdout 'y/N'
+exits 2 ncly auth grant mistral hello --json
+answer stderr NOT_FOUND
+stderr '"message":"The commands of hello declare no key for mistral\.","hint":"ncly auth status","next":\["ncly","auth","status"\]'
+exits 2 ncly auth grant deepgram skill --json
+answer stderr NOT_FOUND
+exits 78 ncly auth grant deepgram broken --json
+answer stderr EXTENSION_INVALID
+exits 2 ncly auth grant keychain hello --json
+answer stderr USAGE_INVALID
+cmp $STATE/grants.json granted.json
+
+# revoke with --force removes the grant and answers the path that it held
+exec ncly auth revoke deepgram hello --force --json
+stdout '\A\{"ok":true,"contract_version":1,"action":"revoke","domain":"hello","path":"'${DATA@R}'/ncly-hello","service":"deepgram"\}\n\z'
+! stderr .
+cp stdout revoke.json
+exec ncly describe 'auth revoke' --json
+cp stdout describe-revoke.json
+schema revoke.json describe-revoke.json schema
+grep '\A\{"format_version":1,"grants":\[\]\}\n\z' $STATE/grants.json
+
+# A grant that does not exist exits 2 with NOT_FOUND before any confirmation, with and without
+# --force
+exits 2 ncly auth revoke deepgram hello --force --json
+answer stderr NOT_FOUND
+stderr '"message":"No grant gives the key of deepgram to hello\.","hint":"ncly auth status","next":\["ncly","auth","status"\]'
+exits 2 pty none.txt ncly auth revoke deepgram hello
+! stdout 'y/N'
+stdout 'error\[NOT_FOUND\]'
+
+# Without a terminal and without --force, a revocation needs a confirmation and keeps the grant
+exec pty yes.txt ncly auth grant deepgram hello
+cp $STATE/grants.json granted.json
+exits 2 ncly auth revoke deepgram hello --json
+answer stderr CONFIRMATION_REQUIRED
+stderr '"hint":"ncly auth revoke deepgram hello --force","next":\["ncly","auth","revoke","deepgram","hello","--force"\]'
+cmp $STATE/grants.json granted.json
+
+# In a terminal, a declined revocation keeps the grant, Ctrl-C at its confirmation exits 130 and
+# keeps it, and a confirmed one removes it. The question shows the path of the grant as a fact
+exits 2 pty no.txt ncly --no-color auth revoke deepgram hello
+stdout '\A\? Revoke the key of deepgram from hello\?\n  Path  '${DATA@R}'/ncly-hello\n  \[y/N\] n\n'
+stdout 'error\[CONFIRMATION_REQUIRED\]: hello still receives the key of deepgram\.'
+stderr '\Aecho on\nterminal as found\n\z'
+cmp $STATE/grants.json granted.json
+exits 130 pty interrupt.txt ncly auth revoke deepgram hello
+stdout 'error\[INTERRUPTED\]'
+stderr '\Aecho on\nterminal as found\n\z'
+cmp $STATE/grants.json granted.json
+exec pty yes.txt ncly auth revoke deepgram hello
+stdout '\[y/N\]\x1b\[m y\n'
+stdout '\nRevoked the key of deepgram from hello\.\n\z'
+stderr '\Aecho on\nterminal as found\n\z'
+grep '\A\{"format_version":1,"grants":\[\]\}\n\z' $STATE/grants.json
+
+# revoke removes a grant whose domain no extension has anymore
+exec pty yes.txt ncly auth grant deepgram other
+exec pty yes.txt ncly auth grant deepgram hello
+rm $DATA/ncly-other
+exec ncly auth revoke deepgram other --force --json
+stdout '"action":"revoke","domain":"other","path":"'${DATA@R}'/ncly-other","service":"deepgram"'
+grep '\A\{"format_version":1,"grants":\[\{"service":"deepgram","domain":"hello",' $STATE/grants.json
+! grep '"domain":"other"' $STATE/grants.json
+cp $STATE/grants.json granted.json
+
+# Another process that holds grants.lock past 250 milliseconds makes revoke exit 75 with
+# TEMPORARY, before any change, so the same call is safe to repeat once the lock is free
+! exec holdlock $STATE/grants.lock held &
+waitfile held
+exits 75 ncly auth revoke deepgram hello --force --json
+answer stderr TEMPORARY
+cmp $STATE/grants.json granted.json
+kill
+wait
+exec ncly auth revoke deepgram hello --force --json
+stdout '"action":"revoke"'
+exec pty yes.txt ncly auth grant deepgram hello
+cp $STATE/grants.json granted.json
+
+# A grants file that core cannot read, and one with another format_version, fail both commands
+# with CONFIG_INVALID before any change, before the terminal, and before any confirmation. The
+# hint names the file
+chmod 000 $STATE/grants.json
+exits 78 ncly auth grant openai hello --json
+answer stderr CONFIG_INVALID
+stderr '"message":"The grants file '${STATE@R}'/grants\.json cannot be read\.","hint":"Fix '${STATE@R}'/grants\.json, or remove it, which revokes every grant\."'
+exits 78 pty none.txt ncly auth grant openai hello
+! stdout 'y/N'
+stdout 'error\[CONFIG_INVALID\]'
+exits 78 ncly auth revoke deepgram hello --force --json
+answer stderr CONFIG_INVALID
+exits 78 pty none.txt ncly auth revoke deepgram hello
+! stdout 'y/N'
+chmod 644 $STATE/grants.json
+cmp $STATE/grants.json granted.json
+cp version-2.json $STATE/grants.json
+exits 78 ncly auth grant openai hello --json
+answer stderr CONFIG_INVALID
+stderr '"message":"The grants file '${STATE@R}'/grants\.json holds format_version 2, which this ncly does not read\."'
+exits 78 ncly auth revoke deepgram hello --force --json
+answer stderr CONFIG_INVALID
+cmp $STATE/grants.json version-2.json
+cp broken.json $STATE/grants.json
+exits 78 ncly auth grant openai hello --json
+answer stderr CONFIG_INVALID
+stderr '"message":"The grants file '${STATE@R}'/grants\.json holds invalid JSON or a value of the wrong type\."'
+cp twice.json $STATE/grants.json
+exits 78 ncly auth revoke deepgram hello --force --json
+answer stderr CONFIG_INVALID
+cmp $STATE/grants.json twice.json
+rm $STATE/grants.json
+
+# Under the pseudo-locale, every word of the help, the confirmation, and the errors comes from
+# the catalog
+exec ncly --lang en-XA auth grant --help
+pseudo stdout auth grant deepgram transcript service domain
+exec ncly --lang en-XA auth revoke --help
+pseudo stdout auth revoke deepgram transcript service domain force
+exits 2 pty pseudo-no.txt ncly --lang en-XA auth grant openai hello
+pseudo stdout openai hello $DATA/ncly-hello auth grant n
+exits 2 ncly --lang en-XA auth grant mistral hello
+pseudo stderr mistral hello auth status
+exits 2 ncly --lang en-XA auth revoke openai hello --force
+pseudo stderr openai hello auth status
+
+! exists test-keychain.jsonl
+! exists ran
+
+-- yes.txt --
+[y/N]	y
+-- no.txt --
+[y/N]	n
+-- interrupt.txt --
+[y/N]	^C
+-- none.txt --
+-- pseudo-no.txt --
+Ñ]	n
+-- version-2.json --
+{"format_version":2,"grants":[]}
+-- broken.json --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"hello","path":7,"granted_at":"2026-10-17T04:00:00Z"}]}
+-- twice.json --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"hello","path":null,"granted_at":"2026-10-17T04:00:00Z"},{"service":"deepgram","domain":"hello","path":null,"granted_at":"2026-10-17T05:00:00Z"}]}
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+-- .local/share/nicely/extensions/ncly-other --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-other.toml --
+format_version = 1
+contract_version = 1
+domain = "other"
+
+[[commands]]
+path = "other"
+summary = "other.summary"
+requires = { keys = ["deepgram"] }
+-- .local/share/nicely/extensions/ncly-other.locales/en.toml --
+["other.summary"]
+description = "Summary of the other fixture."
+other = "Do other things"
+-- .local/share/nicely/extensions/ncly-broken --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-broken.toml --
+format_version = 2
+contract_version = 1
+domain = "broken"

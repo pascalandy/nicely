@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "required": ["dry_run", "plan", "pending_checks"],
+  "properties": {
+    "dry_run": {"const": true},
+    "plan": {"type": "array", "items": {"$ref": "#/$defs/planned"}, "maxItems": 1},
+    "pending_checks": {"type": "array", "items": {"$ref": "#/$defs/pending"}}
+  },
+  "$defs": {
+    "planned": {
+      "type": "object",
+      "required": ["key", "action", "domain", "effects"],
+      "properties": {
+        "key": {"type": "string"},
+        "action": {"enum": ["grant", "revoke"]},
+        "domain": {"type": "string"},
+        "effects": {
+          "type": "object",
+          "required": ["user_writes", "network", "paid"],
+          "properties": {
+            "user_writes": {"const": true},
+            "network": {"const": false},
+            "paid": {"const": false}
+          }
+        }
+      }
+    },
+    "pending": {
+      "type": "object",
+      "required": ["id", "message"],
+      "properties": {
+        "id": {"type": "string"},
+        "message": {"type": "string"}
+      }
+    }
+  }
+}

@@ -31,6 +31,7 @@ var authCommand = contract.Command{
 		`ncly auth status`,
 		`ncly auth login deepgram`,
 		`<command that prints the key> | ncly auth login deepgram --stdin`,
+		`ncly auth grant deepgram transcript`,
 	},
 }
 
@@ -75,7 +76,8 @@ type serviceEntry struct {
 }
 
 // addAuth adds ncly auth: status, which reports the keys that the installed
-// extensions declare, login, and logout. b is the keychain's backend.
+// extensions declare, login, logout, grant, and revoke. b is the keychain's
+// backend.
 func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions []*extension, b keychain.Backend) {
 	group := command.Build(p, p, authCommand, nil)
 	group.AddCommand(command.Build(p, p, authStatusCommand, func(c *cobra.Command, _ []string) error {
@@ -93,6 +95,8 @@ func addAuth(p *i18n.Printer, g command.Globals, root *cobra.Command, extensions
 	}))
 	addAuthLogin(p, g, group, extensions, b)
 	addAuthLogout(p, g, group, extensions, b)
+	addAuthGrant(p, g, group, extensions)
+	addAuthRevoke(p, g, group, extensions)
 	root.AddCommand(group)
 }
 

@@ -1,10 +1,17 @@
 # A dry run of ncly auth login or logout shares the name check of execution, then needs
 # neither a terminal nor --stdin, reads no stdin, asks the keychain nothing, prompts for
 # nothing, and changes no file or key: auth.keychain stays a pending check. The test keychain is the file
-# $HOME/test-keychain.jsonl, which snapshot sees, and its call log stays as seeded.
+# $HOME/test-keychain.jsonl, which snapshot sees, and its call log stays as seeded. A dry run of
+# grant or revoke makes the checks of execution before the confirmation, and changes no grant.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
+env DATA=$WORK/.local/share/nicely/extensions
+env STATE=$WORK/.local/state/nicely
+chmod 755 $DATA/ncly-hello
 cp seed.jsonl test-keychain.jsonl
+mkdir $STATE
+exec sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"openai\",\"domain\":\"hello\",\"path\":\"%s\",\"granted_at\":\"2026-10-17T04:00:00Z\"}]}\n" "$DATA/ncly-hello" > "$STATE/grants.json"'
+cp $STATE/grants.json grants-seed.json
 snapshot before
 
 # Without a terminal and without --stdin, over a stored key that a replacement would confirm
@@ -81,6 +88,108 @@ pseudo stdout deepgram auth.keychain
 unchanged before
 cmp test-keychain.jsonl seed.jsonl
 
+# A dry run of grant needs no terminal, prompts for nothing, and changes no grant:
+# auth.confirmation, the answer that only a human gives, stays a pending check
+exec ncly auth grant deepgram hello --dry-run --json
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\{"id":"auth\.confirmation","message":"Whether a human at a terminal confirms the grant of the key of deepgram to hello\."\}\],"plan":\[\{"key":"deepgram","action":"grant","domain":"hello","effects":\{"user_writes":true,"network":false,"paid":false\}\}\]\}\n\z'
+! stderr .
+cp stdout $TMPDIR/dry-grant.json
+exec ncly describe 'auth grant' --json
+stdout '"modes":\{"dry_run":true,'
+cp stdout $TMPDIR/describe-grant.json
+schema $TMPDIR/dry-grant.json $TMPDIR/describe-grant.json dry_run_schema
+exec pty none.txt ncly auth grant deepgram hello -n
+! stdout 'y/N'
+cmp stdout plan-grant.txt
+unchanged before
+cmp $STATE/grants.json grants-seed.json
+
+# When grant would answer unchanged, the plan and the pending checks are empty
+exec ncly auth grant openai hello --dry-run --json
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\],"plan":\[\]\}\n\z'
+cp stdout $TMPDIR/dry-nothing.json
+schema $TMPDIR/dry-nothing.json $TMPDIR/describe-grant.json dry_run_schema
+exec ncly auth grant openai hello --dry-run
+stdout '\AWould change nothing: hello already receives the key of openai\.\n\z'
+
+# The dry run fails where execution fails before asking: a service that the domain does not
+# declare, a domain that no extension has, and a grants file that core cannot read
+exits 2 ncly auth grant mistral hello --dry-run --json
+answer stderr NOT_FOUND
+exits 2 ncly auth grant deepgram nowhere --dry-run --json
+answer stderr NOT_FOUND
+exits 2 ncly auth grant keychain hello --dry-run --json
+answer stderr USAGE_INVALID
+cp version-2.json $STATE/grants.json
+exits 78 ncly auth grant deepgram hello --dry-run --json
+answer stderr CONFIG_INVALID
+exits 78 ncly auth revoke openai hello --dry-run --json
+answer stderr CONFIG_INVALID
+cp grants-seed.json $STATE/grants.json
+
+# A dry run of revoke, without --force and without a terminal, removes nothing and holds
+# auth.confirmation, which --force answers, so it then holds no pending check
+exec ncly auth revoke openai hello --dry-run --json
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\{"id":"auth\.confirmation","message":"Whether a human confirms the revocation of the key of openai from hello\."\}\],"plan":\[\{"key":"openai","action":"revoke","domain":"hello","effects":\{"user_writes":true,"network":false,"paid":false\}\}\]\}\n\z'
+! stderr .
+cp stdout $TMPDIR/dry-revoke.json
+exec ncly describe 'auth revoke' --json
+stdout '"modes":\{"dry_run":true,'
+cp stdout $TMPDIR/describe-revoke.json
+schema $TMPDIR/dry-revoke.json $TMPDIR/describe-revoke.json dry_run_schema
+exec ncly auth revoke openai hello --force --dry-run --json
+stdout '"pending_checks":\[\],"plan":\[\{"key":"openai","action":"revoke","domain":"hello",'
+exec pty none.txt ncly auth revoke openai hello -n
+! stdout 'y/N'
+cmp stdout plan-revoke.txt
+exits 2 ncly auth revoke deepgram hello --dry-run --json
+answer stderr NOT_FOUND
+
+# The help shows --dry-run, and every word comes from the catalog
+exec ncly auth grant --help
+stdout '^  -n, --dry-run  '
+exec ncly auth revoke --help
+stdout '^  -n, --dry-run  '
+exec ncly --lang en-XA auth grant deepgram hello --dry-run
+pseudo stdout deepgram hello auth.confirmation
+exec ncly --lang en-XA auth grant openai hello --dry-run
+pseudo stdout openai hello
+exec ncly --lang en-XA auth revoke openai hello --dry-run
+pseudo stdout openai hello auth.confirmation
+unchanged before
+cmp $STATE/grants.json grants-seed.json
+cmp test-keychain.jsonl seed.jsonl
+! exists ran
+
+-- none.txt --
+-- plan-grant.txt --
+Would grant the key of deepgram to hello.
+pending  auth.confirmation  Whether a human at a terminal confirms the grant of the key of deepgram to hello.
+-- plan-revoke.txt --
+Would revoke the key of openai from hello.
+pending  auth.confirmation  Whether a human confirms the revocation of the key of openai from hello.
+-- version-2.json --
+{"format_version":2,"grants":[]}
+-- .local/share/nicely/extensions/ncly-hello --
+#!/bin/sh
+echo "$0" >> "$WORK/ran"
+-- .local/share/nicely/extensions/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+requires = { keys = ["deepgram", "openai"] }
+-- .local/share/nicely/extensions/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
 -- seed.jsonl --
 {"call":"set","account":"deepgram","key":"dg-stored"}
 -- key.txt --
