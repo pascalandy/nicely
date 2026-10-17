@@ -89,6 +89,13 @@ grep '^TERM$' grandchild.sig
 # group.sh <flag> sends Ctrl-C to the process group of ncly and the extension 30 times,
 # runs hello wait with the flag each time, and appends each exit code of ncly to
 # exit.txt. Each answer must be INTERRUPTED, and with --trap it keeps output_dir.
+# A failure prints the number of its run, the exit code of ncly, and answer.txt to
+# stderr, so the test log keeps them.
+fail() {
+  echo "run $run: $1. ncly exited $(cat run.txt). answer.txt, $(wc -c < answer.txt | tr -d ' ') bytes:" >&2
+  cat answer.txt >&2
+  exit 1
+}
 rm -f exit.txt
 run=0
 while [ $run -lt 30 ]; do
@@ -100,18 +107,18 @@ while [ $run -lt 30 ]; do
   kill -INT $relay
   wait $relay
   cat run.txt >> exit.txt
-  grep -q '"code":"INTERRUPTED"' answer.txt || { cat answer.txt >&2; exit 1; }
+  grep -q '"code":"INTERRUPTED"' answer.txt || fail 'the answer is not INTERRUPTED'
   if [ "$1" = --trap ]; then
-    grep -q '"output_dir"' answer.txt || { cat answer.txt >&2; exit 1; }
+    grep -q '"output_dir"' answer.txt || fail 'the answer has no output_dir'
   fi
   grandchild=$(cat grandchild.pid)
   if [ "$(uname)" = Linux ]; then
     for wait in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$grandchild" 2>/dev/null || break; sleep 0.1; done
-    if kill -0 "$grandchild" 2>/dev/null; then echo "grandchild $grandchild still runs" >&2; exit 1; fi
+    if kill -0 "$grandchild" 2>/dev/null; then fail "grandchild $grandchild still runs"; fi
   else
     kill "$grandchild" 2>/dev/null
   fi
-done
+done || fail "the loop ended with status $?"
 -- grandchild.sh --
 # grandchild.sh writes its process ID once its traps are set, then runs until a signal
 # ends it, and writes the name of that signal.
