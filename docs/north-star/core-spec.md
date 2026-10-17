@@ -120,7 +120,7 @@ Each check is an object with these keys:
 | `path` | Only in an entry of the `extensions` component. The absolute path of the extension's executable, as discovery found it, or `null` for a bundled extension |
 | `hidden_by` | Only in the entry of an extension that another one hides. An object with `source`, which is `core`, `bundled`, or `extension`, and `path`, the absolute path of the executable that wins, or `null` for a core command or a bundled extension |
 
-Without `--json`, doctor prints one line per check, in the order of `checks`, in three aligned columns: its status, `pass`, `warn`, or `fail`, colored by status, its full `id`, and its message. A check with a problem adds a line under it, with its code in the column of the `id`, then `hint:` and the hint in the column of the message.
+Without `--json`, doctor prints one line per check, in the order of `checks`, in three aligned columns: its status, `pass`, `warn`, or `fail`, colored by status, its full `id`, and its message. A check with a problem adds a line under it, with its code in the column of the `id`, then `hint:` and the hint in the column of the message. The status is bold, green for `pass`, yellow for `warn`, and red for `fail`, its code takes the color of its status, and `hint:` takes the label style of an error.
 
 ### Required programs
 
@@ -179,7 +179,7 @@ Each entry of `services` has `service`, `configured`, and `source`, which is `en
 
 An unavailable keychain alone leaves `ok` true, with `keychain` set to `unavailable`, because every listed key may come from the environment, as on a machine reached over SSH. A missing key fails `status` as it fails the `auth` component of [ncly doctor](#ncly-doctor), so both report the same verdict for each service.
 
-Without `--json`, `status` prints `keychain` and its state, an empty line, then one line per service, in aligned columns: the service, its source, and, from M08, each of its grants as `<domain>: granted` or `<domain>: not granted`, with `, optional` for an optional key, separated by commas. A service's problem follows its line, in the column of its source: `fail[<code>]` and the message, then `hint:` and the hint, with the label styles of an error.
+Without `--json`, `status` prints `keychain` and its state, then, when a manifest declares a service, an empty line and one line per service, in aligned columns: the service, in bold, its source, and, from M08, each of its grants as `<domain>: granted` or `<domain>: not granted`, with `, optional` for an optional key, separated by commas. A service's problem follows its line, in the column of its source: `fail[<code>]` and the message, then `hint:` and the hint, with the label styles of an error.
 
 For `login` and `logout`, `--dry-run` takes precedence over secret input and confirmation. It describes the intended action without reading stdin for a key, opening a keychain entry, or prompting. Checks that would require a keychain read, including whether login would replace a key, are reported as pending. This simulation does not require a terminal or `--stdin`.
 
