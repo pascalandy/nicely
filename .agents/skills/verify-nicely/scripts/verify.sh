@@ -203,8 +203,8 @@ FIXTURE
 # appends each call to evidence/codex-calls.txt, which outlives the cleanup, and answers
 # --version with codex-cli and $CODEX_STUB_VERSION, 0.163.0 by default. It appends any other
 # call, which starts a task, to evidence/codex-task.txt, and the task that it reads on stdin to
-# evidence/codex-input.txt, then writes "OK from the stub" in the file of
-# --output-last-message.
+# evidence/codex-input.txt, waits $CODEX_STUB_WAIT seconds when it is set, then writes "OK from
+# the stub" in the file of --output-last-message.
 prepare_agent() {
 	local run="$1" repo home stub path gocache gomodcache gopath goenv
 	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
@@ -230,6 +230,7 @@ while [ $# -gt 0 ]; do
 	if [ "$1" = --output-last-message ]; then out="$2"; fi
 	shift
 done
+if [ -n "$CODEX_STUB_WAIT" ]; then sleep "$CODEX_STUB_WAIT"; fi
 echo '{"type":"turn.completed"}'
 printf 'OK from the stub' >"$out"
 STUB

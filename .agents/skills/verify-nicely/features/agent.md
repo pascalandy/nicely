@@ -13,6 +13,7 @@
 - `agent-tools` refuses a call without `--tools` with `CAPABILITY_UNSUPPORTED`, even in a dry run
 - `agent-depth` gives Codex `NCLY_AGENT_DEPTH` plus one, and refuses a call at `[agent] max_depth` with `AGENT_DEPTH_LIMIT` before it probes Codex
 - `agent-run` runs one task under a run ID that the caller chose, answers from its record, and saves the record and `answer.txt` in the state folder. The same call again answers from the record without starting Codex
+- `agent-timeout` stops a task at its `--timeout` with `RUNTIME`, leaves its run `unknown`, and the same call again starts no second task
 
 ## How to get to it (user POV)
 
@@ -22,6 +23,7 @@
 - `ncly skill view agent`
 - `ncly agent run <task> --tools --model <id> --dry-run`, as text and as JSON
 - `ncly agent run <task> --tools --model <id> --run-id <id> --json`
+- `ncly agent run <task> --tools --model <id> --run-id <id> --timeout <duration> --json`, then `ncly run view <id> --json`
 
 ## Driving it with verify.sh
 
@@ -30,10 +32,12 @@ Preconditions:
 - A new run from `just verify`, whose Doctor step passed
 - `just` in `PATH`
 
+In `just verify step "$run" agent <args>`, `agent` names this feature, and `<args>` are the arguments of `ncly`: `just verify step "$run" agent agent run --help` runs `ncly agent run --help`.
+
 - **Install.** Run `just verify prepare "$run" agent`. It exits 0, and its last lines name `<run>/scratch/home/.local/bin/ncly` and `<run>/scratch/home/.local/share/nicely/extensions/ncly-agent` as installed. Report these lines beside the quote.
 - **Installed build.** Run `just verify step "$run" agent --version`. Exit 0, and stdout names the build of the Doctor step, because the wrapper now runs the `ncly` that `just install` wrote.
 - **Discovery.** Run `just verify step "$run" agent --help`. Exit 0, and the `EXTENSIONS` section lists `agent:  Run trusted tasks through Codex` beside `skill`.
-- **Help.** Run `just verify step "$run" agent agent --help`, then `just verify step "$run" agent agent run --help`. Both exit 0. The first lists the command `run`. The second shows `ncly agent run [task] [flags]` and the flags `--cwd`, `--dry-run`, `--effort`, `--model`, `--run-id`, `--task-file`, and `--tools`.
+- **Help.** Run `just verify step "$run" agent agent --help`, then `just verify step "$run" agent agent run --help`. Both exit 0. The first lists the command `run`. The second shows `ncly agent run [task] [flags]` and the flags `--cwd`, `--dry-run`, `--effort`, `--model`, `--run-id`, `--task-file`, `--timeout`, and `--tools`, and `--timeout` says `5m by default`.
 - **Source.** Run `just verify step "$run" agent doctor extensions --json`. Exit 0, and the check `extensions.agent` is a `pass` with the source `extension` and the path `<run>/scratch/home/.local/share/nicely/extensions/ncly-agent`.
 - **Recent Codex.** Run `just verify step "$run" agent doctor agent --json`. Exit 0, and the one check `agent.codex` is a `pass` whose message names `codex 0.163.0` and the stub `<run>/scratch/stub/codex`.
 - **Older Codex.** Run `CODEX_STUB_VERSION=0.162.0 just verify step "$run" agent doctor agent --json`. Exit 78, and `agent.codex` fails with `PREREQ_MISSING`, the message `codex 0.162.0 is older than 0.162.1.`, and a hint and `next` that hold the install command of the machine: `sudo pacman -S openai-codex` on Arch, `brew install --cask codex` on macOS, or `Install codex.` and no `next` without either package manager.
@@ -48,7 +52,10 @@ Preconditions:
 - **Record.** Run `cat "$run/scratch/home/.local/state/nicely/runs/verify-run.json"`, then `cat "$run/scratch/home/.local/state/nicely/runs/verify-run/answer.txt"`. The record has `"status":"completed"`, `"path":"agent run"`, `"inputs"` with `"model":"test-model"`, `"tools":true`, and `task_sha256`, and one step `codex` with `"effect":"paid"` and `"status":"completed"`, whose one artifact is that `answer.txt`, with `"size_bytes":16`. The answer file holds `OK from the stub`. Report both outputs beside the quote.
 - **Same ID.** Run the call of Run again. Exit 0, and stdout is the answer of Run, `duration_ms` included, because the call answers from the record and starts no Codex.
 - **Reuse.** Run `just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --run-id verify-run --dry-run --json`. Exit 0, and the one item of `plan` has the `output_dir` `<run>/scratch/home/.local/state/nicely/runs/verify-run` and the step `codex` with the action `reuse`, `invocation` is empty, and `pending_checks` is empty.
-- **Calls.** After the cleanup, run `just verify quote "$run" codex-calls`, then `just verify quote "$run" codex-task`. In `codex-calls.txt`, each line is `codex --version`, one per `ncly doctor agent` call and one per `ncly agent run` call before Run other than Without --tools and Depth limit, which stop before the probe, then one probe and one `codex exec` line for Run, and nothing for Same ID and Reuse. `codex-task.txt` holds that one line, which ends with `--output-last-message`, a file of the run's temporary folder, and `-`, and `evidence/codex-input.txt` holds `Review this branch`.
+- **Timeout.** Run `CODEX_STUB_WAIT=30 just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --run-id verify-timeout --timeout 2s --json`. Exit 1 after about 2 seconds, stdout is empty, and stderr holds the code `RUNTIME`, `"run_id":"verify-timeout"`, the message `Codex did not finish within 2s for verify-timeout, so its result is unknown.`, and the hint `ncly run view verify-timeout`.
+- **Stopped run.** Run `just verify step "$run" agent run view verify-timeout --json`. Exit 0, the run has `"status":"unknown"` and `"active":false`, and its step `codex` has `"status":"unknown"`, `"finished_at":null`, no artifact, and the error `RUNTIME` of Timeout.
+- **No second task.** Run the call of Timeout again, without `CODEX_STUB_WAIT`. Exit 1, and stderr holds the code `RESUME_UNSAFE` and `"run_id":"verify-timeout"`, because Codex may have done paid work.
+- **Calls.** After the cleanup, run `just verify quote "$run" codex-calls`, then `just verify quote "$run" codex-task`. In `codex-calls.txt`, each line is `codex --version`, one per `ncly doctor agent` call and one per `ncly agent run` call before Run other than Without --tools and Depth limit, which stop before the probe, then one probe and one `codex exec` line for Run, nothing for Same ID and Reuse, one probe and one `codex exec` line for Timeout, and nothing for No second task. `codex-task.txt` holds those two lines, which end with `--output-last-message`, a file of the run's temporary folder, and `-`, and `evidence/codex-input.txt` holds `Review this branch` twice.
 
 ## Gotchas
 
