@@ -971,8 +971,12 @@ other = "No record holds the run {{.ID}}."
 description = "Error RESUME_UNSAFE of `ncly run view` when the record of the run cannot be read, cannot be parsed, or holds another format_version. {{.File}} is the path of the record."
 other = "Cannot read the record {{.File}}, or this release does not support its format."
 
+["run.view.lock_unreadable"]
+description = "Error RESUME_UNSAFE of `ncly run view` when the lock file of the run cannot be read, so ncly cannot tell whether a process runs it now. {{.File}} is the path of the lock file, and {{.ID}} the run ID, which stays as is."
+other = "Cannot read the lock {{.File}}, so ncly cannot tell whether a process runs {{.ID}}."
+
 ["run.view.unreadable_hint"]
-description = "Hint under the error run.view.unreadable: what the user does next. The record never counts as absent, so its run may have billed."
+description = "Hint under the errors run.view.unreadable and run.view.lock_unreadable: what the user does next. The run never counts as absent, so it may have billed."
 other = "Inspect the file before you start any new run of the same work: its run may have billed."
 
 ["run.view.status"]

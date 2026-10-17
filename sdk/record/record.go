@@ -150,7 +150,8 @@ type Store struct {
 // File returns the path of the record of a run.
 func (s Store) File(id string) string { return filepath.Join(s.Dir, id+".json") }
 
-func (s Store) lock(id string) string { return filepath.Join(s.Dir, id+".lock") }
+// Lock returns the path of the lock file of a run.
+func (s Store) Lock(id string) string { return filepath.Join(s.Dir, id+".lock") }
 
 // ArtifactDir returns the folder of a run's artifacts, beside its record.
 func (s Store) ArtifactDir(id string) string { return filepath.Join(s.Dir, id) }
@@ -189,7 +190,7 @@ type Run struct {
 // UnreadableError for a record that it cannot use. The caller closes the
 // run, which releases the lock, once it has answered.
 func (s Store) Open(ctx context.Context, id string) (*Run, error) {
-	unlock, err := platform.Lock(ctx, s.lock(id), LockWait)
+	unlock, err := platform.Lock(ctx, s.Lock(id), LockWait)
 	if errors.Is(err, platform.ErrLocked) {
 		return nil, ErrBusy
 	}
@@ -258,7 +259,7 @@ func (s Store) IDs() ([]string, error) {
 
 // Active reports whether a process holds the run now. It never creates the
 // lock file and never holds the lock past its answer.
-func (s Store) Active(id string) (bool, error) { return platform.Held(s.lock(id)) }
+func (s Store) Active(id string) (bool, error) { return platform.Held(s.Lock(id)) }
 
 // read reads the record of a file, with the bytes of the file, or returns
 // fs.ErrNotExist when no file exists. Any other failure is an

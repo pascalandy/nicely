@@ -69,6 +69,23 @@ exits 1 ncly run view v2 --json
 answer stderr RESUME_UNSAFE
 cmp $RUNS/v2.json v2.json
 
+# So is a record that breaks Record format, such as one whose started_at is no time, which run
+# list counts as unreadable, and one that lacks keys
+cp badtime.json $RUNS/badtime.json
+exits 1 ncly run view badtime --json
+answer stderr RESUME_UNSAFE
+cp partial.json $RUNS/partial.json
+exits 1 ncly run view partial --json
+answer stderr RESUME_UNSAFE
+
+# A run whose lock cannot be read is RESUME_UNSAFE, because its active would be a guess
+exec /bin/sh -c ': > "$RUNS/c1.lock"'
+chmod 000 $RUNS/c1.lock
+exits 1 ncly run view c1 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"Cannot read the lock '${RUNS@R}'/c1\.lock, so ncly cannot tell whether a process runs c1\.","hint":"Inspect the file before you start any new run of the same work: its run may have billed\."'
+chmod 600 $RUNS/c1.lock
+
 # The text of the view comes from the catalog
 exec ncly --lang en-XA run view f1
 pseudo stdout f1 transcript run youtube failed pending transcribe summarize paid none u1 2026-10-01T10:00:00Z 2026-10-01T10:00:05Z 5s v0.13.0 RUNTIME Deepgram refused the file Check then again 1 lang fr
@@ -131,5 +148,9 @@ ITEMS
 {"format_version":1,"run_id":"r1","path":"agent run","status":"running","started_at":"2026-10-17T18:40:00Z","updated_at":"2026-10-17T18:40:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{"cwd":"/work","task_sha256":"87b5","tools":true},"resolved":{"effort":"medium","harness":"codex","model":"m1"},"tools":{"codex":"0.163.0"},"items":[{"key":"task","output_dir":"/state/runs/r1","steps":[{"id":"codex","effect":"paid","status":"unknown","started_at":"2026-10-17T18:40:00Z","finished_at":null,"artifacts":[],"error":null}]}]}
 -- garbage.json --
 {"format_version":
+-- badtime.json --
+{"format_version":1,"run_id":"badtime","path":"agent run","status":"completed","started_at":"yesterday","updated_at":"yesterday","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[]}
+-- partial.json --
+{"format_version":1,"run_id":"partial"}
 -- v2.json --
 {"format_version":2,"run_id":"v2"}

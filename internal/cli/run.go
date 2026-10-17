@@ -166,7 +166,13 @@ func addRun(p *i18n.Printer, root *cobra.Command) {
 			list := []string{"ncly", "run", "list"}
 			return command.Fail(contract.Problem{Code: contract.NotFound, Message: p.T("run.view.not_found", map[string]any{"ID": id}), Hint: strings.Join(list, " "), Next: list})
 		}
-		active, _ := store.Active(id)
+		active, err := store.Active(id)
+		if err != nil {
+			// A lock that cannot be read leaves active unknown, which never
+			// reads as false.
+			data := map[string]any{"File": store.Lock(id), "ID": id}
+			return command.Fail(contract.Problem{Code: contract.ResumeUnsafe, Message: p.T("run.view.lock_unreadable", data), Hint: p.T("run.view.unreadable_hint")})
+		}
 		keys["active"] = active
 		return &answered{
 			outcome: contract.Outcome{Data: map[string]any{"run": keys}},
