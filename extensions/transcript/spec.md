@@ -81,7 +81,7 @@ These options of the transcript CLI change:
 | `--preview` | Removed, because `ncly markdown view` renders a summary from M18 |
 | `list prompts` | `ncly transcript prompt list` |
 | `list profiles` | `ncly agent profile list` |
-| `list models` | Removed. M11 decides whether `ncly agent model list` replaces it |
+| `list models` | Removed. `ncly agent model list` is in the [M99 parking lot](../../docs/milestones/M99-parking-lot.md) |
 | `doctor --source` | `ncly doctor transcript` |
 
 ### Steps and resume
