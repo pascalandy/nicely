@@ -179,6 +179,8 @@ Each entry of `services` has `service`, `configured`, and `source`, which is `en
 - `KEYRING_UNAVAILABLE` when the keychain does not answer and the variable is empty, with a hint that names the variable to export and no `next`, because the hint leaves a value to fill in
 - `KEY_NOT_GRANTED` when the key exists and an extension that needs it has no grant, with the hint and `next` `ncly auth grant <service> <domain>` for the first such domain in name order. A missing key reports its own code alone, because the key comes before its grants
 
+A service that no extension needs, because each one that declares it marks its key optional, never fails `status`: when its key is missing, or the keychain does not answer, its entry keeps `configured` false and `source` `none`, without the keys of a problem.
+
 An unavailable keychain alone leaves `ok` true, with `keychain` set to `unavailable`, because every listed key may come from the environment, as on a machine reached over SSH. A missing key fails `status` as it fails the `auth` component of [ncly doctor](#ncly-doctor), so both report the same verdict for each service.
 
 Without `--json`, `status` prints `keychain` and its state, then, when a manifest declares a service, an empty line and one line per service, in aligned columns: the service, in bold, its source, and, from M08, each of its grants as `<domain>: granted` or `<domain>: not granted`, with `, optional` for an optional key, separated by commas. A service's problem follows its line, in the column of its source: `fail[<code>]` and the message, then `hint:` and the hint, with the label styles of an error.
