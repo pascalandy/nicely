@@ -11,7 +11,7 @@ Version: v0.9.0
 
 `agent` is the first real external extension: Nicely needs no agent to operate, so it ships outside the binary. It lives in `extensions/agent/`, builds as `ncly-agent`, and owns profiles, harness adapters, tools-off mode, and the depth limit, as [extensions/agent/spec.md](../../extensions/agent/spec.md) defines. This milestone reads profiles and prepares runs. Execution and its records arrive in [M10](M10-agent-run.md), and the other harnesses in [M11](M11-harnesses.md).
 
-Before taps exist, `just install` builds `ncly` and the first-party extensions into one location where core finds them. A user without the repository waits for the official tap of [M12](M12-taps.md).
+Before taps exist, `just install` puts `ncly` in `~/.local/bin/` and the first-party extensions in the data folder's `extensions/` directory. A user without the repository waits for the official tap of [M12](M12-taps.md).
 
 ## Cards
 
@@ -28,7 +28,7 @@ Before taps exist, `just install` builds `ncly` and the first-party extensions i
 - **Read:** [extensions/agent/spec.md](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions)
 - **Proves:** `extensions/agent/testdata/script/agent_install.txtar`
 
-Add the manifest, `SKILL.md`, and `ncly-agent` binary in `extensions/agent/`, built on `sdk/`. `just install` builds `ncly` and `ncly-agent` into the data folder, and `ncly agent --help` reaches the extension through core.
+Add the manifest, catalogs, `SKILL.md`, and `ncly-agent` binary in `extensions/agent/`, built on `sdk/`. `just install` puts `ncly` in `~/.local/bin/` and the extension's files in the data folder's `extensions/` directory. With `~/.local/bin/` on `PATH`, `ncly agent --help` reaches the extension through core.
 
 ### M09-T2 Profiles
 
