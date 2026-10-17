@@ -19,12 +19,9 @@ The current build implements help, the version, shell completion, and `ncly desc
 
 ## Planned commands
 
-Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It finds extensions named `ncly-<domain>`, and it bundles one extension, `skill`, which agents use to learn Nicely. Everything else is an extension, including the first ones: `agent`, which runs a task through Claude Code, Pi, and other harnesses, and `transcript`, which transcribes YouTube and Zoom audio and summarizes it through `agent`. Taps arrive between the two, so `transcript` installs from the official tap. Everyday domains such as `markdown` and `video`, a private docs hub, and Canadian French follow. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
+Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, `run`, and `tap`. It finds extensions named `ncly-<domain>`, and it bundles one extension, `skill`, which agents use to learn Nicely. Everything else is an extension, including the first ones: `agent`, which runs a task through Claude Code, Pi, and other harnesses, and `transcript`, which transcribes YouTube and Zoom audio and summarizes it through `agent`. Taps arrive between the two, so `agent` and `transcript` install from the official tap as precompiled programs. Everyday domains such as `markdown` and `video`, a private docs hub, and Canadian French follow. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
 
 Interactive forms will ask for missing values. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
-
-From M12, install the recommended first-party extensions, starting with `agent`, with `ncly tap add pascalandy/nicely`.
-The [tap spec](docs/north-star/core-spec.md#ncly-tap) defines installation from release archives, with no Go compiler on your machine.
 
 ## Agent instructions
 

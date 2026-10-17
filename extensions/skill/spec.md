@@ -80,17 +80,18 @@ claude = "~/.claude/skills"
 
 Each value is absolute or starts with `~/`, as [Configuration](../../docs/north-star/contract.md#configuration) requires. No configured harness is `CONFIG_INVALID` with a hint naming that table.
 Each link is `<harness-folder>/<skill-name>` and targets the selected skill folder. Tap targets use that tap's `current` path, so sync selects the new files.
-For bundled `nicely`, `link` first publishes its embedded folder in the data folder, keyed by the installed `ncly` version.
-Repeating `link` leaves an unchanged managed link alone. A source switch replaces only an unchanged link that Nicely owns.
-An existing user file, unmanaged link, or changed managed target is a conflict. The command answers `RUNTIME` and preserves it.
-Link ownership records the skill name, source, tap ID when applicable, destination, and exact target in the state folder.
-Link updates and tap removal share [Publication and recovery](../../docs/north-star/core-spec.md#publication-and-recovery), including locks, durable intent, and whole-invocation retry checks.
-Core reads that ownership evidence before tap removal. It never imports the skill extension.
+`link` skips the bundled `nicely` skill, which agents read with `ncly skill view nicely`.
+A link is managed when its target is a skill folder that Nicely selects or a path under a tap's `current` link.
+Any other file or link at the destination is a conflict. The command answers `RUNTIME` and preserves it.
+Repeating `link` leaves a matching managed link alone. A source switch replaces only a managed link.
+Link updates follow [Publication and recovery](../../docs/north-star/core-spec.md#publication-and-recovery), including locks, revalidation, and whole-invocation retry checks.
+Tap removal removes the links in the `[skill.link]` folders whose targets lie inside that tap's storage.
+Core inspects those targets without importing the skill extension. It leaves a user-modified link to another target alone, so that link does not block removal.
 
 The answer has `links`, sorted by harness and skill name. Each entry has `name`, `harness`, `path`, `target`, and `action`: `created`, `updated`, or `unchanged`.
 A partial failure keeps the completed entries beside `errors`. Dry run returns `dry_run: true`, `plan`, and `pending_checks`, which is empty.
 Each plan entry names the same link fields, its intended action, and `effects`: `user_writes: true`, `network: false`, and `paid: false`.
-Dry run lists any bundled-skill publication too, checks conflicts, and changes no files or links.
+Dry run checks conflicts and changes no files or links.
 
 ## ncly skill status
 

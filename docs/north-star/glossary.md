@@ -250,9 +250,9 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Project note: [Tap identity and storage](core-spec.md#tap-identity-and-storage) defines normalization and local storage
   - Distinct from: an extension's domain, which several taps can provide
 - Tap publication
-  - Def.: an immutable installed tree of a tap's skills and complete extensions, with its Git revision and verified release archives
+  - Def.: an immutable installed tree of a tap's skills and complete extensions, from a Git revision or verified official release archives
   - Project note: [Publication and recovery](core-spec.md#publication-and-recovery) defines its ownership evidence and selection
-  - Distinct from: the Git clone, which `sync` fetches, and the tap ID, which stays the same across updates
+  - Distinct from: a Git tap's bare clone, which `sync` fetches, and the tap ID, which stays the same across updates
 - Homebrew tap
   - Def.: the repository `pascalandy/homebrew-tap`, whose formula builds `ncly`
 

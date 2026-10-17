@@ -262,13 +262,10 @@ Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a skill 
 
 ### Discovery
 
-A domain uses lowercase letters and digits, starts with a letter, and follows the service-name rule, such as `transcript`.
-Core looks for an executable named `ncly-<domain>`, or a link to one. From M12, configured taps come first, as [Discovery and grants](core-spec.md#discovery-and-grants) defines.
-Then core searches the data folder's `extensions` folder, such as `~/.local/share/nicely/extensions/`, followed by each folder of `PATH`, in order.
-It skips empty or relative `PATH` entries, [reserved names](core-spec.md#command-tree), and names that break the domain rule, such as `ncly-hello.toml`.
-The first file found for a domain is its extension and hides any later one.
-Outside taps, core never resolves the link. The manifest, catalogs, and skill sit beside the path that it found.
-A tap call selects one immutable publication before any read, as [Discovery and grants](core-spec.md#discovery-and-grants) defines.
+A domain is lowercase letters and digits that start with a letter, such as `transcript`, as a service name is. Core looks for a file named `ncly-<domain>` that the user may execute, or a link to one: first in the `extensions` folder of the data folder, such as `~/.local/share/nicely/extensions/`, then in each folder of `PATH`, in order. It skips an empty or relative `PATH` entry, a reserved name of [core-spec.md](core-spec.md#command-tree), and every name whose domain breaks the rule above, such as `ncly-hello.toml`. The first file found for a domain is its extension and hides any later one. Core never resolves the link: the manifest, the catalogs, and the skill sit beside the path that it found.
+
+From M12, configured taps precede the data folder and `PATH`, as [Discovery and grants](core-spec.md#discovery-and-grants) defines.
+Core never resolves a link for the source. A tap call reads and launches from the publication that `current` names when the call starts.
 
 To dispatch `ncly <domain>`, core reads that domain's manifest and catalogs only. `ncly --help` and completion read every one, and `ncly --help` lists the extensions in their own section, apart from core's commands. Core never starts an extension to learn its commands. An extension whose manifest or `en` catalog is missing, unreadable, or invalid stays its domain's extension: `ncly <domain>`, its help included, answers `EXTENSION_INVALID` with exit 78 without starting it, and `ncly --help` and completion leave it out. A broken extension never affects another domain.
 
@@ -630,11 +627,9 @@ A new item has `output`, the output folder that will hold its result folder. An 
 
 A key reaches an extension only after a human grants that key to that extension in a terminal, through [ncly auth](core-spec.md#ncly-auth) `grant`, as [D030](decisions/D030-trusted-extensions.md) and [D058](decisions/D058-grants-by-path.md) decide. `--force` never grants a key. Grants are consent and protection against accidental leaks, not isolation.
 
-A grant binds a service to an extension's domain and source. Outside taps, the source is the absolute path where [Discovery](#discovery) found the executable, without resolving a link. The `path` of [ncly doctor](core-spec.md#ncly-doctor) reports that path, or `null` for a bundled extension. From M12, a tap extension uses its tap ID instead, as [Discovery and grants](core-spec.md#discovery-and-grants) defines. An extension from another source inherits no grant through its name. A new version at the same source keeps its grants. A key that it declares for the first time requires a human grant.
+A grant binds a service to an extension's domain and source. The source of an external extension is the absolute path where [Discovery](#discovery) found its executable, without resolving a link, as the `path` of [ncly doctor](core-spec.md#ncly-doctor) reports it: `null` for a bundled extension. [M12](../milestones/M12-taps.md) adds the identity of a tap. An extension from another source inherits no grant through its name, such as another `ncly-transcript` earlier in `PATH`. A new version at the same path keeps its grants, and a key that it declares for the first time reaches it only after a human grants it.
 
 Grants stay on one machine, in `grants.json` in the state folder, such as `~/.local/state/nicely/grants.json`. The file is one JSON object with `format_version`, `1`, and `grants`, an array of objects with `service`, `domain`, `path`, and `granted_at`, an ISO 8601 time, and holds one grant for each service and domain. Core writes it as [Record format](#record-format) writes a record, under the lock `grants.lock` beside it, and revalidates it under that lock. A missing file holds no grant. A file that core cannot read, or that holds another `format_version`, grants nothing, and `ncly auth grant`, `revoke`, and `status` fail with `CONFIG_INVALID`, whose hint names the file.
-
-M12 adds optional `tap`, the canonical tap ID, to a grant object. When present, `tap` supplies the source comparison, independently of `path`. The required `path` still records where discovery found the executable at grant time. Without `tap`, a grant applies only to a non-tap source. Existing path grants stay unchanged, and no migration grants access. An older reader ignores `tap` and still compares the recorded path. Thus a publication at a new path inherits nothing through that reader.
 
 When core starts a command of an extension, it passes the key of each service that the command's `requires.keys` declares and that a human granted to this extension at its source, from the service's variable or, when the variable is empty, from the keychain, as [Keys](#keys) reads it. It passes no other key. `NCLY_MISSING_KEYS` names each declared service whose key it does not pass, as `<service>=<code>`, separated by commas, in the order of `requires.keys`, such as `deepgram=KEY_NOT_GRANTED`:
 

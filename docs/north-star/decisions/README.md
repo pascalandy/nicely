@@ -63,7 +63,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D055](D055-completion-values-from-a-list-command.md) | Complete an extension's values from a list command |
 | [D056](D056-extension-status-command.md) | Let an extension add doctor checks through its status command |
 | [D057](D057-auth-edge-cases.md) | Settle the edge cases of ncly auth with gh, Docker, and clig.dev |
-| [D058](D058-grants-by-path.md) | Grant a key to an extension at its source, and let the extension answer what it lacks |
+| [D058](D058-grants-by-path.md) | Grant a key to an extension at its path, and let the extension answer what it lacks |
 | [D059](D059-no-buttons.md) | Let a human type each answer, and show no button |
 | [D060](D060-style-the-plain-text.md) | Style the text that a pipe gets, and let the terminal wrap it |
 | [D061](D061-tap-publications.md) | Install complete tap publications without a local build |
