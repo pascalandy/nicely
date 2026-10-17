@@ -62,9 +62,7 @@ grep '^INT$' grandchild.sig
 # still answers INTERRUPTED, keeps the answer's key, and on Linux, where the orphan
 # becomes its child, stops the grandchild. Each run may win the race or lose it
 exec sh group.sh --instant
-grep -count=30 '^130$' exit.txt
 exec sh group.sh --trap
-grep -count=30 '^130$' exit.txt
 
 # Without --json, core adds its error block only when the extension's exit code differs from the signal's
 rm grandchild.pid grandchild.sig
@@ -87,16 +85,14 @@ grep '^TERM$' grandchild.sig
 
 -- group.sh --
 # group.sh <flag> sends Ctrl-C to the process group of ncly and the extension 30 times,
-# runs hello wait with the flag each time, and appends each exit code of ncly to
-# exit.txt. Each answer must be INTERRUPTED, and with --trap it keeps output_dir.
-# A failure prints the number of its run, the exit code of ncly, and answer.txt to
-# stderr, so the test log keeps them.
+# and runs hello wait with the flag each time. Each run must exit 130 with an INTERRUPTED
+# answer, and with --trap the answer keeps output_dir. A failure prints the number of
+# its run, the exit code of ncly, and answer.txt to stderr, so the test log keeps them.
 fail() {
   echo "run $run: $1. ncly exited $(cat run.txt). answer.txt, $(wc -c < answer.txt | tr -d ' ') bytes:" >&2
   cat answer.txt >&2
   exit 1
 }
-rm -f exit.txt
 run=0
 while [ $run -lt 30 ]; do
   run=$((run + 1))
@@ -106,7 +102,7 @@ while [ $run -lt 30 ]; do
   while [ ! -f grandchild.pid ]; do sleep 0.01; done
   kill -INT $relay
   wait $relay
-  cat run.txt >> exit.txt
+  grep -qx 130 run.txt || fail 'ncly did not exit 130'
   grep -q '"code":"INTERRUPTED"' answer.txt || fail 'the answer is not INTERRUPTED'
   if [ "$1" = --trap ]; then
     grep -q '"output_dir"' answer.txt || fail 'the answer has no output_dir'
