@@ -28,6 +28,14 @@ The docs form layers like the code: the glossary fixes the words, the vision and
 
 Use these writing practices from ASD-STE100 Simplified Technical English, Issue 9 (January 15, 2025), for English prose. In procedures, give one instruction per sentence and use the imperative form. Limit procedural sentences to 20 words. In descriptive text, give each sentence one topic and limit it to 25 words. Keep command syntax and code identifiers exact.
 
+## Run macOS checks on the mini
+
+The `fleet` skill names Pascal's machines. The mini is the agents' Mac and stays on. The mbp is Pascal's laptop, and it is often offline.
+
+1. Run each check that needs macOS on the mini, through the `fleet` skill.
+2. Use the mbp only when the mini cannot run the check.
+3. In the report, name the machine. When you used the mbp, give the reason.
+
 ## Merge on the brigade's rule or Pascal's word
 
 Open each pull request ready for review. In a `brigade-mode` run, the brigade decides when to merge. Otherwise, merge only when Pascal says "merge" for that pull request.
