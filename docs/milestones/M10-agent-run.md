@@ -5,7 +5,7 @@ Version: v0.10.0
 
 ## Demo
 
-`ncly agent run` answers through claude or pi with tools off, and `ncly run view` shows the record of that run.
+With a stub claude or pi harness, `ncly agent run` answers with tools off, and `ncly run view` shows the record of that run.
 
 ## Scope
 
@@ -19,7 +19,6 @@ Version: v0.10.0
 | M10-T2 | Run list | agent | M10-T1 | todo |
 | M10-T3 | Run view | agent | M10-T1 | todo |
 | M10-T4 | Cancellation and failures | agent | M10-T1 | todo |
-| M10-T5 | Real harness check | agent | M10-T4 | todo |
 
 ### M10-T1 Records and agent run
 
@@ -28,7 +27,7 @@ Version: v0.10.0
 
 `ncly agent run` sends the task to a stub harness and answers with `run_id` and the answer, which it also saves as the step's artifact in `runs/<run-id>/`. Before the harness starts, the SDK writes the record atomically under its lock and completes the persistence barrier, and the step turns `unknown`. A failed barrier prevents the start.
 
-The record has one item with the key `task`. The task's fingerprint in `inputs` identifies what a call with the same run ID must match.
+The record has one item with the key `task`.
 
 With `--run-id`, the caller's ID reaches `ncly-agent` through dispatch and names its record, `runs/<id>.json`. The same call again returns the saved answer, and the counted stub harness runs once. After the config changes the model of the profile that the call names, the same call still returns the saved answer, with the first call's `model` and `duration_ms`, and starts no harness, because the record keeps the resolved profile under `resolved`, which that call does not compare. The same ID with another task is `USAGE_INVALID`, the ID of a run whose paid step left `pending` without completing is `RESUME_UNSAFE`, and both start no harness. Two calls with one new ID at the same time start one harness: while the first holds the run lock, the second exits 75 with `TEMPORARY`. A record file that cannot be read, and one that cannot be parsed, each make the same call answer `RESUME_UNSAFE`, and no harness starts.
 
@@ -57,9 +56,6 @@ Ctrl-C, SIGTERM, and the timeout stop the harness's process tree and leave the s
 
 Build the boundary hook, which lives only in the test binary and kills the process at a chosen step boundary, as SIGKILL would. The boundary scenario kills `ncly-agent` at each of its step's boundaries. After each kill, core answers exit 1 with `RUNTIME`, and `ncly run view` reports `active` as `false`, with the step `pending` before its intent persists, `unknown` from then until its final status persists, and `completed` after. The counted stub harness ran zero times at every boundary before the effect and once at every boundary after it.
 
-### M10-T5 Real harness check
+## After this milestone
 
-- **Read:** [Adapters](../../extensions/agent/spec.md#adapters)
-- **Proves:** the observations in the pull request, and the check date in `extensions/agent/spec.md`
-
-Recheck the adapters' flags against the installed `claude` and `pi`, then run each one once with material that tries to use tools, hooks, MCP servers, and loaded extensions, and observe that it cannot. Check how each adapter detects a machine policy that it cannot override, such as the hooks of a managed settings file of Claude Code, and record it in the spec. A stub accepting flags or a harness returning text is not that proof. Each run may bill a little, so ask Pascal before starting.
+When Pascal authorizes two small paid calls, recheck the [adapters' flags](../../extensions/agent/spec.md#adapters) against the installed `claude` and `pi`. Run each one once with material that tries to use tools, hooks, MCP servers, and loaded extensions, and observe that it cannot. Check how each adapter detects a machine policy that it cannot override, such as the hooks of a managed settings file of Claude Code, and record the observations and check date in `extensions/agent/spec.md`. A stub accepting flags or a harness returning text is not that proof. This check informs Pascal's Epic 3 demo and blocks no later milestone.
