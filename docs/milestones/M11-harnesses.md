@@ -9,7 +9,7 @@ Version: v0.11.0
 
 ## Scope
 
-Add `codex` beside the `claude` and `pi` adapters of M09. Grok and OpenCode wait in [M99](M99-parking-lot.md). Use the `headless` skill's existing adapters and notes where available. Each adapter declares supported versions, tools-off behavior, input delivery, cancellation, and result parsing, and its declared modes are validated on the real installed harness before they are enabled.
+Add `codex` beside the `claude` and `pi` adapters of M09. Grok and OpenCode wait in [M99](M99-parking-lot.md). Use the `headless` skill's existing adapters and notes where available. Each adapter declares supported versions, tools-off behavior, input delivery, cancellation, and result parsing, and its flags match the installed harness's help. Pascal's real task under **After this milestone** confirms the `--tools` mode.
 
 `--check-unchanged` reports the files that a run changed, with the limits that [ncly agent](../../extensions/agent/spec.md#ncly-agent) states. Write-prevention sandboxes and cost tracking stay out of scope.
 
@@ -28,7 +28,7 @@ Add `codex` beside the `claude` and `pi` adapters of M09. Grok and OpenCode wait
 - **Read:** [Adapters](../../extensions/agent/spec.md#adapters), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `extensions/agent/testdata/script/agent_codex.txtar`
 
-Add the `codex` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding, stdin delivery, and answer checks for `--tools`. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
+Add the `codex` adapter in `extensions/agent/`, through `sdk/runner/`. Its scenario proves version checks, key forwarding as `CODEX_API_KEY` in the child environment, stdin delivery, and answer checks for `--tools`. A tools-off request, including a dry run, answers `CAPABILITY_UNSUPPORTED` without starting the counted harness.
 
 ### M11-T2 Check unchanged
 
