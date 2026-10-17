@@ -59,6 +59,8 @@ type entry struct {
 	group       bool
 	// requirements holds the entries of the manifest's programs table.
 	requirements map[string]contract.Requirement
+	// keys holds the entries of the manifest's keys table.
+	keys map[string]contract.KeyEntry
 }
 
 // listing is the answer of ncly describe for no path or a group.
@@ -147,7 +149,7 @@ type effectsDetail struct {
 
 type requiresDetail struct {
 	Bins []binDetail `json:"bins"`
-	Keys []named     `json:"keys"`
+	Keys []keyDetail `json:"keys"`
 }
 
 // binDetail is a program that a command may run, with the keys of its
@@ -157,8 +159,11 @@ type binDetail struct {
 	contract.Requirement
 }
 
-type named struct {
-	Name string `json:"name"`
+// keyDetail is a service whose key a command may need, with optional from
+// the service's entry in the manifest's keys table, or false without one.
+type keyDetail struct {
+	Name     string `json:"name"`
+	Optional bool   `json:"optional"`
 }
 
 type modesDetail struct {
@@ -180,13 +185,16 @@ func (e entry) detail(p *i18n.Printer, lang config.Value, values config.Values) 
 		FlagGroups: []groupDetail{},
 		Result:     describeResult(d),
 		Effects:    effectsDetail(d.DeclaredEffects()),
-		Requires:   requiresDetail{Bins: []binDetail{}, Keys: names(d.Requires.Keys)},
+		Requires:   requiresDetail{Bins: []binDetail{}, Keys: []keyDetail{}},
 		Modes:      modesDetail(d.Modes),
 		Config:     []config.Value{lang},
 		Examples:   append([]string{}, d.Examples...),
 	}
 	for _, name := range d.Requires.Bins {
 		out.Requires.Bins = append(out.Requires.Bins, binDetail{name, e.requirements[name]})
+	}
+	for _, name := range d.Requires.Keys {
+		out.Requires.Keys = append(out.Requires.Keys, keyDetail{name, e.keys[name].Optional})
 	}
 	for _, key := range d.Config {
 		out.Config = append(out.Config, values.Under(key)...)
@@ -246,14 +254,6 @@ func mustSchema(data []byte) map[string]any {
 		panic(err)
 	}
 	return schema
-}
-
-func names(list []string) []named {
-	out := []named{}
-	for _, name := range list {
-		out = append(out, named{name})
-	}
-	return out
 }
 
 // typedValues turns accepted values into JSON values of their type.
@@ -344,7 +344,7 @@ func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 		for _, d := range e.manifest.Commands {
 			en := entry{
 				Path: strings.Join(d.Path, " "), Summary: text.T(d.Summary), Source: sourceExtension,
-				declaration: d, text: text, group: !e.manifest.Runs(d), requirements: e.manifest.Requirements,
+				declaration: d, text: text, group: !e.manifest.Runs(d), requirements: e.manifest.Requirements, keys: e.manifest.Keys,
 			}
 			if e.bundled {
 				en.Source = sourceBundled

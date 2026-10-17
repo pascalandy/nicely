@@ -488,3 +488,36 @@ func TestAConsumerReadsAServiceWithAndWithoutGrants(t *testing.T) {
 		}
 	}
 }
+
+func TestAConsumerReadsAKeyWithAndWithoutOptional(t *testing.T) {
+	// Entries of requires.keys as ncly describe gives them, written out:
+	// before M08 an entry holds the name alone, and from M08 it adds
+	// optional, false unless the manifest's keys table marks the key
+	// optional.
+	for _, c := range []struct {
+		line     string
+		optional bool
+	}{
+		{`{"name":"anthropic"}`, false},
+		{`{"name":"anthropic","optional":false}`, false},
+		{`{"name":"anthropic","optional":true}`, true},
+	} {
+		var key struct {
+			Name     string `json:"name"`
+			Optional bool   `json:"optional"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &key); err != nil {
+			t.Fatal(err)
+		}
+		if key.Name != "anthropic" || key.Optional != c.optional {
+			t.Errorf("consumer read %+v from %s", key, c.line)
+		}
+		// A consumer written before M08 reads the name alone.
+		var older struct {
+			Name string `json:"name"`
+		}
+		if err := json.Unmarshal([]byte(c.line), &older); err != nil || older.Name != "anthropic" {
+			t.Errorf("older consumer read %+v from %s", older, c.line)
+		}
+	}
+}
