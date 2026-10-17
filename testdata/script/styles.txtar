@@ -102,10 +102,11 @@ stdout '^ALPHA$'
 stdout '^  Run `ncly doctor` first\.$'
 stdout '^USE `--dry-run` FIRST$'
 
-# A link keeps its destination as the skill writes it, so a relative path still resolves
-# against the folder, and a heading keeps the case of a link
+# A link or an image keeps its destination as the skill writes it, so a relative path still
+# resolves against the folder, and a heading keeps the case of a link and of an image
 stdout '^  Then run the command, as the check scripts/check\.sh does\.$'
 stdout '^READ https://example\.com/CasePath$'
+stdout '^SEE the screen images/CasePath\.png$'
 ! stdout '\x1b\[[0-9;]*m'
 
 # A pipe gets the file as it is, after the comment that gives the folder. The bundled skill
@@ -170,6 +171,8 @@ Run `ncly doctor` first.
 Then run the command, as [the check](scripts/check.sh) does.
 
 ## Read https://example.com/CasePath
+
+## See ![the screen](images/CasePath.png)
 -- skills/beta/SKILL.md --
 ---
 name: beta
