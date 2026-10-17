@@ -228,6 +228,18 @@ other = "down"
 description = "Key help under a choice of a form, after the key /: pressing it starts typing a filter that narrows the options."
 other = "filter"
 
+["form.key_esc"]
+description = "Key help under a choice of a form, while the human filters it: the name of the Escape key, which form.set_filter or form.clear_filter follows."
+other = "esc"
+
+["form.set_filter"]
+description = "Key help under a choice of a form, after the name of the Escape key in form.key_esc, while the human types a filter: pressing it keeps the filter and returns to the options."
+other = "set filter"
+
+["form.clear_filter"]
+description = "Key help under a choice of a form, after the name of the Escape key in form.key_esc, once a filter is set: pressing it removes the filter."
+other = "clear filter"
+
 ["form.complete"]
 description = "Key help under a text field of a form that suggests values, after the key ctrl+e: pressing it accepts the suggestion that the field shows."
 other = "complete"

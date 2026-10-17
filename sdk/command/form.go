@@ -66,12 +66,15 @@ func (f *Form) PrintNext(code int) error {
 // FormKeys returns the help of a form's keys in the language of p.
 func FormKeys(p *i18n.Printer) tui.Keys {
 	return tui.Keys{
-		Enter:    p.T("form.key_enter"),
-		Submit:   p.T("form.submit"),
-		Up:       p.T("form.up"),
-		Down:     p.T("form.down"),
-		Filter:   p.T("form.filter"),
-		Complete: p.T("form.complete"),
+		Enter:       p.T("form.key_enter"),
+		Esc:         p.T("form.key_esc"),
+		Submit:      p.T("form.submit"),
+		Up:          p.T("form.up"),
+		Down:        p.T("form.down"),
+		Filter:      p.T("form.filter"),
+		SetFilter:   p.T("form.set_filter"),
+		ClearFilter: p.T("form.clear_filter"),
+		Complete:    p.T("form.complete"),
 	}
 }
 

@@ -21,12 +21,14 @@ import (
 // with Ctrl-C.
 var ErrInterrupted = errors.New("tui: interrupted")
 
-// Keys is the help of a form's keys, in the active language: the name of
-// Enter, then what each key does.
+// Keys is the help of a form's keys, in the active language: the names of
+// Enter and Escape, then what each key does.
 type Keys struct {
-	Enter, Submit string
-	// Up, Down, and Filter are what ↑, ↓, and / do in a choice.
-	Up, Down, Filter string
+	Enter, Esc, Submit string
+	// Up, Down, and Filter are what ↑, ↓, and / do in a choice, and
+	// SetFilter and ClearFilter what Escape does while the human filters
+	// it and once a filter is set.
+	Up, Down, Filter, SetFilter, ClearFilter string
 	// Complete is what ctrl+e does in a text field that suggests values.
 	Complete string
 }
@@ -155,6 +157,8 @@ func newForm(keys Keys, fields ...huh.Field) *huh.Form {
 	keymap.Select.Up.SetHelp("↑", keys.Up)
 	keymap.Select.Down.SetHelp("↓", keys.Down)
 	keymap.Select.Filter.SetHelp("/", keys.Filter)
+	keymap.Select.SetFilter.SetHelp(keys.Esc, keys.SetFilter)
+	keymap.Select.ClearFilter.SetHelp(keys.Esc, keys.ClearFilter)
 	return huh.NewForm(huh.NewGroup(fields...)).WithTheme(huh.ThemeFunc(theme)).WithKeyMap(keymap)
 }
 

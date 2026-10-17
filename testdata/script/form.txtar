@@ -150,7 +150,8 @@ stdout '┃ --mood <word>\n'
 stdout 'Next time:\n  ncly hello pick Ada --mood calm --right\n\z'
 exists picked
 
-# Under the pseudo-locale, every word of the form comes from a catalog
+# Under the pseudo-locale, every word of the form comes from a catalog, the key help of a
+# choice that the human filters included
 exec pty pseudo.txt ncly --lang en-XA cafe order latte --size small
 pseudo stdout --to-go --table <number> ncly cafe order latte --size small Order taken
 
@@ -207,7 +208,10 @@ name	Ada
 right	j\c
 	^M
 -- pseudo.txt --
---to-go	^M
+--to-go	/\c
+šéţ	-\c
+	^[
+çļéáŕ	^M
 -- bin/tmux --
 #!/bin/sh
 echo "$@" >> "$WORK/tmux.log"
