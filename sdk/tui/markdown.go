@@ -8,10 +8,10 @@ import (
 )
 
 // Markdown renders a skill's Markdown in the look of ncly skill view: the
-// style of the help, with headings in bold uppercase, code in cyan, and
-// dashes for bullets, wrapped at width. Without color, code keeps its
-// backticks, so it stays apart from the prose. A link or an image shows its
-// destination as the skill writes it, so a relative path still resolves
+// style of the help, with headings in bold uppercase, inline code in cyan,
+// and dashes for bullets, wrapped at width. Without color, inline code keeps
+// its backticks, so it stays apart from the prose. A link or an image shows
+// its destination as the skill writes it, so a relative path still resolves
 // against the skill's folder. Glamour writes the styles, and Output turns
 // them into plain text when color is off.
 func Markdown(markdown string, width int, noColor bool) (string, error) {
