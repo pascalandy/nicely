@@ -4,6 +4,10 @@
 
 [Deferred agent features](../../docs/milestones/M99-parking-lot.md#agent-extras) include other harnesses, named profiles, providers, model discovery, a Codex API key, and post-run file comparison. They are not prerequisites of this extension.
 
+## Install
+
+`just install`, from a checkout, builds `ncly` into `~/.local/bin/`. It builds each first-party external extension, such as `ncly-agent`, into the `extensions` folder of Nicely's data folder, such as `~/.local/share/nicely/extensions/`. It writes the extension's manifest, catalogs, and skill beside it, as `ncly-agent.toml`, `ncly-agent.locales/`, and `ncly-agent.skill/`, where [Discovery](../../docs/north-star/contract.md#discovery) finds them. It honors an absolute `XDG_DATA_HOME`. It builds every file before it replaces an installed one, so a failed build keeps the previous install.
+
 ## ncly agent
 
 ```
@@ -47,7 +51,7 @@ Stdout contains JSONL events. The answer comes from the output file and must con
 
 Codex has no verified switch that removes all tools, so this adapter supports only explicit `--tools`. The flags above retain the help check recorded on 2026-10-16 in [PR #156](https://github.com/pascalandy/nicely/pull/156). Real task compatibility still needs the independent installed-harness check in M10. The adapter uses `sdk/runner` for execution, cancellation, and environment filtering.
 
-Declare Codex as a required program with its local version probe. Existing `ncly doctor agent` checks that declaration. A separate `agent status` command and a matrix of configured harnesses would duplicate that first check.
+The manifest declares `codex` in `programs` as a required program, not `conditional`, with `version = "0.162.1"` and the default probe `--version`. Its `install` holds `brew install --cask codex` and `sudo pacman -S openai-codex`. Existing `ncly doctor agent` checks that declaration, as [Required programs](../../docs/north-star/core-spec.md#required-programs) defines: the `agent.codex` check fails with `PREREQ_MISSING` for a missing or older Codex, or a probe that prints no version, and its hint and `next` hold the install command of this machine. Doctor only runs `codex --version`, so it starts no task. A separate `agent status` command and a matrix of configured harnesses would duplicate that first check.
 
 Codex uses its own existing login. `agent` declares no API key and receives none from Nicely. Keep the runner's removal of `*_API_KEY` variables. A user configures the native login outside Nicely; the extension never starts an interactive login. A Codex API key waits in [M99](../../docs/milestones/M99-parking-lot.md#agent-extras).
 
