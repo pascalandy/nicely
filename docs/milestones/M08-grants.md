@@ -11,14 +11,14 @@ A human grants the `deepgram` key to a test extension, which then receives it, w
 
 Implement [Grants](../north-star/contract.md#grants), the `grant` and `revoke` commands of [ncly auth](../north-star/core-spec.md#ncly-auth), and the grant checks of [Required keys](../north-star/core-spec.md#required-keys), as [D058](../north-star/decisions/D058-grants-by-path.md) decides. The extension host in `internal/cli` owns grants, as the [code map](../north-star/architecture.md#code-map) says, and writes the grants file through the durable writes and the locks of `sdk/platform`. An extension learns which declared key it lacks from `NCLY_MISSING_KEYS`, and a Go extension through `Call.Key` of `sdk/extension`. The grant prompt is the confirmation of [M07](M07-forms.md), in the look that Pascal picked.
 
-The scenarios declare services in the manifests of the shell fixture of M01 and of the Go fixture of M02, and use the test keychain and the `pty` command of [M06](M06-auth.md). A fixture records a SHA-256 of each key that it receives, never the key, so no key appears on stdout or stderr.
+The scenarios declare services in the manifests of shell fixtures and of the Go fixture `keyed`, which stays apart from the `hello` of M02 because verify-nicely installs `hello` in every run, and use the test keychain and the `pty` command of [M06](M06-auth.md). A fixture records a SHA-256 of each key that it receives, never the key, so no key appears on stdout or stderr.
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M08-T1 | Grant and revoke | agent | — | done |
-| M08-T2 | Keys reach granted extensions | agent | M08-T1 | todo |
+| M08-T2 | Keys reach granted extensions | agent | M08-T1 | done |
 | M08-T3 | Source identity | agent | M08-T2 | todo |
 | M08-T4 | Status and doctor | agent | M08-T3 | todo |
 | M08-T5 | Optional keys | agent | M08-T4 | todo |
