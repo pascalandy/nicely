@@ -305,7 +305,7 @@ func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys 
 		{p.T("run.view.active"), held},
 		{p.T("run.view.started"), rec.StartedAt},
 		{p.T("run.view.updated"), rec.UpdatedAt},
-		{p.T("run.view.attempts"), strconv.Itoa(rec.Attempts)},
+		{p.T("run.view.attempts"), p.Number(float64(rec.Attempts), 0)},
 		{p.T("run.view.ncly"), rec.NclyVersion},
 	})
 	for _, section := range []struct{ heading, key string }{
