@@ -98,6 +98,7 @@ test *args:
     # Go's test cache never rechecks a file outside the tools module, such as the docs or the release workflow, so these tests run uncached.
     (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
+    bash scripts/release-verify-test.sh
     bash scripts/test-hook-env.sh
     bash scripts/check-layers-test.sh
 
@@ -129,6 +130,11 @@ release-lint:
 [group('checks')]
 release-check version:
     bash scripts/release-check.sh {{ quote(version) }}
+
+# Check a published release and the formula of the Homebrew tap, without changing either
+[group('checks')]
+release-verify version:
+    bash scripts/release-verify.sh {{ quote(version) }}
 
 # Fail when go.mod or tools/go.mod needs tidying
 [group('checks')]
