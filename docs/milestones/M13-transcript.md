@@ -1,11 +1,11 @@
 # M13 Transcript
 
-Status: planned
+Status: ready
 Version: v0.13.0
 
 ## Demo
 
-One explicit YouTube URL produces verified transcript files and an inspectable run through real `uv`, the Python program, and a test transport.
+One explicit YouTube URL produces verified transcript files and an inspectable run through real `uv`, the Python engine, and a test transport.
 
 ## Scope
 
@@ -14,96 +14,87 @@ It installs with the `just install` of [M09](M09-agent-profiles.md).
 The [transcript spec](../../extensions/transcript/spec.md) defines one YouTube video and one `transcribe` step.
 A human grants its required Deepgram key.
 
-Copy the existing program from `authoring/andy/transcript/` in `pascalandy/skills`, with its tests and license material.
-Embed it with `go:embed`, extract it atomically into Nicely's cache, and run it through `uv`.
-Keep its existing transcription and Arc cookie path.
-Leave its other source features unexposed; this milestone does not port them to Go.
+Copy only the YouTube engine of `authoring/andy/transcript/` in `pascalandy/skills` at `0c9c4a2`, with the tests of the code it keeps.
+Leave out summary, Zoom, queues, prompts, discovery, previews, progress, and the legacy CLI.
+Each new file stays under 10,000 bytes, as `just limits` requires.
+Embed the engine with `go:embed`, extract it into Nicely's cache, and run it through `uv`.
 
-The first command retains durable intent before paid dispatch, verified artifacts, run locks, cancellation, and replay of verified results.
+The command records intent before paid dispatch, verifies artifacts, locks runs, handles cancellation, and replays verified results.
 An incomplete run never causes a second upload under the same run ID.
-Summary, multi-step resume, and extra transcript features are in
+Summary, resume, and extra transcript features stay in
 [M99](M99-parking-lot/transcript-summary.md), [M99](M99-parking-lot/resume.md), and
 [M99](M99-parking-lot/transcript-extras.md).
 
-Scenarios use the test keychain and stubs for failure injection and counted calls.
-One path uses actual Go, real `uv`, and the actual Python program with a test-only Deepgram transport.
+Scenarios use the test keychain, stubs, and counted calls.
+One path runs real Go, real `uv`, and the engine with a test transport that only the test binary installs.
 No scenario sends a paid request or adds a production endpoint override.
-These are implementation requirements; this planned milestone has no runtime proof yet.
-
-## Open questions
-
-Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/spec.md), then delete this section.
-
-- Which source revision to copy, and how `just check` runs its ruff, pyright, and pytest checks through `uv`
-- How a test-only transport reaches the actual Python program without a production endpoint override
-- Which files the program writes besides the three transcripts, and when, so recorded completion covers its actual outputs
-- Which download dependencies an empty-cache execution needs, including any `ffmpeg` or JavaScript runtime requirement, and their manifest checks
-- Which source cookie behavior proves one useful YouTube path, including Arc on macOS, without requiring a browser matrix
-- How Go verifies usable transcript content and complete artifact evidence after a lost final protocol message
+Each card grows the transcript skill with what it ships.
 
 ## Cards
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M13-T1 | Python program | agent | — | todo |
+| M13-T1 | Python engine | agent | — | todo |
 | M13-T2 | Protocol and dry run | agent | M13-T1 | todo |
 | M13-T3 | Transcription with a record | agent | M13-T2 | todo |
 | M13-T4 | Failures and replay | agent | M13-T3 | todo |
-| M13-T5 | Interruption and contenders | agent | M13-T3 | todo |
+| M13-T5 | Interruption and contenders | agent | M13-T3, M13-T4 | todo |
 
-### M13-T1 Python program
+### M13-T1 Python engine
 
-- **Read:** [Protocol with the Python program](../../extensions/transcript/spec/protocol.md)
-- **Proves:** `extensions/transcript/python/`, whose tests run in just check
+- **Read:** [Output and cookies](../../extensions/transcript/spec/output-and-cookies.md), [Protocol with the Python program](../../extensions/transcript/spec/protocol.md)
+- **Proves:** `extensions/transcript/python/`, whose checks run in just check
 
-Copy the program and wire its checks through `uv`.
-Its tests save a transcript through the test-only Deepgram transport.
-Preserve the existing transcription path while adding the JSON protocol that the wrapper needs.
+Copy the engine and the tests of the code it keeps.
+Run ruff, pyright, and pytest through `uv` in a `python` recipe that `check` runs.
+Fix the nine pyright errors of the source rather than suppress them.
+Goldens made by the source program at `0c9c4a2` prove the three files for one recorded Deepgram response.
+`PROVENANCE.md` names the source SHA, the MIT notice, the removed features, and each intentional change.
 
 ### M13-T2 Protocol and dry run
 
-- **Read:** [Protocol with the Python program](../../extensions/transcript/spec/protocol.md), [Dry-run answer](../north-star/contract/dry-run-answer.md), [Output and cookies](../../extensions/transcript/spec/output-and-cookies.md)
-- **Proves:** `extensions/transcript/testdata/script/transcript_protocol.txtar`, `extensions/transcript/testdata/script/transcript_dry_run.txtar`
+- **Read:** [Protocol with the Python program](../../extensions/transcript/spec/protocol.md), [Output and cookies](../../extensions/transcript/spec/output-and-cookies.md), [Dry-run answer](../north-star/contract/dry-run-answer.md)
+- **Proves:** `extensions/transcript/testdata/script/transcript_protocol.txtar`, `extensions/transcript/testdata/script/transcript_dry_run.txtar`, `extensions/transcript/python/`
 
-Embed and extract the program, then exchange one `request` and `plan` through `uv`.
-A stub proves Go's protocol handling; real `uv` and Python prove an empty-cache dry run.
-Compare user files, config, keychain, and state before and after.
-Only documented cache preparation is allowed: no key read, download, paid request, record, or result folder.
-Check empty result folders explicitly because `snapshot` ignores folders.
+Add the JSON Lines protocol to the engine, then embed, extract, and run it from Go.
+Python tests prove each sequence rule and each row of the program-code table.
+Unlike the source, a 5xx after the upload is `deepgram_unknown`, and no retry repeats an upload.
+yt-dlp gets `--no-playlist` and `--ignore-config`, and a cookie flag only when `browser` is `arc`.
+The script header asks for yt-dlp at its minimum or newer and pins every other dependency.
+A stub `uv` proves that Go refuses a missing plan, a plan for another item, and an unknown version.
+Real `uv` and Python prove the dry run reads no key and creates no record or result folder.
+Add the transcript feature to verify-nicely, and create the transcript skill.
 
 ### M13-T3 Transcription with a record
 
-- **Read:** [Records and replay](../../extensions/transcript/spec/records-and-replay.md), [Protocol with the Python program](../../extensions/transcript/spec/protocol.md), [Record format](../north-star/contract/record-format.md)
-- **Proves:** `extensions/transcript/testdata/script/transcript_run.txtar`, `extensions/transcript/testdata/script/transcript_barrier.txtar`, `extensions/transcript/testdata/script/transcript_keys.txtar`
+- **Read:** [Records and replay](../../extensions/transcript/spec/records-and-replay.md), [Protocol with the Python program](../../extensions/transcript/spec/protocol.md), [Record format](../north-star/contract/record-format.md), [Run IDs](../north-star/contract/run-ids.md), [ncly run](../north-star/core-spec.md#ncly-run)
+- **Proves:** `extensions/transcript/testdata/script/transcript_run.txtar`, `extensions/transcript/testdata/script/transcript_barrier.txtar`, `extensions/transcript/testdata/script/transcript_boundaries.txtar`
 
-Record the one validated item before user-side writes or paid dispatch.
-Persist its destination and intent before reservation, then complete the persistence barrier before sending `ack`.
-A failed barrier sends no acknowledgement and starts no upload.
-Prove one run through actual Go, real `uv`, Python, the test transport, and independently verified artifacts.
-Inspect its record in a new process with `ncly run view`.
-The answer contains one `results` item.
-Prove missing keys and grants, and a granted environment key when the keychain is unavailable.
+Record the plan, record each candidate folder, then create it with an exclusive `mkdir`.
+Complete the persistence barrier before `ack`; a failed barrier sends no `ack` and starts no upload.
+After the completed step, Go checks the three files, computes sizes and hashes, and syncs them before it records completion.
+Prove one real-uv run with one counted upload, then read it with `ncly run view` in a new process.
+The boundary scenario kills Go before and after intent and completion, then checks the record, files, uploads, and a repeat.
+A crash after a name collision leaves the existing folder untouched and starts no upload.
+Register `AUTH_REJECTED`; a 401 gives that item code under an overall `RUNTIME`.
 
 ### M13-T4 Failures and replay
 
-- **Read:** [Records and replay](../../extensions/transcript/spec/records-and-replay.md), [Retry safety](../north-star/contract/retry-safety.md), [Output](../north-star/contract/output.md)
-- **Proves:** `extensions/transcript/testdata/script/transcript_failures.txtar`, `extensions/transcript/testdata/script/transcript_protocol_errors.txtar`, `extensions/transcript/testdata/script/transcript_replay.txtar`
+- **Read:** [Records and replay](../../extensions/transcript/spec/records-and-replay.md), [Protocol with the Python program](../../extensions/transcript/spec/protocol.md), [Retry safety](../north-star/contract/retry-safety.md), [Keys](../north-star/contract/keys.md)
+- **Proves:** `extensions/transcript/testdata/script/transcript_failures.txtar`, `extensions/transcript/testdata/script/transcript_protocol_errors.txtar`, `extensions/transcript/testdata/script/transcript_replay.txtar`, `extensions/transcript/testdata/script/transcript_keys.txtar`
 
-Stop before paid dispatch and after dispatch but before the response.
-A 504 after upload counts exactly one request and leaves transcription unknown with exit 1.
-Keep pending failure causes, and handle malformed messages and timeouts as specified.
-After a paid intent, a repeated call with the same run ID returns only verified completed work.
-Complete recorded artifacts may resolve a lost final message locally, without another upload.
-Changed or incomplete evidence is refused; no override bypasses that refusal.
-A changed URL or explicit output argument fails before effects.
-Prove that invocation and replay refusals omit attempted results and keep their top-level code, while a failed transcription item uses the shared batch verdict.
+A 504 after the upload counts one upload and leaves the step unknown; a repeat refuses with `RESUME_UNSAFE`.
+A stub `uv` proves each protocol failure that the spec lists.
+A completed run replays after a config change without starting `uv` or uploading.
+A changed or missing artifact refuses, and another URL or `--output` fails before any effect.
+Prove missing keys, missing grants, an unavailable keychain, and a granted environment key.
 
 ### M13-T5 Interruption and contenders
 
-- **Read:** [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md), [Records and evidence](../north-star/contract/records-and-evidence.md)
+- **Read:** [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md), [Records and evidence](../north-star/contract/records-and-evidence.md), [Records and replay](../../extensions/transcript/spec/records-and-replay.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_cancel.txtar`, `extensions/transcript/testdata/script/transcript_contenders.txtar`
 
-Ctrl-C stops the process tree, preserves completed files, and returns `INTERRUPTED` with the available result paths.
-Two callers using one run ID never start two uploads.
-Two new runs choosing the same output parent never share a result folder.
-Lock failures use the overall retry verdict required by the effects already made.
+Ctrl-C after `ack` exits 130, keeps `output_dir` in the answer, and leaves no child process.
+SIGTERM exits 143, and a signal after durable completion keeps the completion.
+A second call under a busy run ID exits 75 and starts nothing.
+Two new runs with one title write two folders.
