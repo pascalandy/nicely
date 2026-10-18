@@ -68,4 +68,4 @@ Use the test-only boundary hook on this one paid step. Kill at every real bounda
 
 ## After this milestone
 
-Pascal authorizes one small Codex task when ready. An independent agent then checks dry run, execution, the saved answer, and replay with no second request on the installed harness. Record the version and evidence before claiming real Codex compatibility. A stub accepting flags is not that proof. No Claude, Pi, Grok, or OpenCode validation belongs to this check.
+Pascal authorizes one small Codex task when ready. An independent agent then checks dry run, execution, the saved answer, and replay with no second request on the installed harness. Record the version and evidence before claiming real Codex compatibility. A stub accepting flags is not that proof. No Claude, Pi, Grok, or OpenCode validation belongs to this check. Done on 2026-10-17: [#151](https://github.com/pascalandy/nicely/issues/151) records the result and links its proof.
