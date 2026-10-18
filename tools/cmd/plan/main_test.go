@@ -158,13 +158,75 @@ func TestStatus(t *testing.T) {
 	if err := run([]string{"status", root}, &out); err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
 	}
-	for _, w := range []string{"M00  done   1/1  Foundation\n", "M01  ready  0/3  Host  <- current\n", "todo  agent   M01-T3  Help  after M01-T1, M01-T2\n"} {
+	// M01-T3 waits on Pascal's M01-T1, so the order stops after M01-T2.
+	for _, w := range []string{
+		"M00  done   1/1  Foundation\n", "M01  ready  0/3  Host  <- current\n", "todo  agent   M01-T3  Help  after M01-T1, M01-T2\n",
+		"If each agent card succeeds, just next serves them in this order: M01-T2\n", "These agent cards wait on a card of Pascal: M01-T3\n",
+	} {
 		if !strings.Contains(out.String(), w) {
 			t.Errorf("status lacks %q:\n%s", w, out.String())
 		}
 	}
 	if strings.Contains(out.String(), "M99") {
 		t.Errorf("status lists the parking lot:\n%s", out.String())
+	}
+}
+
+// describe has the dependencies of M03, whose cards just next served in the
+// order T1, T2, T4, T5, T3 (#64).
+var describe = `# M01 Describe
+
+Status: ready
+Version: v0.1.0
+
+## Demo
+
+It describes.
+
+## Cards
+
+| Card | Title | Owner | Depends on | Status |
+|---|---|---|---|---|
+| M01-T1 | Listing | agent | — | todo |
+| M01-T2 | Detail | agent | M01-T1 | todo |
+| M01-T3 | Schemas | agent | M01-T2, M01-T5 | todo |
+| M01-T4 | Config | agent | M01-T2 | todo |
+| M01-T5 | Help | agent | M01-T2 | todo |
+` + describeSections
+
+var describeSections = func() string {
+	var b strings.Builder
+	for _, c := range []string{"M01-T1 Listing", "M01-T2 Detail", "M01-T3 Schemas", "M01-T4 Config", "M01-T5 Help"} {
+		b.WriteString("\n### " + c + "\n\n- **Read:** [Demo](#demo)\n- **Proves:** `proof.txt`\n")
+	}
+	return b.String()
+}()
+
+func TestStatusOrder(t *testing.T) {
+	root := repository(t, map[string]string{"M01-describe.md": describe})
+	file := filepath.Join(root, "docs", "milestones", "M01-describe.md")
+	var next, out, again strings.Builder
+	if err := run([]string{"next", root}, &next); err != nil {
+		t.Fatalf("%v\n%s", err, next.String())
+	}
+	if err := run([]string{"status", root}, &out); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+	if w := "If each agent card succeeds, just next serves them in this order: M01-T1, M01-T2, M01-T4, M01-T5, M01-T3\n"; !strings.Contains(out.String(), w) {
+		t.Errorf("status lacks %q:\n%s", w, out.String())
+	}
+	if strings.Contains(out.String(), "wait on a card of Pascal") {
+		t.Errorf("status finds a card of Pascal:\n%s", out.String())
+	}
+	// The order lives in memory: the plan and the choice of next stay as they were.
+	if data, err := os.ReadFile(file); err != nil || string(data) != describe {
+		t.Errorf("status changed the milestone file: %v\n%s", err, data)
+	}
+	if err := run([]string{"next", root}, &again); err != nil || again.String() != next.String() {
+		t.Errorf("next changed after status: %v\n%s", err, again.String())
+	}
+	if !strings.Contains(next.String(), "Next card: M01-T1 Listing") {
+		t.Errorf("next lacks M01-T1:\n%s", next.String())
 	}
 }
 

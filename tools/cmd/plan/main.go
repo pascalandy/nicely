@@ -1,7 +1,8 @@
 // Command plan reads the milestone files and prints the next card, shows the
-// progress of every milestone, or checks that the files keep the format that
-// AGENTS.md describes, that every link in the docs resolves, and that every
-// card the docs name exists. It takes the repository root:
+// progress of every milestone and the order of the current one's cards, or
+// checks that the files keep the format that AGENTS.md describes, that every
+// link in the docs resolves, and that every card the docs name exists. It
+// takes the repository root:
 //
 //	plan next|status|check <root>
 //
@@ -722,18 +723,7 @@ func next(out *strings.Builder, milestones []*milestone) {
 		}
 		return
 	}
-	var agent, pascal []*card
-	for _, c := range m.cards {
-		waiting := slices.ContainsFunc(c.depends, func(d string) bool { return m.card(d).status != "done" })
-		if c.status != "todo" || waiting {
-			continue
-		}
-		if c.owner == "agent" {
-			agent = append(agent, c)
-		} else {
-			pascal = append(pascal, c)
-		}
-	}
+	agent, pascal := startable(m, nil)
 	for _, c := range pascal {
 		fmt.Fprintf(out, "Waiting on Pascal: %s %s\n", c.id, c.title)
 	}
@@ -753,6 +743,41 @@ func next(out *strings.Builder, milestones []*milestone) {
 	fmt.Fprintln(out, "Follow \"Work on a card\" in AGENTS.md. The pull request sets this card to done.")
 	if m.status == "planned" {
 		fmt.Fprintf(out, "%s has no open questions, so this pull request also sets it to active.\n", m.id)
+	}
+}
+
+// startable returns the todo cards of m whose dependencies are done, by owner
+// and in the order of the table. next serves the first agent card. A card in
+// assumed counts as done, so status can plan ahead without changing a card.
+func startable(m *milestone, assumed map[string]bool) (agent, pascal []*card) {
+	done := func(c *card) bool { return c.status == "done" || assumed[c.id] }
+	for _, c := range m.cards {
+		waiting := slices.ContainsFunc(c.depends, func(d string) bool { return !done(m.card(d)) })
+		if done(c) || waiting {
+			continue
+		}
+		if c.owner == "agent" {
+			agent = append(agent, c)
+		} else {
+			pascal = append(pascal, c)
+		}
+	}
+	return agent, pascal
+}
+
+// order returns the agent cards of m in the order that next serves them, if
+// each one succeeds. Pascal's cards keep their real status, so the order
+// stops when every agent card left waits on one of them.
+func order(m *milestone) []*card {
+	assumed := map[string]bool{}
+	var cards []*card
+	for {
+		agent, _ := startable(m, assumed)
+		if len(agent) == 0 {
+			return cards
+		}
+		assumed[agent[0].id] = true
+		cards = append(cards, agent[0])
 	}
 }
 
@@ -787,6 +812,25 @@ func status(out *strings.Builder, milestones []*milestone) {
 		rows = append(rows, []string{c.status, c.owner, c.id, title})
 	}
 	out.WriteString(table("  ", rows))
+	served := order(current)
+	var ids, blocked, notes []string
+	for _, c := range served {
+		ids = append(ids, c.id)
+	}
+	for _, c := range current.cards {
+		if c.owner == "agent" && c.status == "todo" && !slices.Contains(served, c) {
+			blocked = append(blocked, c.id)
+		}
+	}
+	if len(ids) > 0 {
+		notes = append(notes, "If each agent card succeeds, just next serves them in this order: "+strings.Join(ids, ", "))
+	}
+	if len(blocked) > 0 {
+		notes = append(notes, "These agent cards wait on a card of Pascal: "+strings.Join(blocked, ", "))
+	}
+	if len(notes) > 0 {
+		fmt.Fprintf(out, "\n%s\n", strings.Join(notes, "\n"))
+	}
 }
 
 // table aligns rows in columns two spaces apart, after indent.
