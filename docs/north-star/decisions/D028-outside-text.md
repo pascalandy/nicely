@@ -2,7 +2,7 @@
 
 Decided 2026-10-05. Outside text reaches agents only with tools disabled. An adapter must enforce that mode or refuse. Trusted tasks receive tools only through explicit `--tools`.
 
-**Scope update, 2026-10-17.** [The Codex path](../../../extensions/agent/spec.md#ncly-agent) requires `--tools` because it cannot enforce tools-off. It accepts no outside text, including through `--task-file`. [Summary](../../milestones/M99-parking-lot.md#transcript-summary) waits for verified tools-off support.
+**Scope update, 2026-10-17.** [The Codex path](../../../extensions/agent/spec.md#ncly-agent) requires `--tools` because it cannot enforce tools-off. It accepts no outside text, including through `--task-file`. [Summary](../../milestones/M99-parking-lot/transcript-summary.md) waits for verified tools-off support.
 
 **Why.** A transcript or web page can contain instructions. The original transcript CLI used tool-free `claude --print` for this reason.
 

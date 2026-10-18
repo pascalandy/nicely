@@ -12,7 +12,7 @@ A fresh agent session discovers, checks, and runs the one-video transcript comma
 Finish the YouTube path of [M13](M13-transcript.md) with doctor checks, the transcript skill, and fresh-session evidence.
 The [transcript spec](../../extensions/transcript/spec.md) owns its behavior.
 Zoom, prompt discovery, `--open`, progress displays, and additional browser support remain in
-[M99](M99-parking-lot.md#transcript-extras).
+[M99](M99-parking-lot/transcript-extras.md).
 
 ## Open questions
 

@@ -11,7 +11,7 @@ Version: v0.10.0
 
 An agent task can bill and modify its working directory. Preserve a record before launch, a verified answer after success, and an honest result after interruption. This milestone implements one item, `task`, and one step, `paid`, through the record support in `sdk/`. [The agent spec](../../extensions/agent/spec.md#records-and-replay) fixes its inputs and evidence.
 
-The record format and run-ID rules still apply. Partial multi-step continuation, child-run recovery, effect-policy migration fixtures, and explicit resume stay in [M99](M99-parking-lot.md#resume). Do not implement them to prepare for transcript or another future consumer.
+The record format and run-ID rules still apply. Partial multi-step continuation, child-run recovery, effect-policy migration fixtures, and explicit resume stay in [M99](M99-parking-lot/resume.md). Do not implement them to prepare for transcript or another future consumer.
 
 Core keeps `run list` and `run view`: a human can recover a generated ID after losing output. They read the same records and need no index or database. Their text output takes the looks that [ncly run](../north-star/core-spec.md#ncly-run) records from M07; add no new design.
 

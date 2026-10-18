@@ -13,7 +13,7 @@ Version: v0.4.0
 
 [M03](M03-describe.md) comes first, so `skill` reads the skills of installed extensions through `ncly describe --json`, as an agent would, and needs no discovery code of its own.
 
-The `nicely` skill teaches only what this release can do, as [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill) says, and [M05](M05-doctor.md), [M06](M06-auth.md), [M10](M10-agent-run.md) add their lines. Explicit resume guidance waits in [M99](M99-parking-lot.md#resume). Its draft for this milestone:
+The `nicely` skill teaches only what this release can do, as [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill) says, and [M05](M05-doctor.md), [M06](M06-auth.md), [M10](M10-agent-run.md) add their lines. Explicit resume guidance waits in [M99](M99-parking-lot/resume.md). Its draft for this milestone:
 
 ```text
 Set NCLY_NO_INPUT=1 and NCLY_JSON=1 for every ncly call

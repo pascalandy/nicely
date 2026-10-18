@@ -41,105 +41,14 @@ Ideas that are kept but belong to no delivery milestone. To start one, select a 
 | homebrew-core | A formula in Homebrew's main repository | Nicely meets Homebrew's notability rules |
 | Windows | Support for Windows | Never planned. Revisit only on real demand |
 
-## Agent extras
+## Parked capabilities
 
-Parked from M09 and M11: Claude, Pi, Grok, and OpenCode adapters; a Codex API key; named
-profiles; provider selection; model catalogs; profile status screens; configurable system prompts; untrusted
-`--input`; built-in code review; `--check-unchanged` snapshots and guards; and migration of the existing `headless` skill.
-M09 and M10 keep one trusted task through the installed Codex CLI, native login, model and
-effort settings, dry run, durable execution, inspection, and cancellation.
+Each parked capability has its own file:
 
-Revisit each extra for a demonstrated workflow that the current path cannot serve. A second
-adapter must solve that need on its own. Model names in a brainstorm do not create an adapter
-matrix. A tools-off consumer must first prove that its chosen runtime disables tools, as
-[D028](../north-star/decisions/D028-outside-text.md) requires; a filesystem check is no substitute.
-The old multi-adapter M11 is removed from the delivery queue.
-
-A Codex API key needs no new Nicely machinery: M08 already ships optional keys. PR #156
-recorded that `codex exec` reads `CODEX_API_KEY`, so the adapter would map the granted `openai`
-key to it. Reverify that flag before a card uses it.
-
-## Taps
-
-Parked from M12, whole: `ncly tap add` and `ncly tap list`, release packaging of the first-party
-extensions, staged installation and source receipts, arbitrary Git remotes, automatic updates,
-`tap sync`, `tap remove`, ownership and conflict recovery for updates, tap-provided skill
-discovery, `skill link`, harness-specific skill destinations, standalone skill prerequisite
-manifests and their doctor checks, and a private fleet extension. Today `just install` installs
-`ncly` and the first-party extensions from a checkout, and Homebrew ships `ncly` itself.
-
-Revisit when a machine or a user without a source checkout needs an extension. Start with one
-first-party extension from the official tap, installed as a complete artifact that records its
-source, grants no key, and overwrites no user-owned destination.
-[M12 at e0a0122](https://github.com/pascalandy/nicely/blob/e0a0122c18d284b2e5b148ede34e972b388bb858/docs/milestones/M12-taps.md)
-holds that slice, its open questions, and the `tap list` look that Pascal picked in M07-T1.
-Revisit updates after a second real version needs installation, and skill distribution or fleet
-work for a concrete consumer. That work must retain
-[D035](../north-star/decisions/D035-sync-ownership.md) where it manages persistent copies.
-
-## Transcript summary
-
-Parked from M14 and the implicit summary in M13: summarizing transcripts, prompt selection,
-agent invocation, and the evidence needed to associate each summary with its source.
-M13 produces a transcript from one YouTube URL without invoking an agent.
-
-The first candidate is one explicit summary of one verified saved transcript, with one prompt.
-It requires a proven tools-off path for outside text under D028. The selected Codex path does
-not supply that capability. Do not add a second harness merely to keep the old roadmap moving.
-M14 is removed from the delivery queue; a concrete need and that capability must precede a
-replacement slice. Structured summaries remain a separate option above.
-
-## Resume
-
-Parked from M15 and the broader M10 fixtures: `ncly run resume`, partial multi-step continuation,
-nested child-run recovery, and compatibility tests for changing a step's effect policy.
-This is a deferred capability, not a prerequisite for recording one paid step safely.
-
-M10 and M13 retain locks, durable intent before a paid request, verified completion, run
-inspection, same-ID completed-result replay, and refusal of an unknown paid effect.
-Retry before any persisted non-repeatable intent remains governed by the shared contract.
-A transcript can reconcile complete, verified local artifacts without another upload.
-
-Revisit when a selected command has useful partial work that the user actually needs to
-continue. Design and prove that one continuation before generalizing it to other domains.
-M15 is removed from the delivery queue.
-
-## Transcript extras
-
-Parked from M13 and M16: multiple URLs and batch orchestration, Zoom folder discovery and
-`--latest`, browser matrices, configurable prompts, output opening, spinners, and automatic
-migration or retirement of the old transcript CLI and skills.
-M13 keeps one YouTube URL and its three verified artifacts. M16 checks its prerequisites,
-teaches the command, and proves that an independent fresh session can use it.
-
-Revisit another input source for a real transcript need. Add browser support only when the
-selected machine needs it. Retire the old CLI only after Pascal's required uses have parity;
-a partial replacement does not justify deleting a working workflow. Pascal picked the spinner's
-look in M07-T1; [the transcript spec at 29b311f](https://github.com/pascalandy/nicely/blob/29b311fed17791eb8d91d043a70751c3c2ce3d3e/extensions/transcript/spec.md)
-records it, so a spinner needs no new mockup.
-
-## Everyday domains
-
-Parked from M17: exhaustive inventories of two machines, histories and packages, and the rule
-that every writing command supports files, folders, globs, batches, progress, records, and
-resume. A safe one-file transformation does not inherit all of those capabilities.
-
-M17 selects one frequent job and its smallest useful input and output. M18 keeps Markdown
-view as a bounded candidate, subject to that selection. Writing commands still need dry run,
-destination validation, overwrite consent, and truthful retry behavior for their actual effects.
-
-The unselected video and image suites of M19 and M20 are removed from the delivery queue.
-Keep their ideas here: video encode, cut, and extract audio; image encode, resize, and compress.
-Revisit one operation when a concrete daily job warrants it, and write only its contract and
-one fixture. Neither domain implies that the whole command suite ships together.
-
-## Docs hub
-
-Parked from M21: project scanning, a visibility registry, `docs list`, `sync`, and `check`,
-editable generated mirrors, synchronization recovery, public builds, publishing, and custom
-search. Local documentation aggregation does not require a publishing platform.
-
-M21 keeps explicit project roots, one existing renderer, a local `docs serve` view, read-only
-sources, and a disposable cache. Resolve the actual renderer and multi-project input layout
-before the milestone becomes ready. Revisit a parked feature only when the basic local view
-fails a demonstrated need; public publication needs its own explicit selection of sources.
+- [Agent extras](M99-parking-lot/agent-extras.md)
+- [Taps](M99-parking-lot/taps.md)
+- [Transcript summary](M99-parking-lot/transcript-summary.md)
+- [Resume](M99-parking-lot/resume.md)
+- [Transcript extras](M99-parking-lot/transcript-extras.md)
+- [Everyday domains](M99-parking-lot/everyday-domains.md)
+- [Docs hub](M99-parking-lot/docs-hub.md)

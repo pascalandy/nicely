@@ -10,9 +10,9 @@ The program comes from `authoring/andy/transcript/` in `pascalandy/skills`.
 Copy its transcription implementation; do not rewrite it in Go for this milestone.
 Other source features remain unexposed.
 Summary awaits a verified tools-off path under [D028](../../docs/north-star/decisions/D028-outside-text.md).
-It is parked in [M99](../../docs/milestones/M99-parking-lot.md#transcript-summary), alongside
-[resume](../../docs/milestones/M99-parking-lot.md#resume) and
-[transcript extras](../../docs/milestones/M99-parking-lot.md#transcript-extras).
+It is parked in [M99](../../docs/milestones/M99-parking-lot/transcript-summary.md), alongside
+[resume](../../docs/milestones/M99-parking-lot/resume.md) and
+[transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md).
 
 This specification describes planned behavior.
 The open questions in M13 and M16 must be resolved before their implementation is ready.
