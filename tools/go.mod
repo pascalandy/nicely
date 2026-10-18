@@ -10,7 +10,10 @@ tool (
 	golang.org/x/vuln/cmd/govulncheck
 )
 
-require go.yaml.in/yaml/v3 v3.0.5
+require (
+	github.com/BurntSushi/toml v1.6.0
+	go.yaml.in/yaml/v3 v3.0.5
+)
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.4.0 // indirect
@@ -60,7 +63,6 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.2 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.2 // indirect
-	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go-linter v1.2.1 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.33.0 // indirect

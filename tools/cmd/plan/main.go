@@ -25,6 +25,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/BurntSushi/toml"
 )
 
 const (
@@ -93,7 +95,6 @@ var (
 	codeAfter    = regexp.MustCompile("\\b[Cc]ode `([^`]+)`")
 	envelope     = regexp.MustCompile(`"(?:errors|warnings)"\s*:\s*\\?\[`)
 	jsonCode     = regexp.MustCompile(`"code"\s*:\s*"([^"]*)"`)
-	manifestCode = regexp.MustCompile(`^code\s*=\s*"([^"]*)"`)
 	cardHeading  = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
 	checkbox     = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
 	codeSpan     = regexp.MustCompile("`([^`]+)`")
@@ -658,18 +659,17 @@ func knownCodes(root string) (map[string]bool, error) {
 		return nil, err
 	}
 	for _, name := range manifests {
-		data, err := os.ReadFile(name)
-		if err != nil {
-			return nil, err
+		var manifest struct {
+			Errors []struct {
+				Code string `toml:"code"`
+			} `toml:"errors"`
 		}
-		table := ""
-		for line := range strings.Lines(string(data)) {
-			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "[") {
-				table = line
-			} else if m := manifestCode.FindStringSubmatch(line); m != nil && table == "[[errors]]" {
-				codes[m[1]] = true
-			}
+		if _, err := toml.DecodeFile(name, &manifest); err != nil {
+			rel, _ := filepath.Rel(root, name)
+			return nil, fmt.Errorf("%s: %w", filepath.ToSlash(rel), err)
+		}
+		for _, e := range manifest.Errors {
+			codes[e.Code] = true
 		}
 	}
 	return codes, nil
@@ -679,10 +679,10 @@ func knownCodes(root string) (map[string]bool, error) {
 // role is explicit, and each character of plainForms in prose. The contexts
 // are a cell under a Code column, a code span right after "code", such as
 // "error code `X`", and the "code" of an object in an "errors" or
-// "warnings" array. Prose is the text outside code blocks and code spans,
-// where a table cell that holds only an em dash, an empty Depends on, is no
-// prose. A value that is no code, such as the exit code `78`, is no
-// reference.
+// "warnings" array. Prose is the text outside code, where a table cell that
+// holds only an em dash, an empty Depends on, is no prose. Code is a fenced
+// block or a code span on one line, as for links. A value that is no code,
+// such as the exit code `78`, is no reference.
 func checkProse(file, text string, codes map[string]bool) []string {
 	var problems []string
 	code := func(n int, value string) {
@@ -690,20 +690,19 @@ func checkProse(file, text string, codes map[string]bool) []string {
 			problems = append(problems, fmt.Sprintf("%s:%d: no code table or fixture manifest defines the code %s", file, n, value))
 		}
 	}
-	var header []string
-	var block []string
-	fenced := false
+	var header, block []string
+	var f fence
 	for i, line := range strings.Split(text, "\n") {
 		n := i + 1
-		if isFence(line) {
-			if fenced {
+		if opened := f.open != ""; f.in(line) {
+			switch {
+			case !opened:
+				block, header = nil, nil
+			case f.open == "":
 				envelopeCodes(strings.Join(block, "\n"), n-len(block), code)
+			default:
+				block = append(block, line)
 			}
-			fenced, block, header = !fenced, nil, nil
-			continue
-		}
-		if fenced {
-			block = append(block, line)
 			continue
 		}
 		envelopeCodes(line, n, code)
@@ -737,16 +736,22 @@ func checkProse(file, text string, codes map[string]bool) []string {
 
 // envelopeCodes calls code with the line and the value of each "code" inside
 // an "errors" or "warnings" array of chunk, a line or a code block whose first
-// line is first. The array ends at its matching bracket, or with the chunk.
+// line is first. The array ends at its matching bracket outside a string, or
+// with the chunk.
 func envelopeCodes(chunk string, first int, code func(int, string)) {
 	for _, loc := range envelope.FindAllStringIndex(chunk, -1) {
-		end, depth := len(chunk), 0
+		end, depth, quoted := len(chunk), 0, false
 	scan:
 		for i := loc[1] - 1; i < len(chunk); i++ {
-			switch chunk[i] {
-			case '[':
+			switch c := chunk[i]; {
+			case quoted && c == '\\':
+				i++
+			case c == '"':
+				quoted = !quoted
+			case quoted:
+			case c == '[':
 				depth++
-			case ']':
+			case c == ']':
 				if depth--; depth == 0 {
 					end = i
 					break scan
@@ -801,24 +806,37 @@ func cellCodes(cell string) []string {
 	return values
 }
 
-// isFence says whether line opens or closes a fenced code block, indented or
-// not.
-func isFence(line string) bool {
-	fence := strings.TrimLeft(line, " ")
-	return strings.HasPrefix(fence, "```") || strings.HasPrefix(fence, "~~~")
+// fence follows the fenced code blocks of a Markdown file, indented or not. A
+// block opens with three or more backticks or tildes, and only a line of at
+// least as many of the same character, alone, closes it.
+type fence struct {
+	open string // the marker of the current block, or "" outside one
+}
+
+// in reports whether line opens, closes, or lies inside a fenced block.
+func (f *fence) in(line string) bool {
+	text := strings.TrimLeft(line, " ")
+	marker := ""
+	if strings.HasPrefix(text, "```") || strings.HasPrefix(text, "~~~") {
+		marker = text[:len(text)-len(strings.TrimLeft(text, text[:1]))]
+	}
+	switch {
+	case f.open == "":
+		f.open = marker
+		return marker != ""
+	case marker != "" && marker[0] == f.open[0] && len(marker) >= len(f.open) && strings.TrimSpace(text[len(marker):]) == "":
+		f.open = ""
+	}
+	return true
 }
 
 // links returns the Markdown links of text outside code: fenced blocks,
 // indented or not, and code spans.
 func links(text string) []docLink {
 	var found []docLink
-	fenced := false
+	var f fence
 	for i, line := range strings.Split(text, "\n") {
-		if isFence(line) {
-			fenced = !fenced
-			continue
-		}
-		if fenced {
+		if f.in(line) {
 			continue
 		}
 		for _, l := range mdLink.FindAllStringSubmatch(codeSpan.ReplaceAllString(line, ""), -1) {

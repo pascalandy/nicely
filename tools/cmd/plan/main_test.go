@@ -440,6 +440,8 @@ func TestCheckCodesAndTypography(t *testing.T) {
 		{"unknown code after warning code", "extensions/demo/SKILL.md", "Relay the warning code `DEMO_QUIET`.\n", "extensions/demo/SKILL.md:1: no code table or fixture manifest defines the code DEMO_QUIET"},
 		{"unknown code in a Code column", "extensions/demo/notes.md", "| Id | Code | When |\n|---|---|---|\n| `demo.check` | `DEMO_LOST` | It warns |\n", "extensions/demo/notes.md:3: no code table or fixture manifest defines the code DEMO_LOST"},
 		{"unknown code in an errors example", "docs/north-star/vision.md", "An answer:\n\n```json\n{\"ok\":false,\"errors\":[{\"code\":\"RUNTIME_LOST\",\"message\":\"m\",\"hint\":\"h\"}]}\n```\n", "docs/north-star/vision.md:4: no code table or fixture manifest defines the code RUNTIME_LOST"},
+		{"unknown code after a bracket in a string", "docs/north-star/vision.md", "```json\n{\"ok\":false,\"errors\":[{\"message\":\"Unexpected ]\",\"code\":\"DEMO_GONE\"}]}\n```\n", "docs/north-star/vision.md:2: no code table or fixture manifest defines the code DEMO_GONE"},
+		{"prose after a nested fence", "README.md", "````markdown\n```\nIt\u2019s code.\n```\n````\n\nIt\u2019s prose.\n", "README.md:7: the prose holds \u2019 (U+2019)"},
 		{"unknown code in a warnings example over lines", "docs/north-star/vision.md", "```json\n{\n  \"ok\": true,\n  \"warnings\": [\n    {\"code\": \"DEMO_SLOW\"},\n    {\"code\": \"DEMO_FAST\"}\n  ]\n}\n```\n", "docs/north-star/vision.md:6: no code table or fixture manifest defines the code DEMO_FAST"},
 		{"declared code without its manifest", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`."), "docs/milestones/M01-host.md:8: no code table or fixture manifest defines the code HELLO_GRUMPY"},
 		{"em dash in prose", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches \u2014 fast."), "docs/milestones/M01-host.md:8: the prose holds \u2014 (U+2014)"},
@@ -480,10 +482,14 @@ func TestCheckCodesAndTypographyPass(t *testing.T) {
 		"```json\n{\"ok\":false,\"errors\":[{\"code\":\"USAGE_INVALID\",\"message\":\"m\"}],\"warnings\":[{\"code\":\"DEMO_SLOW\"}]}\n{\"checks\":[{\"id\":\"x\",\"code\":\"NOT_IN_AN_ENVELOPE\"}]}\n```\n\n" +
 		"```\nstderr '\"code\":\"NOT_IN_AN_ENVELOPE\"'\n```\n"
 	typography := "Write `a \u2014 b` and `\u2018x\u2019`.\n\n```\nIt\u2019s \u201cquoted\u201d \u2014 here.\n```\n\n- A list\n\n  ~~~\n  \u2014 in an indented block\n  ~~~\n"
+	nested := "````markdown\n```\nIt\u2019s \u2014 code.\n```\n````\n\n" +
+		"```json\n{\"errors\":[{\"message\":\"[\",\"code\":\"USAGE_INVALID\"}],\"checks\":[{\"code\":\"OUT_OF_SCOPE\"}]}\n```\n"
 	root := repository(t, map[string]string{"M01-host.md": edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`.")})
 	sources(t, root)
+	// The manifest is TOML: a comment and a literal string change nothing.
+	write(t, filepath.Join(root, "testdata", "extensions", "hello", "manifest.toml"), "domain = \"hello\"\n\n[[errors]] # the own codes\ncode = 'HELLO_GRUMPY'\nexit = 1\n")
 	write(t, filepath.Join(root, "AGENTS.md"), "# AGENTS.md\n\n## Code\n")
-	write(t, filepath.Join(root, "docs", "north-star", "vision.md"), known+"\n"+outside+"\n"+typography)
+	write(t, filepath.Join(root, "docs", "north-star", "vision.md"), known+"\n"+outside+"\n"+typography+"\n"+nested)
 	write(t, filepath.Join(root, "docs", "archived", "chat.md"), "The code `GONE_CODE` \u2014 it\u2019s old.\n")
 	write(t, filepath.Join(root, "extensions", "demo", "testdata", "notes.md"), "The code `FIXTURE_ONLY` \u2014 here.\n")
 	var out strings.Builder
