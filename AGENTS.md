@@ -69,6 +69,8 @@ A milestone file holds `Status`, `Version`, and the sections **Demo**, an option
 
 Each code span of a **Proves** line is a path from the repository root, such as `extensions/transcript/python/` or `justfile`. Name a command, such as just check, without a code span. Once the card is `done`, `just test` checks that each path exists.
 
+After a plan pull request merges, fix the stale card and milestone references of each open issue labeled `4-epic`. List the updated issues in that pull request.
+
 ## Rules
 
 - Where the specs are silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in a new decision in [decisions/](docs/north-star/decisions/README.md).
