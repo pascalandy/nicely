@@ -28,7 +28,7 @@ Bind to loopback, and disable renderer behavior that executes project code or fe
 
 There is no persistent hub mirror or project registry.
 Scanning, synchronization, visibility management, publishing, and search remain in
-[M99](M99-parking-lot.md#docs-hub).
+[M99](M99-parking-lot/docs-hub.md).
 This milestone changes no core mechanism.
 
 ## Open questions

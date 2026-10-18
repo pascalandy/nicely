@@ -2,7 +2,7 @@
 
 `agent` is an external extension, built as `ncly-agent` from this folder. It runs one trusted task through Codex. [M09](../../docs/milestones/M09-agent-profiles.md) adds preparation and [M10](../../docs/milestones/M10-agent-run.md) adds execution and inspection. It follows the [contract](../../docs/north-star/contract.md).
 
-[Deferred agent features](../../docs/milestones/M99-parking-lot.md#agent-extras) include other harnesses, named profiles, providers, model discovery, a Codex API key, and post-run file comparison. They are not prerequisites of this extension.
+[Deferred agent features](../../docs/milestones/M99-parking-lot/agent-extras.md) include other harnesses, named profiles, providers, model discovery, a Codex API key, and post-run file comparison. They are not prerequisites of this extension.
 
 ## Install
 
@@ -82,7 +82,7 @@ Codex has no verified switch that removes all tools, so this adapter supports on
 
 The manifest declares `codex` in `programs` as a required program, not `conditional`, with `version = "0.162.1"` and the default probe `--version`. Its `install` holds `brew install --cask codex` and `sudo pacman -S openai-codex`. Existing `ncly doctor agent` checks that declaration, as [Required programs](../../docs/north-star/core-spec.md#required-programs) defines: the `agent.codex` check fails with `PREREQ_MISSING` for a missing or older Codex, or a probe that prints no version, and its hint and `next` hold the install command of this machine. Doctor only runs `codex --version`, so it starts no task. Preparation runs the same check through the program check of `sdk/runner`, with the environment that Codex receives and a limit of 10 seconds, so a missing, older, or silent Codex fails `ncly agent run` with the same `PREREQ_MISSING`, hint, and `next`. A probe that does not answer within the limit fails with `PREREQ_MISSING` too, whose hint asks to check that `codex --version` answers. A separate `agent status` command and a matrix of configured harnesses would duplicate that first check.
 
-Codex uses its own existing login. `agent` declares no API key and receives none from Nicely. Keep the runner's removal of `*_API_KEY` variables. A user configures the native login outside Nicely; the extension never starts an interactive login. A Codex API key waits in [M99](../../docs/milestones/M99-parking-lot.md#agent-extras).
+Codex uses its own existing login. `agent` declares no API key and receives none from Nicely. Keep the runner's removal of `*_API_KEY` variables. A user configures the native login outside Nicely; the extension never starts an interactive login. A Codex API key waits in [M99](../../docs/milestones/M99-parking-lot/agent-extras.md).
 
 ## Records and replay
 

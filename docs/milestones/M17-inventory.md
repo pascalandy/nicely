@@ -15,7 +15,7 @@ Use relevant `justfile` recipes or skills when a shell command hides the actual 
 A full package inventory, both machines' shell histories, and a catalogue of future domains are unnecessary.
 
 [Markdown viewing](M18-markdown.md) is the current candidate.
-Other everyday domains and extra formats stay in [M99](M99-parking-lot.md#everyday-domains).
+Other everyday domains and extra formats stay in [M99](M99-parking-lot/everyday-domains.md).
 This milestone confirms or replaces that one candidate; it does not approve a domain family.
 
 ### Conventions for the everyday domains

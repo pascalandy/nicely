@@ -1,6 +1,6 @@
 # Milestones
 
-This folder holds the plan: one file per milestone, named like `M01-short-title.md`, and [M99](M99-parking-lot.md), the parking lot. [D042](../north-star/decisions/D042-milestones-and-cards.md) sets the rules of the plan.
+This folder holds the plan: one file per milestone, named like `M01-short-title.md`, and [M99](M99-parking-lot.md), the parking lot. M99 keeps each parked capability in its own file in `M99-parking-lot/`. [D042](../north-star/decisions/D042-milestones-and-cards.md) sets the rules of the plan.
 
 ## Make a milestone ready
 

@@ -22,8 +22,8 @@ Leave its other source features unexposed; this milestone does not port them to 
 The first command retains durable intent before paid dispatch, verified artifacts, run locks, cancellation, and replay of verified results.
 An incomplete run never causes a second upload under the same run ID.
 Summary, multi-step resume, and extra transcript features are in
-[M99](M99-parking-lot.md#transcript-summary), [M99](M99-parking-lot.md#resume), and
-[M99](M99-parking-lot.md#transcript-extras).
+[M99](M99-parking-lot/transcript-summary.md), [M99](M99-parking-lot/resume.md), and
+[M99](M99-parking-lot/transcript-extras.md).
 
 Scenarios use the test keychain and stubs for failure injection and counted calls.
 One path uses actual Go, real `uv`, and the actual Python program with a test-only Deepgram transport.
