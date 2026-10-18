@@ -72,7 +72,7 @@ GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive shi
 
 ## Local release preparation
 
-The full local check runs on Linux with Go, Git, just, gitleaks, shellcheck, shfmt, Ruby, GNU `install`, `shasum`, and `tar`. The tools module requires Go 1.27.1, which Go downloads when automatic toolchain downloads are enabled. The application module still requires Go 1.27.0.
+The full local check runs on Linux with Go, Git, just, gitleaks, shellcheck, shfmt, Ruby, GNU `install`, `shasum`, and `tar`. The race detector of `just race` also needs a C compiler, such as gcc. The tools module requires Go 1.27.1, which Go downloads when automatic toolchain downloads are enabled. The application module still requires Go 1.27.0.
 
 `just release-check vX.Y.Z` runs `just check`, the pinned `govulncheck` and `goreleaser check`, then prepares and checks a snapshot in its own temporary checkout. It accepts a release tag such as `v0.0.1`; an invalid tag fails before building. It uses no publishing credentials and invokes no publisher. A failed check returns a failure, never release readiness.
 
