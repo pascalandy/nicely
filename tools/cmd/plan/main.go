@@ -637,7 +637,13 @@ func knownCodes(root string) (map[string]bool, error) {
 		}
 		section := ""
 		var header []string
+		var f fence
 		for line := range strings.Lines(string(data)) {
+			// A table in an example, such as a fenced Markdown block, defines no code.
+			if f.in(line) {
+				header = nil
+				continue
+			}
 			if heading, ok := strings.CutPrefix(line, "## "); ok {
 				section = strings.TrimSpace(heading)
 			}
