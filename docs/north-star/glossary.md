@@ -81,6 +81,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - A report command keeps its report on stdout, even when a check fails
 - Doctor lists the checks of an extension's status command under the extension's component
 - Completion takes the values that only an extension knows from a list command
+- Completion and doctor each call a command of an extension themselves: a list command and a status command, which keep their own conditions
 
 ### Definitions
 
@@ -134,6 +135,10 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 - List command
   - Def.: a command whose verb is `list`, such as `ncly skill list`
   - Project note: [Completion values](contract.md#completion-values) defines when completion may run one: never one that writes a user file or bills
+- Command that core calls
+  - Def.: a command of an installed extension that core starts itself for one of its own commands: completion's list command or doctor's status command
+  - Project note: [Commands that core calls](contract.md#commands-that-core-calls) defines the rules that both share. [Completion values](contract.md#completion-values) and [Status command](contract.md#status-command) keep the conditions, the limit, and the reading of the answer of each
+  - Distinct from: an ordinary dispatch, in which core starts a command for its caller, as when an agent calls a status command alone
 - Grant
   - Def.: the permission, given by a human in a terminal, for one extension to receive one key
   - Project note: [Grants](contract.md#grants) binds it to the extension's domain and source, the path where discovery found the extension until taps
