@@ -245,48 +245,87 @@ func writeRuns(w io.Writer, p *i18n.Printer, list runList) error {
 				widths[i] = max(widths[i], ansi.StringWidth(cell))
 			}
 		}
-		line := func(marker string, cells []string, style func(string) string) string {
+		line := func(marker string, cells []string, styles []func(string) string) string {
 			parts := make([]string, len(cells))
 			for i, cell := range cells {
-				parts[i] = style(cell)
+				parts[i] = styles[i](cell)
 				if i < len(cells)-1 {
 					parts[i] += strings.Repeat(" ", widths[i]-ansi.StringWidth(cell))
 				}
 			}
 			return marker + strings.Join(parts, "  ") + "\n"
 		}
-		plain := func(s string) string { return s }
-		b.WriteString(line("  ", header, tui.Bold))
+		b.WriteString(line("  ", header, slices.Repeat([]func(string) string{tui.Bold}, len(header))))
 		active := false
 		for i, e := range list.Runs {
 			marker := "  "
 			if e.Active {
 				marker, active = activeMark+" ", true
 			}
-			b.WriteString(line(marker, rows[i], plain))
+			b.WriteString(line(marker, rows[i], []func(string) string{unstyled, styleOf(listStatus, record.Status(e.Status)), unstyled, unstyled, unstyled}))
 			for _, key := range e.Keys {
-				b.WriteString("    " + key + "\n")
+				b.WriteString("    " + tui.Muted(key) + "\n")
 			}
 			if more := e.ItemCount - len(e.Keys); more > 0 {
-				b.WriteString("    " + p.N("run.list.more_keys", more) + "\n")
+				b.WriteString("    " + tui.Muted(p.N("run.list.more_keys", more)) + "\n")
 			}
 		}
 		if active {
-			b.WriteString("\n" + activeMark + " " + p.T("run.list.active_legend") + "\n")
+			b.WriteString("\n" + activeMark + " " + tui.Muted(p.T("run.list.active_legend")) + "\n")
 		}
 	}
 	if len(list.Unreadable) > 0 {
 		b.WriteString(p.N("run.list.unreadable", len(list.Unreadable), map[string]any{"IDs": strings.Join(list.Unreadable, ", ")}) + "\n")
 	}
 	if list.More {
-		b.WriteString(p.T("run.list.more") + "\n")
+		b.WriteString(tui.Muted(p.T("run.list.more")) + "\n")
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
 }
 
 // activeMark starts the row of a run that a process holds, in green.
-var activeMark = ansi.Style{}.ForegroundColor(ansi.Green).Styled("●")
+var activeMark = colored(ansi.Green)("●")
+
+// listStatus colors the status of a row of run list, and stepStatus the
+// status of a step of run view, as ncly run in core-spec.md defines. A status
+// that a map leaves out stays plain, as does the status of a run in view
+// other than completed, because the picked looks give it no style.
+var (
+	listStatus = map[record.Status]func(string) string{
+		record.Completed:   colored(ansi.Green),
+		record.Running:     colored(ansi.Cyan),
+		record.Failed:      colored(ansi.Red),
+		record.Unknown:     colored(ansi.Yellow),
+		record.Interrupted: colored(ansi.Yellow),
+	}
+	viewStatus = map[record.Status]func(string) string{
+		record.Completed: colored(ansi.Green),
+	}
+	stepStatus = map[record.StepStatus]func(string) string{
+		record.StepCompleted: colored(ansi.Green),
+		record.StepFailed:    colored(ansi.Red),
+		record.StepPending:   tui.Muted,
+	}
+)
+
+// colored returns the style of a text in one of the 16 ANSI colors, which
+// tui.Output removes when color is off.
+func colored(color ansi.BasicColor) func(string) string {
+	style := ansi.Style{}.ForegroundColor(color)
+	return func(s string) string { return style.Styled(s) }
+}
+
+// unstyled leaves a text plain.
+func unstyled(s string) string { return s }
+
+// styleOf returns the style that styles gives a status, or none.
+func styleOf[S comparable](styles map[S]func(string) string, status S) func(string) string {
+	if style, found := styles[status]; found {
+		return style
+	}
+	return unstyled
+}
 
 // writeRun prints a record as ncly run in core-spec.md shows it: the run
 // ID and the command path, its facts as labeled lines, then its inputs, its
@@ -300,22 +339,27 @@ func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys 
 	if active {
 		held = p.T("run.view.yes")
 	}
-	writeValues(&b, "", [][2]any{
-		{p.T("run.view.status"), string(rec.Status)},
+	writeValues(&b, "", tui.Muted, [][2]any{
+		{p.T("run.view.status"), styleOf(viewStatus, rec.Status)(string(rec.Status))},
 		{p.T("run.view.active"), held},
 		{p.T("run.view.started"), rec.StartedAt},
 		{p.T("run.view.updated"), rec.UpdatedAt},
 		{p.T("run.view.attempts"), p.Number(float64(rec.Attempts), 0)},
 		{p.T("run.view.ncly"), rec.NclyVersion},
 	})
-	for _, section := range []struct{ heading, key string }{
-		{"run.view.inputs", "inputs"},
-		{"run.view.resolved", "resolved"},
-		{"run.view.tools", "tools"},
+	// The labels of the inputs and the resolved values are bright black, as
+	// those of the facts are, and each tool stays plain beside its version.
+	for _, section := range []struct {
+		heading, key string
+		label        func(string) string
+	}{
+		{"run.view.inputs", "inputs", tui.Muted},
+		{"run.view.resolved", "resolved", tui.Muted},
+		{"run.view.tools", "tools", unstyled},
 	} {
 		if values, _ := keys[section.key].(map[string]any); len(values) > 0 {
 			b.WriteString("\n" + tui.Bold(p.T(section.heading)) + "\n")
-			writeValues(&b, "  ", sortedValues(values))
+			writeValues(&b, "  ", section.label, sortedValues(values))
 		}
 	}
 	if len(rec.Items) > 0 {
@@ -332,13 +376,14 @@ func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys 
 	for _, it := range rec.Items {
 		b.WriteString("  " + it.Key)
 		if it.OutputDir != nil {
-			b.WriteString(" → " + *it.OutputDir)
+			b.WriteString(" " + tui.Muted("→") + " " + *it.OutputDir)
 		}
 		b.WriteString("\n")
 		for _, s := range it.Steps {
 			cells := []string{string(s.Status), s.ID, string(s.Effect)}
+			styles := []func(string) string{styleOf(stepStatus, s.Status), unstyled, tui.Muted}
 			for i, cell := range cells {
-				cells[i] = cell + strings.Repeat(" ", widths[i]-ansi.StringWidth(cell))
+				cells[i] = styles[i](cell) + strings.Repeat(" ", widths[i]-ansi.StringWidth(cell))
 			}
 			line := strings.Join(cells, "  ")
 			if s.StartedAt != nil {
@@ -346,7 +391,7 @@ func writeRun(w io.Writer, p *i18n.Printer, id string, rec *record.Record, keys 
 			}
 			b.WriteString("    " + strings.TrimRight(line, " ") + "\n")
 			for _, a := range s.Artifacts {
-				b.WriteString("      " + a.Path + "  " + p.Size(a.SizeBytes) + "\n")
+				b.WriteString("      " + a.Path + "  " + tui.Muted(p.Size(a.SizeBytes)) + "\n")
 			}
 			if s.Error != nil {
 				b.WriteString("      " + tui.ErrorLabel(p.T("error.label", map[string]any{"Code": s.Error.Code})) + " " + s.Error.Message + "\n")
@@ -386,30 +431,30 @@ func sortedValues(values map[string]any) [][2]any {
 }
 
 // writeValues prints labeled values in aligned columns, each label at
-// indent. An object takes its own labeled lines under its label, and an
-// array one line per element, both indented once more.
-func writeValues(b *strings.Builder, indent string, pairs [][2]any) {
+// indent, in the style of label. An object takes its own labeled lines under
+// its label, and an array one line per element, both indented once more.
+func writeValues(b *strings.Builder, indent string, label func(string) string, pairs [][2]any) {
 	width := 0
 	for _, pair := range pairs {
 		width = max(width, ansi.StringWidth(pair[0].(string)))
 	}
 	for _, pair := range pairs {
-		label := pair[0].(string)
+		name := pair[0].(string)
 		switch v := pair[1].(type) {
 		case map[string]any:
-			b.WriteString(indent + label + "\n")
-			writeValues(b, indent+"  ", sortedValues(v))
+			b.WriteString(indent + label(name) + "\n")
+			writeValues(b, indent+"  ", label, sortedValues(v))
 		case []any:
-			b.WriteString(indent + label + "\n")
+			b.WriteString(indent + label(name) + "\n")
 			for _, element := range v {
 				if object, isObject := element.(map[string]any); isObject {
-					writeValues(b, indent+"  ", sortedValues(object))
+					writeValues(b, indent+"  ", label, sortedValues(object))
 					continue
 				}
 				b.WriteString(indent + "  " + scalar(element) + "\n")
 			}
 		default:
-			b.WriteString(indent + label + strings.Repeat(" ", width-ansi.StringWidth(label)+2) + scalar(v) + "\n")
+			b.WriteString(indent + label(name) + strings.Repeat(" ", width-ansi.StringWidth(name)+2) + scalar(v) + "\n")
 		}
 	}
 }

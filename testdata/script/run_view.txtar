@@ -2,7 +2,7 @@
 # then active, which it reads from the lock without creating it. A saved run that failed still
 # inspects with exit 0, and a record that cannot be used answers RESUME_UNSAFE.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
-onlyncly holdlock
+onlyncly holdlock pty
 env RUNS=$WORK/.local/state/nicely/runs
 mkdir $RUNS
 cp c1.json $RUNS/c1.json
@@ -27,6 +27,28 @@ exec ncly run view c1
 cmp stdout want-c1.txt
 ! stderr .
 
+# On a terminal, the run ID and the headings are bold, and the labels of the facts, the inputs,
+# and the resolved values are bright black. A completed run and a completed step are green,
+# and the arrow, the effect, and the size of an artifact are bright black. The tools stay
+# plain, and the text without its escape sequences is the text of a pipe
+exec pty none.txt ncly run view c1
+stdout '^\x1b\[1mc1\x1b\[m  agent run$'
+stdout '^\x1b\[90mstatus\x1b\[m    \x1b\[32mcompleted\x1b\[m$'
+stdout '^\x1b\[90mactive\x1b\[m    no$'
+stdout '^\x1b\[90mncly\x1b\[m      v0\.10\.0$'
+stdout '^\x1b\[1mINPUTS\x1b\[m$'
+stdout '^  \x1b\[90mcwd\x1b\[m          /work$'
+stdout '^  \x1b\[90moptions\x1b\[m$'
+stdout '^    \x1b\[90mlang\x1b\[m  fr$'
+stdout '^    u1$'
+stdout '^  \x1b\[90meffort\x1b\[m   medium$'
+stdout '^  codex  0\.163\.0$'
+stdout '^  task \x1b\[90m→\x1b\[m /state/runs/c1$'
+stdout '^    \x1b\[32mcompleted\x1b\[m  codex  \x1b\[90mpaid\x1b\[m  2026-10-17T18:37:13Z → 2026-10-17T18:37:14Z, 1 s$'
+stdout '^      /state/runs/c1/answer\.txt  \x1b\[90m16 B\x1b\[m$'
+plain stdout shown.txt
+cmp shown.txt want-c1.txt
+
 # A saved run that failed still inspects with exit 0: ok describes the inspection, and status
 # the saved operation. The text shows the error of the step and its hint
 exec ncly run view f1 --json
@@ -34,6 +56,17 @@ stdout '\A\{"ok":true,"contract_version":1,"run":\{"active":false,'
 stdout '"status":"failed"'
 exec ncly run view f1
 cmp stdout want-f1.txt
+
+# On a terminal, a failed step is red and a pending one bright black, beside the error block of
+# the failed step. A failed run stays plain
+exec pty none.txt ncly run view f1
+stdout '^\x1b\[90mstatus\x1b\[m    failed$'
+stdout '^    \x1b\[31mfailed\x1b\[m   transcribe  \x1b\[90mpaid\x1b\[m  2026-10-01T10:00:00Z → 2026-10-01T10:00:05Z, 5 s$'
+stdout '^      \x1b\[1;31merror\[RUNTIME\]:\x1b\[m Deepgram refused the file\.$'
+stdout '^      \x1b\[1;36mhint:\x1b\[m Check the file, then run again\.$'
+stdout '^    \x1b\[90mpending\x1b\[m  summarize   \x1b\[90mnone\x1b\[m$'
+plain stdout shown.txt
+cmp shown.txt want-f1.txt
 
 # While another process holds a run, view answers at once with active, and a step that
 # started without an end shows its start alone
@@ -44,6 +77,11 @@ stdout '"active":true'
 exec ncly run view r1
 stdout '^active    yes$'
 stdout '^    unknown  codex  paid  2026-10-17T18:40:00Z$'
+# On a terminal, a running run and an unknown step stay plain
+exec pty none.txt ncly run view r1
+stdout '^\x1b\[90mstatus\x1b\[m    running$'
+stdout '^\x1b\[90mactive\x1b\[m    yes$'
+stdout '^    unknown  codex  \x1b\[90mpaid\x1b\[m  2026-10-17T18:40:00Z$'
 kill
 wait
 exec ncly run view r1 --json
@@ -92,6 +130,9 @@ chmod 600 $RUNS/c1.lock
 cp many.json $RUNS/many.json
 exec ncly run view many
 stdout '^attempts  1,003$'
+# On a terminal, an unknown run stays plain too
+exec pty none.txt ncly run view many
+stdout '^\x1b\[90mstatus\x1b\[m    unknown$'
 
 # The text of the view comes from the catalog
 exec ncly --lang en-XA run view f1
@@ -147,6 +188,7 @@ ITEMS
       error[RUNTIME]: Deepgram refused the file.
       hint: Check the file, then run again.
     pending  summarize   none
+-- none.txt --
 -- c1.json --
 {"format_version":1,"run_id":"c1","path":"agent run","status":"completed","started_at":"2026-10-17T18:37:13Z","updated_at":"2026-10-17T18:37:14Z","ncly_version":"v0.10.0","attempts":1,"inputs":{"cwd":"/work","task_sha256":"87b5","tools":true,"urls":["u1","u2"],"options":{"lang":"fr","max":3}},"resolved":{"effort":"medium","harness":"codex","model":"m1"},"tools":{"codex":"0.163.0"},"items":[{"key":"task","output_dir":"/state/runs/c1","steps":[{"id":"codex","effect":"paid","status":"completed","started_at":"2026-10-17T18:37:13Z","finished_at":"2026-10-17T18:37:14Z","artifacts":[{"path":"/state/runs/c1/answer.txt","size_bytes":16,"sha256":"1762"}],"error":null,"evidence":{"format_version":1,"duration_ms":28}}]}],"future_key":"kept"}
 -- f1.json --

@@ -2,7 +2,7 @@
 # then by run ID, with the filters before the limit, and a bounded preview of item keys. A
 # record that it cannot use never counts as absent: unreadable names it, whatever the filters.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
-onlyncly holdlock
+onlyncly holdlock pty
 env RUNS=$WORK/.local/state/nicely/runs
 
 # Without a runs folder, no run matches
@@ -49,6 +49,21 @@ exec ncly run list
 stdout '\x1b\[1mRUN\x1b\[m'
 stdout '^\x1b\[32m●\x1b\[m a3 '
 env CLICOLOR_FORCE=
+
+# On a terminal, each status takes its color, and the keys, the count of the other keys, and
+# the legend are bright black. The line of the unreadable records stays plain, and the text
+# without its escape sequences is the text of a pipe
+exec pty none.txt ncly run list
+stdout '^\x1b\[32m●\x1b\[m a3   \x1b\[36mrunning\x1b\[m    2026-10-05  agent run               1$'
+stdout '^  a1   \x1b\[33munknown\x1b\[m    2026-10-03  '
+stdout '^  t1   \x1b\[32mcompleted\x1b\[m  2026-10-01  '
+stdout '^    \x1b\[90mtask\x1b\[m$'
+stdout '^    \x1b\[90mu3\x1b\[m$'
+stdout '^    \x1b\[90mand 2 more\x1b\[m$'
+stdout '^\x1b\[32m●\x1b\[m \x1b\[90mA process holds this run now\.\x1b\[m$'
+stdout '^Cannot read the records of bad, badtime, v2: ncly run view <run-id> says why\.$'
+plain stdout shown.txt
+cmp shown.txt want-list.txt
 kill
 wait
 
@@ -73,6 +88,10 @@ exec ncly run list --path 'agent run' --limit 3 --json
 stdout '"more":false'
 exec ncly run list --limit 1
 cmp stdout want-limit.txt
+exec pty none.txt ncly run list --limit 1
+stdout '^\x1b\[90mMore runs match: raise --limit, or narrow the filters\.\x1b\[m$'
+plain stdout shown.txt
+cmp shown.txt want-limit.txt
 
 # A count that is no whole number from 1 and a time that is no RFC 3339 time are USAGE_INVALID
 exits 2 ncly run list --limit 0 --json
@@ -116,6 +135,19 @@ stdout '^  big +completed +2026-10-06 +batch run +1,003$'
 stdout '^    and 1,000 more$'
 rm $RUNS/big.json
 
+# A failed run is red, and an interrupted one yellow, as an unknown one is
+env XDG_STATE_HOME=$WORK/other
+mkdir $WORK/other/nicely/runs
+cp f1.json $WORK/other/nicely/runs/f1.json
+cp i1.json $WORK/other/nicely/runs/i1.json
+exec ncly run list
+cmp stdout want-other.txt
+exec pty none.txt ncly run list
+stdout '^  i1   \x1b\[33minterrupted\x1b\[m  2026-10-02  '
+stdout '^  f1   \x1b\[31mfailed\x1b\[m       2026-10-01  '
+plain stdout shown.txt
+cmp shown.txt want-other.txt
+
 -- want-list.txt --
   RUN  STATUS     STARTED     COMMAND                 ITEMS
 ● a3   running    2026-10-05  agent run               1
@@ -132,6 +164,13 @@ rm $RUNS/big.json
 
 ● A process holds this run now.
 Cannot read the records of bad, badtime, v2: ncly run view <run-id> says why.
+-- want-other.txt --
+  RUN  STATUS       STARTED     COMMAND                 ITEMS
+  i1   interrupted  2026-10-02  agent run               1
+    task
+  f1   failed       2026-10-01  transcript run youtube  1
+    u1
+-- none.txt --
 -- want-limit.txt --
   RUN  STATUS   STARTED     COMMAND    ITEMS
   a3   running  2026-10-05  agent run  1
@@ -140,6 +179,10 @@ Cannot read the records of bad, badtime, v2: ncly run view <run-id> says why.
 More runs match: raise --limit, or narrow the filters.
 -- t1.json --
 {"format_version":1,"run_id":"t1","path":"transcript run youtube","status":"completed","started_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:05:00Z","ncly_version":"v0.13.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"u1","output_dir":null,"steps":[]},{"key":"u2","output_dir":null,"steps":[]},{"key":"u3","output_dir":null,"steps":[]},{"key":"u4","output_dir":null,"steps":[]},{"key":"u5","output_dir":null,"steps":[]}]}
+-- f1.json --
+{"format_version":1,"run_id":"f1","path":"transcript run youtube","status":"failed","started_at":"2026-10-01T10:00:00Z","updated_at":"2026-10-01T10:00:05Z","ncly_version":"v0.13.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"u1","output_dir":null,"steps":[]}]}
+-- i1.json --
+{"format_version":1,"run_id":"i1","path":"agent run","status":"interrupted","started_at":"2026-10-02T09:00:00Z","updated_at":"2026-10-02T09:01:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
 -- a1.json --
 {"format_version":1,"run_id":"a1","path":"agent run","status":"unknown","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:01:00Z","ncly_version":"v0.10.0","attempts":1,"inputs":{},"resolved":{},"tools":{},"items":[{"key":"task","output_dir":null,"steps":[]}]}
 -- a2.json --
