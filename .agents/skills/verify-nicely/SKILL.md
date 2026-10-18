@@ -61,4 +61,4 @@ just verify quote "$run" hello
 - Check side effects, such as files or a keychain entry, beside the answer
 - Quote the lines that prove each end state, after the cleanup, from the quoted transcript
 
-Done when `quote` prints the transcript of every feature driven after the cleanup, with `cleanup.txt` after auth, and the report quotes the lines that prove each end state.
+Done when, after the cleanup, `quote` prints each transcript, `cleanup.txt` included after auth, and the report quotes the lines that prove each end state.
