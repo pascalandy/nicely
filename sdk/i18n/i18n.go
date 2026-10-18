@@ -5,9 +5,10 @@
 //
 // Send every string that a human reads through a catalog. Name each ID
 // <domain>.<thing>, and never reuse an ID for a new meaning. Give every
-// message that holds a number its plural forms. Format numbers, sizes,
-// durations, and dates through this package, and let translated text set its
-// own width.
+// message that holds a number its plural forms. Send such a message through
+// N, Size, or Duration: T always shows its other form, and the test binary
+// of cmd/ncly refuses it. Format numbers, sizes, durations, and dates through
+// this package, and let translated text set its own width.
 package i18n
 
 import (
