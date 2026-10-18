@@ -156,6 +156,12 @@ CONFIG
 	cat >"${root}/check.sh" <<'SCRIPT'
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# A case can move a tracking ref of the caller once, during the first check.
+if [[ -e "${NCLY_LAYERS_TEST}/move" ]]; then
+	read -r ref target <"${NCLY_LAYERS_TEST}/move"
+	git update-ref "${ref}" "${target}"
+	rm "${NCLY_LAYERS_TEST}/move"
+fi
 state=clean
 if [[ -e left/over ]]; then state=dirty; fi
 printf '%s %s %s\n' "$(git rev-parse HEAD)" "$(pwd -P)" "${state}" >>"${NCLY_LAYERS_TEST}/checks"
@@ -207,6 +213,12 @@ JUST
 	sha_one="${layer_sha}"
 	fct_layer two one two.txt two
 	sha_two="${layer_sha}"
+	fct_layer three two three.txt three
+	sha_three="${layer_sha}"
+	fct_layer orphan main orphan.txt orphan
+	sha_orphan="${layer_sha}"
+	fct_layer above orphan above.txt above
+	sha_above="${layer_sha}"
 	fct_layer bad main fail.txt fail
 	sha_bad="${layer_sha}"
 	fct_layer fixed bad fail.txt pass
@@ -241,6 +253,39 @@ fct_case_failing_check() {
 	fct_expect_out bad "${sha_bad}" FAIL fixed "${sha_fixed}" ok
 	grep -q 'stub check failed on purpose' "${run}/01-bad.log" || fct_fail "the log of bad lacks the check output"
 	fct_expect_no_worktree
+	fct_caller_unchanged
+}
+
+fct_case_coherent_stack() {
+	test_case="coherent stack"
+	fct_caller coherent-stack
+	fct_run 0 just check-layers one two three
+	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
+	fct_expect_out one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
+	fct_expect_no_worktree
+	fct_caller_unchanged
+}
+
+fct_case_missing_parent() {
+	test_case="layer without its parent"
+	fct_caller missing-parent
+	fct_run 1 just check-layers one orphan above
+	fct_expect_checks "${sha_one}" "${sha_orphan}" "${sha_above}"
+	fct_expect_out one "${sha_one}" ok orphan "${sha_orphan}" FAIL above "${sha_above}" ok
+	grep -q "origin/orphan ${sha_orphan} does not contain origin/one ${sha_one}" "${run}/02-orphan.log" || fct_fail "the log of orphan does not name both layers"
+	grep -q 'stub check passed' "${run}/02-orphan.log" || fct_fail "the check of orphan must pass, so that only the ancestry fails it"
+	fct_expect_no_worktree
+	fct_caller_unchanged
+}
+
+fct_case_moved_ref() {
+	test_case="tracking ref moved during the run"
+	fct_caller moved-ref
+	printf 'refs/remotes/origin/two %s\n' "${sha_bad}" >"${root}/move"
+	fct_run 0 just check-layers one two three
+	[[ ! -e "${root}/move" && "$(git -C "${caller}" rev-parse refs/remotes/origin/two)" == "${sha_bad}" ]] || fct_fail "the stub check did not move origin/two"
+	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
+	fct_expect_out one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
 	fct_caller_unchanged
 }
 
@@ -359,6 +404,9 @@ fct_main() {
 	fct_setup
 	fct_case_two_layers
 	fct_case_failing_check
+	fct_case_coherent_stack
+	fct_case_missing_parent
+	fct_case_moved_ref
 	fct_case_deleted_branch
 	fct_case_missing_justfile
 	fct_case_main_only_refspec
@@ -367,7 +415,7 @@ fct_main() {
 	fct_case_discovery
 	fct_case_signal INT 130
 	fct_case_signal TERM 143
-	printf 'check-layers checks each layer as origin holds it and leaves the caller unchanged\n'
+	printf 'check-layers checks each layer as origin holds it, on the layer below, and leaves the caller unchanged\n'
 }
 
 fct_main

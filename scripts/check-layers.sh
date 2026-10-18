@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # check-layers.sh runs just check on each layer of a stack, bottom to top, as
-# origin holds it, for just check-layers. It runs on macOS and Linux.
+# origin holds it, for just check-layers. A layer fails when it does not
+# contain the layer below. It runs on macOS and Linux.
 #
 #   just check-layers [branch...]
 #
@@ -29,6 +30,9 @@ fi
 refspecs=()
 for branch in "${branches[@]}"; do refspecs+=("+refs/heads/$branch:refs/remotes/origin/$branch"); done
 git fetch --quiet origin "${refspecs[@]}" || die "git fetch of the layers from origin failed"
+# Freeze each layer's SHA once: a tracking ref that moves during the run must not change the commit checked.
+shas=()
+for branch in "${branches[@]}"; do shas+=("$(git rev-parse "refs/remotes/origin/$branch")"); done
 # Not /tmp: Linux mounts it as tmpfs and macOS purges it, and the logs must outlive the run.
 run="${XDG_CACHE_HOME:-$HOME/.cache}/nicely/check-layers/$(date +%Y%m%d-%H%M%S)-$$"
 worktree="$run/worktree"
@@ -38,18 +42,24 @@ trap 'git worktree remove --force "$worktree" 2>/dev/null || true' EXIT
 # Without these traps, Ctrl-C moves on to the next layer, and SIGTERM can leave the worktree behind.
 trap 'exit 130' INT
 trap 'exit 143' TERM
-git worktree add --quiet --detach "$worktree" "refs/remotes/origin/${branches[0]}"
+git worktree add --quiet --detach "$worktree" "${shas[0]}"
 echo "check-layers: logs in $run" >&2
 status=0
 for i in "${!branches[@]}"; do
 	branch="${branches[$i]}"
-	sha="$(git rev-parse "refs/remotes/origin/$branch")"
+	sha="${shas[$i]}"
 	log="$run/$(printf '%02d' $((i + 1)))-${branch//\//-}.log"
+	: >"$log"
+	verdict=ok
+	# A layer restacked on an old parent can pass its own check, so the check cannot clear this failure.
+	if ((i > 0)) && ! git merge-base --is-ancestor "${shas[i - 1]}" "$sha"; then
+		echo "check-layers: origin/$branch $sha does not contain origin/${branches[i - 1]} ${shas[i - 1]}" >>"$log"
+		verdict=FAIL
+	fi
 	git -C "$worktree" checkout --quiet --force --detach "$sha"
 	git -C "$worktree" clean -ffdxq
-	verdict=ok
 	# The layer's own justfile, or a FAIL: without it, just would search the folders above the worktree.
-	(cd "$worktree" && just --justfile "$worktree/justfile" --working-directory "$worktree" check) >"$log" 2>&1 </dev/null || verdict=FAIL
+	(cd "$worktree" && just --justfile "$worktree/justfile" --working-directory "$worktree" check) >>"$log" 2>&1 </dev/null || verdict=FAIL
 	if [[ "$(git -C "$worktree" rev-parse HEAD)" != "$sha" ]]; then
 		echo "check-layers: HEAD moved off origin/$branch during the check" >>"$log"
 		verdict=FAIL
