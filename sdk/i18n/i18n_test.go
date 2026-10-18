@@ -1,8 +1,10 @@
 package i18n
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
@@ -81,4 +83,41 @@ func TestPluralForms(t *testing.T) {
 	if got := newPrinter(b, language.English).N("files", 1, map[string]any{"Count": "2"}); got != "1 file" {
 		t.Errorf("a Count in data changed the count: got %q, want %q", got, "1 file")
 	}
+}
+
+// TestPluralGuard proves the guard that the test binary of cmd/ncly turns
+// on. T refuses a message with a one form and names its ID, and N still
+// renders it. Off, as in a release, T renders the other form, as before.
+func TestPluralGuard(t *testing.T) {
+	c, err := Load(fstest.MapFS{"en.toml": {Data: []byte(`
+[files]
+description = "d"
+one = "{{.Count}} file"
+other = "{{.Count}} files"
+
+[hello]
+description = "d"
+other = "Hello"
+`)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := c.Printer("en")
+	if got := p.T("files", map[string]any{"Count": "1"}); got != "1 files" {
+		t.Errorf("guard off: got %q, want %q", got, "1 files")
+	}
+	PluralGuard = true
+	t.Cleanup(func() { PluralGuard = false })
+	if got := p.T("hello"); got != "Hello" {
+		t.Errorf("a message without a one form: got %q, want %q", got, "Hello")
+	}
+	if got := p.N("files", 1); got != "1 file" {
+		t.Errorf("N: got %q, want %q", got, "1 file")
+	}
+	defer func() {
+		if r := recover(); !strings.Contains(fmt.Sprint(r), "files has plural forms") {
+			t.Errorf("got panic %v, want one that names files", r)
+		}
+	}()
+	p.T("files", map[string]any{"Count": "1"})
 }

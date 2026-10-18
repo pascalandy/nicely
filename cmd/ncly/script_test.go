@@ -12,6 +12,7 @@ import (
 
 	"github.com/pascalandy/nicely/extensions/agent"
 	"github.com/pascalandy/nicely/sdk/extension"
+	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/pascalandy/nicely/sdk/record"
 	"github.com/pascalandy/nicely/sdk/runner"
 	hello "github.com/pascalandy/nicely/testdata/extensions/hello"
@@ -20,6 +21,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// Every command of the test binary refuses a plural message sent through Printer.T.
+	i18n.PluralGuard = true
 	testscript.Main(m, map[string]func(){
 		"ncly":       testNcly,
 		"closedpipe": closedPipe,

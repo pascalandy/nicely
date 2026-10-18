@@ -44,6 +44,12 @@ func Locales() fs.FS {
 // so a scenario finds the text that bypasses the catalog.
 var Pseudo = language.MustParse("en-XA")
 
+// PluralGuard, when true, makes Printer.T panic on a message whose en entry
+// has a one form, and name its ID. T passes no count, so it always shows the
+// other form. Only the test binary of cmd/ncly sets it, so a scenario fails
+// where such a call runs, even with the ID in a variable. See #234.
+var PluralGuard bool
+
 // Catalogs holds the catalogs of one or more owners, such as the SDK and
 // core, or the SDK and an extension: for each owner, one file per language,
 // named after its tag, such as en.toml or fr-CA.toml. Each owner's en
@@ -53,6 +59,7 @@ type Catalogs struct {
 	tags    []language.Tag // the languages with a catalog, en first
 	matcher language.Matcher
 	en      map[string]bool
+	plural  map[string]bool // the IDs whose en entry has a one form
 }
 
 // CatalogError reports an en catalog that is missing, unreadable, or not a
@@ -74,7 +81,7 @@ func (e *CatalogError) Unwrap() error { return e.Err }
 func Load(folders ...fs.FS) (*Catalogs, error) {
 	b := goi18n.NewBundle(language.English)
 	b.RegisterUnmarshalFunc("toml", toml.Unmarshal)
-	c := &Catalogs{bundle: b, tags: []language.Tag{language.English}, en: map[string]bool{}}
+	c := &Catalogs{bundle: b, tags: []language.Tag{language.English}, en: map[string]bool{}, plural: map[string]bool{}}
 	for _, fsys := range folders {
 		en, err := b.LoadMessageFileFS(fsys, "en.toml")
 		if err != nil {
@@ -90,6 +97,7 @@ func Load(folders ...fs.FS) (*Catalogs, error) {
 				return nil, &CatalogError{File: "en.toml", Err: err}
 			}
 			c.en[m.ID] = true
+			c.plural[m.ID] = m.One != ""
 			if err := b.AddMessages(Pseudo, pseudoMessage(m)); err != nil {
 				return nil, &CatalogError{File: "en.toml", Err: err}
 			}
@@ -143,7 +151,11 @@ func (c *Catalogs) Match(setting string) language.Tag {
 }
 
 // Printer returns a printer of these catalogs for a language setting.
-func (c *Catalogs) Printer(setting string) *Printer { return newPrinter(c.bundle, c.Match(setting)) }
+func (c *Catalogs) Printer(setting string) *Printer {
+	p := newPrinter(c.bundle, c.Match(setting))
+	p.plural = c.plural
+	return p
+}
 
 // Requested returns the language that a setting requests, as a tag, such as
 // fr-CA for fr_CA.UTF-8, whether or not a catalog speaks it. A setting that
@@ -171,6 +183,8 @@ type Printer struct {
 	// plain writes a number in the digits that numbers shows, in English
 	// and without grouping, for the plural rules.
 	plain *message.Printer
+	// plural holds the IDs that PluralGuard refuses.
+	plural map[string]bool
 }
 
 func newPrinter(b *goi18n.Bundle, tag language.Tag) *Printer {
@@ -185,6 +199,9 @@ func newPrinter(b *goi18n.Bundle, tag language.Tag) *Printer {
 // message that the active catalog lacks falls back to en, and a message that
 // en lacks too returns the id itself, so a scenario shows it.
 func (p *Printer) T(id string, data ...map[string]any) string {
+	if PluralGuard && p.plural[id] {
+		panic(fmt.Sprintf("i18n: %s has plural forms, which Printer.T cannot choose: use Printer.N, Size, or Duration", id))
+	}
 	cfg := &goi18n.LocalizeConfig{MessageID: id}
 	if len(data) > 0 {
 		cfg.TemplateData = data[0]
