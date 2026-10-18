@@ -137,8 +137,7 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		// exit, and changes nothing (#188).
 		select {
 		case <-ctx.Done():
-			var cause SignalCause
-			stopped = errors.As(context.Cause(ctx), &cause)
+			_, stopped = signalCause(ctx)
 		case <-time.After(signalSettle):
 		}
 	case <-ctx.Done():
@@ -321,11 +320,18 @@ func (c SignalCause) Error() string { return "stopped by " + c.Signal.String() }
 // SignalOf returns the signal that ended ctx, and SIGTERM when ctx ended
 // for another reason, such as a timeout.
 func SignalOf(ctx context.Context) os.Signal {
-	var cause SignalCause
-	if errors.As(context.Cause(ctx), &cause) {
-		return cause.Signal
+	if sig, ok := signalCause(ctx); ok {
+		return sig
 	}
 	return syscall.SIGTERM
+}
+
+// signalCause returns the signal that ended ctx, and false when a signal
+// did not end it.
+func signalCause(ctx context.Context) (os.Signal, bool) {
+	var cause SignalCause
+	ok := errors.As(context.Cause(ctx), &cause)
+	return cause.Signal, ok
 }
 
 // OnSignal returns a context that the first Ctrl-C or SIGTERM ends, with

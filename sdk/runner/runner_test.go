@@ -90,9 +90,9 @@ func TestRunStopsAfterTheExitOnlyForASignal(t *testing.T) {
 }
 
 // TestRunStopsAProgramThatRunsAtTheDeadline proves that a deadline that
-// ends ctx before the program exits stops it with SIGTERM, or with SIGKILL
-// under a limit. The program ends only on a signal, so the deadline came
-// first.
+// ends ctx before the program exits stops it: Run sends SIGTERM, or SIGKILL
+// under a limit, and reports SIGTERM. The program ends only on a signal, so
+// the deadline came first.
 func TestRunStopsAProgramThatRunsAtTheDeadline(t *testing.T) {
 	for limit, killed := range map[time.Duration]syscall.Signal{0: syscall.SIGTERM, time.Hour: syscall.SIGKILL} {
 		t.Run(fmt.Sprintf("limit=%v", limit), func(t *testing.T) {
