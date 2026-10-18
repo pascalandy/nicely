@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# check-layers-test.sh proves just check-layers on a scratch stack, for just
-# test. It runs on macOS and Linux, with bash 3.2.
+# check-layers-test.sh proves just check-layers and just signoff-layers on a
+# scratch stack, for just test. It runs on macOS and Linux, with bash 3.2.
 #
 # Each case clones a bare origin into a new caller and runs the caller's
 # justfile: a copy of the real one, where only check is a stub. gh is a stub
 # too, so no case reaches the network. To prove that a case catches a broken
 # guard, copy the justfile and scripts/ to a scratch folder. Break the guard in
-# the copy of check-layers.sh. Run the copy of this test. See #58.
+# the copy of check-layers.sh. Run the copy of this test. See #58 and #71.
 set -Eeuo pipefail
 trap 'printf "%s: line %s failed: %s\n" "${BASH_SOURCE[0]##*/}" "${LINENO}" "${BASH_COMMAND}" >&2' ERR
 # A hook or a caller can export GIT_DIR. The scratch repositories must see their own.
@@ -63,6 +63,7 @@ fct_caller() {
 	caller="${root}/${1}"
 	git clone --quiet "${root}/origin.git" "${caller}"
 	git -C "${caller}" config fetch.prune false
+	rm -f "${root}/signed" "${root}/signoff-fails"
 	printf 'caller change\n' >>"${caller}/README.txt"
 	printf 'caller file\n' >"${caller}/untracked.txt"
 	fct_snapshot >"${root}/caller.before"
@@ -98,7 +99,7 @@ fct_run() {
 		cat "${root}/stdout" "${root}/stderr" >&2
 		fct_fail "expected exit ${expected}, got ${status}"
 	fi
-	run="$(sed -n 's/^check-layers: logs in //p' "${root}/stderr")"
+	run="$(sed -n 's/^[a-z-]*-layers: logs in //p' "${root}/stderr")"
 }
 
 fct_same() {
@@ -127,6 +128,28 @@ fct_expect_verdicts() {
 	done
 	fct_same "${root}/stdout.expected" "${root}/stdout" "check-layers printed other verdicts"
 	fct_same "${root}/summary.expected" "${run}/summary.txt" "summary.txt holds other verdicts"
+}
+
+# fct_expect_gh <call>... requires exactly these calls to the gh stub, in that order.
+fct_expect_gh() {
+	: >"${root}/gh-calls.expected"
+	if (($# > 0)); then printf '%s\n' "$@" >"${root}/gh-calls.expected"; fi
+	fct_same "${root}/gh-calls.expected" "${root}/gh-calls" "gh got other calls"
+}
+
+# fct_expect_signed_summary requires one sign-off per line of summary.txt, with its SHA, in the same order, each SHA an ancestor of the next.
+fct_expect_signed_summary() {
+	local branch sha verdict previous=""
+	: >"${root}/gh-calls.expected"
+	while read -r branch sha verdict; do
+		[[ "${verdict}" == ok ]] || fct_fail "summary.txt gives ${branch} the verdict ${verdict}"
+		printf 'signoff --commit %s\n' "${sha}" >>"${root}/gh-calls.expected"
+		if [[ -n "${previous}" ]] && ! git -C "${caller}" merge-base --is-ancestor "${previous}" "${sha}"; then
+			fct_fail "${sha} of ${branch} does not contain ${previous}"
+		fi
+		previous="${sha}"
+	done <"${run}/summary.txt"
+	fct_same "${root}/gh-calls.expected" "${root}/gh-calls" "the sign-offs do not match summary.txt"
 }
 
 fct_expect_no_worktree() {
@@ -170,6 +193,12 @@ if [[ -e left/over ]]; then state=dirty; fi
 printf '%s %s %s\n' "$(git rev-parse HEAD)" "$(pwd -P)" "${state}" >>"${NCLY_LAYERS_TEST}/checks"
 mkdir -p left
 printf 'left by a layer\n' >left/over
+# A case can advance a branch on origin once, during the first check.
+if [[ -e "${NCLY_LAYERS_TEST}/advance" ]]; then
+	read -r branch target <"${NCLY_LAYERS_TEST}/advance"
+	git push --quiet origin "${target}:refs/heads/${branch}"
+	rm "${NCLY_LAYERS_TEST}/advance"
+fi
 # A case can move the worktree's HEAD once, during the first check.
 if [[ -e "${NCLY_LAYERS_TEST}/detach" ]]; then
 	git checkout --quiet --detach HEAD~1
@@ -192,6 +221,21 @@ set -Eeuo pipefail
 printf '%s\n' "$*" >>"${NCLY_LAYERS_TEST}/gh-calls"
 if [[ "$*" == "stack view --json" ]]; then
 	cat "${NCLY_LAYERS_TEST}/stack.json"
+	exit 0
+fi
+# signed holds the green statuses, and signoff-fails the SHAs whose sign-off fails.
+if [[ $# -eq 3 && "${1}" == signoff && "${2}" == --commit ]]; then
+	if grep -qx "${3}" "${NCLY_LAYERS_TEST}/signoff-fails" 2>/dev/null; then
+		echo "gh stub: the sign-off of ${3} failed on purpose" >&2
+		exit 1
+	fi
+	printf '%s\n' "${3}" >>"${NCLY_LAYERS_TEST}/signed"
+	echo "gh stub: signed off on ${3}"
+	exit 0
+fi
+if [[ $# -eq 4 && "${1} ${2} ${3}" == "signoff status --commit" ]]; then
+	grep -qx "${4}" "${NCLY_LAYERS_TEST}/signed" 2>/dev/null
+	echo "gh stub: signoff is green on ${4}"
 	exit 0
 fi
 echo "gh stub: no answer for: $*" >&2
@@ -223,6 +267,8 @@ JUST
 	sha_two="${layer_sha}"
 	fct_layer three two three.txt three
 	sha_three="${layer_sha}"
+	fct_layer next two next.txt next
+	sha_next="${layer_sha}"
 	fct_layer orphan main orphan.txt orphan
 	sha_orphan="${layer_sha}"
 	fct_layer above orphan above.txt above
@@ -246,6 +292,7 @@ fct_case_two_layers() {
 	fct_run 0 just check-layers one two
 	fct_expect_checks "${sha_one}" "${sha_two}"
 	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" ok
+	fct_expect_gh
 	[[ "$(ls "${run}")" == "01-one.log"$'\n'"02-two.log"$'\n'"summary.txt" ]] || fct_fail "expected one log per layer and summary.txt"
 	grep -q 'stub check passed' "${run}/01-one.log" || fct_fail "the log of one lacks the check output"
 	grep -q 'stub check passed' "${run}/02-two.log" || fct_fail "the log of two lacks the check output"
@@ -259,6 +306,7 @@ fct_case_failing_check() {
 	fct_run 1 just check-layers bad fixed
 	fct_expect_checks "${sha_bad}" "${sha_fixed}"
 	fct_expect_verdicts bad "${sha_bad}" FAIL fixed "${sha_fixed}" ok
+	fct_expect_gh
 	grep -q 'stub check failed on purpose' "${run}/01-bad.log" || fct_fail "the log of bad lacks the check output"
 	fct_expect_no_worktree
 	fct_caller_unchanged
@@ -280,6 +328,7 @@ fct_case_missing_parent() {
 	fct_run 1 just check-layers one orphan above
 	fct_expect_checks "${sha_one}" "${sha_orphan}" "${sha_above}"
 	fct_expect_verdicts one "${sha_one}" ok orphan "${sha_orphan}" FAIL above "${sha_above}" ok
+	fct_expect_gh
 	grep -q "origin/orphan ${sha_orphan} does not contain origin/one ${sha_one}" "${run}/02-orphan.log" || fct_fail "the log of orphan does not name both layers"
 	grep -q 'stub check passed' "${run}/02-orphan.log" || fct_fail "the check of orphan must pass, so that only the ancestry fails it"
 	fct_expect_no_worktree
@@ -305,6 +354,7 @@ fct_case_moved_head() {
 	[[ ! -e "${root}/detach" ]] || fct_fail "the stub check did not move HEAD"
 	fct_expect_checks "${sha_one}" "${sha_two}"
 	fct_expect_verdicts one "${sha_one}" FAIL two "${sha_two}" ok
+	fct_expect_gh
 	grep -q 'stub check passed' "${run}/01-one.log" || fct_fail "the check of one must pass, so that only the moved HEAD fails it"
 	grep -q 'HEAD moved off origin/one during the check' "${run}/01-one.log" || fct_fail "the log of one does not name the moved HEAD"
 	fct_expect_no_worktree
@@ -332,10 +382,16 @@ check:
     @echo decoy >>"${NCLY_LAYERS_TEST}/decoy"
 JUST
 	fct_run 1 just check-layers nojust
-	rm "${root}/cache/justfile"
 	[[ ! -e "${root}/decoy" ]] || fct_fail "the justfile above the worktree ran"
 	fct_expect_checks
 	fct_expect_verdicts nojust "${sha_nojust}" FAIL
+	fct_caller_unchanged
+	test_case="layer without a justfile for signoff-layers"
+	fct_run 1 just signoff-layers nojust
+	rm "${root}/cache/justfile"
+	[[ ! -e "${root}/decoy" ]] || fct_fail "the justfile above the worktree ran"
+	fct_expect_verdicts nojust "${sha_nojust}" FAIL
+	fct_expect_gh
 	fct_caller_unchanged
 }
 
@@ -369,6 +425,11 @@ fct_case_just_environment() {
 	fct_run 0 env "JUST_JUSTFILE=${caller}/justfile" "JUST_WORKING_DIRECTORY=${caller}" JUST_NO_DEPS=true just check-layers one two
 	fct_expect_checks "${sha_one}" "${sha_two}"
 	fct_caller_unchanged
+	test_case="inherited JUST_ variables for signoff-layers"
+	fct_run 0 env "JUST_JUSTFILE=${caller}/justfile" "JUST_WORKING_DIRECTORY=${caller}" JUST_NO_DEPS=true just signoff-layers one two
+	fct_expect_checks "${sha_one}" "${sha_two}"
+	fct_expect_signed_summary
+	fct_caller_unchanged
 }
 
 fct_case_discovery() {
@@ -382,9 +443,81 @@ fct_case_discovery() {
 ]}
 JSON
 	fct_run 0 just check-layers
-	printf 'stack view --json\n' >"${root}/gh-calls.expected"
-	fct_same "${root}/gh-calls.expected" "${root}/gh-calls" "check-layers did not ask gh for the stack"
+	fct_expect_gh "stack view --json"
 	fct_expect_checks "${sha_one}" "${sha_two}"
+	fct_caller_unchanged
+	test_case="discovery for signoff-layers"
+	fct_run 0 just signoff-layers
+	fct_expect_gh "stack view --json" "signoff --commit ${sha_one}" "signoff --commit ${sha_two}"
+	fct_expect_checks "${sha_one}" "${sha_two}"
+	fct_caller_unchanged
+}
+
+fct_case_signoff_stack() {
+	test_case="signoff-layers on three layers"
+	fct_caller signoff-stack
+	fct_run 0 just signoff-layers one two three
+	[[ "${run}" == "${root}/cache/nicely/signoff-layers/"* ]] || fct_fail "the logs are outside the signoff-layers folder: ${run}"
+	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
+	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
+	fct_expect_signed_summary
+	grep -q "signoff-layers: signed off ${sha_two} after its checks passed" "${run}/02-two.log" || fct_fail "the log of two does not name its sign-off"
+	fct_expect_no_worktree
+	fct_caller_unchanged
+	# A green status from an earlier run proves nothing about this run, so the layers are checked and signed again.
+	test_case="signoff-layers over green statuses"
+	(cd "${caller}" && gh signoff status --commit "${sha_two}") >/dev/null || fct_fail "the first run left no green status"
+	fct_run 0 just signoff-layers one two three
+	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
+	fct_expect_signed_summary
+	fct_caller_unchanged
+}
+
+fct_case_signoff_failures() {
+	test_case="signoff-layers after a failed check"
+	fct_caller signoff-failures
+	fct_run 1 just signoff-layers bad fixed
+	fct_expect_checks "${sha_bad}"
+	fct_expect_verdicts bad "${sha_bad}" FAIL
+	fct_expect_gh
+	fct_caller_unchanged
+	test_case="signoff-layers after a failed ancestry check"
+	fct_run 1 just signoff-layers one orphan above
+	fct_expect_checks "${sha_one}" "${sha_orphan}"
+	fct_expect_verdicts one "${sha_one}" ok orphan "${sha_orphan}" FAIL
+	fct_expect_gh "signoff --commit ${sha_one}"
+	fct_caller_unchanged
+	test_case="signoff-layers after a moved HEAD"
+	: >"${root}/detach"
+	fct_run 1 just signoff-layers one two
+	fct_expect_checks "${sha_one}"
+	fct_expect_verdicts one "${sha_one}" FAIL
+	fct_expect_gh
+	fct_caller_unchanged
+	test_case="signoff-layers after a failed sign-off"
+	printf '%s\n' "${sha_two}" >"${root}/signoff-fails"
+	fct_run 1 just signoff-layers one two three
+	fct_expect_checks "${sha_one}" "${sha_two}"
+	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" FAIL
+	fct_expect_gh "signoff --commit ${sha_one}" "signoff --commit ${sha_two}"
+	grep -q 'stub check passed' "${run}/02-two.log" || fct_fail "the log of two lacks the check that passed"
+	grep -q "the checks passed, but gh signoff --commit ${sha_two} failed" "${run}/02-two.log" || fct_fail "the log of two does not name the failed sign-off"
+	fct_expect_no_worktree
+	fct_caller_unchanged
+}
+
+fct_case_signoff_advanced_origin() {
+	test_case="signoff-layers while origin advances"
+	fct_caller signoff-advanced
+	printf 'two %s\n' "${sha_next}" >"${root}/advance"
+	fct_run 0 just signoff-layers one two three
+	[[ ! -e "${root}/advance" ]] || fct_fail "the stub check did not advance two"
+	[[ "$(git --git-dir="${root}/origin.git" rev-parse refs/heads/two)" == "${sha_next}" ]] || fct_fail "two did not advance on origin"
+	[[ "$(git -C "${caller}" rev-parse refs/remotes/origin/two)" == "${sha_next}" ]] || fct_fail "origin/two did not advance in the caller"
+	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
+	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
+	fct_expect_signed_summary
+	git -C "${root}/seed" push --quiet --force origin "${sha_two}:refs/heads/two"
 	fct_caller_unchanged
 }
 
@@ -437,9 +570,12 @@ fct_main() {
 	fct_case_git_environment
 	fct_case_just_environment
 	fct_case_discovery
+	fct_case_signoff_stack
+	fct_case_signoff_failures
+	fct_case_signoff_advanced_origin
 	fct_case_signal INT 130
 	fct_case_signal TERM 143
-	printf 'check-layers checks each layer as origin holds it, on the layer below, and leaves the caller unchanged\n'
+	printf 'check-layers and signoff-layers check each layer as origin holds it, on the layer below, sign only what passed, and leave the caller unchanged\n'
 }
 
 fct_main

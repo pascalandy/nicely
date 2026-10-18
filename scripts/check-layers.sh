@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # check-layers.sh runs just check on each layer of a stack, bottom to top, as
 # origin holds it, for just check-layers. A layer fails when it does not
-# contain the layer below. It runs on macOS and Linux.
+# contain the layer below. With --signoff, for just signoff-layers, it signs
+# off each SHA that passed, and stops at the first failure. It runs on macOS
+# and Linux.
 #
 #   just check-layers [branch...]
+#   just signoff-layers [branch...]
 #
 # Without branches, it reads the layers of the current stack from gh stack.
 # The run's folder keeps one log per layer, and summary.txt, which gives the
@@ -17,8 +20,16 @@ for just_variable in $(compgen -e); do
 	if [[ "$just_variable" == JUST_* ]]; then unset "$just_variable"; fi
 done
 
+name="check-layers"
+signoff=false
+if [[ "${1:-}" == --signoff ]]; then
+	name="signoff-layers"
+	signoff=true
+	shift
+fi
+
 die() {
-	echo "check-layers: $*" >&2
+	echo "$name: $*" >&2
 	exit 1
 }
 
@@ -36,7 +47,7 @@ git fetch --quiet origin "${refspecs[@]}" || die "git fetch of the layers from o
 shas=()
 for branch in "${branches[@]}"; do shas+=("$(git rev-parse "refs/remotes/origin/$branch")"); done
 # Not /tmp: Linux mounts it as tmpfs and macOS purges it, and the logs must outlive the run.
-run="${XDG_CACHE_HOME:-$HOME/.cache}/nicely/check-layers/$(date +%Y%m%d-%H%M%S)-$$"
+run="${XDG_CACHE_HOME:-$HOME/.cache}/nicely/$name/$(date +%Y%m%d-%H%M%S)-$$"
 worktree="$run/worktree"
 summary="$run/summary.txt"
 mkdir -p "$run"
@@ -46,7 +57,7 @@ trap 'git worktree remove --force "$worktree" 2>/dev/null || true' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 git worktree add --quiet --detach "$worktree" "${shas[0]}"
-echo "check-layers: logs in $run" >&2
+echo "$name: logs in $run" >&2
 status=0
 for i in "${!branches[@]}"; do
 	branch="${branches[$i]}"
@@ -56,7 +67,7 @@ for i in "${!branches[@]}"; do
 	verdict=ok
 	# A layer restacked on an old parent can pass its own check, so the check cannot clear this failure.
 	if ((i > 0)) && ! git merge-base --is-ancestor "${shas[i - 1]}" "$sha"; then
-		echo "check-layers: origin/$branch $sha does not contain origin/${branches[i - 1]} ${shas[i - 1]}" >>"$log"
+		echo "$name: origin/$branch $sha does not contain origin/${branches[i - 1]} ${shas[i - 1]}" >>"$log"
 		verdict=FAIL
 	fi
 	git -C "$worktree" checkout --quiet --force --detach "$sha"
@@ -64,12 +75,23 @@ for i in "${!branches[@]}"; do
 	# The layer's own justfile, or a FAIL: without it, just would search the folders above the worktree.
 	(cd "$worktree" && just --justfile "$worktree/justfile" --working-directory "$worktree" check) >>"$log" 2>&1 </dev/null || verdict=FAIL
 	if [[ "$(git -C "$worktree" rev-parse HEAD)" != "$sha" ]]; then
-		echo "check-layers: HEAD moved off origin/$branch during the check" >>"$log"
+		echo "$name: HEAD moved off origin/$branch during the check" >>"$log"
 		verdict=FAIL
+	fi
+	# Sign the frozen SHA, never the branch: origin can move during the run, and only this SHA was checked.
+	if $signoff && [[ "$verdict" == ok ]]; then
+		if gh signoff --commit "$sha" >>"$log" 2>&1 </dev/null; then
+			echo "$name: signed off $sha after its checks passed" >>"$log"
+		else
+			echo "$name: the checks passed, but gh signoff --commit $sha failed" >>"$log"
+			verdict=FAIL
+		fi
 	fi
 	[[ "$verdict" == ok ]] || status=1
 	# Written once the verdict is final, so a layer that a signal interrupts gets no line.
 	echo "$branch $sha $verdict" >>"$summary"
 	echo "$branch $(git rev-parse --short "$sha") $verdict"
+	# A layer above a failed one is never signed off.
+	if $signoff && [[ "$verdict" != ok ]]; then break; fi
 done
 exit "$status"

@@ -169,3 +169,9 @@ fmt *files:
 [group('checks')]
 signoff: check
     gh signoff
+
+# Sign off each layer of a stack after its checks pass, up to the first failure
+[group('checks')]
+[positional-arguments]
+signoff-layers *branches:
+    @exec bash scripts/check-layers.sh --signoff "$@"
