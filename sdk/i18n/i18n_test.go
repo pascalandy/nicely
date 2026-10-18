@@ -253,3 +253,38 @@ func TestCheckCatalogsHoldsEachTranslationToTheIDsOfEnglish(t *testing.T) {
 		}
 	}
 }
+
+// TestCheckCatalogsRequiresTheOneFormOfANumber rejects, in each language,
+// an entry whose other form reads .Count or .N without a one form, which
+// English hides when it writes both forms the same, and accepts the entry
+// once it has that form.
+func TestCheckCatalogsRequiresTheOneFormOfANumber(t *testing.T) {
+	entry := func(forms string) string { return "[\"item.count\"]\ndescription = \"d\"\n" + forms }
+	cases := []struct{ name, without, with string }{
+		{"Count", `other = "{{.Count}} items"`, `one = "{{.Count}} item"` + "\n" + `other = "{{.Count}} items"`},
+		{"N", `other = "{{.N}} B"`, `one = "{{.N}} B"` + "\n" + `other = "{{.N}} B"`},
+		{"Count with spaces", `other = "{{ .Count }} items"`, `one = "{{ .Count }} item"` + "\n" + `other = "{{ .Count }} items"`},
+		{"empty one", `one = ""` + "\n" + `other = "{{.N}} B"`, `one = "{{.N}} B"` + "\n" + `other = "{{.N}} B"`},
+	}
+	for _, c := range cases {
+		valid := entry(c.with + "\n")
+		for _, file := range []string{"en.toml", "fr-CA.toml"} {
+			fsys := fstest.MapFS{"en.toml": {Data: []byte(valid)}, "fr-CA.toml": {Data: []byte(valid)}}
+			fsys[file] = &fstest.MapFile{Data: []byte(entry(c.without + "\n"))}
+			err := CheckCatalogs(fsys, "")
+			if err == nil || !strings.HasPrefix(err.Error(), file+": item.count ") || !strings.Contains(err.Error(), "one form") {
+				t.Errorf("%s in %s: got %v, want an error that names %s, item.count, and the one form", c.name, file, err, file)
+			}
+			fsys[file] = &fstest.MapFile{Data: []byte(valid)}
+			if err := CheckCatalogs(fsys, ""); err != nil {
+				t.Errorf("%s in %s with its one form: %v", c.name, file, err)
+			}
+		}
+	}
+	for _, other := range []string{"No items.", "{{.Name}} is ready.", "{{.Number}} of {{.Counter}}"} {
+		fsys := fstest.MapFS{"en.toml": {Data: []byte(entry(fmt.Sprintf("other = %q\n", other)))}}
+		if err := CheckCatalogs(fsys, ""); err != nil {
+			t.Errorf("%q, which reads neither .Count nor .N, needs only other: %v", other, err)
+		}
+	}
+}
