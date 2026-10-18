@@ -51,9 +51,10 @@ var skipped = []limitRule{
 
 // generated asks go/ast, so the gate exempts exactly what the go command
 // treats as generated. A file without a valid package clause is not generated.
-// A syntax error is not a gate error.
+// The header comes before the package clause, so the parse stops there. A deep
+// or broken body cannot change the answer.
 func generated(src []byte) bool {
-	file, _ := parser.ParseFile(token.NewFileSet(), "", src, parser.ParseComments)
+	file, _ := parser.ParseFile(token.NewFileSet(), "", src, parser.PackageClauseOnly|parser.ParseComments)
 	return ast.IsGenerated(file)
 }
 
