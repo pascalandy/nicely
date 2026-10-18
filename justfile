@@ -157,11 +157,11 @@ fmt-check:
     {{ golangci }} fmt --diff ./... ./testdata/extensions/...
     cd tools && go tool golangci-lint fmt --diff
 
-# Check the release scripts and the dormant manual workflow
+# Check the shell scripts, those of the skills too, and the dormant manual workflow
 [group('checks')]
 release-lint:
-    shellcheck scripts/*.sh
-    shfmt -d scripts/*.sh
+    shellcheck scripts/*.sh .agents/skills/*/scripts/*.sh
+    shfmt -d scripts/*.sh .agents/skills/*/scripts/*.sh
     {{ go-tools }} actionlint
 
 # Build and inspect a local release without publishing
