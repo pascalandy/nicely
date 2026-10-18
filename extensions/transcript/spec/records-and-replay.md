@@ -7,26 +7,24 @@ Use the SDK for records, locks, and publication, as [Operations](../../../docs/n
 Python emits the single-item plan before user-side effects.
 Go validates it and durably creates the initial record with a pending step.
 The step becomes unknown before result-folder reservation or upload.
-Go records completion only after independently verifying and syncing the required artifacts.
+Go records completion only after it verifies and syncs the required artifacts, as [Verified artifacts](#verified-artifacts) says.
 
 - A download failure before intent leaves the step pending with its code, message, and hint.
 - After acknowledgement, a known pre-upload transport failure or a received 4xx refusal makes the step failed.
   A 5xx response or lost connection after sending audio leaves it unknown.
   Upload retries, including SDK retries, are disabled.
   One acknowledgement permits at most one upload request.
-- The record keeps the program and `yt-dlp` versions reported by the intent.
+- The record keeps the program and `yt-dlp` versions reported by the intent, in `tools` under `transcript` and `yt-dlp`.
   Its item key is the URL exactly as supplied.
 - A repeated call uses the run lock and input checks of [Run IDs](../../../docs/north-star/contract/run-ids.md).
   A different command, URL, or explicit output argument is `USAGE_INVALID` before effects.
   A busy run returns `TEMPORARY` with a `run view` hint and starts no program.
 - A completed run returns its verified saved result without Python, a dependency upgrade, or a Deepgram request.
-  Check every required path, size, hash, and usable transcript format before returning success.
+  Before it returns success, it applies [Verified artifacts](#verified-artifacts) and compares each size and hash with the record.
   Missing, changed, or unsupported evidence returns `RESUME_UNSAFE`.
-- Complete, already recorded artifact evidence may resolve a lost final protocol message locally.
-  Under the run lock, Go verifies that complete set and persists completion before returning success.
-  This never writes transcript artifacts or starts another upload.
-  Dry run reports reuse without changing the record.
-  Unrecorded files alone prove nothing.
+- A lost final protocol message leaves the step unknown, so a repeat refuses with `RESUME_UNSAFE`.
+  Pascal cut its local recovery on 2026-10-18, as [D038](../../../docs/north-star/decisions/D038-python-protocol.md) records.
+  [M99](../../../docs/milestones/M99-parking-lot/resume.md) parks it.
 - Before any intent, the shared run-ID rules may safely retry preparation.
   After a paid intent, incomplete or uncertain work is refused with `RESUME_UNSAFE`.
   A missing response never proves the request was free.
@@ -51,4 +49,22 @@ The domain records these `resolved` values, without using them to compare a repe
 
 A configuration change never redirects a saved result.
 The recorded output folder and verified artifacts determine replay.
-A saved run keeps its original `started_at`; local completion reconciliation starts no new execution attempt.
+A saved run keeps its original `started_at`.
+
+## Verified artifacts
+
+After a `completed` step, Go checks each required name before it records completion:
+
+1. The name is a regular file directly inside `output_dir`, not a symlink.
+2. Go computes its size and SHA-256, and checks that its content is usable.
+3. Go syncs the three files and the folder, then calls `Run.Complete` with the three artifacts.
+
+Usable content:
+
+- `raw_transcript.txt` is valid UTF-8 and not blank.
+- `raw_sentences.txt` is valid UTF-8. An empty sentence list stays valid, as in the source.
+- `raw_transcript.json` is valid UTF-8 and holds one JSON array, with nothing after it.
+
+A file that fails a check leaves the step unknown, with the overall `RUNTIME` of a protocol failure.
+Completion lists the three artifacts with `path`, `size_bytes`, and `sha256`.
+Its `evidence` holds `format_version: 1` and the program's `warnings`.
