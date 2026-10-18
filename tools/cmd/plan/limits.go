@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -33,8 +34,7 @@ var skipped = []limitRule{
 			content = c.old
 		}
 		lines := bytes.SplitN(content, []byte("\n"), 11)
-		header := bytes.Join(lines[:min(10, len(lines))], []byte("\n"))
-		return bytes.Contains(header, []byte("Code generated")) && bytes.Contains(header, []byte("DO NOT EDIT"))
+		return generatedMarker.Match(bytes.Join(lines[:min(10, len(lines))], []byte("\n")))
 	},
 	// Binary files hold no agent prose.
 	func(c change) bool {
@@ -45,6 +45,10 @@ var skipped = []limitRule{
 		return bytes.IndexByte(content[:min(8000, len(content))], 0) >= 0
 	},
 }
+
+// generatedMarker is the header line that Go's convention reserves for
+// generated files, so a doc that quotes it is still checked.
+var generatedMarker = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
 
 const agentsSizeFix = `AGENTS.md only routes an agent to the files it must read. Move the text you added to the file that owns it, as the row "Where does a new rule go?" in "Find what you need" says, and leave a link in its place.`
 
@@ -134,7 +138,7 @@ func limitsGit(root string, args ...string) ([]byte, error) {
 }
 
 func readChanges(root string, refs []string, old, next string) ([]change, error) {
-	data, err := limitsGit(root, append([]string{"diff", "--name-status", "-z", "-M", "-l0", "--diff-filter=ACMRD"}, refs...)...)
+	data, err := limitsGit(root, append([]string{"diff", "--name-status", "-z", "-M", "-l0", "--ignore-submodules=all", "--diff-filter=ACMRD"}, refs...)...)
 	if err != nil {
 		return nil, err
 	}
