@@ -38,12 +38,12 @@ func TestRunNeverStartsAProgramOnceCtxEnded(t *testing.T) {
 }
 
 // TestRunStopsAfterTheExitOnlyForASignal proves that, once the program has
-// exited, only a signal that ends ctx during the settle wait stops it, as a
-// Ctrl-C that reaches the program and ncly together does. A deadline or a
-// plain cancellation that ends ctx then keeps the program's own result
-// (#188). synctest makes the order certain: its clock stands still while the
-// program runs, because the wait for the exit is a system call, so ctx ends
-// a millisecond after the exit, while Run waits 25 ms for a signal.
+// exited, only a signal that ends ctx during the settle wait stops it. Such a
+// signal is a Ctrl-C that reaches the program and ncly together. A deadline
+// or a plain cancellation that ends ctx then keeps the program's own result
+// (#188). synctest makes the order certain. Its clock stands still while the
+// program runs, because the wait for the exit is a system call. So ctx ends a
+// millisecond after the exit, while Run waits 25 ms for a signal.
 func TestRunStopsAfterTheExitOnlyForASignal(t *testing.T) {
 	cases := []struct {
 		name string
