@@ -1,5 +1,9 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# A shebang recipe writes its script here. The Codex sandbox makes just's default, $XDG_RUNTIME_DIR/just, read-only.
+# A nested just reads this setting again, but not the --tempdir of its caller. JUST_TEMPDIR and --tempdir still win. See #79.
+set tempdir := "/tmp"
+
 go-tools := 'GOTOOLCHAIN="$(go -C tools env GOVERSION)" go tool -modfile=tools/go.mod'
 golangci := go-tools + " golangci-lint"
 
