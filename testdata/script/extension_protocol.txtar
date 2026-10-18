@@ -109,7 +109,8 @@ stderr '"code":"INTERRUPTED"'
 
 # A report answers on stdout even when a finding fails, and on stderr when the report itself fails
 exits 78 ncly hello check failing --json
-stdout '^\{"ok":false,"contract_version":1,"checks":\[\{"id":"hello.mood","status":"fail"\}\]\}$'
+answer stdout report
+stdout '"checks":\[\{"id":"hello.mood","status":"fail"\}\]\}$'
 ! stderr .
 exits 78 ncly hello check broken --json
 ! stdout .
