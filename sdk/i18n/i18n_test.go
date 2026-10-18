@@ -269,6 +269,10 @@ func TestCheckCatalogsRequiresTheOneFormOfANumber(t *testing.T) {
 		{"(.).Count", `other = "{{(.).Count}} items"`, `one = "{{(.).Count}} item"` + "\n" + `other = "{{(.).Count}} items"`},
 		{"Count passed to a template", `other = '{{define "n"}}{{.}} items{{end}}{{template "n" .Count}}'`, `one = "{{.Count}} item"` + "\n" + `other = '{{define "n"}}{{.}} items{{end}}{{template "n" .Count}}'`},
 		{"N in a template", `other = '{{define "n"}}{{.N}} B{{end}}{{template "n" .}}'`, `one = "{{.N}} B"` + "\n" + `other = '{{define "n"}}{{.N}} B{{end}}{{template "n" .}}'`},
+		{"($).Count", `other = "{{($).Count}} items"`, `one = "{{.Count}} item"` + "\n" + `other = "{{($).Count}} items"`},
+		{"((.)).Count", `other = "{{((.)).Count}} items"`, `one = "{{.Count}} item"` + "\n" + `other = "{{((.)).Count}} items"`},
+		{"($).N", `other = "{{($).N}} B"`, `one = "{{.N}} B"` + "\n" + `other = "{{($).N}} B"`},
+		{"a variable", `other = "{{$root := .}}{{$root.Count}} items"`, `one = "{{.Count}} item"` + "\n" + `other = "{{$root := .}}{{$root.Count}} items"`},
 	}
 	for _, c := range cases {
 		valid := entry(c.with + "\n")

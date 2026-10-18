@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 	"text/template"
-	"text/template/parse"
 
 	"github.com/BurntSushi/toml"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
@@ -55,15 +54,12 @@ func CheckCatalogs(fsys fs.FS, domain string) error {
 	return nil
 }
 
-// numberFields holds the template fields that carry a number: Count, which
-// Printer.N fills, and N, which Printer.Size and Printer.Duration fill.
-var numberFields = []string{"Count", "N"}
-
-// checkOneForm requires a one form of an entry whose other form reads a
-// number field, such as {{.Count}} or {{ .N }}. When English writes both
-// forms the same, as for a unit symbol, neither a scenario nor the
-// pseudo-locale sees a missing one, and a language whose forms differ would
-// show the other form for 1.
+// checkOneForm requires a one form of an entry whose other form shows a
+// number from the field Count, which Printer.N fills, or N, which
+// Printer.Size and Printer.Duration fill. When English writes both forms the
+// same, as for a unit symbol, neither a scenario nor the pseudo-locale sees
+// a missing one, and a language whose forms differ would show the other form
+// for 1.
 func checkOneForm(entry map[string]any) error {
 	m, err := goi18n.NewMessage(entry)
 	if err != nil {
@@ -78,62 +74,28 @@ func checkOneForm(entry map[string]any) error {
 	if strings.TrimSpace(m.One) != "" {
 		return nil
 	}
-	// Templates holds the form and each template that it defines.
-	for _, t := range other.Templates() {
-		if field := numberField(t.Root); field != "" {
-			return fmt.Errorf("reads .%s in its other form, but has no one form", field)
-		}
+	if field := numberField(other); field != "" {
+		return fmt.Errorf("reads .%s in its other form, but has no one form", field)
 	}
 	return nil
 }
 
-// numberField returns the first field of numberFields that node reads, or
-// "" when it reads none.
-func numberField(node parse.Node) string {
-	var nodes []parse.Node
-	switch n := node.(type) {
-	case *parse.FieldNode:
-		if slices.Contains(numberFields, n.Ident[0]) {
-			return n.Ident[0]
-		}
-	case *parse.VariableNode:
-		// $.Count reads the data as .Count does, such as inside a range.
-		if len(n.Ident) > 1 && n.Ident[0] == "$" && slices.Contains(numberFields, n.Ident[1]) {
-			return n.Ident[1]
-		}
-	case *parse.ChainNode:
-		// (.).Count reads the data as .Count does.
-		if n.Node.String() == "." && slices.Contains(numberFields, n.Field[0]) {
-			return n.Field[0]
-		}
-		nodes = []parse.Node{n.Node}
-	case *parse.ListNode:
-		if n != nil {
-			nodes = n.Nodes
-		}
-	case *parse.ActionNode:
-		nodes = []parse.Node{n.Pipe}
-	case *parse.PipeNode:
-		for _, c := range n.Cmds {
-			nodes = append(nodes, c)
-		}
-	case *parse.CommandNode:
-		nodes = n.Args
-	case *parse.IfNode:
-		nodes = []parse.Node{n.Pipe, n.List, n.ElseList}
-	case *parse.RangeNode:
-		nodes = []parse.Node{n.Pipe, n.List, n.ElseList}
-	case *parse.WithNode:
-		nodes = []parse.Node{n.Pipe, n.List, n.ElseList}
-	case *parse.TemplateNode:
-		if n.Pipe != nil {
-			nodes = []parse.Node{n.Pipe}
-		}
+// numberField returns Count or N when the text of t changes with the value
+// of that field, or "" when it changes with neither. Rendering sees every
+// way that a template reads a field, such as {{ .Count }}, {{$.N}}, a
+// variable, or a template that the form defines. A form that fails on these
+// values keeps the text that it wrote before the failure.
+func numberField(t *template.Template) string {
+	render := func(count, n string) string {
+		var b strings.Builder
+		_ = t.Execute(&b, map[string]any{"Count": count, "N": n})
+		return b.String()
 	}
-	for _, n := range nodes {
-		if field := numberField(n); field != "" {
-			return field
-		}
+	switch shown := render("1", "1"); {
+	case render("2", "1") != shown:
+		return "Count"
+	case render("1", "2") != shown:
+		return "N"
 	}
 	return ""
 }
