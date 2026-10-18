@@ -39,8 +39,8 @@ func Locales() fs.FS {
 	return sub
 }
 
-// PluralGuard, when true, makes Printer.T panic on a message whose en entry
-// has a one form, and name its ID. T passes no count, so it always shows the
+// PluralGuard, when true, makes Printer.T panic on a message with a one form
+// in any language, and name its ID. T passes no count, so it always shows the
 // other form. Only the test binary of cmd/ncly sets it, so a scenario fails
 // where such a call runs, even with the ID in a variable. See #234.
 var PluralGuard bool
@@ -54,7 +54,7 @@ type Catalogs struct {
 	tags    []language.Tag // the languages with a catalog, en first
 	matcher language.Matcher
 	en      map[string]bool
-	plural  map[string]bool // the IDs whose en entry has a one form
+	plural  map[string]bool // the IDs with a one form in any language
 }
 
 // CatalogError reports an en catalog that is missing, unreadable, or not a
@@ -92,7 +92,7 @@ func Load(folders ...fs.FS) (*Catalogs, error) {
 				return nil, &CatalogError{File: "en.toml", Err: err}
 			}
 			c.en[m.ID] = true
-			c.plural[m.ID] = m.One != ""
+			c.markPlural(m)
 			if err := b.AddMessages(Pseudo, pseudoMessage(m)); err != nil {
 				return nil, &CatalogError{File: "en.toml", Err: err}
 			}
@@ -114,6 +114,9 @@ func Load(folders ...fs.FS) (*Catalogs, error) {
 				continue
 			}
 			valid := slices.DeleteFunc(f.Messages, func(m *goi18n.Message) bool { return checkMessage(m) != nil })
+			for _, m := range valid {
+				c.markPlural(m)
+			}
 			if b.AddMessages(f.Tag, valid...) == nil && !slices.Contains(c.tags, f.Tag) {
 				c.tags = append(c.tags, f.Tag)
 			}
@@ -121,6 +124,13 @@ func Load(folders ...fs.FS) (*Catalogs, error) {
 	}
 	c.matcher = language.NewMatcher(c.tags)
 	return c, nil
+}
+
+// markPlural records the ID of a message with a one form, for PluralGuard.
+func (c *Catalogs) markPlural(m *goi18n.Message) {
+	if m.One != "" {
+		c.plural[m.ID] = true
+	}
 }
 
 // Has reports whether the en catalog holds an ID.
