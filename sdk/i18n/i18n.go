@@ -10,9 +10,7 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
-	"math"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -166,12 +164,16 @@ func parseSetting(setting string) (language.Tag, error) {
 type Printer struct {
 	localizer *goi18n.Localizer
 	numbers   *message.Printer
+	// plain writes a number in the digits that numbers shows, in English
+	// and without grouping, for the plural rules.
+	plain *message.Printer
 }
 
 func newPrinter(b *goi18n.Bundle, tag language.Tag) *Printer {
 	return &Printer{
 		localizer: goi18n.NewLocalizer(b, tag.String()),
 		numbers:   message.NewPrinter(tag),
+		plain:     message.NewPrinter(language.English),
 	}
 }
 
@@ -251,14 +253,19 @@ func (p *Printer) Duration(d time.Duration) string {
 	if unit == 0 {
 		decimals = 0
 	}
-	value := float64(d) / float64(durationUnits[unit].length)
-	// The plural form follows the number as it shows, such as 1 or 1.5, which
-	// the plural rules read in plain digits.
-	shown := math.Round(value*math.Pow10(decimals)) / math.Pow10(decimals)
+	return p.measure(durationUnits[unit].id, float64(d)/float64(durationUnits[unit].length), decimals)
+}
+
+// measure returns the text of the unit message id, with N filled by v
+// formatted with at most the given decimals, in the plural form of that
+// number as it shows, such as 2 for 1.96. The plural rules read the digits
+// that plain writes, which round v as N does, ties to even included, so the
+// form and the text never disagree.
+func (p *Printer) measure(id string, v float64, decimals int) string {
 	return p.localize(&goi18n.LocalizeConfig{
-		MessageID:    durationUnits[unit].id,
-		PluralCount:  strconv.FormatFloat(shown, 'f', -1, 64),
-		TemplateData: map[string]any{"N": p.Number(value, decimals)},
+		MessageID:    id,
+		PluralCount:  p.plain.Sprint(number.Decimal(v, number.MaxFractionDigits(decimals), number.NoSeparator())),
+		TemplateData: map[string]any{"N": p.Number(v, decimals)},
 	})
 }
 

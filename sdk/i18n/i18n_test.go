@@ -112,6 +112,8 @@ func TestDurationPluralForms(t *testing.T) {
 		{"en", 1500 * time.Millisecond, "1.5 seconds"},
 		{"en", 2 * time.Second, "2 seconds"},
 		{"fr-CA", 1500 * time.Millisecond, "1,5 seconde"},
+		// 1.95 shows as 1,9, which takes one, though rounding half up gives 2.
+		{"fr-CA", 1950 * time.Millisecond, "1,9 seconde"},
 		{"fr-CA", 2 * time.Second, "2 secondes"},
 	}
 	for _, c := range cases {
