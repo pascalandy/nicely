@@ -220,7 +220,8 @@ func (p *Printer) Number(v float64, decimals int) string {
 var sizeUnits = []string{"size.bytes", "size.kilobytes", "size.megabytes", "size.gigabytes", "size.terabytes"}
 
 // Size formats a byte count with at most one decimal in the largest unit
-// that keeps the number at 1 or more, such as 1.5 MB.
+// that keeps the number at 1 or more, such as 1.5 MB, in the plural form of
+// that number. Bytes take no decimal.
 func (p *Printer) Size(bytes int64) string {
 	value, unit := float64(bytes), 0
 	for value >= 1000 && unit < len(sizeUnits)-1 {
@@ -231,7 +232,7 @@ func (p *Printer) Size(bytes int64) string {
 	if unit == 0 {
 		decimals = 0
 	}
-	return p.T(sizeUnits[unit], map[string]any{"N": p.Number(value, decimals)})
+	return p.measure(sizeUnits[unit], value, decimals)
 }
 
 // durationUnits holds the catalog IDs of duration units, from the

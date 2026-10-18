@@ -145,23 +145,28 @@ one = "{{.N}} h"
 other = "{{.N}} h"
 
 ["size.bytes"]
-description = "A size in bytes. {{.N}} is a number already formatted for the language, such as 512. B is the symbol of the byte."
+description = "A size in bytes. {{.N}} is a number already formatted for the language, such as 512. B is the symbol of the byte. The form follows {{.N}}."
+one = "{{.N}} B"
 other = "{{.N}} B"
 
 ["size.kilobytes"]
-description = "A size in kilobytes, 1000 bytes each. {{.N}} is a number already formatted, such as 1.5. kB is the unit symbol."
+description = "A size in kilobytes, 1000 bytes each. {{.N}} is a number already formatted, such as 1.5. kB is the unit symbol. The form follows {{.N}}, decimals included."
+one = "{{.N}} kB"
 other = "{{.N}} kB"
 
 ["size.megabytes"]
-description = "A size in megabytes, 1000 kilobytes each. {{.N}} is a number already formatted, such as 1.5. MB is the unit symbol."
+description = "A size in megabytes, 1000 kilobytes each. {{.N}} is a number already formatted, such as 1.5. MB is the unit symbol. The form follows {{.N}}, decimals included."
+one = "{{.N}} MB"
 other = "{{.N}} MB"
 
 ["size.gigabytes"]
-description = "A size in gigabytes, 1000 megabytes each. {{.N}} is a number already formatted, such as 1.5. GB is the unit symbol."
+description = "A size in gigabytes, 1000 megabytes each. {{.N}} is a number already formatted, such as 1.5. GB is the unit symbol. The form follows {{.N}}, decimals included."
+one = "{{.N}} GB"
 other = "{{.N}} GB"
 
 ["size.terabytes"]
-description = "A size in terabytes, 1000 gigabytes each. {{.N}} is a number already formatted, such as 1.5. TB is the unit symbol."
+description = "A size in terabytes, 1000 gigabytes each. {{.N}} is a number already formatted, such as 1.5. TB is the unit symbol. The form follows {{.N}}, decimals included."
+one = "{{.N}} TB"
 other = "{{.N}} TB"
 
 ["help.effects"]
@@ -265,7 +270,8 @@ description = "Key help under a text field of a form that suggests values, after
 other = "complete"
 
 ["form.number"]
-description = "Prompt of a choice of a form on a terminal that cannot redraw a line, which lists the options as numbered lines above it. {{.Count}} is the number of the last option, at least 1. The human types a number after it."
+description = "Prompt of a choice of a form on a terminal that cannot redraw a line, which lists the options as numbered lines above it. {{.Count}} is the number of the last option, at least 1, already formatted for the language. The form follows {{.Count}}. The human types a number after it."
+one = "Type a number from 1 to {{.Count}}:"
 other = "Type a number from 1 to {{.Count}}:"
 
 ["form.group_title"]

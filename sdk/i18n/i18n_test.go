@@ -123,6 +123,50 @@ func TestDurationPluralForms(t *testing.T) {
 	}
 }
 
+// TestSizePluralForms proves that a size takes the plural form of the
+// number that it shows, after rounding, not of the raw value: 1.04 kB shows
+// as 1 and 1.96 kB as 2.
+func TestSizePluralForms(t *testing.T) {
+	b := goi18n.NewBundle(language.English)
+	en := []*goi18n.Message{
+		{ID: "size.bytes", One: "{{.N}} byte", Other: "{{.N}} bytes"},
+		{ID: "size.kilobytes", One: "{{.N}} kilobyte", Other: "{{.N}} kilobytes"},
+	}
+	fr := []*goi18n.Message{
+		{ID: "size.bytes", One: "{{.N}} octet", Other: "{{.N}} octets"},
+		{ID: "size.kilobytes", One: "{{.N}} kilooctet", Other: "{{.N}} kilooctets"},
+	}
+	if err := b.AddMessages(language.English, en...); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.AddMessages(language.MustParse("fr-CA"), fr...); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		lang  string
+		bytes int64
+		want  string
+	}{
+		{"en", 0, "0 bytes"},
+		{"en", 1, "1 byte"},
+		{"en", 2, "2 bytes"},
+		{"en", 1_000, "1 kilobyte"},
+		{"en", 1_040, "1 kilobyte"},
+		{"en", 1_500, "1.5 kilobytes"},
+		{"fr-CA", 0, "0 octet"},
+		{"fr-CA", 1, "1 octet"},
+		{"fr-CA", 2, "2 octets"},
+		{"fr-CA", 1_500, "1,5 kilooctet"},
+		{"fr-CA", 1_950, "1,9 kilooctet"},
+		{"fr-CA", 1_960, "2 kilooctets"},
+	}
+	for _, c := range cases {
+		if got := newPrinter(b, language.MustParse(c.lang)).Size(c.bytes); got != c.want {
+			t.Errorf("%s, %d: got %q, want %q", c.lang, c.bytes, got, c.want)
+		}
+	}
+}
+
 func TestFormats(t *testing.T) {
 	sdk := sdkCatalogs(t)
 	en, fr := sdk.Printer("en"), newPrinter(sdk.bundle, language.MustParse("fr-CA"))

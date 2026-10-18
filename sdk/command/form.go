@@ -227,9 +227,9 @@ func (f *Form) pick(ctx context.Context, text *i18n.Printer, c *cobra.Command, d
 }
 
 // number asks for the number of one of count options, on a terminal whose
-// TERM is dumb.
+// TERM is dumb, in the plural form of count.
 func (f *Form) number(count int) string {
-	return f.p.T("form.number", map[string]any{"Count": count})
+	return f.p.N("form.number", count)
 }
 
 // commandLine writes a call as the Next time: line of Modes in contract.md
