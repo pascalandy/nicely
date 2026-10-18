@@ -30,6 +30,10 @@ Fix documentation errors in the commit that introduces them. `just test` checks 
 
 Use ASD-STE100 Issue 9 writing practices for English prose. Procedures use imperative sentences, one instruction each, at most 20 words. Descriptive sentences have one topic and at most 25 words. Preserve exact command syntax and identifiers.
 
+## Follow serious CLIs where the specs are silent
+
+Where the specs are silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in a new decision in [decisions/](decisions/README.md).
+
 ## Run macOS checks on the mini
 
 Use the `fleet` skill to run macOS checks on the mini. Use the mbp only if the mini is offline or lacks Nicely or a required tool. Report the machine and the reason for any mbp fallback.
