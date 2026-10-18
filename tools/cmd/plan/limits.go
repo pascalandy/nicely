@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"go/scanner"
+	"go/ast"
+	"go/parser"
 	"go/token"
 	"path"
-	"regexp"
 	"slices"
 	"strings"
 )
@@ -49,24 +49,12 @@ var skipped = []limitRule{
 	},
 }
 
-// generatedMarker is the header line of a generated Go file.
-var generatedMarker = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
-
-// generated applies the rule of go/ast. The header is a line of a comment
-// before the package clause. A string that quotes the header does not count.
-// The scanner removes the CR of a CRLF line.
+// generated asks go/ast, so the gate exempts exactly what the go command
+// treats as generated. A file without a valid package clause is not generated.
+// A syntax error is not a gate error.
 func generated(src []byte) bool {
-	var s scanner.Scanner
-	s.Init(token.NewFileSet().AddFile("", -1, len(src)), src, nil, scanner.ScanComments)
-	for {
-		_, tok, lit := s.Scan()
-		if tok != token.COMMENT {
-			return false
-		}
-		if generatedMarker.MatchString(lit) {
-			return true
-		}
-	}
+	file, _ := parser.ParseFile(token.NewFileSet(), "", src, parser.ParseComments)
+	return ast.IsGenerated(file)
 }
 
 const agentsSizeFix = `AGENTS.md only routes an agent to the files it must read. Move the text you added to the file that owns it, as the row "Where does a new rule go?" in "Find what you need" says, and leave a link in its place.`
