@@ -62,7 +62,7 @@ Preserve the existing transcription path while adding the JSON protocol that the
 
 ### M13-T2 Protocol and dry run
 
-- **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Dry-run answer](../north-star/contract.md#dry-run-answer), [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies)
+- **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Dry-run answer](../north-star/contract/dry-run-answer.md), [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies)
 - **Proves:** `extensions/transcript/testdata/script/transcript_protocol.txtar`, `extensions/transcript/testdata/script/transcript_dry_run.txtar`
 
 Embed and extract the program, then exchange one `request` and `plan` through `uv`.
@@ -73,7 +73,7 @@ Check empty result folders explicitly because `snapshot` ignores folders.
 
 ### M13-T3 Transcription with a record
 
-- **Read:** [Records and replay](../../extensions/transcript/spec.md#records-and-replay), [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Record format](../north-star/contract.md#record-format)
+- **Read:** [Records and replay](../../extensions/transcript/spec.md#records-and-replay), [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program), [Record format](../north-star/contract/record-format.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_run.txtar`, `extensions/transcript/testdata/script/transcript_barrier.txtar`, `extensions/transcript/testdata/script/transcript_keys.txtar`
 
 Record the one validated item before user-side writes or paid dispatch.
@@ -86,7 +86,7 @@ Prove missing keys and grants, and a granted environment key when the keychain i
 
 ### M13-T4 Failures and replay
 
-- **Read:** [Records and replay](../../extensions/transcript/spec.md#records-and-replay), [Retry safety](../north-star/contract.md#retry-safety), [Output](../north-star/contract.md#output)
+- **Read:** [Records and replay](../../extensions/transcript/spec.md#records-and-replay), [Retry safety](../north-star/contract/retry-safety.md), [Output](../north-star/contract/output.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_failures.txtar`, `extensions/transcript/testdata/script/transcript_protocol_errors.txtar`, `extensions/transcript/testdata/script/transcript_replay.txtar`
 
 Stop before paid dispatch and after dispatch but before the response.
@@ -100,7 +100,7 @@ Prove that invocation and replay refusals omit attempted results and keep their 
 
 ### M13-T5 Interruption and contenders
 
-- **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Records and evidence](../north-star/contract.md#records-and-evidence)
+- **Read:** [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md), [Records and evidence](../north-star/contract/records-and-evidence.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_cancel.txtar`, `extensions/transcript/testdata/script/transcript_contenders.txtar`
 
 Ctrl-C stops the process tree, preserves completed files, and returns `INTERRUPTED` with the available result paths.

@@ -39,7 +39,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 - An extension is bundled or external; a first-party extension can be either
 - The SDK implements the contract and the services in Go, for core and every Go extension
-- The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](contract.md#programs-that-ncly-runs) names
+- The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](contract/programs-that-ncly-runs.md) names
 - A Python program lives inside an extension and talks to its Go code in JSON only
 
 ### Definitions
@@ -63,7 +63,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Distinct from: services, the one layer of the SDK that runs work
 - Program runner
   - Def.: the service that runs programs for core and extensions, with their environment, timeout, signals, and cleanup
-  - Project note: [Programs that ncly runs](contract.md#programs-that-ncly-runs) defines its scope, including the one program that starts outside it
+  - Project note: [Programs that ncly runs](contract/programs-that-ncly-runs.md) defines its scope, including the one program that starts outside it
 - Python program
   - Def.: Python code that an extension embeds while it moves to Go, such as transcript's
 
@@ -98,21 +98,21 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: an optional second noun inside a domain, such as `prompt` in `ncly transcript prompt list`
 - Verb
   - Def.: the action of a command, one per action across domains, such as `list` or `run`
-  - Project note: [Usage](contract.md#usage) lists them
+  - Project note: [Usage](contract/usage.md) lists them
 - Command declaration
   - Def.: the one description of a command that supplies its help, completion, validation, and discovery
 - Manifest
   - Def.: the file that declares an extension's commands, effects, modes, and requirements, read without starting the extension
-  - Project note: `ncly-<domain>.toml`, whose schema [Manifest](contract.md#manifest) defines
+  - Project note: `ncly-<domain>.toml`, whose schema [Manifest](contract/manifest.md) defines
 - Conditional program
   - Def.: a program in a manifest's `programs` that a command needs only for some configs or invocations, such as one harness among several
   - Project note: [Required programs](core-spec.md#required-programs) defines it. Doctor never checks it, and preparation checks it when an invocation selects it
 - Canonical arguments
   - Def.: the one form in which core passes a validated call to an extension: the command path after the domain, each flag as `--<name>=<value>`, then `--` and the positional arguments
-  - Project note: [Dispatch](contract.md#dispatch) defines it. `--dry-run` and `--run-id` pass as words after the own flags; a flag that has a variable, such as `--json`, reaches the extension as that variable instead
+  - Project note: [Dispatch](contract/dispatch.md) defines it. `--dry-run` and `--run-id` pass as words after the own flags; a flag that has a variable, such as `--json`, reaches the extension as that variable instead
 - Protocol failure
   - Def.: an answer or an exit code from an extension or an embedded program that breaks the contract
-  - Project note: core answers `RUNTIME` in its place, as [Answer check](contract.md#answer-check) defines
+  - Project note: core answers `RUNTIME` in its place, as [Answer check](contract/answer-check.md) defines
   - Distinct from: a failure that the extension reports through a valid answer
 - Environment
   - Def.: the variables that an extension receives: the resolved global flags, the versions, and the keys granted to it
@@ -122,7 +122,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: the number a command exits with. Each error code maps to one
 - Problem
   - Def.: one entry of `errors` or `warnings`: a `code`, a `message`, a `hint`, and an optional `next`
-  - Project note: [Output](contract.md#output) defines it. Agents act on `code` and `next`, never on `message` or `hint`
+  - Project note: [Output](contract/output.md) defines it. Agents act on `code` and `next`, never on `message` or `hint`
 - Next command
   - Def.: the command that a problem's hint names, as an array of words in `next`, present only when it runs as is
   - Distinct from: a hint, the text for a human, which may wrap the same command in a sentence
@@ -130,35 +130,35 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: a command whose result is a report, such as `ncly doctor`
 - Status command
   - Def.: the report command `ncly <domain> status` that an extension's manifest marks for doctor, which runs it and lists its checks under the extension's component
-  - Project note: [Status command](contract.md#status-command) defines it. An agent may also call it alone
+  - Project note: [Status command](contract/status-command.md) defines it. An agent may also call it alone
   - Distinct from: `ncly auth status`, a command of core that reports keys
 - List command
   - Def.: a command whose verb is `list`, such as `ncly skill list`
-  - Project note: [Completion values](contract.md#completion-values) defines when completion may run one: never one that writes a user file or bills
+  - Project note: [Completion values](contract/completion-values.md) defines when completion may run one: never one that writes a user file or bills
 - Command that core calls
   - Def.: a command of an installed extension that core starts itself for one of its own commands: completion's list command or doctor's status command
-  - Project note: [Commands that core calls](contract.md#commands-that-core-calls) defines the rules that both share. [Completion values](contract.md#completion-values) and [Status command](contract.md#status-command) keep the conditions, the limit, and the reading of the answer of each
+  - Project note: [Commands that core calls](contract/commands-that-core-calls.md) defines the rules that both share. [Completion values](contract/completion-values.md) and [Status command](contract/status-command.md) keep the conditions, the limit, and the reading of the answer of each
   - Distinct from: an ordinary dispatch, in which core starts a command for its caller, as when an agent calls a status command alone
 - Grant
   - Def.: the permission, given by a human in a terminal, for one extension to receive one key
-  - Project note: [Grants](contract.md#grants) binds it to the extension's domain and source, the path where discovery found the extension until taps
+  - Project note: [Grants](contract/grants.md) binds it to the extension's domain and source, the path where discovery found the extension until taps
 - Optional key
   - Def.: a service that a command declares but runs without, such as a harness key, whose harness then uses its own login
-  - Project note: the `keys` table of a [manifest](contract.md#manifest) marks it, and a missing one never fails `ncly auth status` or `ncly doctor`
+  - Project note: the `keys` table of a [manifest](contract/manifest.md) marks it, and a missing one never fails `ncly auth status` or `ncly doctor`
   - Distinct from: a conditional program, which a command needs only for some configs
 - Service
   - Def.: a network service whose key `ncly auth` manages, such as Deepgram, named `deepgram`
-  - Project note: [Keys](contract.md#keys) defines its name and the variable of its key, such as `DEEPGRAM_API_KEY`. A command declares its services in the `requires.keys` of its manifest
+  - Project note: [Keys](contract/keys.md) defines its name and the variable of its key, such as `DEEPGRAM_API_KEY`. A command declares its services in the `requires.keys` of its manifest
   - Distinct from: services, layer 2, and the service field of a keychain entry
 - Interactive mode
-  - Def.: the mode in which `ncly` may ask questions. [Modes](contract.md#modes) defines when it applies
+  - Def.: the mode in which `ncly` may ask questions. [Modes](contract/modes.md) defines when it applies
   - Distinct from: non-interactive mode
 - Non-interactive mode
   - Def.: every case outside interactive mode. A missing value fails instead of opening a form
 - Plain prompt
-  - Def.: a question in the terminal that the human answers by typing a line, such as a `[y/N]` confirmation, whose look [Modes](contract.md#modes) describes
+  - Def.: a question in the terminal that the human answers by typing a line, such as a `[y/N]` confirmation, whose look [Modes](contract/modes.md) describes
   - Project note: [ncly auth](core-spec.md#ncly-auth) defines it. [M07](../milestones/M07-forms.md) replaced the key prompt of M06, which turned echo off, with a masked field, and styled the confirmation, which stays a prompt, as [D059](decisions/D059-no-buttons.md) decides
-  - Distinct from: a form, including the masked field of a key, which the shared tui package builds and [Modes](contract.md#modes) describes
+  - Distinct from: a form, including the masked field of a key, which the shared tui package builds and [Modes](contract/modes.md) describes
 
 ## Operations
 
@@ -182,14 +182,14 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Def.: the durable evidence of one operation, identified by `run_id`, including its step outcomes and artifact references
 - Run ID
   - Def.: the identifier of one run, chosen by the caller with `--run-id`, or generated
-  - Project note: [Run IDs](contract.md#run-ids) defines what a call with an existing run ID does
+  - Project note: [Run IDs](contract/run-ids.md) defines what a call with an existing run ID does
 - Resolved value
   - Def.: a value that preparation picked for a run from the config or the machine, such as its model and effort
-  - Project note: a run record keeps it under `resolved`, and every later attempt reads it from there, as [Records and evidence](contract.md#records-and-evidence) defines
+  - Project note: a run record keeps it under `resolved`, and every later attempt reads it from there, as [Records and evidence](contract/records-and-evidence.md) defines
   - Distinct from: an input, which the call states, and which a call with the same run ID compares
 - Effect
   - Def.: what an operation does outside Nicely's cache and state and the run's temporary files, such as a user write, network access, or a paid request
-  - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract.md#record-format) lists
+  - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract/record-format.md) lists
 - Step boundary
   - Def.: the moment just before or just after record support persists a change to a step: its intent, the evidence of one artifact, or its final status
   - Project note: the boundary scenario of a recorded operation kills it at every step boundary, as [the scenario rules](../../testdata/script/README.md) ask
@@ -342,7 +342,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Reason: one word names a domain added to core, bundled or external
 - headless mode
   - Use instead: non-interactive mode
-  - Reason: [Modes](contract.md#modes) names the two modes
+  - Reason: [Modes](contract/modes.md) names the two modes
 - guide
   - Use instead: the file that answers the question: vision.md, principles.md, architecture.md, or glossary.md
   - Reason: the guide was split by question

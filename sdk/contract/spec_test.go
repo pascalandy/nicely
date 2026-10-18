@@ -9,7 +9,7 @@ import (
 	"github.com/pascalandy/nicely/internal/specdoc"
 )
 
-const contractDoc = "../../docs/north-star/contract.md"
+const contractDir = "../../docs/north-star/contract/"
 
 // shipped lists the milestones whose error codes the registry holds, and
 // shippedWarnings those whose warning codes it holds.
@@ -19,7 +19,7 @@ var (
 )
 
 func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
-	tables, err := specdoc.Tables(contractDoc, "Error codes")
+	tables, err := specdoc.Tables(contractDir+"error-codes.md", "Error codes")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestErrorCodesAgreeWithTheSpec(t *testing.T) {
 }
 
 func TestExitCodesAgreeWithTheSpec(t *testing.T) {
-	tables, err := specdoc.Tables(contractDoc, "Exit codes")
+	tables, err := specdoc.Tables(contractDir+"exit-codes.md", "Exit codes")
 	if err != nil {
 		t.Fatal(err)
 	}

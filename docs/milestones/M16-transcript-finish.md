@@ -32,7 +32,7 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 
 ### M16-T1 Doctor for YouTube
 
-- **Read:** [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract.md#status-command)
+- **Read:** [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract/status-command.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_doctor.txtar`, `extensions/transcript/testdata/script/transcript_cookies.txtar`
 
 Add `ncly transcript status` so `ncly doctor transcript` reports the dependencies established in M13 and the selected cookie path.

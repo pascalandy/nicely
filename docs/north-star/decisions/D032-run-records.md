@@ -1,6 +1,6 @@
 # D032 Keep small run records and resume explicitly
 
-Decided 2026-10-05. [Operations](../contract.md#operations) separates domain steps and recovery from process lifecycles. Records keep evidence and output references.
+Decided 2026-10-05. [Operations](../contract/operations.md) separates domain steps and recovery from process lifecycles. Records keep evidence and output references.
 
 **Scope update, 2026-10-17.** M10 and M13 first prove one item and one paid step, inspection, verified completion replay, and refusal of uncertain work. [M99](../../milestones/M99-parking-lot.md#resume) defers explicit resume and multi-step consumers until partial work needs reuse.
 

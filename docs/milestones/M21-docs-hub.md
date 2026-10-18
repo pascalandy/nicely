@@ -57,7 +57,7 @@ Keep sources unchanged and generated files inside disposable cache.
 
 ### M21-T2 Paths and lifecycle
 
-- **Read:** [Scope](#scope), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
+- **Read:** [Scope](#scope), [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md)
 - **Proves:** `extensions/docs/testdata/script/docs_serve_boundaries.txtar`
 
 Prove that the listener is loopback-only and that served paths cannot escape the selected documentation.

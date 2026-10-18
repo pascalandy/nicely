@@ -9,7 +9,7 @@ Version: v0.3.0
 
 ## Scope
 
-Implement [ncly describe](../north-star/core-spec.md#ncly-describe). Grow the declarations of M00, and the manifest of M01, with the fields that the commands of M01 and M02 need. One declaration supplies help, validation, doctor, and targeted discovery, so help shows a command's required arguments, flag groups, and effects from the same fields that `describe` returns, as [Usage](../north-star/contract.md#usage) says. Build no custom schema language or framework for future commands.
+Implement [ncly describe](../north-star/core-spec.md#ncly-describe). Grow the declarations of M00, and the manifest of M01, with the fields that the commands of M01 and M02 need. One declaration supplies help, validation, doctor, and targeted discovery, so help shows a command's required arguments, flag groups, and effects from the same fields that `describe` returns, as [Usage](../north-star/contract/usage.md) says. Build no custom schema language or framework for future commands.
 
 Describe comes before [M04](M04-skill.md), so that `skill` finds the skills of installed extensions through `ncly describe --json`, as an agent would, and the `nicely` skill teaches discovery from its first release.
 
@@ -27,7 +27,7 @@ The scenarios reach a bundled extension through `ncly-bundled`, the test build o
 
 ### M03-T1 Concise listing
 
-- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Extensions](../north-star/contract.md#extensions), [Output](../north-star/contract.md#output), [Compatibility](../north-star/contract.md#compatibility)
+- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Extensions](../north-star/contract/extensions.md), [Output](../north-star/contract/output.md), [Compatibility](../north-star/contract/compatibility.md)
 - **Proves:** `testdata/script/describe_list.txtar`, `sdk/contract/compat_test.go`
 
 `ncly describe` without a path, and with a group path, returns concise entries with `path`, `summary`, and `source`, in the order of their paths. An external extension's entries come from its manifest, and the scenario proves that it never starts. The entry of an extension's domain adds `skill`, the folder `ncly-<domain>.skill/` beside the manifest when it exists, and `null` otherwise or for a bundled extension. A broken extension's commands are absent, as from `ncly --help`, and a path inside its domain answers `EXTENSION_INVALID`, as `ncly <domain>` does.
@@ -36,10 +36,10 @@ An unknown path answers `NOT_FOUND`, whose `next` is `["ncly","describe"]`. As t
 
 ### M03-T2 Command detail
 
-- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest)
+- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Command descriptions](../north-star/contract/command-descriptions.md), [Manifest](../north-star/contract/manifest.md)
 - **Proves:** `testdata/script/describe_command.txtar`, `testdata/script/usage_validation.txtar`, `testdata/script/extension_manifest.txtar`
 
-A command path returns `args`, `flags`, `flag_groups`, `effects`, `requires`, `modes`, and `examples`, where `flags` holds the declared flags, plus `--dry-run` and `--run-id` when `modes` sets `dry_run` or `recorded`. Extend the M00 declarations, and add each field to [Manifest](../north-star/contract.md#manifest) in the same pull request, where they lack one: requiredness, value types, defaults, variadic flags, flag groups, effects, modes, and the programs and keys that a command requires. [Manifest](../north-star/contract.md#manifest) already defines each program once, in the top-level `programs` table that `requires.bins` names: this card reads the names, checks that each one names an entry and that a command names each entry, and checks the form of each name. [M05](M05-doctor.md) reads the keys of each entry. Each name in `requires.keys` is a service name, as [Keys](../north-star/contract.md#keys) defines: this card checks its form and that it appears once in its command, and `ncly describe` returns each one as an object with its `name`. [M06](M06-auth.md) reads the names. `extension_manifest.txtar` proves that the manifest rejects a malformed name in `requires.keys`, `keychain`, and a name that appears twice in one command. A fixture command that declares the `recorded` mode lists `run-id` among its flags, and a manifest that declares `dry-run` or `run-id` as an own flag is invalid.
+A command path returns `args`, `flags`, `flag_groups`, `effects`, `requires`, `modes`, and `examples`, where `flags` holds the declared flags, plus `--dry-run` and `--run-id` when `modes` sets `dry_run` or `recorded`. Extend the M00 declarations, and add each field to [Manifest](../north-star/contract/manifest.md) in the same pull request, where they lack one: requiredness, value types, defaults, variadic flags, flag groups, effects, modes, and the programs and keys that a command requires. [Manifest](../north-star/contract/manifest.md) already defines each program once, in the top-level `programs` table that `requires.bins` names: this card reads the names, checks that each one names an entry and that a command names each entry, and checks the form of each name. [M05](M05-doctor.md) reads the keys of each entry. Each name in `requires.keys` is a service name, as [Keys](../north-star/contract/keys.md) defines: this card checks its form and that it appears once in its command, and `ncly describe` returns each one as an object with its `name`. [M06](M06-auth.md) reads the names. `extension_manifest.txtar` proves that the manifest rejects a malformed name in `requires.keys`, `keychain`, and a name that appears twice in one command. A fixture command that declares the `recorded` mode lists `run-id` among its flags, and a manifest that declares `dry-run` or `run-id` as an own flag is invalid.
 
 Validation reads the same fields, so no constraint ships unenforced. In `usage_validation.txtar`, a missing required argument or flag, a value that its type rejects, and a call that breaks a flag group each answer `USAGE_INVALID` before the command runs, and no fixture's execution marker appears: through `ncly` for the core commands that declare them and for the external shell fixture, and through the SDK's entry point, `ncly-hello` run directly, for the Go fixture.
 
@@ -52,14 +52,14 @@ Validation reads the same fields, so no constraint ships unenforced. In `usage_v
 
 ### M03-T4 Config sources
 
-- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Configuration](../north-star/contract.md#configuration)
+- **Read:** [ncly describe](../north-star/core-spec.md#ncly-describe), [Configuration](../north-star/contract/configuration.md)
 - **Proves:** `testdata/script/describe_config.txtar`, `sdk/config/config_test.go`
 
-`config` lists each key a command reads, with its value and source, and never a secret. An extension's command names the keys that it reads in its manifest, as dotted paths under its domain, where a table such as `agent.profiles` covers every key beneath it, because doctor in [M05](M05-doctor.md) checks the extension's table against these keys, as [Configuration](../north-star/contract.md#configuration) defines. `sdk/config` keeps the source of each value as it merges the files: the flag, the variable, the file that set it, or the default. A table merges key by key, so each of its keys keeps its own source, and a list keeps the source of the file that replaced it, even when that list is empty. With an invalid config file, discovery uses defaults and adds `CONFIG_DEFAULTS_USED`.
+`config` lists each key a command reads, with its value and source, and never a secret. An extension's command names the keys that it reads in its manifest, as dotted paths under its domain, where a table such as `agent.profiles` covers every key beneath it, because doctor in [M05](M05-doctor.md) checks the extension's table against these keys, as [Configuration](../north-star/contract/configuration.md) defines. `sdk/config` keeps the source of each value as it merges the files: the flag, the variable, the file that set it, or the default. A table merges key by key, so each of its keys keeps its own source, and a list keeps the source of the file that replaced it, even when that list is empty. With an invalid config file, discovery uses defaults and adds `CONFIG_DEFAULTS_USED`.
 
 ### M03-T5 Help and dispatch from declarations
 
-- **Read:** [Usage](../north-star/contract.md#usage), [Command descriptions](../north-star/contract.md#command-descriptions), [Manifest](../north-star/contract.md#manifest), [Dispatch](../north-star/contract.md#dispatch), [SDK](../north-star/contract.md#sdk)
+- **Read:** [Usage](../north-star/contract/usage.md), [Command descriptions](../north-star/contract/command-descriptions.md), [Manifest](../north-star/contract/manifest.md), [Dispatch](../north-star/contract/dispatch.md), [SDK](../north-star/contract/sdk.md)
 - **Proves:** `testdata/script/help.txtar`, `testdata/script/usage_dispatch.txtar`
 
 Help and dispatch read the declarations of M03-T2. The help of its fixture commands shows a required argument as `<name>`, an optional one as `[name]`, a flag group as `(--a | --b)`, and one line for a command that writes, uses the network, or may bill, with `--dry-run` named when it is supported, in the help style of M00. `help.txtar` compares each page with the answer of `ncly describe` for the same command, so help and discovery never disagree, and runs once under the pseudo-locale.

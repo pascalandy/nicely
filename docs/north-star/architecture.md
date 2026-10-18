@@ -55,18 +55,18 @@ Each part has one owner: one package and one spec section.
 | Layer | Part | Owns | Package | Spec |
 |---|---|---|---|---|
 | 4 | Each extension | Its domain's preparation, business steps, result verification, catalog, skill, and recovery evidence when supported | `extensions/<name>/` | Its `spec.md` |
-| 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract.md#extensions) |
+| 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract/extensions.md) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
-| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/` | [SDK](contract.md#sdk) |
-| 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract.md#command-descriptions), [Output](contract.md#output) |
-| 2 | Program runner | Child environment, process groups, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract.md#programs-that-ncly-runs), [Required programs](core-spec.md#required-programs) |
-| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/` | [Operations](contract.md#operations) |
-| 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract.md#configuration) |
-| 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract.md#configuration) |
+| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/` | [SDK](contract/sdk.md) |
+| 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract/command-descriptions.md), [Output](contract/output.md) |
+| 2 | Program runner | Child environment, process groups, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract/programs-that-ncly-runs.md), [Required programs](core-spec.md#required-programs) |
+| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/` | [Operations](contract/operations.md) |
+| 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract/configuration.md) |
+| 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract/configuration.md) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
 | 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `sdk/contract/` | [contract.md](contract.md) |
-| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/` | [Record format](contract.md#record-format), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
-| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/` | [Keys](contract.md#keys), [Programs that ncly runs](contract.md#programs-that-ncly-runs) |
+| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/` | [Record format](contract/record-format.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
+| 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/` | [Keys](contract/keys.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
 
 A later shared service starts in `sdk/`. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. [The milestones](../milestones/) record when each implementation arrives.
 

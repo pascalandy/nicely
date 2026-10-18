@@ -27,7 +27,7 @@ One model and effort can come from flags or `[agent]` defaults. Named profiles, 
 
 ### M09-T1 Extension and install
 
-- **Read:** [agent spec](../../extensions/agent/spec.md), [Extensions](../north-star/contract.md#extensions), [Required programs](../north-star/core-spec.md#required-programs)
+- **Read:** [agent spec](../../extensions/agent/spec.md), [Extensions](../north-star/contract/extensions.md), [Required programs](../north-star/core-spec.md#required-programs)
 - **Proves:** `extensions/agent/testdata/script/agent_install.txtar`
 
 Add the manifest, catalogs, skill, and binary in `extensions/agent/`. Add `just install`, which puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. Declare Codex as a required program, with its minimum version and local version probe. Existing doctor behavior then checks `agent.codex`; no separate profile scanner or status command is needed.
@@ -36,7 +36,7 @@ Prove that `ncly agent --help` reaches the installed extension. A missing or old
 
 ### M09-T2 Codex dry run
 
-- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Settings](../../extensions/agent/spec.md#settings), [Codex invocation](../../extensions/agent/spec.md#codex-invocation), [Operations](../north-star/contract.md#operations)
+- **Read:** [ncly agent](../../extensions/agent/spec.md#ncly-agent), [Settings](../../extensions/agent/spec.md#settings), [Codex invocation](../../extensions/agent/spec.md#codex-invocation), [Operations](../north-star/contract/operations.md)
 - **Proves:** `extensions/agent/testdata/script/agent_dry_run.txtar`
 
 Resolve the model, effort, trusted task, and working directory. Check Codex's version and the requested tools mode through `sdk/runner`. Show the redacted invocation without launching a task. Missing model, unreadable task file, and invalid settings fail before launch.

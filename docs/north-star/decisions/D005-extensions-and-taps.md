@@ -1,6 +1,6 @@
 # D005 Add extensions the Git way and carry them in taps
 
-Decided 2026-10-05, revised 2026-10-09. Discover `ncly-<domain>` executables through a static manifest. Bundled Go extensions share their contract, as [Extensions](../contract.md#extensions) defines.
+Decided 2026-10-05, revised 2026-10-09. Discover `ncly-<domain>` executables through a static manifest. Bundled Go extensions share their contract, as [Extensions](../contract/extensions.md) defines.
 
 **Scope update, 2026-10-17.** [M99](../../milestones/M99-parking-lot.md#taps) defers tap distribution. `just install` installs first-party extensions from a checkout, with their existing skill folders.
 

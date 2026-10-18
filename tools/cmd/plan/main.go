@@ -55,9 +55,12 @@ var (
 	skippedNames = []string{"testdata", "node_modules", "dist"}
 )
 
-// codeSections are the "## " headings of contract.md and of an extension's
-// spec whose tables define codes, under a Code or a Warning column.
+// codeSections are the section titles whose tables define codes, under a Code
+// or a Warning column. A title is "# " in a part of a split doc, and "## " in
+// a whole one.
 var codeSections = []string{"Error codes", "Warning codes", "Codes"}
+
+var sectionTitle = regexp.MustCompile(`^##? (.+)$`)
 
 // exampleCode is the one code that a doc may name without a source: the Error
 // codes section of contract.md gives it as an extension's own code, and no
@@ -619,21 +622,27 @@ func checkSessionFiles(root string) []string {
 	return problems
 }
 
-// knownCodes returns the codes that a doc may name: those of the tables under
-// codeSections in contract.md and in each extension's spec, the errors that
-// the manifests of the fixture extensions declare, and exampleCode. A missing
-// contract.md adds no code.
+// knownCodes returns the codes that a doc may name. They come from the tables
+// under codeSections in the parts of contract.md and in each extension's spec,
+// whole or split into spec/.
+// They also come from the errors that the fixture manifests declare, and from
+// exampleCode.
 func knownCodes(root string) (map[string]bool, error) {
 	codes := map[string]bool{exampleCode: true}
+	parts, err := filepath.Glob(filepath.Join(root, "docs", "north-star", "contract", "*.md"))
+	if err != nil {
+		return nil, err
+	}
 	specs, err := filepath.Glob(filepath.Join(root, "extensions", "*", "spec.md"))
 	if err != nil {
 		return nil, err
 	}
-	for _, name := range append([]string{filepath.Join(root, "docs", "north-star", "contract.md")}, specs...) {
+	specParts, err := filepath.Glob(filepath.Join(root, "extensions", "*", "spec", "*.md"))
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range slices.Concat(parts, specs, specParts) {
 		data, err := os.ReadFile(name)
-		if errors.Is(err, fs.ErrNotExist) {
-			continue
-		}
 		if err != nil {
 			return nil, err
 		}
@@ -646,8 +655,8 @@ func knownCodes(root string) (map[string]bool, error) {
 				header = nil
 				continue
 			}
-			if heading, ok := strings.CutPrefix(line, "## "); ok {
-				section = strings.TrimSpace(heading)
+			if m := sectionTitle.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
+				section = m[1]
 			}
 			cells, isHeader := tableRow(line, &header)
 			if cells == nil || isHeader || !slices.Contains(codeSections, section) {

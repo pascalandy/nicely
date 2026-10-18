@@ -6,7 +6,7 @@
 
 ## Install
 
-`just install`, from a checkout, builds `ncly` into `~/.local/bin/`. It builds each first-party external extension, such as `ncly-agent`, into the `extensions` folder of Nicely's data folder, such as `~/.local/share/nicely/extensions/`. It writes the extension's manifest, catalogs, and skill beside it, as `ncly-agent.toml`, `ncly-agent.locales/`, and `ncly-agent.skill/`, where [Discovery](../../docs/north-star/contract.md#discovery) finds them. It honors an absolute `XDG_DATA_HOME`. It builds every file before it replaces an installed one, so a failed build keeps the previous install.
+`just install`, from a checkout, builds `ncly` into `~/.local/bin/`. It builds each first-party external extension, such as `ncly-agent`, into the `extensions` folder of Nicely's data folder, such as `~/.local/share/nicely/extensions/`. It writes the extension's manifest, catalogs, and skill beside it, as `ncly-agent.toml`, `ncly-agent.locales/`, and `ncly-agent.skill/`, where [Discovery](../../docs/north-star/contract/discovery.md) finds them. It honors an absolute `XDG_DATA_HOME`. It builds every file before it replaces an installed one, so a failed build keeps the previous install.
 
 ## ncly agent
 
@@ -32,7 +32,7 @@ ncly run view "$RUN_ID" --json
 
 ### Dry run
 
-`--dry-run --json` answers with the keys of [Dry-run answer](../../docs/north-star/contract.md#dry-run-answer) and these keys:
+`--dry-run --json` answers with the keys of [Dry-run answer](../../docs/north-star/contract/dry-run-answer.md) and these keys:
 
 | Key | Type | Meaning |
 |---|---|---|
@@ -86,17 +86,17 @@ Codex uses its own existing login. `agent` declares no API key and receives none
 
 ## Records and replay
 
-One run has one item, `task`, and one step, `codex`, whose effect is always `paid`. Persist its intent and finish the [durability barrier](../../docs/north-star/contract.md#record-format) before launch. A failed barrier starts no task. Once launch is possible, the step stays `unknown` until a verified answer is saved. A failure proven to precede launch may be `failed`.
+One run has one item, `task`, and one step, `codex`, whose effect is always `paid`. Persist its intent and finish the [durability barrier](../../docs/north-star/contract/record-format.md) before launch. A failed barrier starts no task. Once launch is possible, the step stays `unknown` until a verified answer is saved. A failure proven to precede launch may be `failed`.
 
 The run's `inputs` hold the task's SHA-256, absolute working directory, `tools: true`, and any explicitly supplied model and effort. A value omitted from the call is omitted from these stated settings, so a configuration change does not change the call's identity. `resolved` holds `harness: "codex"`, the actual model, and the actual effort. Compare stated inputs, not newly resolved defaults, on replay.
 
-After preparation, the call checks `--run-id` against [Run IDs](../../docs/north-star/contract.md#run-ids), in a dry run too. Without `--dry-run`, it generates an ID when the call gives none, then takes the run lock and reads the record while it holds the lock. For an ID that no record holds, it writes the initial record, with the step `codex` `pending` and the run `running`, then persists the intent: the step turns `unknown`, with its `started_at`. Only then does Codex start, in the run's own temporary folder, `ncly-run-<id>-` and a random suffix in the system temporary directory, which holds `<answer-file>` and is removed when the call ends. The call reads no event from the stdout of Codex. The stderr of Codex reaches the stderr of `ncly` only with `--verbose`.
+After preparation, the call checks `--run-id` against [Run IDs](../../docs/north-star/contract/run-ids.md), in a dry run too. Without `--dry-run`, it generates an ID when the call gives none, then takes the run lock and reads the record while it holds the lock. For an ID that no record holds, it writes the initial record, with the step `codex` `pending` and the run `running`, then persists the intent: the step turns `unknown`, with its `started_at`. Only then does Codex start, in the run's own temporary folder, `ncly-run-<id>-` and a random suffix in the system temporary directory, which holds `<answer-file>` and is removed when the call ends. The call reads no event from the stdout of Codex. The stderr of Codex reaches the stderr of `ncly` only with `--verbose`.
 
 A record that cannot be written answers `RUNTIME`, exit 1, before Codex starts, with a hint that names the `runs` folder. A failure after the launch, such as a nonzero exit or an answer file without text, answers `RUNTIME`, exit 1, and leaves the step and the run `unknown`. Every answer of a recorded call holds its `run_id`, failures included.
 
 Save `answer.txt` under `runs/<run-id>/` in the state directory. Record its path, size, and SHA-256 as the step's artifact. Step evidence contains `format_version: 1` and `duration_ms`. Publish the answer and completed record before printing success. Both initial and repeated answers come from that committed evidence.
 
-[Run IDs](../../docs/north-star/contract.md#run-ids) governs locking and replay. A call whose ID a record holds takes the first case that applies, before the model and the Codex check:
+[Run IDs](../../docs/north-star/contract/run-ids.md) governs locking and replay. A call whose ID a record holds takes the first case that applies, before the model and the Codex check:
 
 1. A record that cannot be read, that holds another `format_version`, or whose `resolved` lacks the `harness` `codex`, a model, or a known effort: `RESUME_UNSAFE`
 2. A record of another command path, other `inputs`, or other item keys: `USAGE_INVALID`, because the ID names another call
@@ -110,7 +110,7 @@ A dry run with `--run-id` tries the run lock without waiting and without creatin
 
 ### Stops and failures
 
-Ctrl-C, SIGTERM, and the timeout stop Codex and every descendant that `ncly` can reach, with the process-tree cleanup of [Programs that ncly runs](../../docs/north-star/contract.md#programs-that-ncly-runs): the signal, or SIGTERM for the timeout, then SIGKILL 15 seconds later. They stop the Codex check at once, as they stop a version probe. Without `--dry-run`, what the call answers depends on where the stop comes. Each answer keeps the `run_id`, and each answer after the record has `ncly run view <id>` as its hint and `next`:
+Ctrl-C, SIGTERM, and the timeout stop Codex and every descendant that `ncly` can reach, with the process-tree cleanup of [Programs that ncly runs](../../docs/north-star/contract/programs-that-ncly-runs.md): the signal, or SIGTERM for the timeout, then SIGKILL 15 seconds later. They stop the Codex check at once, as they stop a version probe. Without `--dry-run`, what the call answers depends on where the stop comes. Each answer keeps the `run_id`, and each answer after the record has `ncly run view <id>` as its hint and `next`:
 
 - Before the record, such as during the Codex check or the wait for the run lock, no record exists: a signal answers with exit 130 or 143, and the timeout answers `RUNTIME`, whose hint asks for a longer `--timeout`
 - After the intent, before Codex starts, and for a start that fails, such as a Codex that is no longer executable or a temporary folder that cannot be made, no task ran: the step turns `failed` with its error, and the run `interrupted` after a signal, or `failed`. The call answers `INTERRUPTED` with exit 130, `TERMINATED` with exit 143, or `RUNTIME`

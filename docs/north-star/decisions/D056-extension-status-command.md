@@ -1,6 +1,6 @@
 # D056 Let an extension add doctor checks through its status command
 
-Decided 2026-10-13. Doctor calls an extension's report command only when its manifest marks `status` with `doctor = true`. [Status command](../contract.md#status-command) owns effects, timeouts, and report validation.
+Decided 2026-10-13. Doctor calls an extension's report command only when its manifest marks `status` with `doctor = true`. [Status command](../contract/status-command.md) owns effects, timeouts, and report validation.
 
 **Why.** Domain checks need domain code. Agents can also call the same report directly. Static program prerequisites remain in manifests so doctor can check an extension that cannot start.
 

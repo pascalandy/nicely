@@ -12,7 +12,7 @@ import (
 )
 
 func TestGlobalFlagsAgreeWithTheSpec(t *testing.T) {
-	tables, err := specdoc.Tables("../../docs/north-star/contract.md", "Global flags")
+	tables, err := specdoc.Tables("../../docs/north-star/contract/global-flags.md", "Global flags")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,7 +9,7 @@ Version: v0.5.0
 
 ## Scope
 
-Implement [ncly doctor](../north-star/core-spec.md#ncly-doctor) with the `core` and `extensions` components, a component for each installed extension, and the [status command](../north-star/contract.md#status-command) through which an extension adds its own checks, which `ncly skill status` proves. The `auth` component arrives with keys in [M06](M06-auth.md), and transcript's status command in [M16](M16-transcript-finish.md). Doctor never installs anything, as [D011](../north-star/decisions/D011-local-checks.md) decides, so `ncly auth` in M06 stays the first command that writes.
+Implement [ncly doctor](../north-star/core-spec.md#ncly-doctor) with the `core` and `extensions` components, a component for each installed extension, and the [status command](../north-star/contract/status-command.md) through which an extension adds its own checks, which `ncly skill status` proves. The `auth` component arrives with keys in [M06](M06-auth.md), and transcript's status command in [M16](M16-transcript-finish.md). Doctor never installs anything, as [D011](../north-star/decisions/D011-local-checks.md) decides, so `ncly auth` in M06 stays the first command that writes.
 
 Doctor runs the version probes and the status commands through the program runner that M01 brought, and kills one at the limit with the stop that [M04-T5](M04-skill.md#m04-t5-skill-name-completion) adds for completion. It runs them one at a time, because the runner's cleanup signals every descendant of `ncly`, so the timeout of one would also stop another that runs beside it. They run together only once [#49](https://github.com/pascalandy/nicely/issues/49) scopes that cleanup to one program.
 
@@ -26,10 +26,10 @@ The scenarios use the shell fixture of M01, which gains required programs, confi
 
 ### M05-T1 Report and core component
 
-- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Output](../north-star/contract.md#output), [Configuration](../north-star/contract.md#configuration), [SDK](../north-star/contract.md#sdk)
+- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Output](../north-star/contract/output.md), [Configuration](../north-star/contract/configuration.md), [SDK](../north-star/contract/sdk.md)
 - **Proves:** `testdata/script/doctor_core.txtar`, `testdata/script/doctor_config.txtar`, `extensions/skill/testdata/script/skill_nicely.txtar`
 
-Add `doctor` to core in `internal/cli`, with the `core` component, the check object, and the `component` argument, which answers `NOT_FOUND` with exit 2 for an unknown component. The report goes through the report outcome of the SDK, which keeps a failed report on stdout, as [SDK](../north-star/contract.md#sdk) says of core's doctor. Invalid config is the failed `core.config` finding with `CONFIG_INVALID`, and independent checks still run. Doctor exits 0 without a failed check and 78 with one, and `doctor_core.txtar` proves a failed report: exit 78, the findings under `checks` on stdout, a failed check with its `hint`, and no `errors`.
+Add `doctor` to core in `internal/cli`, with the `core` component, the check object, and the `component` argument, which answers `NOT_FOUND` with exit 2 for an unknown component. The report goes through the report outcome of the SDK, which keeps a failed report on stdout, as [SDK](../north-star/contract/sdk.md) says of core's doctor. Invalid config is the failed `core.config` finding with `CONFIG_INVALID`, and independent checks still run. Doctor exits 0 without a failed check and 78 with one, and `doctor_core.txtar` proves a failed report: exit 78, the findings under `checks` on stdout, a failed check with its `hint`, and no `errors`.
 
 Add `doctor` to the `nicely` skill in `extensions/skill`: an agent calls it during setup, or when a dry run reports a problem that the agent cannot explain. Update the skill's rule for reading a failure: doctor and each status command marked `doctor` put their findings under `checks`, and on exit 78 the agent relays the `hint` and `next` of each failed check to the human. Another report command, such as `ncly auth status`, puts its findings under the data key that `ncly describe` gives it, and `errors` stays the path for a failure of the command itself, so the skill never teaches `checks` as a key of every report. The skill stays within its 60 lines, as `skill_nicely.txtar` checks.
 
@@ -37,7 +37,7 @@ In `doctor_config.txtar`, each unknown key is a `warn` entry of `core.config` wi
 
 ### M05-T2 Required programs
 
-- **Read:** [Required programs](../north-star/core-spec.md#required-programs), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Command tree](../north-star/core-spec.md#command-tree), [Manifest](../north-star/contract.md#manifest), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Compatibility](../north-star/contract.md#compatibility)
+- **Read:** [Required programs](../north-star/core-spec.md#required-programs), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Command tree](../north-star/core-spec.md#command-tree), [Manifest](../north-star/contract/manifest.md), [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md), [Compatibility](../north-star/contract/compatibility.md)
 - **Proves:** `testdata/script/doctor_probe.txtar`, `testdata/script/extension_manifest.txtar`, `sdk/contract/compat_test.go`
 
 Add `conditional`, `version`, `probe`, and `install` to the entries of `programs` in the manifest of `sdk/contract`, with their rules, and to the entries of `requires.bins` that `ncly describe` returns, with a consumer case in `compat_test.go` that reads an entry with and without them. Add the program check to `sdk/runner`, public so that a Go extension's status command calls it too: it looks a program up, probes it with stdin closed when it declares `version`, reads and compares the version, and picks the install command. Each installed extension becomes a component of doctor in `internal/cli`, which runs that check for each program that is not conditional, one at a time, and stops a probe at the limit with the stop of M04-T5. Register `CHECK_TIMEOUT` in the registry of `sdk/contract`. Because each installed extension now names a component, add `core` and `extensions` to `reservedNames` in `internal/cli`, and to the extra names that `TestReservedNamesAgreeWithTheDomainTable` in `internal/cli/spec_test.go` expects beside the domain table's rows, next to `help`, `version`, and `config`.
@@ -46,14 +46,14 @@ Add `conditional`, `version`, `probe`, and `install` to the entries of `programs
 
 ### M05-T3 Extensions component
 
-- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Extensions](../north-star/contract.md#extensions), [Discovery](../north-star/contract.md#discovery), [Compatibility](../north-star/contract.md#compatibility)
+- **Read:** [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Extensions](../north-star/contract/extensions.md), [Discovery](../north-star/contract/discovery.md), [Compatibility](../north-star/contract/compatibility.md)
 - **Proves:** `testdata/script/doctor_extensions.txtar`, `sdk/contract/compat_test.go`
 
 The `extensions` component in `internal/cli` holds one `extensions.<domain>` entry for each extension that core finds, with `domain`, `source`, and `path`: a `pass` for the one that runs, a `pass` with `hidden_by` for each one that a core command, a bundled extension, or an earlier extension hides, and a `fail` with `EXTENSION_INVALID` for an incompatible manifest. It starts no extension, as an execution marker that never appears proves. `doctor_extensions.txtar` asserts the keys of each entry, including the `null` path of the bundled `skill`, and a consumer case in `compat_test.go` reads a check with and without the keys of an extension.
 
 ### M05-T4 Status commands and skill status
 
-- **Read:** [Status command](../north-star/contract.md#status-command), [ncly skill status](../../extensions/skill/spec.md#ncly-skill-status), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Manifest](../north-star/contract.md#manifest), [Dispatch](../north-star/contract.md#dispatch), [Answer check](../north-star/contract.md#answer-check), [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill)
+- **Read:** [Status command](../north-star/contract/status-command.md), [ncly skill status](../../extensions/skill/spec.md#ncly-skill-status), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Manifest](../north-star/contract/manifest.md), [Dispatch](../north-star/contract/dispatch.md), [Answer check](../north-star/contract/answer-check.md), [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill)
 - **Proves:** `extensions/skill/testdata/script/skill_status.txtar`, `testdata/script/doctor_status.txtar`, `testdata/script/extension_manifest.txtar`
 
 Add `doctor` to the manifest of `sdk/contract`, with the conditions of a status command, which `Check` reports for a Go extension too. Doctor in `internal/cli` dispatches each status command through the extension that discovery found, one at a time after the probes, checks the whole answer, and lists its checks under the extension's component.

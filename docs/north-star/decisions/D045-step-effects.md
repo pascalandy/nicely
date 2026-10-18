@@ -1,6 +1,6 @@
 # D045 Derive retry safety from declared step effects
 
-Decided 2026-10-10, revised 2026-10-16. Record support derives [retry safety](../contract.md#retry-safety) from declared step effects. [Record format](../contract.md#record-format) defines their order and preserves the more cautious of stored and current declarations.
+Decided 2026-10-10, revised 2026-10-16. Record support derives [retry safety](../contract/retry-safety.md) from declared step effects. [Record format](../contract/record-format.md) defines their order and preserves the more cautious of stored and current declarations.
 
 **Why.** A second, manual effect report can drift and authorize another charge. Stored restrictions survive rollbacks; current restrictions prevent reuse of outdated permissions. [pi-durable](https://github.com/earendil-works/pi/blob/4dd2b149d155d7369de16ea4dc77c84e9f5ffb24/packages/durable/docs/spec.md#L3385-L3388) makes the same stored-and-current policy choice.
 

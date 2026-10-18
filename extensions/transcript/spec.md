@@ -31,7 +31,7 @@ ncly transcript run youtube --url <url> [--output <folder>] [--run-id <id>] [--t
 - The manifest declares `deepgram` in the command's `requires.keys`.
   A human must grant the key to transcript.
   Missing credentials or grants use `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, as
-  [Keys](../../docs/north-star/contract.md#keys) and [Grants](../../docs/north-star/contract.md#grants) define.
+  [Keys](../../docs/north-star/contract/keys.md) and [Grants](../../docs/north-star/contract/grants.md) define.
 - `--dry-run` uses the same local preparation as execution.
   It reads no key and starts no audio download or paid request.
   It creates no user file, result folder, or run record.
@@ -117,7 +117,7 @@ The source CLI's `--output-dir` becomes `--output`; debug output uses `NCLY_DEBU
 
 Each run has one item and one `transcribe` step, which declares the `paid` effect.
 The manifest supports recorded execution and dry run; domain resume remains unimplemented.
-Use the SDK for records, locks, and publication, as [Operations](../../docs/north-star/contract.md#operations) defines.
+Use the SDK for records, locks, and publication, as [Operations](../../docs/north-star/contract/operations.md) defines.
 
 Python emits the single-item plan before user-side effects.
 Go validates it and durably creates the initial record with a pending step.
@@ -131,7 +131,7 @@ Go records completion only after independently verifying and syncing the require
   One acknowledgement permits at most one upload request.
 - The record keeps the program and `yt-dlp` versions reported by the intent.
   Its item key is the URL exactly as supplied.
-- A repeated call uses the run lock and input checks of [Run IDs](../../docs/north-star/contract.md#run-ids).
+- A repeated call uses the run lock and input checks of [Run IDs](../../docs/north-star/contract/run-ids.md).
   A different command, URL, or explicit output argument is `USAGE_INVALID` before effects.
   A busy run returns `TEMPORARY` with a `run view` hint and starts no program.
 - A completed run returns its verified saved result without Python, a dependency upgrade, or a Deepgram request.
@@ -149,7 +149,7 @@ Go records completion only after independently verifying and syncing the require
 - A refusal preserves available artifacts and names `ncly run view <run-id>` in its hint and `next`.
   Starting a new run is an explicit choice that may incur another charge.
 
-The domain records these `inputs`, as [Records and evidence](../../docs/north-star/contract.md#records-and-evidence) defines:
+The domain records these `inputs`, as [Records and evidence](../../docs/north-star/contract/records-and-evidence.md) defines:
 
 | Key | Type | Meaning |
 |---|---|---|
@@ -224,7 +224,7 @@ A nonzero exit, missing plan, wrong item, illegal ordering, duplicate message, m
 Go preserves verified evidence, leaves acknowledged unresolved effects unknown, and exits 1 with `RUNTIME`.
 An untouched step stays pending with its failure cause.
 Cancellation and timeout keep the verdict required by
-[Programs that ncly runs](../../docs/north-star/contract.md#programs-that-ncly-runs).
+[Programs that ncly runs](../../docs/north-star/contract/programs-that-ncly-runs.md).
 A dry-run plan or zero exit alone never proves execution succeeded.
 
 | Program code | Step status | Error code | Catalog ID |

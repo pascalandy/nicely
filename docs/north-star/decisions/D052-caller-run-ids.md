@@ -1,6 +1,6 @@
 # D052 Let the caller name a run, so that a repeated call continues it
 
-Decided 2026-10-12, revised 2026-10-16. Let callers select `--run-id` before execution. [Run IDs](../contract.md#run-ids) owns replay, input comparison, and refusal of unsafe repeats. Successful answers come from committed records and verified artifacts.
+Decided 2026-10-12, revised 2026-10-16. Let callers select `--run-id` before execution. [Run IDs](../contract/run-ids.md) owns replay, input comparison, and refusal of unsafe repeats. Successful answers come from committed records and verified artifacts.
 
 **Scope update, 2026-10-17.** M10 and M13 prove one item and one paid step. [M99](../../milestones/M99-parking-lot.md#resume) defers explicit resume, child-run recovery, and policy-migration fixtures.
 

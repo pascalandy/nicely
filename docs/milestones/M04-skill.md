@@ -38,7 +38,7 @@ Each extension ships a skill named after its domain: ncly skill view DOMAIN. The
 
 ### M04-T1 Skill list
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract.md#configuration), [SDK](../north-star/contract.md#sdk)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Configuration](../north-star/contract/configuration.md), [SDK](../north-star/contract/sdk.md)
 - **Proves:** `extensions/skill/testdata/script/skill_list.txtar`, `extensions/skill/testdata/script/skill_shadowed.txtar`, `extensions/skill/testdata/script/skill_invalid.txtar`, `extensions/skill/testdata/script/skill_links.txtar`
 
 `ncly skill list` over `[skill] paths`, as the first bundled extension, with `source` and `SKILL_SHADOWED`, `SKILL_NO_SOURCE`, `SKILL_INVALID`, and `SKILL_SOURCE_MISSING`. As the first command that fails on a broken config, where discovery falls back to defaults, it maps an unreadable, malformed, or wrongly typed config to `CONFIG_INVALID`, including a relative folder in `paths`. Its `[skill]` table decodes through `sdk/config`, which keeps each value's source from [M03-T4](M03-describe.md#m03-t4-config-sources). Add `skill` to the bundled list of `cmd/ncly`, and update that list's comment. The extension lives in `extensions/skill/`. It reads the frontmatter of a `SKILL.md` with `go.yaml.in/yaml/v3`, through a reader in `sdk/extension`, because an extension imports only `sdk/` and `Check` reuses that reader in [M04-T3](#m04-t3-skills-from-extensions). The scenarios cover these edge cases:
@@ -50,14 +50,14 @@ Each extension ships a skill named after its domain: ncly skill view DOMAIN. The
 
 ### M04-T2 Skill view
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Answer check](../north-star/contract.md#answer-check)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Answer check](../north-star/contract/answer-check.md)
 - **Proves:** `extensions/skill/testdata/script/skill_view.txtar`, `testdata/script/extension_protocol.txtar`
 
 `ncly skill view <name>`, with or without `--json`. The text view adds the folder line only when the skill has a folder, and `--json` returns the fields that [ncly skill](../../extensions/skill/spec.md#ncly-skill) specifies. An unknown name, or a skill that `list` omits as invalid, answers `NOT_FOUND` with exit 2 and the `next` `ncly skill list`. As the first answer with `next` that crosses the answer check, it proves that core passes `next` on from an extension. The answer check in `sdk/contract` gains the `next` part of its rule 4, and `extension_protocol.txtar` proves with the shell fixture that core rejects a `next` that is not a non-empty array of strings, an answer that an extension built on the SDK cannot give.
 
 ### M04-T3 Skills from extensions
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract.md#extensions), [SDK](../north-star/contract.md#sdk), [ncly describe](../north-star/core-spec.md#ncly-describe)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Extensions](../north-star/contract/extensions.md), [SDK](../north-star/contract/sdk.md), [ncly describe](../north-star/core-spec.md#ncly-describe)
 - **Proves:** `extensions/skill/testdata/script/skill_extension.txtar`
 
 The skill of an installed extension appears in `list` with the source `extension`, and `view` reads it, so every extension can teach agents how to use it. `skill` finds it through the `skill` key of `"$NCLY_BIN" describe --json`, which it runs through the program runner of `sdk/runner`, never by searching for extensions itself, so the skill of an extension that core hides never appears. The shell fixture of M01 gets a `ncly-hello.skill/` folder. `extension.Extension` in `sdk/extension` gains `Skill`, and the Go fixture embeds its skill there. The `install` command of the test binary in `cmd/ncly` writes that skill as `ncly-hello.skill/`, as installing an external extension does. `Check` refuses a skill whose `name` is not the domain, read with the reader of M04-T1.
@@ -73,7 +73,7 @@ Then an agent in a fresh harness session, given only that line, finds and reads 
 
 ### M04-T5 Skill name completion
 
-- **Read:** [Completion values](../north-star/contract.md#completion-values), [Manifest](../north-star/contract.md#manifest), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [ncly completion](../north-star/core-spec.md#ncly-completion), [ncly describe](../north-star/core-spec.md#ncly-describe)
+- **Read:** [Completion values](../north-star/contract/completion-values.md), [Manifest](../north-star/contract/manifest.md), [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md), [ncly completion](../north-star/core-spec.md#ncly-completion), [ncly describe](../north-star/core-spec.md#ncly-describe)
 - **Proves:** `extensions/skill/testdata/script/skill_completion.txtar`, `testdata/script/completion.txtar`, `testdata/script/extension_manifest.txtar`, `sdk/contract/compat_test.go`
 
 Add `values_from` to the manifest in `sdk/contract`, with the one check that a list command qualifies, which the manifest and completion share. Core's completion in `internal/cli` dispatches the list command through the extension that discovery found, and the program runner in `sdk/runner` gains a stop at the limit with neither cleanup nor drain limit. The `name` argument of `skill view` declares `values_from` on `skill list`, so `ncly skill view <Tab>` suggests the names that `ncly skill list` returns, and `ncly describe 'skill view' --json` shows that `values_from` on `name`. A consumer case in `compat_test.go` reads an argument with and without `values_from`. With the shell fixture, `completion.txtar` proves that:

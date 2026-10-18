@@ -431,13 +431,15 @@ func write(t *testing.T, name, text string) {
 	}
 }
 
-// sources writes the files that define the codes a doc may name: core's
-// tables in contract.md, an extension's tables in its spec, and the manifest
+// sources writes the files that define the codes a doc may name. They are the
+// parts of contract.md, an extension's spec and a part of it, and the manifest
 // of the hello fixture.
 func sources(t *testing.T, root string) {
 	t.Helper()
-	write(t, filepath.Join(root, "docs", "north-star", "contract.md"), "# Contract\n\n## Exit codes\n\n| Code | Meaning |\n|---|---|\n| `78` | A human must act |\n\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `USAGE_INVALID` | 2 | A bad flag |\n\n| Code | When |\n|---|---|\n| `CONFIG_UNKNOWN_KEY` | An unknown key |\n")
-	write(t, filepath.Join(root, "extensions", "demo", "spec.md"), "# Demo\n\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `DEMO_BROKEN` | 1 | It broke |\n\n## Codes\n\n| Warning | When |\n|---|---|\n| `DEMO_SLOW` | It was slow |\n")
+	write(t, filepath.Join(root, "docs", "north-star", "contract", "exit-codes.md"), "# Exit codes\n\n| Code | Meaning |\n|---|---|\n| `78` | A human must act |\n")
+	write(t, filepath.Join(root, "docs", "north-star", "contract", "error-codes.md"), "# Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `USAGE_INVALID` | 2 | A bad flag |\n\n| Code | When |\n|---|---|\n| `CONFIG_UNKNOWN_KEY` | An unknown key |\n")
+	write(t, filepath.Join(root, "extensions", "demo", "spec.md"), "# Demo\n\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `DEMO_BROKEN` | 1 | It broke |\n")
+	write(t, filepath.Join(root, "extensions", "demo", "spec", "codes.md"), "# Codes\n\n| Warning | When |\n|---|---|\n| `DEMO_SLOW` | It was slow |\n")
 	write(t, filepath.Join(root, "testdata", "extensions", "hello", "manifest.toml"), "domain = \"hello\"\n\n[[commands]]\npath = \"hello run\"\ncode = \"HELLO_NOT_AN_ERROR\"\n\n[[errors]]\ncode = \"HELLO_GRUMPY\"\nexit = 1\n")
 }
 

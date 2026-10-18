@@ -9,7 +9,7 @@ A human grants the `deepgram` key to a test extension, which then receives it, w
 
 ## Scope
 
-Implement [Grants](../north-star/contract.md#grants), the `grant` and `revoke` commands of [ncly auth](../north-star/core-spec.md#ncly-auth), and the grant checks of [Required keys](../north-star/core-spec.md#required-keys), as [D058](../north-star/decisions/D058-grants-by-path.md) decides. The extension host in `internal/cli` owns grants, as the [code map](../north-star/architecture.md#code-map) says, and writes the grants file through the durable writes and the locks of `sdk/platform`. An extension learns which declared key it lacks from `NCLY_MISSING_KEYS`, and a Go extension through `Call.Key` of `sdk/extension`. The grant prompt is the confirmation of [M07](M07-forms.md), in the look that Pascal picked.
+Implement [Grants](../north-star/contract/grants.md), the `grant` and `revoke` commands of [ncly auth](../north-star/core-spec.md#ncly-auth), and the grant checks of [Required keys](../north-star/core-spec.md#required-keys), as [D058](../north-star/decisions/D058-grants-by-path.md) decides. The extension host in `internal/cli` owns grants, as the [code map](../north-star/architecture.md#code-map) says, and writes the grants file through the durable writes and the locks of `sdk/platform`. An extension learns which declared key it lacks from `NCLY_MISSING_KEYS`, and a Go extension through `Call.Key` of `sdk/extension`. The grant prompt is the confirmation of [M07](M07-forms.md), in the look that Pascal picked.
 
 The scenarios declare services in the manifests of shell fixtures and of the Go fixture `keyed`, which stays apart from the `hello` of M02 because verify-nicely installs `hello` in every run, and use the test keychain and the `pty` command of [M06](M06-auth.md). A fixture records a SHA-256 of each key that it receives, never the key, so no key appears on stdout or stderr.
 
@@ -25,10 +25,10 @@ The scenarios declare services in the manifests of shell fixtures and of the Go 
 
 ### M08-T1 Grant and revoke
 
-- **Read:** [Grants](../north-star/contract.md#grants), [ncly auth](../north-star/core-spec.md#ncly-auth), [Modes](../north-star/contract.md#modes), [Global flags](../north-star/contract.md#global-flags), [ncly completion](../north-star/core-spec.md#ncly-completion), [D058](../north-star/decisions/D058-grants-by-path.md)
+- **Read:** [Grants](../north-star/contract/grants.md), [ncly auth](../north-star/core-spec.md#ncly-auth), [Modes](../north-star/contract/modes.md), [Global flags](../north-star/contract/global-flags.md), [ncly completion](../north-star/core-spec.md#ncly-completion), [D058](../north-star/decisions/D058-grants-by-path.md)
 - **Proves:** `testdata/script/grant.txtar`, `testdata/script/auth_dry_run.txtar`, `testdata/script/completion.txtar`
 
-Add `auth grant` and `auth revoke` to core in `internal/cli`, with the grants file of [Grants](../north-star/contract.md#grants). `grant` stores the path where discovery found the extension, so the file needs no new format when M08-T3 compares sources. Until then, a grant of a service to a domain that already holds one answers `unchanged`. Both declarations set `dry_run` in `modes`. Completion suggests the declared services after `grant` and `revoke`, as M06-T4 does for `login`, then the domains whose extension declares that service after `grant`, and the domains that hold a grant of it after `revoke`.
+Add `auth grant` and `auth revoke` to core in `internal/cli`, with the grants file of [Grants](../north-star/contract/grants.md). `grant` stores the path where discovery found the extension, so the file needs no new format when M08-T3 compares sources. Until then, a grant of a service to a domain that already holds one answers `unchanged`. Both declarations set `dry_run` in `modes`. Completion suggests the declared services after `grant` and `revoke`, as M06-T4 does for `login`, then the domains whose extension declares that service after `grant`, and the domains that hold a grant of it after `revoke`.
 Add durable writes and locks to `sdk/platform/` for the grants file.
 
 Under `pty`, `grant.txtar` covers a confirmed grant, which the grants file then holds with the fixture's path, a declined one, which exits 2 with `CONFIRMATION_REQUIRED` and changes nothing, a grant that exists, which answers `unchanged` without a prompt, and Ctrl-C at the prompt, which exits 130 and changes nothing. It also covers:
@@ -42,10 +42,10 @@ Under `pty`, `grant.txtar` covers a confirmed grant, which the grants file then 
 
 ### M08-T2 Keys reach granted extensions
 
-- **Read:** [Grants](../north-star/contract.md#grants), [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs), [Keys](../north-star/contract.md#keys), [Dispatch](../north-star/contract.md#dispatch), [SDK](../north-star/contract.md#sdk), [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill)
+- **Read:** [Grants](../north-star/contract/grants.md), [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md), [Keys](../north-star/contract/keys.md), [Dispatch](../north-star/contract/dispatch.md), [SDK](../north-star/contract/sdk.md), [The nicely skill](../../extensions/skill/spec.md#the-nicely-skill)
 - **Proves:** `testdata/script/grant_dispatch.txtar`, `extensions/skill/testdata/script/skill_nicely.txtar`
 
-When core in `internal/cli` starts an extension's command, it passes each declared key that a human granted to the extension's domain, and sets `NCLY_MISSING_KEYS`, as [Grants](../north-star/contract.md#grants) defines, with the verdict of each service of M06-T2. M08-T3 adds the comparison of sources. Register `KEY_NOT_GRANTED` in the registry of `sdk/contract`, and add `Call.Key` to `sdk/extension`. Add `KEY_NOT_GRANTED` to the `nicely` skill's rule for a missing key, within its 60 lines.
+When core in `internal/cli` starts an extension's command, it passes each declared key that a human granted to the extension's domain, and sets `NCLY_MISSING_KEYS`, as [Grants](../north-star/contract/grants.md) defines, with the verdict of each service of M06-T2. M08-T3 adds the comparison of sources. Register `KEY_NOT_GRANTED` in the registry of `sdk/contract`, and add `Call.Key` to `sdk/extension`. Add `KEY_NOT_GRANTED` to the `nicely` skill's rule for a missing key, within its 60 lines.
 
 A shell fixture command records the names of the key variables that it receives, with a SHA-256 of each value, and `NCLY_MISSING_KEYS`, and a Go fixture command answers through `Call.Key`. `grant_dispatch.txtar` covers:
 
@@ -61,10 +61,10 @@ Make the `verifykeys` fixture of verify-nicely runnable. It declares `verifynice
 
 ### M08-T3 Source identity
 
-- **Read:** [Grants](../north-star/contract.md#grants), [Discovery](../north-star/contract.md#discovery), [ncly auth](../north-star/core-spec.md#ncly-auth)
+- **Read:** [Grants](../north-star/contract/grants.md), [Discovery](../north-star/contract/discovery.md), [ncly auth](../north-star/core-spec.md#ncly-auth)
 - **Proves:** `testdata/script/grant_source.txtar`
 
-Bind each grant to its source, as [Grants](../north-star/contract.md#grants) defines: core passes a key only to the extension at the path that the grant holds, and a grant to the same domain at another path asks for confirmation with both paths, then replaces the old grant. `grant_source.txtar` covers:
+Bind each grant to its source, as [Grants](../north-star/contract/grants.md) defines: core passes a key only to the extension at the path that the grant holds, and a grant to the same domain at another path asks for confirmation with both paths, then replaces the old grant. `grant_source.txtar` covers:
 
 - A copy of the shell fixture under the same name earlier in `PATH`, which receives none of the keys granted to the first, and whose `NCLY_MISSING_KEYS` names them with `KEY_NOT_GRANTED`
 - A grant to that copy under `pty`, whose prompt shows both paths, and after which only the copy receives the key
@@ -73,7 +73,7 @@ Bind each grant to its source, as [Grants](../north-star/contract.md#grants) def
 
 ### M08-T4 Status and doctor
 
-- **Read:** [ncly auth](../north-star/core-spec.md#ncly-auth), [Required keys](../north-star/core-spec.md#required-keys), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Grants](../north-star/contract.md#grants), [Compatibility](../north-star/contract.md#compatibility)
+- **Read:** [ncly auth](../north-star/core-spec.md#ncly-auth), [Required keys](../north-star/core-spec.md#required-keys), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Grants](../north-star/contract/grants.md), [Compatibility](../north-star/contract/compatibility.md)
 - **Proves:** `testdata/script/grant_status.txtar`, `testdata/script/doctor_status.txtar`, `sdk/contract/compat_test.go`
 
 Each entry of `ncly auth status` adds `grants`, and `status` and the `auth.<service>` check of doctor fail with `KEY_NOT_GRANTED` when an extension that needs the key lacks a grant, as [ncly auth](../north-star/core-spec.md#ncly-auth) defines. Add the `auth.grants` check to doctor in `internal/cli`, register the warning `GRANT_UNUSED` in `sdk/contract`, and add a consumer case in `compat_test.go` that reads an entry of `services` with and without `grants`.
@@ -86,7 +86,7 @@ Under `--live`, doctor reads the key of a status command within the bound of [Re
 
 ### M08-T5 Optional keys
 
-- **Read:** [Manifest](../north-star/contract.md#manifest), [Grants](../north-star/contract.md#grants), [ncly auth](../north-star/core-spec.md#ncly-auth), [Required keys](../north-star/core-spec.md#required-keys), [ncly describe](../north-star/core-spec.md#ncly-describe), [Compatibility](../north-star/contract.md#compatibility)
+- **Read:** [Manifest](../north-star/contract/manifest.md), [Grants](../north-star/contract/grants.md), [ncly auth](../north-star/core-spec.md#ncly-auth), [Required keys](../north-star/core-spec.md#required-keys), [ncly describe](../north-star/core-spec.md#ncly-describe), [Compatibility](../north-star/contract/compatibility.md)
 - **Proves:** `testdata/script/extension_manifest.txtar`, `testdata/script/grant_optional.txtar`, `sdk/contract/compat_test.go`
 
 Add the `keys` table to the manifest of `sdk/contract`, with its rules, and `optional` to the entries of `requires.keys` that `ncly describe` returns, with a consumer case in `compat_test.go` that reads an entry with and without it. `extension_manifest.txtar` proves that the manifest rejects an entry of `keys` that no command declares and an `optional` that is not a boolean.
