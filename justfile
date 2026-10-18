@@ -66,7 +66,7 @@ install:
 
 # Run every check that signoff requires
 [group('checks')]
-check: fmt-check lint tidy-check test release-lint gitleaks-rules gitleaks
+check: fmt-check lint tidy-check test race release-lint gitleaks-rules gitleaks
 
 # Run just check on each layer of a stack, bottom to top, as origin holds it
 [group('checks')]
@@ -144,6 +144,11 @@ test *args:
     (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
     bash scripts/test-hook-env.sh
+
+# Run the Go tests of sdk and internal under the race detector, without the scenarios
+[group('checks')]
+race:
+    go test -race ./sdk/... ./internal/...
 
 # Lint the Go code
 [group('checks')]
