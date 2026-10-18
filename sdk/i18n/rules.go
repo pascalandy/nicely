@@ -6,6 +6,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"text/template"
 	"text/template/parse"
 
 	"github.com/BurntSushi/toml"
@@ -68,13 +69,20 @@ func checkOneForm(entry map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("is not a message: %w", err)
 	}
-	tree := parse.New("other")
-	tree.Mode = parse.SkipFuncCheck
-	if _, err := tree.Parse(m.Other, m.LeftDelim, m.RightDelim, map[string]*parse.Tree{}); err != nil {
+	// The printer parses each form as text/template does here, under the
+	// name "", so a form that defines its own templates parses the same.
+	other, err := template.New("").Delims(m.LeftDelim, m.RightDelim).Parse(m.Other)
+	if err != nil {
 		return fmt.Errorf("has an other form that does not parse: %w", err)
 	}
-	if field := numberField(tree.Root); field != "" && strings.TrimSpace(m.One) == "" {
-		return fmt.Errorf("reads .%s in its other form, but has no one form", field)
+	if strings.TrimSpace(m.One) != "" {
+		return nil
+	}
+	// Templates holds the form and each template that it defines.
+	for _, t := range other.Templates() {
+		if field := numberField(t.Root); field != "" {
+			return fmt.Errorf("reads .%s in its other form, but has no one form", field)
+		}
 	}
 	return nil
 }
@@ -88,6 +96,17 @@ func numberField(node parse.Node) string {
 		if slices.Contains(numberFields, n.Ident[0]) {
 			return n.Ident[0]
 		}
+	case *parse.VariableNode:
+		// $.Count reads the data as .Count does, such as inside a range.
+		if len(n.Ident) > 1 && n.Ident[0] == "$" && slices.Contains(numberFields, n.Ident[1]) {
+			return n.Ident[1]
+		}
+	case *parse.ChainNode:
+		// (.).Count reads the data as .Count does.
+		if n.Node.String() == "." && slices.Contains(numberFields, n.Field[0]) {
+			return n.Field[0]
+		}
+		nodes = []parse.Node{n.Node}
 	case *parse.ListNode:
 		if n != nil {
 			nodes = n.Nodes
@@ -106,6 +125,10 @@ func numberField(node parse.Node) string {
 		nodes = []parse.Node{n.Pipe, n.List, n.ElseList}
 	case *parse.WithNode:
 		nodes = []parse.Node{n.Pipe, n.List, n.ElseList}
+	case *parse.TemplateNode:
+		if n.Pipe != nil {
+			nodes = []parse.Node{n.Pipe}
+		}
 	}
 	for _, n := range nodes {
 		if field := numberField(n); field != "" {

@@ -265,6 +265,10 @@ func TestCheckCatalogsRequiresTheOneFormOfANumber(t *testing.T) {
 		{"N", `other = "{{.N}} B"`, `one = "{{.N}} B"` + "\n" + `other = "{{.N}} B"`},
 		{"Count with spaces", `other = "{{ .Count }} items"`, `one = "{{ .Count }} item"` + "\n" + `other = "{{ .Count }} items"`},
 		{"empty one", `one = ""` + "\n" + `other = "{{.N}} B"`, `one = "{{.N}} B"` + "\n" + `other = "{{.N}} B"`},
+		{"$.Count", `other = "{{$.Count}} items"`, `one = "{{$.Count}} item"` + "\n" + `other = "{{$.Count}} items"`},
+		{"(.).Count", `other = "{{(.).Count}} items"`, `one = "{{(.).Count}} item"` + "\n" + `other = "{{(.).Count}} items"`},
+		{"Count passed to a template", `other = '{{define "n"}}{{.}} items{{end}}{{template "n" .Count}}'`, `one = "{{.Count}} item"` + "\n" + `other = '{{define "n"}}{{.}} items{{end}}{{template "n" .Count}}'`},
+		{"N in a template", `other = '{{define "n"}}{{.N}} B{{end}}{{template "n" .}}'`, `one = "{{.N}} B"` + "\n" + `other = '{{define "n"}}{{.N}} B{{end}}{{template "n" .}}'`},
 	}
 	for _, c := range cases {
 		valid := entry(c.with + "\n")
@@ -281,7 +285,9 @@ func TestCheckCatalogsRequiresTheOneFormOfANumber(t *testing.T) {
 			}
 		}
 	}
-	for _, other := range []string{"No items.", "{{.Name}} is ready.", "{{.Number}} of {{.Counter}}"} {
+	// The printer parses a form under the name "", so a form may define a
+	// template named other.
+	for _, other := range []string{"No items.", "{{.Name}} is ready.", "{{.Number}} of {{.Counter}}", `{{define "other"}}Ready.{{end}}{{template "other" .}}`} {
 		fsys := fstest.MapFS{"en.toml": {Data: []byte(entry(fmt.Sprintf("other = %q\n", other)))}}
 		if err := CheckCatalogs(fsys, ""); err != nil {
 			t.Errorf("%q, which reads neither .Count nor .N, needs only other: %v", other, err)
