@@ -57,3 +57,7 @@ For a stack, follow Land in `gh-stack` for a project that pushes its head to tru
 9. Require each Story closed by its pull request in `gh issue view <story> --json state,closedByPullRequestsReferences`.
 
 Report any failed step as an incomplete merge. Never manually close an open pull request to report it merged.
+
+## Keep UAT in separate issues
+
+Create a separate GitHub issue for each UAT. Keep its task and procedure there, with only a link in the Epic.
