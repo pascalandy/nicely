@@ -1,8 +1,9 @@
 // Command plan reads the milestone files and prints the next card, shows the
 // progress of every milestone and the order of the current one's cards, or
 // checks that the files keep the format that AGENTS.md describes, that every
-// link in the docs resolves, and that every card the docs name exists. It
-// takes the repository root:
+// link in the docs resolves, that every card and code the docs name exists,
+// and that the prose holds no em dash or curly quote. It takes the
+// repository root:
 //
 //	plan next|status|check <root>
 //
@@ -51,6 +52,24 @@ var (
 	skippedNames = []string{"testdata", "node_modules", "dist"}
 )
 
+// codeSections are the "## " headings of contract.md and of an extension's
+// spec whose tables define codes, under a Code or a Warning column.
+var codeSections = []string{"Error codes", "Warning codes", "Codes"}
+
+// exampleCode is the one code that a doc may name without a source: the Error
+// codes section of contract.md gives it as an extension's own code, and no
+// extension declares it.
+const exampleCode = "FLEET_HOST_DOWN"
+
+// plainForms maps each character that prose avoids to what to write instead.
+var plainForms = map[rune]string{
+	'\u2014': "a colon, a comma, or two sentences",
+	'\u2018': "a straight quote",
+	'\u2019': "a straight quote",
+	'\u201C': "a straight quote",
+	'\u201D': "a straight quote",
+}
+
 // maxAgentCards keeps a milestone small enough for one agent to finish and
 // for Pascal to follow.
 const maxAgentCards = 5
@@ -70,6 +89,11 @@ var (
 	titleLine    = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
 	cardID       = regexp.MustCompile(`^M\d\d-T\d+$`)
 	cardRef      = regexp.MustCompile(`\bM\d\d-T\d+\b`)
+	codeShape    = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
+	codeAfter    = regexp.MustCompile("\\b[Cc]ode `([^`]+)`")
+	envelope     = regexp.MustCompile(`"(?:errors|warnings)"\s*:\s*\\?\[`)
+	jsonCode     = regexp.MustCompile(`"code"\s*:\s*"([^"]*)"`)
+	manifestCode = regexp.MustCompile(`^code\s*=\s*"([^"]*)"`)
 	cardHeading  = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
 	checkbox     = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
 	codeSpan     = regexp.MustCompile("`([^`]+)`")
@@ -78,6 +102,7 @@ var (
 
 type milestone struct {
 	path, id, title, status, version string
+	text                             string
 	number                           int
 	hasDemo, hasCards, hasHeader     bool
 	open                             []string // nil when the file has no Open questions section
@@ -120,7 +145,14 @@ func run(args []string, out io.Writer) error {
 	var b strings.Builder
 	problems := check(root, milestones)
 	if args[0] == "check" {
-		broken, err := checkDocs(root, cardIDs(milestones))
+		codes, err := knownCodes(root)
+		if err != nil {
+			return err
+		}
+		for _, m := range milestones {
+			problems = append(problems, checkProse(m.path, m.text, codes)...)
+		}
+		broken, err := checkDocs(root, cardIDs(milestones), codes)
 		if err != nil {
 			return err
 		}
@@ -168,7 +200,7 @@ func load(root string) ([]*milestone, error) {
 }
 
 func parse(file, text string) *milestone {
-	m := &milestone{path: file, number: -1, links: links(text), refs: cardRefs(text)}
+	m := &milestone{path: file, text: text, number: -1, links: links(text), refs: cardRefs(text)}
 	if match := fileName.FindStringSubmatch(path.Base(file)); match != nil {
 		m.id = match[1]
 		m.number, _ = strconv.Atoi(m.id[1:])
@@ -237,10 +269,7 @@ func parse(file, text string) *milestone {
 
 // row reads one line of the cards table.
 func (m *milestone) row(n int, line string) {
-	var cells []string
-	for cell := range strings.SplitSeq(strings.Trim(strings.TrimSpace(line), "|"), "|") {
-		cells = append(cells, strings.TrimSpace(cell))
-	}
+	cells := tableCells(line)
 	switch {
 	case strings.HasPrefix(strings.TrimSpace(line), "|---"):
 		return
@@ -487,8 +516,9 @@ func (m *milestone) checkLinks(root string) {
 }
 
 // checkDocs reports the broken links of every Markdown file outside the
-// hidden folders and skippedDirs, and each card it names that is not in known.
-func checkDocs(root string, known map[string]bool) ([]string, error) {
+// hidden folders and skippedDirs, each card it names that is not in known,
+// and what checkProse finds with codes.
+func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 	var problems []string
 	err := filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -523,6 +553,7 @@ func checkDocs(root string, known map[string]bool) ([]string, error) {
 				problems = append(problems, fmt.Sprintf("%s:%d: no milestone defines the card %s", rel, r.line, r.target))
 			}
 		}
+		problems = append(problems, checkProse(rel, string(data), codes)...)
 		return nil
 	})
 	return problems, err
@@ -585,13 +616,205 @@ func checkSessionFiles(root string) []string {
 	return problems
 }
 
+// knownCodes returns the codes that a doc may name: those of the tables under
+// codeSections in contract.md and in each extension's spec, the errors that
+// the manifests of the fixture extensions declare, and exampleCode. A missing
+// contract.md adds no code.
+func knownCodes(root string) (map[string]bool, error) {
+	codes := map[string]bool{exampleCode: true}
+	specs, err := filepath.Glob(filepath.Join(root, "extensions", "*", "spec.md"))
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range append([]string{filepath.Join(root, "docs", "north-star", "contract.md")}, specs...) {
+		data, err := os.ReadFile(name)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		section := ""
+		var header []string
+		for line := range strings.Lines(string(data)) {
+			if heading, ok := strings.CutPrefix(line, "## "); ok {
+				section = strings.TrimSpace(heading)
+			}
+			cells, isHeader := tableRow(line, &header)
+			if cells == nil || isHeader || !slices.Contains(codeSections, section) {
+				continue
+			}
+			for i, h := range header {
+				if (h == "Code" || h == "Warning") && i < len(cells) {
+					for _, c := range cellCodes(cells[i]) {
+						codes[c] = true
+					}
+				}
+			}
+		}
+	}
+	manifests, err := filepath.Glob(filepath.Join(root, "testdata", "extensions", "*", "manifest.toml"))
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range manifests {
+		data, err := os.ReadFile(name)
+		if err != nil {
+			return nil, err
+		}
+		table := ""
+		for line := range strings.Lines(string(data)) {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "[") {
+				table = line
+			} else if m := manifestCode.FindStringSubmatch(line); m != nil && table == "[[errors]]" {
+				codes[m[1]] = true
+			}
+		}
+	}
+	return codes, nil
+}
+
+// checkProse reports, in text, each code outside codes in a context whose
+// role is explicit, and each character of plainForms in prose. The contexts
+// are a cell under a Code column, a code span right after "code", such as
+// "error code `X`", and the "code" of an object in an "errors" or
+// "warnings" array. Prose is the text outside code blocks and code spans,
+// where a table cell that holds only an em dash, an empty Depends on, is no
+// prose. A value that is no code, such as the exit code `78`, is no
+// reference.
+func checkProse(file, text string, codes map[string]bool) []string {
+	var problems []string
+	code := func(n int, value string) {
+		if codeShape.MatchString(value) && !codes[value] {
+			problems = append(problems, fmt.Sprintf("%s:%d: no code table or fixture manifest defines the code %s", file, n, value))
+		}
+	}
+	var header []string
+	var block []string
+	fenced := false
+	for i, line := range strings.Split(text, "\n") {
+		n := i + 1
+		if isFence(line) {
+			if fenced {
+				envelopeCodes(strings.Join(block, "\n"), n-len(block), code)
+			}
+			fenced, block, header = !fenced, nil, nil
+			continue
+		}
+		if fenced {
+			block = append(block, line)
+			continue
+		}
+		envelopeCodes(line, n, code)
+		for _, m := range codeAfter.FindAllStringSubmatch(line, -1) {
+			code(n, m[1])
+		}
+		prose := []string{line}
+		if cells, isHeader := tableRow(line, &header); cells != nil {
+			prose = nil
+			for i, cell := range cells {
+				if !isHeader && i < len(header) && header[i] == "Code" {
+					for _, c := range cellCodes(cell) {
+						code(n, c)
+					}
+				}
+				if cell != "\u2014" {
+					prose = append(prose, cell)
+				}
+			}
+		}
+		for _, p := range prose {
+			for _, r := range codeSpan.ReplaceAllString(p, "") {
+				if plain, ok := plainForms[r]; ok {
+					problems = append(problems, fmt.Sprintf("%s:%d: the prose holds %c (U+%04X): write %s", file, n, r, r, plain))
+				}
+			}
+		}
+	}
+	return problems
+}
+
+// envelopeCodes calls code with the line and the value of each "code" inside
+// an "errors" or "warnings" array of chunk, a line or a code block whose first
+// line is first. The array ends at its matching bracket, or with the chunk.
+func envelopeCodes(chunk string, first int, code func(int, string)) {
+	for _, loc := range envelope.FindAllStringIndex(chunk, -1) {
+		end, depth := len(chunk), 0
+	scan:
+		for i := loc[1] - 1; i < len(chunk); i++ {
+			switch chunk[i] {
+			case '[':
+				depth++
+			case ']':
+				if depth--; depth == 0 {
+					end = i
+					break scan
+				}
+			}
+		}
+		for _, m := range jsonCode.FindAllStringSubmatchIndex(chunk[loc[1]:end], -1) {
+			at := loc[1] + m[2]
+			code(first+strings.Count(chunk[:at], "\n"), chunk[at:loc[1]+m[3]])
+		}
+	}
+}
+
+// tableRow returns the cells of a table row, or nil for another line, which
+// ends the table. The first row of a table is its header, which it stores in
+// header; the delimiter row returns no cells.
+func tableRow(line string, header *[]string) (cells []string, isHeader bool) {
+	if !strings.HasPrefix(strings.TrimSpace(line), "|") {
+		*header = nil
+		return nil, false
+	}
+	cells = tableCells(line)
+	switch {
+	case *header == nil:
+		*header = cells
+		return cells, true
+	case strings.HasPrefix(strings.TrimSpace(line), "|---"):
+		return nil, false
+	}
+	return cells, false
+}
+
+// tableCells splits a table row into its cells, without their spaces.
+func tableCells(line string) []string {
+	var cells []string
+	for cell := range strings.SplitSeq(strings.Trim(strings.TrimSpace(line), "|"), "|") {
+		cells = append(cells, strings.TrimSpace(cell))
+	}
+	return cells
+}
+
+// cellCodes returns the code spans of a cell, or the cell when it has none.
+func cellCodes(cell string) []string {
+	spans := codeSpan.FindAllStringSubmatch(cell, -1)
+	if len(spans) == 0 {
+		return []string{cell}
+	}
+	var values []string
+	for _, s := range spans {
+		values = append(values, s[1])
+	}
+	return values
+}
+
+// isFence says whether line opens or closes a fenced code block, indented or
+// not.
+func isFence(line string) bool {
+	fence := strings.TrimLeft(line, " ")
+	return strings.HasPrefix(fence, "```") || strings.HasPrefix(fence, "~~~")
+}
+
 // links returns the Markdown links of text outside code: fenced blocks,
 // indented or not, and code spans.
 func links(text string) []docLink {
 	var found []docLink
 	fenced := false
 	for i, line := range strings.Split(text, "\n") {
-		if fence := strings.TrimLeft(line, " "); strings.HasPrefix(fence, "```") || strings.HasPrefix(fence, "~~~") {
+		if isFence(line) {
 			fenced = !fenced
 			continue
 		}

@@ -420,3 +420,74 @@ func write(t *testing.T, name, text string) {
 		t.Fatal(err)
 	}
 }
+
+// sources writes the files that define the codes a doc may name: core's
+// tables in contract.md, an extension's tables in its spec, and the manifest
+// of the hello fixture.
+func sources(t *testing.T, root string) {
+	t.Helper()
+	write(t, filepath.Join(root, "docs", "north-star", "contract.md"), "# Contract\n\n## Exit codes\n\n| Code | Meaning |\n|---|---|\n| `78` | A human must act |\n\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `USAGE_INVALID` | 2 | A bad flag |\n\n| Code | When |\n|---|---|\n| `CONFIG_UNKNOWN_KEY` | An unknown key |\n")
+	write(t, filepath.Join(root, "extensions", "demo", "spec.md"), "# Demo\n\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `DEMO_BROKEN` | 1 | It broke |\n\n## Codes\n\n| Warning | When |\n|---|---|\n| `DEMO_SLOW` | It was slow |\n")
+	write(t, filepath.Join(root, "testdata", "extensions", "hello", "manifest.toml"), "domain = \"hello\"\n\n[[commands]]\npath = \"hello run\"\ncode = \"HELLO_NOT_AN_ERROR\"\n\n[[errors]]\ncode = \"HELLO_GRUMPY\"\nexit = 1\n")
+}
+
+func TestCheckCodesAndTypography(t *testing.T) {
+	cases := []struct {
+		name, file, text, want string
+	}{
+		{"unknown code after code", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches, or fails with the code `HELLO_UNKNOWN`."), "docs/milestones/M01-host.md:8: no code table or fixture manifest defines the code HELLO_UNKNOWN"},
+		{"unknown code after error code", "README.md", "# Read me\n\nIt answers the error code `DEMO_GONE`.\n", "README.md:3: no code table or fixture manifest defines the code DEMO_GONE"},
+		{"unknown code after warning code", "extensions/demo/SKILL.md", "Relay the warning code `DEMO_QUIET`.\n", "extensions/demo/SKILL.md:1: no code table or fixture manifest defines the code DEMO_QUIET"},
+		{"unknown code in a Code column", "extensions/demo/notes.md", "| Id | Code | When |\n|---|---|---|\n| `demo.check` | `DEMO_LOST` | It warns |\n", "extensions/demo/notes.md:3: no code table or fixture manifest defines the code DEMO_LOST"},
+		{"unknown code in an errors example", "docs/north-star/vision.md", "An answer:\n\n```json\n{\"ok\":false,\"errors\":[{\"code\":\"RUNTIME_LOST\",\"message\":\"m\",\"hint\":\"h\"}]}\n```\n", "docs/north-star/vision.md:4: no code table or fixture manifest defines the code RUNTIME_LOST"},
+		{"unknown code in a warnings example over lines", "docs/north-star/vision.md", "```json\n{\n  \"ok\": true,\n  \"warnings\": [\n    {\"code\": \"DEMO_SLOW\"},\n    {\"code\": \"DEMO_FAST\"}\n  ]\n}\n```\n", "docs/north-star/vision.md:6: no code table or fixture manifest defines the code DEMO_FAST"},
+		{"declared code without its manifest", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`."), "docs/milestones/M01-host.md:8: no code table or fixture manifest defines the code HELLO_GRUMPY"},
+		{"em dash in prose", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches \u2014 fast."), "docs/milestones/M01-host.md:8: the prose holds \u2014 (U+2014)"},
+		{"curly apostrophe in prose", "AGENTS.md", "# AGENTS.md\n\n## Code\n\nIt\u2019s fine.\n", "AGENTS.md:5: the prose holds \u2019 (U+2019)"},
+		{"curly quotes in a table cell", "README.md", "| A | B |\n|---|---|\n| x | \u201cy\u201d |\n", "README.md:3: the prose holds \u201c (U+201C)"},
+		{"left single quote in prose", "README.md", "A \u2018word\u2019.\n", "README.md:1: the prose holds \u2018 (U+2018)"},
+		{"right double quote in prose", "README.md", "A word\u201d.\n", "README.md:1: the prose holds \u201d (U+201D)"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := repository(t, map[string]string{"M01-host.md": host})
+			sources(t, root)
+			if tc.name == "declared code without its manifest" {
+				if err := os.Remove(filepath.Join(root, "testdata", "extensions", "hello", "manifest.toml")); err != nil {
+					t.Fatal(err)
+				}
+			}
+			write(t, filepath.Join(root, "AGENTS.md"), "# AGENTS.md\n\n## Code\n")
+			write(t, filepath.Join(root, filepath.FromSlash(tc.file)), tc.text)
+			var out strings.Builder
+			if err := run([]string{"check", root}, &out); err == nil {
+				t.Fatalf("check passed:\n%s", tc.text)
+			}
+			if !strings.Contains(out.String(), tc.want) {
+				t.Errorf("check lacks %q:\n%s", tc.want, out.String())
+			}
+		})
+	}
+}
+
+func TestCheckCodesAndTypographyPass(t *testing.T) {
+	// Every code below has its source, or stands outside the three contexts
+	// whose role is explicit: a cell under Code, a span after "code", and the
+	// "code" of an errors or warnings example.
+	known := "It answers the code `USAGE_INVALID`, the error code `DEMO_BROKEN`, the warning code `DEMO_SLOW`, the warning code `CONFIG_UNKNOWN_KEY`, and, as an example, the code `FLEET_HOST_DOWN`.\n"
+	outside := "Set `NCLY_JSON` and `NCLY_LANG`, exit code `78` or `2`, and expect `SOME_THING`, OTHER_THING, the codes `NONE_SUCH`, and code: `NOPE_NOPE`.\n\n" +
+		"| Code | Meaning |\n|---|---|\n| `0` | Success |\n| `130` | Ctrl-C |\n\n" +
+		"```json\n{\"ok\":false,\"errors\":[{\"code\":\"USAGE_INVALID\",\"message\":\"m\"}],\"warnings\":[{\"code\":\"DEMO_SLOW\"}]}\n{\"checks\":[{\"id\":\"x\",\"code\":\"NOT_IN_AN_ENVELOPE\"}]}\n```\n\n" +
+		"```\nstderr '\"code\":\"NOT_IN_AN_ENVELOPE\"'\n```\n"
+	typography := "Write `a \u2014 b` and `\u2018x\u2019`.\n\n```\nIt\u2019s \u201cquoted\u201d \u2014 here.\n```\n\n- A list\n\n  ~~~\n  \u2014 in an indented block\n  ~~~\n"
+	root := repository(t, map[string]string{"M01-host.md": edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`.")})
+	sources(t, root)
+	write(t, filepath.Join(root, "AGENTS.md"), "# AGENTS.md\n\n## Code\n")
+	write(t, filepath.Join(root, "docs", "north-star", "vision.md"), known+"\n"+outside+"\n"+typography)
+	write(t, filepath.Join(root, "docs", "archived", "chat.md"), "The code `GONE_CODE` \u2014 it\u2019s old.\n")
+	write(t, filepath.Join(root, "extensions", "demo", "testdata", "notes.md"), "The code `FIXTURE_ONLY` \u2014 here.\n")
+	var out strings.Builder
+	if err := run([]string{"check", root}, &out); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+}
