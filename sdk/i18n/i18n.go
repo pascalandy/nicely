@@ -40,7 +40,7 @@ func Locales() fs.FS {
 }
 
 // PluralGuard, when true, makes Printer.T panic on a message with a one form
-// in any language, and name its ID. T passes no count, so it always shows the
+// in any loaded language, and name its ID. T passes no count, so it shows the
 // other form. Only the test binary of cmd/ncly sets it, so a scenario fails
 // where such a call runs, even with the ID in a variable. See #234.
 var PluralGuard bool
@@ -54,7 +54,7 @@ type Catalogs struct {
 	tags    []language.Tag // the languages with a catalog, en first
 	matcher language.Matcher
 	en      map[string]bool
-	plural  map[string]bool // the IDs with a one form in any language
+	plural  map[string]bool // the IDs with a one form in any loaded language
 }
 
 // CatalogError reports an en catalog that is missing, unreadable, or not a
@@ -114,10 +114,13 @@ func Load(folders ...fs.FS) (*Catalogs, error) {
 				continue
 			}
 			valid := slices.DeleteFunc(f.Messages, func(m *goi18n.Message) bool { return checkMessage(m) != nil })
+			if b.AddMessages(f.Tag, valid...) != nil {
+				continue
+			}
 			for _, m := range valid {
 				c.markPlural(m)
 			}
-			if b.AddMessages(f.Tag, valid...) == nil && !slices.Contains(c.tags, f.Tag) {
+			if !slices.Contains(c.tags, f.Tag) {
 				c.tags = append(c.tags, f.Tag)
 			}
 		}

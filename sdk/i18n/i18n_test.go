@@ -77,8 +77,10 @@ func TestPluralForms(t *testing.T) {
 }
 
 // TestPluralGuard proves the guard that the test binary of cmd/ncly turns
-// on. T refuses a message with a one form in any language and names its ID,
-// and N still renders it. Off, as in a release, T renders the other form.
+// on. T refuses a message with a one form in any loaded language and names
+// its ID, and N still renders it. Off, as in a release, T renders the other
+// form. go-i18n rejects tlh, which has no plural rule, so its forms count for
+// nothing.
 func TestPluralGuard(t *testing.T) {
 	c, err := Load(fstest.MapFS{
 		"en.toml": {Data: []byte(`
@@ -100,6 +102,12 @@ other = "Hello"
 description = "d"
 one = "{{.Count}} fichier prêt"
 other = "{{.Count}} fichiers prêts"
+`)},
+		"tlh.toml": {Data: []byte(`
+[hello]
+description = "d"
+one = "nuqneH"
+other = "nuqneH"
 `)},
 	})
 	if err != nil {
