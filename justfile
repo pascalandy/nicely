@@ -105,6 +105,7 @@ test *args:
     bash scripts/release-verify-test.sh
     bash scripts/test-hook-env.sh
     bash scripts/check-layers-test.sh
+    bash scripts/signoff-test.sh
 
 # Run the Go tests of sdk and internal under the race detector, without the scenarios
 [group('checks')]
@@ -182,8 +183,8 @@ fmt *files:
 
 # Run the checks, then mark the pushed HEAD green on GitHub
 [group('checks')]
-signoff: check
-    gh signoff
+signoff:
+    @exec bash scripts/signoff.sh
 
 # Sign off each layer of a stack after its checks pass, up to the first failure
 [group('checks')]

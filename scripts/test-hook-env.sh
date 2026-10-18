@@ -22,6 +22,7 @@ fct_main() {
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/test-hook-env.sh"
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/check-layers-test.sh"
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/release-verify-test.sh"
+	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/signoff-test.sh"
 	cat >"${test_dir}/bin/go" <<'SCRIPT'
 #!/usr/bin/env bash
 set -Eeuo pipefail
