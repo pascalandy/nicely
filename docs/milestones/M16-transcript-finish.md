@@ -33,7 +33,7 @@ Settle each one in the [transcript spec](../../extensions/transcript/spec.md), t
 
 ### M16-T1 Doctor for YouTube
 
-- **Read:** [Output and cookies](../../extensions/transcript/spec.md#output-and-cookies), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract/status-command.md)
+- **Read:** [Output and cookies](../../extensions/transcript/spec/output-and-cookies.md), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract/status-command.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_doctor.txtar`, `extensions/transcript/testdata/script/transcript_cookies.txtar`
 
 Add `ncly transcript status`, following the status command of the skill extension.
@@ -45,7 +45,7 @@ The transcript skill tells an agent to run `ncly doctor transcript` first.
 
 ### M16-T2 Fresh-session check
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Records and replay](../../extensions/transcript/spec.md#records-and-replay)
+- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Records and replay](../../extensions/transcript/spec/records-and-replay.md)
 - **Proves:** the session's transcript, attached to the pull request
 
 Give a fresh agent only the line that points to `ncly skill view nicely`.
