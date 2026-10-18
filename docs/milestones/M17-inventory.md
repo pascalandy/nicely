@@ -5,18 +5,21 @@ Version: v0.17.0
 
 ## Demo
 
-Pascal chooses one recurring task, supported by concrete recipes, as Nicely's first useful command requiring no key or configuration.
+Pascal chooses one recurring task, from a concrete before and after, as Nicely's first useful command requiring no key or configuration.
 
 ## Scope
 
-Review a small sample of Pascal's actual recurring recipes.
-Show enough context to choose one useful task: today's command, usual input, expected result, and current friction.
-Use relevant `justfile` recipes or skills when a shell command hides the actual work.
-A full package inventory, both machines' shell histories, and a catalogue of future domains are unnecessary.
-
-[Markdown viewing](M18-markdown.md) is the current candidate.
+The grooming of 2026-10-18 found two candidates in Pascal's own recipes.
+Pascal picks one of them, or neither.
 Other everyday domains and extra formats stay in [M99](M99-parking-lot/everyday-domains.md).
-This milestone confirms or replaces that one candidate; it does not approve a domain family.
+This milestone confirms or replaces one candidate; it does not approve a domain family.
+
+| | View one Markdown file | Convert one screen recording |
+|---|---|---|
+| Today | `just sk-read <name>` in Pascal's SKILLS_MONO repository prints a skill's raw Markdown | `video-archive convert --input ./clip.mov -o ./clip.mp4` in Pascal's dotfiles |
+| Result | [M18](M18-markdown.md) renders one file in the terminal | One converted file |
+| Cost | One card, since Nicely already ships the renderer | Several cards: tool checks, overwrite consent, retry safety |
+| Unknown | How often Pascal opens a Markdown file in a terminal | How often Pascal converts one file by hand |
 
 ### Conventions for the everyday domains
 
@@ -38,27 +41,21 @@ Move only the conventions needed by the approved task into its spec.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M17-T1 | Inspect concrete recipes | agent | — | todo |
-| M17-T2 | Choose the first task | Pascal | M17-T1 | todo |
-| M17-T3 | Plan one command | agent | M17-T2 | todo |
+| M17-T1 | Pick the first task | Pascal | — | todo |
+| M17-T2 | Plan one command | agent | M17-T1 | todo |
 
-### M17-T1 Inspect concrete recipes
+### M17-T1 Pick the first task
 
-- **Read:** [Scope](#scope)
-- **Proves:** the short task comparison in this file
+Pascal picks Markdown, the recording, or neither.
+With a pick, he names one real input he uses and the result it must produce.
 
-Read enough actual recipes to support a choice.
-Describe their inputs, results, and friction, then recommend one task.
-Stop when the evidence supports that decision.
+### M17-T2 Plan one command
 
-### M17-T2 Choose the first task
+- **Read:** [Scope](#scope), [Make a milestone ready](README.md#make-a-milestone-ready), [D061](../north-star/decisions/D061-smallest-useful-capability.md)
+- **Proves:** this file's recorded pick, and the milestone that follows from it
 
-Pascal chooses the first task from the evidence and confirms the result it must produce.
-
-### M17-T3 Plan one command
-
-- **Read:** [Scope](#scope), [Make a milestone ready](README.md#make-a-milestone-ready)
-- **Proves:** the one candidate milestone and its command spec
-
-Confirm or replace M18 with the approved task.
-Write one command's scope and cards, without scheduling the rejected alternatives.
+Record Pascal's pick and his real input here, and set M17-T1 to done.
+For Markdown, write M18's spec and its one card.
+For the recording, replace M18 with one command's spec and cards.
+Move each rejected candidate to M99 with its revisit condition.
+For neither, move both to M99, delete M18, and plan no other task.

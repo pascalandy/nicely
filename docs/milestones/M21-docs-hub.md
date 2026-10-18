@@ -35,9 +35,12 @@ This milestone changes no core mechanism.
 
 Settle each one in `extensions/docs/spec.md`, then delete this section.
 
-- Which existing renderer supports multiple explicit docs roots with simple setup, useful navigation, and the required local-only behavior
+- Which recurring cross-project reading task Pascal has, with its docs roots. Without one, move M21 to M99, as D061 says
+- How the URL reaches the caller. Core buffers an extension's JSON stdout until exit, so a serving command cannot answer its URL in JSON
+- Which existing renderer supports multiple explicit docs roots with simple setup, useful navigation, and the required local-only behavior. Try one renderer first, and compare a second only if the first fails a requirement
 - Which installed programs and versions it requires, and which doctor checks and install hints describe that setup
-- How its build, serving, path boundaries, port selection, and cancellation are proven with two real project docs folders
+- How its build, serving, path boundaries, port selection, and cancellation are proven with two real project docs folders. A hostile fixture holds a config hook, a raw `<script>`, and a remote image
+- Readiness adds a Pascal card that picks the docs view before serving starts
 
 ## Cards
 
@@ -62,6 +65,7 @@ Keep sources unchanged and generated files inside disposable cache.
 
 Prove that the listener is loopback-only and that served paths cannot escape the selected documentation.
 Stop the renderer and server on cancellation.
+It does not reuse the stop policy of doctor, which [#215](https://github.com/pascalandy/nicely/issues/215) questions.
 A failed build leaves sources unchanged and needs no publication recovery.
 
 ## After this milestone

@@ -23,16 +23,17 @@ The language matching of M00 selects the new catalog for `fr_CA.UTF-8` and for a
 
 ```
 # The system language selects French
+env LC_ALL=
+env LC_MESSAGES=
+env NCLY_LANG=
+env NCLY_CONFIG=$WORK/missing.toml
 env LANG=fr_CA.UTF-8
 exec ncly --help
-stdout 'Utilisation'
+stdout 'UTILISATION'
 
 # The agent contract does not change
-env LANG=fr_CA.UTF-8
-env DEEPGRAM_API_KEY=
-exits 78 ncly transcript run youtube --url https://www.youtube.com/watch?v=VIDEO_ID --json
-stderr '"code":"AUTH_MISSING"'
-stderr '"next":\["ncly","auth","login","deepgram"\]'
+exits 2 ncly auth logout deepgram --json
+stderr '"code":"NOT_FOUND"'
 ```
 
 ## Cards
@@ -48,7 +49,12 @@ stderr '"next":\["ncly","auth","login","deepgram"\]'
 - **Read:** [Configuration](../north-star/contract/configuration.md)
 - **Proves:** `testdata/script/language_fr.txtar`
 
+Start after [#234](https://github.com/pascalandy/nicely/issues/234) lands.
 A complete `fr-CA` catalog for core and for the SDK, which renders the help pages, the global flags, and the error labels of every command, each passing the parity test against `en`. The system language selects them.
+A confirmation shows `[o/N]` and accepts `o` and `oui`.
+Each templated message keeps its fields, flags, paths, and placeholders.
+Assert a `fr-CA.toml` for each owner, since parity passes without one.
+`TestMatch` expects `fr-CA`, and `extension_help.txtar` changes where French help expects English completion text.
 
 ### M22-T2 Translate shipped first-party extensions
 
@@ -56,7 +62,7 @@ A complete `fr-CA` catalog for core and for the SDK, which renders the help page
 - **Proves:** `testdata/script/language_fr_extensions.txtar`
 
 A complete `fr-CA` catalog for each shipped first-party extension.
-The agent contract stays the same under English, the pseudo-locale, and French.
+Under `en`, `en-XA`, and `fr-CA`, one call gives the same exit, `ok`, codes, `next`, numbers, enums, and run IDs.
 
 ### M22-T3 Formats and README
 
