@@ -54,6 +54,10 @@ var (
 // for Pascal to follow.
 const maxAgentCards = 5
 
+// readyRule says how many pull requests make a planned milestone ready.
+// AGENTS.md, dev-preferences.md, and D042 state it in these words.
+const readyRule = "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."
+
 var (
 	milestoneStatuses = []string{"planned", "ready", "active", "done"}
 	cardStatuses      = []string{"todo", "done"}
@@ -712,7 +716,7 @@ func next(out *strings.Builder, milestones []*milestone) {
 	}
 	if m.status == "planned" && (m.open != nil || len(m.cards) == 0) {
 		fmt.Fprintf(out, "Next: make %s %s ready\nFile: %s\n\n", m.id, m.title, m.path)
-		fmt.Fprintln(out, "The milestone is planned. Settle its open questions in the spec, finish its cards, and set its status to ready, in one pull request, as \"Make a milestone ready\" in AGENTS.md says.")
+		fmt.Fprintf(out, "The milestone is planned. Settle its open questions in the spec, finish its cards, and set its status to ready, as \"Make a milestone ready\" in AGENTS.md says. %s\n", readyRule)
 		if len(m.open) > 0 {
 			fmt.Fprintf(out, "\nOpen questions:\n%s\n", strings.Join(m.open, "\n"))
 		}

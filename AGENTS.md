@@ -56,7 +56,7 @@ Copy this checklist into the pull request and tick each step when its condition 
 
 ## Make a milestone ready
 
-When `just next` names a planned milestone with open questions, make it ready in one pull request:
+When `just next` names a planned milestone with open questions, make it ready. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests. [dev-preferences.md](docs/north-star/dev-preferences.md#merge-on-the-brigades-rule-or-pascals-word) holds this rule. Follow these steps:
 
 1. Settle each open question in the spec that it names, then delete the **Open questions** section. Ask Pascal only what is his to decide, such as a look, a cost, or a principle.
 2. Finish the cards. Trace each card through the [code map](docs/north-star/architecture.md#code-map): name the package that it changes, and check that this package may reach what the card needs. A part that the package may not import, such as the host's discovery for an extension, is reached through the CLI, after the milestone that adds its command. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. A milestone has at most five agent cards: split a bigger one into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.

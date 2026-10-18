@@ -41,6 +41,7 @@ The `fleet` skill names Pascal's machines. The mini is the agents' Mac and stays
 Open each pull request ready for review. In a `brigade-mode` run, the brigade decides when to merge. Otherwise, merge only when Pascal says "merge" for that pull request.
 
 - When later work depends on an open pull request, stack it on that pull request.
+- Make a planned milestone ready as [Make a milestone ready](../../AGENTS.md#make-a-milestone-ready) says. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
 - Fix each review finding on the branch of its pull request, with a scenario that fails first. Reply on the pull request with the commit that fixes it.
 
 To merge a stack, ask for no confirmation, as for one branch. Stop only on a real blocker. Follow Land in the `gh-stack` skill, for a project that pushes a head to its trunk. Add these checks to its steps:

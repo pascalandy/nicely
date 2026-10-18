@@ -16,6 +16,20 @@ func TestRepositoryPlan(t *testing.T) {
 	}
 }
 
+// TestReadyRule keeps the docs that state how a milestone becomes ready in
+// the words of next's message, so the rule cannot drift apart.
+func TestReadyRule(t *testing.T) {
+	for _, name := range []string{"AGENTS.md", "docs/north-star/dev-preferences.md", "docs/north-star/decisions/D042-milestones-and-cards.md"} {
+		data, err := os.ReadFile(filepath.Join("../../..", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), readyRule) {
+			t.Errorf("%s lacks the rule of next, in its words: %q", name, readyRule)
+		}
+	}
+}
+
 const foundation = `# M00 Foundation
 
 Status: done
@@ -87,6 +101,7 @@ func TestNext(t *testing.T) {
 		name  string
 		files map[string]string
 		want  []string
+		lacks []string
 	}{
 		{
 			name:  "first ready agent card, with the cards waiting on Pascal",
@@ -102,12 +117,13 @@ func TestNext(t *testing.T) {
 			name: "a planned milestone asks for readiness",
 			files: map[string]string{"M01-host.md": edit(host, "Status: ready", "Status: planned") +
 				"\n## Open questions\n\n- Which manifest format?\n"},
-			want: []string{"Next: make M01 Host ready", "- Which manifest format?"},
+			want: []string{"Next: make M01 Host ready", "- Which manifest format?", "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."},
 		},
 		{
 			name:  "a planned milestone without open questions starts with its first card",
 			files: map[string]string{"M01-host.md": edit(host, "Status: ready", "Status: planned")},
 			want:  []string{"Next card: M01-T2 Manifest", "M01 has no open questions, so this pull request also sets it to active."},
+			lacks: []string{"small stack"},
 		},
 		{
 			name:  "every milestone done",
@@ -125,6 +141,11 @@ func TestNext(t *testing.T) {
 			for _, w := range tc.want {
 				if !strings.Contains(out.String(), w) {
 					t.Errorf("next lacks %q:\n%s", w, out.String())
+				}
+			}
+			for _, l := range tc.lacks {
+				if strings.Contains(out.String(), l) {
+					t.Errorf("next has %q:\n%s", l, out.String())
 				}
 			}
 		})
