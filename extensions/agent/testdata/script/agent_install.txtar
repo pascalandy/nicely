@@ -62,7 +62,8 @@ cmp codex.log want-probes.log
 [darwin] env INSTALL='"hint":"brew install --cask codex","next":\["brew","install","--cask","codex"\]'
 env CODEX_VERSION=0.162.0
 exits 78 ncly doctor agent --json
-stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex 0\.162\.0 is older than 0\.162\.1\.",'$INSTALL'\}\]\}\n\z'
+answer stdout report
+stdout '"checks":\[\{"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex 0\.162\.0 is older than 0\.162\.1\.",'$INSTALL'\}\]\}\n\z'
 exits 78 ncly doctor agent
 stdout '^fail  agent\.codex     codex 0\.162\.0 is older than 0\.162\.1\.\n      PREREQ_MISSING  hint: (sudo pacman -S openai-codex|brew install --cask codex)$'
 
@@ -74,7 +75,8 @@ stdout '"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_M
 # A missing codex fails with PREREQ_MISSING and the same install command
 mv bin/codex codex.stub
 exits 78 ncly doctor agent --json
-stdout '\A\{"ok":false,"contract_version":1,"checks":\[\{"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex is not installed\.",'$INSTALL'\}\]\}\n\z'
+answer stdout report
+stdout '"checks":\[\{"id":"agent\.codex","component":"agent","status":"fail","code":"PREREQ_MISSING","message":"codex is not installed\.",'$INSTALL'\}\]\}\n\z'
 exits 78 ncly --lang en-XA doctor agent
 pseudo stdout agent.codex codex PREREQ_MISSING sudo pacman -S openai-codex brew install --cask
 mv codex.stub bin/codex

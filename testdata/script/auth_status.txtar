@@ -49,8 +49,8 @@ cmp stdout found.txt
 # A key in neither fails the report with AUTH_MISSING and exit 78, on stdout, without errors
 env DEEPGRAM_API_KEY=
 exits 78 ncly auth status --json
-stdout '\A\{"ok":false,"contract_version":1,"keychain":"available","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\],"grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
-! stdout '"errors"'
+answer stdout report
+stdout '"keychain":"available","services":\[\{"service":"deepgram","configured":false,"source":"none","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\],"grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
 ! stderr .
 cp stdout missing.json
 schema missing.json describe.json schema
@@ -70,7 +70,8 @@ stdout '\A\{"ok":true,"contract_version":1,"keychain":"unavailable","services":\
 # names the variable, and no next
 env OPENAI_API_KEY=
 exits 78 ncly auth status --json
-stdout '\A\{"ok":false,"contract_version":1,"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE","message":"The keychain does not answer, and OPENAI_API_KEY is empty\.","hint":"Export OPENAI_API_KEY, or unlock the keychain\.","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
+answer stdout report
+stdout '"keychain":"unavailable","services":\[\{"service":"deepgram","configured":true,"source":"env","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\},\{"service":"openai","configured":false,"source":"none","code":"KEYRING_UNAVAILABLE","message":"The keychain does not answer, and OPENAI_API_KEY is empty\.","hint":"Export OPENAI_API_KEY, or unlock the keychain\.","grants":\[\{"domain":"hello","granted":true,"optional":false\}\]\}\]\}\n\z'
 ! stdout '"next"'
 cp stdout unavailable.json
 schema unavailable.json describe.json schema

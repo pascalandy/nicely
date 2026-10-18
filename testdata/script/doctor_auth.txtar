@@ -40,8 +40,8 @@ cmp stdout pass.txt
 # the checks on stdout, and no errors
 env DEEPGRAM_API_KEY=
 exits 78 ncly doctor auth --json
+answer stdout report
 stdout '\{"id":"auth\.deepgram","component":"auth","status":"fail","code":"AUTH_MISSING","message":"No key for deepgram in DEEPGRAM_API_KEY or the keychain\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\}'
-! stdout '"errors"'
 ! stderr .
 cp stdout $TMPDIR/missing.json
 schema $TMPDIR/missing.json $TMPDIR/describe.json schema

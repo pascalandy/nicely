@@ -39,9 +39,9 @@ schema doctor-every.json describe-doctor.json schema
 # with KEY_NOT_GRANTED, whose hint and next grant it to that extension
 exec ncly auth revoke deepgram beta --force --json
 exits 78 ncly auth status --json
+answer stdout report
 stdout '\{"service":"deepgram","configured":true,"source":"env","code":"KEY_NOT_GRANTED","message":"The key of deepgram is not granted to beta\.","hint":"ncly auth grant deepgram beta","next":\["ncly","auth","grant","deepgram","beta"\],"grants":\[\{"domain":"alpha","granted":true,"optional":false\},\{"domain":"beta","granted":false,"optional":false\}\]\}'
 stdout '\{"service":"openai","configured":true,"source":"keychain","grants":\[\{"domain":"alpha","granted":true,"optional":false\}\]\}'
-! stdout '"errors"'
 cp stdout one.json
 schema one.json describe-status.json schema
 exits 78 ncly auth status
