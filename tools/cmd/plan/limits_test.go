@@ -105,6 +105,12 @@ func TestLimitsChanges(t *testing.T) {
 			limitsTestGit(t, root, "add", ".")
 			write(t, filepath.Join(root, "new.md"), "Short.\n")
 		}, nil, []string{"new.md:1", "26 words"}},
+		{"stage-like path", func(t *testing.T, root string) {
+			write(t, filepath.Join(root, "short.md"), "Short.\n")
+			limitsTestGit(t, root, "add", ".")
+			limitsTestGit(t, root, "commit", "-qm", "Short")
+			write(t, filepath.Join(root, "0:short.md"), long)
+		}, nil, []string{"0:short.md:1", "26 words"}},
 		{"submodule", func(t *testing.T, root string) {
 			nestedRepository(t, root, "sub")
 		}, nil, nil},

@@ -145,7 +145,8 @@ const gitlink = "160000"
 
 // readChanges reads the raw diff, whose modes tell a gitlink apart. A gitlink
 // holds no file to read, because a submodule's commits live in another
-// repository. A submodule replaced by a file counts as a new file.
+// repository. A submodule replaced by a file counts as a new file. Each path
+// reads as ./path, so a name such as 0:notes.md never selects an index stage.
 func readChanges(root string, refs []string, old, next string) ([]change, error) {
 	data, err := limitsGit(root, append([]string{"diff", "--raw", "-z", "-M", "-l0", "--diff-filter=ACMRDT"}, refs...)...)
 	if err != nil {
@@ -170,7 +171,7 @@ func readChanges(root string, refs []string, old, next string) ([]change, error)
 		}
 		c := change{path: after}
 		if status != "A" && oldMode != gitlink {
-			c.old, err = limitsGit(root, "show", old+":"+before)
+			c.old, err = limitsGit(root, "show", old+":./"+before)
 			if err != nil {
 				return nil, err
 			}
@@ -179,7 +180,7 @@ func readChanges(root string, refs []string, old, next string) ([]change, error)
 			}
 		}
 		if status != "D" {
-			c.new, err = limitsGit(root, "show", next+":"+after)
+			c.new, err = limitsGit(root, "show", next+":./"+after)
 			if err != nil {
 				return nil, err
 			}
