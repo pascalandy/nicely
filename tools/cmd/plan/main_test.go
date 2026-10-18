@@ -370,6 +370,9 @@ func TestCheckDocsPasses(t *testing.T) {
 	write(t, filepath.Join(root, "extensions", "markdown", "testdata", "broken.md"), "[old](gone.md)\n")
 	write(t, filepath.Join(root, "docs", "north-star", "code.md"), "Write `[a](gone.md)` for a link.\n\n- A list\n\n  ~~~\n  [example](gone.md)\n  ~~~\n")
 	write(t, filepath.Join(root, ".github", "notes.md"), "[old](gone.md)\n")
+	// The link and its heading read the same fences: a short fence inside a
+	// longer block closes nothing.
+	write(t, filepath.Join(root, "docs", "north-star", "nested.md"), "# Demo\n\n````markdown\n```\n````\n\n## Target\n\n[Target](#target)\n")
 	var out strings.Builder
 	if err := run([]string{"check", root}, &out); err != nil {
 		t.Fatalf("%v\n%s", err, out.String())

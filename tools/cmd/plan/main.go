@@ -911,13 +911,10 @@ func anchors(file string) []string {
 	}
 	var list []string
 	seen := map[string]int{}
-	fenced := false
+	var f fence
 	for line := range strings.Lines(string(data)) {
-		if strings.HasPrefix(line, "```") {
-			fenced = !fenced
-		}
 		level := len(line) - len(strings.TrimLeft(line, "#"))
-		if fenced || level == 0 || level > 6 || !strings.HasPrefix(line[level:], " ") {
+		if f.in(line) || level == 0 || level > 6 || !strings.HasPrefix(line[level:], " ") {
 			continue
 		}
 		s := slug(strings.TrimSpace(line[level:]))
