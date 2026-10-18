@@ -106,13 +106,29 @@ func TestLimitsChanges(t *testing.T) {
 			write(t, filepath.Join(root, "new.md"), "Short.\n")
 		}, nil, []string{"new.md:1", "26 words"}},
 		{"submodule", func(t *testing.T, root string) {
-			sub := filepath.Join(root, "sub")
-			if err := os.Mkdir(sub, 0o755); err != nil {
+			nestedRepository(t, root, "sub")
+		}, nil, nil},
+		{"submodule replaced by a file", func(t *testing.T, root string) {
+			nestedRepository(t, root, "sub.md")
+			limitsTestGit(t, root, "add", ".")
+			limitsTestGit(t, root, "commit", "-qm", "Submodule")
+			if err := os.RemoveAll(filepath.Join(root, "sub.md")); err != nil {
 				t.Fatal(err)
 			}
-			limitsTestGit(t, sub, "init", "-q")
-			limitsTestGit(t, sub, "-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-qm", "Sub")
-		}, nil, nil},
+			write(t, filepath.Join(root, "sub.md"), long)
+		}, nil, []string{"sub.md:1", "26 words"}},
+		{"submodule replaced by a file since the base", func(t *testing.T, root string) {
+			nestedRepository(t, root, "sub.md")
+			limitsTestGit(t, root, "add", ".")
+			limitsTestGit(t, root, "commit", "-qm", "Submodule")
+			limitsTestGit(t, root, "branch", "base")
+			if err := os.RemoveAll(filepath.Join(root, "sub.md")); err != nil {
+				t.Fatal(err)
+			}
+			write(t, filepath.Join(root, "sub.md"), long)
+			limitsTestGit(t, root, "add", ".")
+			limitsTestGit(t, root, "commit", "-qm", "File")
+		}, []string{"--base", "base"}, []string{"sub.md:1", "26 words"}},
 		{"base", func(t *testing.T, root string) {
 			limitsTestGit(t, root, "branch", "base")
 			write(t, filepath.Join(root, "new.md"), long)
@@ -151,6 +167,18 @@ func limitsRepository(t *testing.T, files map[string]string) string {
 	limitsTestGit(t, root, "add", ".")
 	limitsTestGit(t, root, "commit", "--allow-empty", "-qm", "Base")
 	return root
+}
+
+// nestedRepository makes name a repository with one commit, which git adds
+// to root as a submodule.
+func nestedRepository(t *testing.T, root, name string) {
+	t.Helper()
+	dir := filepath.Join(root, name)
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	limitsTestGit(t, dir, "init", "-q")
+	limitsTestGit(t, dir, "-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", "commit", "--allow-empty", "-qm", "Sub")
 }
 
 func limitsTestGit(t *testing.T, root string, args ...string) {
