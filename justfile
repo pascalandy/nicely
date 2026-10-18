@@ -66,7 +66,7 @@ install:
 
 # Run every check that signoff requires
 [group('checks')]
-check: fmt-check lint tidy-check test race release-lint gitleaks-rules gitleaks
+check: fmt-check lint tidy-check test race release-lint gitleaks-rules gitleaks agents-size
 
 # Run just check on each layer of a stack, bottom to top, as origin holds it
 [group('checks')]
@@ -146,6 +146,19 @@ tidy-check:
 [group('checks')]
 gitleaks:
     gitleaks git --no-banner --redact --log-level warn
+
+# Fail when the staged AGENTS.md outgrows a router, as rule 3 of "Keep the docs a tower" in dev-preferences.md says
+[group('checks')]
+agents-size:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    max=1250
+    tokens=$(( $(git show :AGENTS.md | wc -c) / 4 ))
+    if (( tokens > max )); then
+        echo "agents-size: AGENTS.md holds $tokens tokens (bytes/4), more than the $max of a router." >&2
+        echo "AGENTS.md only routes an agent to the files it must read. Move the text you added to the file that owns it, as the row \"Where does a new rule go?\" in \"Find what you need\" says, and leave a link in its place." >&2
+        exit 1
+    fi
 
 # Scan the staged changes, as the pre-commit hook does
 [group('checks')]
