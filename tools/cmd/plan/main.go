@@ -692,7 +692,8 @@ func checkProse(file, text string, codes map[string]bool) []string {
 	}
 	var header, block []string
 	var f fence
-	for i, line := range strings.Split(text, "\n") {
+	lines := strings.Split(text, "\n")
+	for i, line := range lines {
 		n := i + 1
 		if opened := f.open != ""; f.in(line) {
 			switch {
@@ -730,6 +731,10 @@ func checkProse(file, text string, codes map[string]bool) []string {
 				}
 			}
 		}
+	}
+	// A block that the file never closes runs to its end, as CommonMark says.
+	if f.open != "" {
+		envelopeCodes(strings.Join(block, "\n"), len(lines)-len(block)+1, code)
 	}
 	return problems
 }
