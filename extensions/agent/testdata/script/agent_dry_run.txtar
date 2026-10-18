@@ -10,9 +10,7 @@ chmod 755 bin/pacman
 chmod 755 bin/brew
 # PATH keeps ncly, the program of the installed extension, and the stubs alone, so no real
 # codex or package manager counts
-mkdir nbin
-exec sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
-env PATH=$WORK/bin:$WORK/nbin
+onlyncly agent-external
 # The installed launcher appends to $TMPDIR/external.log instead of $WORK/external.log, so the
 # snapshot of a dry run, which skips $TMPDIR, sees no write of the test setup
 cp launcher $DATA/ncly-agent

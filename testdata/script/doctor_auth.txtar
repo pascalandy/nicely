@@ -5,10 +5,7 @@
 # deepgram and openai, which a human granted to it, and appends to $WORK/ran when it runs,
 # which it never may. grant_status.txtar proves the grants.
 chmod 755 bin/plain
-mkdir nbin
-exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
-exec sh -c 'ln -s "$(command -v exitcode)" nbin/exitcode'
-env PATH=$WORK/bin:$WORK/nbin
+onlyncly exitcode
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
 env OPENAI_API_KEY=

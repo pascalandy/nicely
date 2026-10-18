@@ -11,11 +11,7 @@ chmod 755 bin/ncly-skill
 chmod 755 bin/ncly-auth
 chmod 755 bin/ncly-broken
 chmod 755 bin/ncly-hello.toml
-# PATH keeps ncly and the fixtures alone, so the other commands of the test binary are no
-# extensions here
-mkdir nbin
-exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
-env PATH=$WORK/bin:$WORK/nbin
+onlyncly
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 
 exits 78 ncly doctor extensions --json

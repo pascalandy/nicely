@@ -11,9 +11,7 @@ chmod 755 bin/pacman
 chmod 755 bin/brew
 # PATH keeps ncly, the program of the installed extension, codes, and the stubs alone, so no
 # real codex or package manager counts
-mkdir nbin
-exec sh -c 'for c in ncly agent-external codes; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
-env PATH=$WORK/bin:$WORK/nbin
+onlyncly agent-external codes
 
 # The installed files sit where discovery looks first
 exists $DATA/ncly-agent

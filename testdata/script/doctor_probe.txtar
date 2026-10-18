@@ -15,11 +15,8 @@ chmod 755 bin/newtool
 chmod 755 bin/oldtool
 chmod 755 bin/plain
 chmod 755 bin/silent
-# PATH keeps ncly and the fixtures alone, so the other commands of the test binary are no
-# extensions here, and no real package manager counts
-mkdir nbin
-exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
-env PATH=$WORK/bin:$WORK/nbin
+# PATH keeps ncly and the fixtures alone, so no real package manager counts
+onlyncly
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 
 # The first package manager of the running system that the stub PATH holds gives the install

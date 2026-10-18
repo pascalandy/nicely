@@ -7,9 +7,7 @@
 env STATE=$WORK/.local/state/nicely
 chmod 755 bin/ncly-alpha
 chmod 755 bin/ncly-beta
-mkdir nbin
-exec sh -c 'ln -s "$(command -v ncly)" nbin/ncly'
-env PATH=$WORK/bin:$WORK/nbin
+onlyncly
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=dg-env
 env OPENAI_API_KEY=

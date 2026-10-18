@@ -6,9 +6,7 @@
 # appends any other call, which would start a task, to $TMPDIR/task.log.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 chmod 755 bin/codex
-mkdir nbin
-exec /bin/sh -c 'for c in ncly agent-external; do ln -s "$(command -v $c)" nbin/$c || exit 1; done'
-env PATH=$WORK/bin:$WORK/nbin
+onlyncly agent-external
 env CODEX_VERSION=0.163.0
 env CFG=$WORK/.config/nicely
 mkdir $CFG
