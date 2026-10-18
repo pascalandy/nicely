@@ -15,7 +15,6 @@ The unused `zoom` request field stays `null`; it exposes no Zoom command.
 | `plan` | program | `items`: one object with `item` and `output`. On preparation failure, `items` is empty, and `code` and `detail` identify the failure |
 | `intent` | program | `item`, `step`, `name`: proposed result-folder basename, `tools`: actual program and `yt-dlp` versions. No user-side output has been created |
 | `ack` | Go | `item` and `step` from the intent, plus `output_dir`: the final reserved result folder |
-| `artifact` | program | `item`, `step`, `path`, `size_bytes`, and `sha256` |
 | `step` | program | `item`, `step`, `status`, `code`, which is `null` for `completed`, `warnings`: program warning codes, and `detail`: a verbose diagnostic |
 
 `item` is the URL as supplied, and `step` is `transcribe`.
@@ -35,15 +34,12 @@ Go owns the overall timeout verdict and process cleanup.
    After sending the plan, Python may prepare audio only in `temp_dir`.
    Before user-side writes or upload, Python sends `intent` and waits for `ack`.
 4. Go validates the intent against the fixed plan.
-   Under the output resource lock, it durably records the candidate `output_dir` and unknown step before reserving the folder.
+   It durably records the candidate `output_dir` and the unknown step, then reserves the folder with an exclusive `mkdir`.
    Complete the persistence barrier before sending `ack` with the final folder.
    A failed barrier prevents acknowledgement and upload.
    Python stops before effects if stdin closes or a matching acknowledgement does not arrive within 10 seconds.
-5. Python saves files only inside the acknowledged folder.
-   It sends one artifact message per required file, then a completed step.
-   Paths are absolute within that folder; sizes are nonnegative byte integers; hashes are 64 lowercase hexadecimal characters.
-   Go independently verifies each file and persists its evidence as received.
-   Go verifies the complete required set and syncs it before durably recording completion.
+5. Python saves the required files only inside the acknowledged folder, then sends a completed step.
+   Go verifies them, as [Verified artifacts](records-and-replay.md#verified-artifacts) says, before it durably records completion.
 6. A failure sends the step's status and program code.
    Go preserves its public code, message, and recovery hint, including for pending preparation failures.
    Exactly one terminal step message is required after a successful plan.
@@ -74,9 +70,50 @@ Go maps it to `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` with catalog ID `transcript.b
 `deepgram_unreachable` covers transport failure before audio was sent, such as refused connections, DNS or TLS failures, and received HTTP 408 or 429 refusals.
 A received HTTP 408 differs from a transport timeout without a response.
 `deepgram_key_rejected` means 401 or 403; other 4xx refusals use `deepgram_failed`.
+A fake key gets that 401 after the whole upload, as [Cold download](output-and-cookies.md#cold-download) records.
 Any 5xx status, timeout, or lost connection after sending audio uses `deepgram_unknown`.
 
 The item's `TEMPORARY` describes its cause.
 After result-folder reservation, paid dispatch, or an unknown effect, the overall runtime failure exits 1 with `RUNTIME`.
 The item retains its cause in `results`.
 Only the overall exit 75 permits repeating the invocation.
+
+## The engine
+
+The engine is transcript's Python program: the YouTube path of `authoring/andy/transcript/` in `pascalandy/skills` at `0c9c4a2`.
+It keeps the tests of the code it copies.
+It lives in `extensions/transcript/python/`, and each of its files stays under 10,000 bytes.
+`PROVENANCE.md` names the source SHA, the MIT notice, the removed features, and each intentional change.
+The PEP 723 header owns every runtime pin: yt-dlp at `2026.7.4` or newer, and one exact version of each other package.
+
+The `python` recipe runs the checks of the engine, and `check` runs that recipe:
+
+1. `uv tool run ruff@0.16.9 check --isolated`, then `uv tool run ruff@0.16.9 format --isolated --check`
+2. `uv export --script` writes the runtime packages of the header to a requirements file
+3. `uv tool run --with-requirements <file> pyright@1.1.414 --pythonversion 3.12`
+4. `uv tool run --with-requirements <file> --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto`
+
+The recipe pins only the tools.
+It runs pyright from the engine folder, because pyright resolves a sibling module only from there.
+It sits outside `just test`, so the nested hook fixture of [#230](https://github.com/pascalandy/nicely/issues/230) never reaches it.
+At `0c9c4a2`, pyright 1.1.414 reports nine errors in `scripts/`: two in the engine files and seven in the tests.
+
+## Test transport
+
+`TestMain` in `cmd/ncly/script_test.go` registers `transcript-external`, as it registers `agent-external`.
+It sets a package variable of the transcript extension, as it sets `record.Boundary`.
+That variable points `uv` at a launcher file in `extensions/transcript/python/testing/`.
+Release builds never embed that folder, and no build tag exists.
+The launcher patches the downloader to copy a fixture audio file.
+It patches `httpx.post` with an `httpx.MockTransport` that reads the whole upload, logs one line per attempt, and returns a fixture response.
+
+The real-uv scenarios use a test-owned uv cache outside `$WORK`, which only the test binary sets.
+The cache warms once with network, like Go modules, then the scenarios run offline.
+"Empty cache" in M13-T2 means Nicely's extraction cache; SP1 and Verify on the real binary prove the cold uv cache.
+
+Spike SP2 ran on 2026-10-18 on Omarchy with uv 0.13.1, offline through `unshare -rn`.
+Its two-file PEP 723 script imports its sibling, and its uv cache was warm.
+The production line failed with exit 2, because `--upgrade-package yt-dlp` asks the package index for yt-dlp.
+With `--offline`, the same line ran from the warm cache, so the test binary adds `--offline`.
+After one warm run, the `python` recipe also passed offline, with or without Node on `PATH`.
+Without Node, pyright's PyPI wrapper fetched Node 26.12.0 during the warm run.

@@ -4,10 +4,10 @@
 It transcribes one YouTube video with Deepgram through the existing Python program.
 It follows the [contract](../../docs/north-star/contract.md).
 [M13](../../docs/milestones/M13-transcript.md) builds this command.
-[M16](../../docs/milestones/M16-transcript-finish.md) adds its doctor checks, skill, and fresh-session proof.
+[M16](../../docs/milestones/M16-transcript-finish.md) adds its doctor checks and fresh-session proof.
 
-The program comes from `authoring/andy/transcript/` in `pascalandy/skills`.
-Copy its transcription implementation; do not rewrite it in Go for this milestone.
+The program comes from `authoring/andy/transcript/` in `pascalandy/skills` at `0c9c4a2`, as [The engine](spec/protocol.md#the-engine) says.
+Copy only its YouTube transcription path; do not rewrite it in Go for this milestone.
 Other source features remain unexposed.
 Summary awaits a verified tools-off path under [D028](../../docs/north-star/decisions/D028-outside-text.md).
 It is parked in [M99](../../docs/milestones/M99-parking-lot/transcript-summary.md), alongside
@@ -15,7 +15,8 @@ It is parked in [M99](../../docs/milestones/M99-parking-lot/transcript-summary.m
 [transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md).
 
 This specification describes planned behavior.
-The open questions in M13 and M16 must be resolved before their implementation is ready.
+The readiness of M13 settled its open questions in these files.
+The open questions of M16 must be resolved before its implementation is ready.
 
 ## ncly transcript
 
@@ -43,7 +44,7 @@ ncly transcript run youtube --url <url> [--output <folder>] [--run-id <id>] [--t
 - An attempted transcription returns `run_id` and `results` with one item, including on execution failure.
   The existing `batch` result envelope is retained; its use does not enable multiple inputs.
   The item holds `ok`, `url`, `output_dir`, and `transcript`.
-  The last two are paths or `null` until available.
+  The last two are paths or `null` until available; `transcript` is the path of `raw_transcript.txt`.
   An unsuccessful item adds `errors`, and verified files remain referenced.
 - Invocation, preparation, and replay refusals attempt no item and omit `results`.
   Their top-level code is the actual refusal, such as `USAGE_INVALID`, `KEY_NOT_GRANTED`, or `RESUME_UNSAFE`.
