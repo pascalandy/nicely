@@ -54,10 +54,12 @@ func cmdExits(ts *testscript.TestScript, neg bool, args []string) {
 
 // cmdAnswer decodes a whole stream as one answer, the way an agent reads it,
 // so a matching substring cannot hide extra text, a wrong type, or a second
-// object: answer <stdout|stderr> <ok|CODE>, where CODE leads the errors.
+// object: answer <stdout|stderr> <ok|CODE>, where CODE leads the errors, or
+// answer stdout report for a failed report, which lists its findings under
+// its own key, such as checks, instead of errors.
 func cmdAnswer(ts *testscript.TestScript, neg bool, args []string) {
-	if neg || len(args) != 2 || (args[0] != "stdout" && args[0] != "stderr") {
-		ts.Fatalf("usage: answer <stdout|stderr> <ok|CODE>")
+	if neg || len(args) != 2 || (args[0] != "stdout" && args[0] != "stderr") || (args[1] == "report" && args[0] != "stdout") {
+		ts.Fatalf("usage: answer <stdout|stderr> <ok|CODE>, or answer stdout report")
 	}
 	if err := checkAnswer(ts.ReadFile(args[0]), args[1]); err != nil {
 		ts.Fatalf("answer on %s: %v", args[0], err)
@@ -86,10 +88,12 @@ func checkAnswer(text, want string) error {
 		}
 	}
 	raw, present := keys["errors"]
-	if wantOK {
-		if present {
-			return errors.New("a success holds errors")
-		}
+	switch {
+	case present && wantOK:
+		return errors.New("a success holds errors")
+	case present && want == "report":
+		return errors.New("a report holds errors")
+	case wantOK || want == "report":
 		return nil
 	}
 	errs, err := problems(raw)
