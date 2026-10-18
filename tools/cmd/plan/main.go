@@ -913,8 +913,14 @@ func anchors(file string) []string {
 	seen := map[string]int{}
 	var f fence
 	for line := range strings.Lines(string(data)) {
+		// A heading starts its line, so only a fence of the root can hold one,
+		// and a marker indented by four spaces is code there, never a fence.
+		code := f.open != ""
+		if !strings.HasPrefix(line, "    ") {
+			code = f.in(line)
+		}
 		level := len(line) - len(strings.TrimLeft(line, "#"))
-		if f.in(line) || level == 0 || level > 6 || !strings.HasPrefix(line[level:], " ") {
+		if code || level == 0 || level > 6 || !strings.HasPrefix(line[level:], " ") {
 			continue
 		}
 		s := slug(strings.TrimSpace(line[level:]))

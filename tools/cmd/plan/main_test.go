@@ -373,6 +373,10 @@ func TestCheckDocsPasses(t *testing.T) {
 	// The link and its heading read the same fences: a short fence inside a
 	// longer block closes nothing.
 	write(t, filepath.Join(root, "docs", "north-star", "nested.md"), "# Demo\n\n````markdown\n```\n````\n\n## Target\n\n[Target](#target)\n")
+	// A marker indented by four spaces is code, so it opens no fence that
+	// would hide the headings below it.
+	write(t, filepath.Join(root, "docs", "north-star", "indented.md"), "# Indented\n\n    ~~~\n\n## Tilde\n\nText.\n\n    ```\n\n## Backtick\n")
+	write(t, filepath.Join(root, "docs", "north-star", "links.md"), "[Tilde](indented.md#tilde), [Backtick](indented.md#backtick)\n")
 	var out strings.Builder
 	if err := run([]string{"check", root}, &out); err != nil {
 		t.Fatalf("%v\n%s", err, out.String())
