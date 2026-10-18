@@ -4,7 +4,8 @@ set -Eeuo pipefail
 # Verifies a published release in its own temporary folder, and never changes the checkout or
 # GitHub. The release-artifacts verifier of the tag checks the assets. The formula of the
 # Homebrew tap gets its own result, since the Homebrew tap can move on to a later release.
-# Exits 0 only when the assets pass and the Homebrew tap matches them, 1 otherwise.
+# Exits 0 only when the assets pass and the Homebrew tap matches them. Once the report has a
+# result, any other outcome exits 1.
 
 readonly NCLY_REPOSITORY="pascalandy/nicely"
 readonly NCLY_SOURCE_URL="https://github.com/pascalandy/nicely.git"
@@ -109,7 +110,11 @@ fct_execute_this() {
 	printf 'Assets: verified\n' >>"${VERIFY_SCRATCH}/report"
 	fct_clean_environment "${verifier}" formula "${tag}" "${dist}"
 	# One clone reads the Homebrew tap, so the formula and the commit that the report names agree.
-	fct_git clone --quiet --depth 1 --branch main --single-branch "${NCLY_TAP_URL}" "${tap}"
+	if ! fct_git clone --quiet --depth 1 --branch main --single-branch "${NCLY_TAP_URL}" "${tap}"; then
+		printf 'Homebrew tap: not read from %s\nResult: assets verified, Homebrew tap not read\n' "${NCLY_TAP_URL}" >>"${VERIFY_SCRATCH}/report"
+		cat "${VERIFY_SCRATCH}/report"
+		return 1
+	fi
 	tap_commit="$(fct_git -C "${tap}" rev-parse HEAD)"
 	formula="${tap}/Formula/ncly.rb"
 	printf 'Homebrew tap commit: %s\n' "${tap_commit}" >>"${VERIFY_SCRATCH}/report"

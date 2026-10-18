@@ -275,6 +275,14 @@ SCRIPT
 	fct_says 'Homebrew tap: Formula/ncly.rb is missing'
 	fct_says 'Result: assets verified, Homebrew tap formula wrong'
 
+	# A Homebrew tap that cannot be read keeps the result of the assets in the report.
+	git -C "${test_root}/tap.git" branch -m main away
+	fct_verify 1 "${test_root}/published" v0.0.1
+	git -C "${test_root}/tap.git" branch -m away main
+	fct_says 'Assets: verified'
+	fct_says 'Homebrew tap: not read from https://github.com/pascalandy/homebrew-tap.git'
+	fct_says 'Result: assets verified, Homebrew tap not read'
+
 	fct_tap "${formula}" restored
 	# An archive changed after publication keeps the checksum that the release published.
 	dist="$(fct_release altered)"
