@@ -1,7 +1,7 @@
 // Command plan reads the milestone files and prints the next card, shows the
 // progress of every milestone, or checks that the files keep the format that
-// AGENTS.md describes and that every link in the docs resolves. It takes the
-// repository root:
+// AGENTS.md describes, that every link in the docs resolves, and that every
+// card the docs name exists. It takes the repository root:
 //
 //	plan next|status|check <root>
 //
@@ -64,6 +64,7 @@ var (
 	decisionName = regexp.MustCompile(`^(D\d{3})-[a-z0-9-]+\.md$`)
 	titleLine    = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
 	cardID       = regexp.MustCompile(`^M\d\d-T\d+$`)
+	cardRef      = regexp.MustCompile(`\bM\d\d-T\d+\b`)
 	cardHeading  = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
 	checkbox     = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
 	codeSpan     = regexp.MustCompile("`([^`]+)`")
@@ -77,6 +78,7 @@ type milestone struct {
 	open                             []string // nil when the file has no Open questions section
 	cards                            []*card
 	links                            []docLink
+	refs                             []docLink // the card IDs that the file names
 	problems                         []string
 }
 
@@ -88,6 +90,7 @@ type card struct {
 	body                     []string
 }
 
+// docLink is a link target, or a card ID, with the line that names it.
 type docLink struct {
 	target string
 	line   int
@@ -112,7 +115,7 @@ func run(args []string, out io.Writer) error {
 	var b strings.Builder
 	problems := check(root, milestones)
 	if args[0] == "check" {
-		broken, err := checkDocs(root)
+		broken, err := checkDocs(root, cardIDs(milestones))
 		if err != nil {
 			return err
 		}
@@ -160,7 +163,7 @@ func load(root string) ([]*milestone, error) {
 }
 
 func parse(file, text string) *milestone {
-	m := &milestone{path: file, number: -1, links: links(text)}
+	m := &milestone{path: file, number: -1, links: links(text), refs: cardRefs(text)}
 	if match := fileName.FindStringSubmatch(path.Base(file)); match != nil {
 		m.id = match[1]
 		m.number, _ = strconv.Atoi(m.id[1:])
@@ -317,6 +320,7 @@ func (c *card) field(name string) (string, bool) {
 func check(root string, milestones []*milestone) []string {
 	var problems []string
 	numbers := map[int]string{}
+	known := cardIDs(milestones)
 	current := -1
 	for i, m := range milestones {
 		if other, taken := numbers[m.number]; taken && m.number >= 0 {
@@ -324,6 +328,11 @@ func check(root string, milestones []*milestone) []string {
 		}
 		numbers[m.number] = m.path
 		m.checkLinks(root)
+		for _, r := range m.refs {
+			if !known[r.target] {
+				m.problem(r.line, "no milestone defines the card %s", r.target)
+			}
+		}
 		if m.status == "open" {
 			if m.id != "M99" || len(m.cards) > 0 {
 				m.problem(0, "only M99, the parking lot, is open, and it holds no cards")
@@ -473,8 +482,8 @@ func (m *milestone) checkLinks(root string) {
 }
 
 // checkDocs reports the broken links of every Markdown file outside the
-// hidden folders and skippedDirs.
-func checkDocs(root string) ([]string, error) {
+// hidden folders and skippedDirs, and each card it names that is not in known.
+func checkDocs(root string, known map[string]bool) ([]string, error) {
 	var problems []string
 	err := filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -502,6 +511,11 @@ func checkDocs(root string) ([]string, error) {
 		for _, l := range links(string(data)) {
 			if why := brokenLink(root, rel, l.target); why != "" {
 				problems = append(problems, fmt.Sprintf("%s:%d: %s", rel, l.line, why))
+			}
+		}
+		for _, r := range cardRefs(string(data)) {
+			if !known[r.target] {
+				problems = append(problems, fmt.Sprintf("%s:%d: no milestone defines the card %s", rel, r.line, r.target))
 			}
 		}
 		return nil
@@ -581,6 +595,29 @@ func links(text string) []docLink {
 		}
 		for _, l := range mdLink.FindAllStringSubmatch(codeSpan.ReplaceAllString(line, ""), -1) {
 			found = append(found, docLink{l[1], i + 1})
+		}
+	}
+	return found
+}
+
+// cardIDs returns the cards that the tables of the milestones define.
+func cardIDs(milestones []*milestone) map[string]bool {
+	known := map[string]bool{}
+	for _, m := range milestones {
+		for _, c := range m.cards {
+			known[c.id] = true
+		}
+	}
+	return known
+}
+
+// cardRefs returns the card IDs that text names, in code too, since a
+// renumbered card makes a command or an example as stale as a sentence.
+func cardRefs(text string) []docLink {
+	var found []docLink
+	for i, line := range strings.Split(text, "\n") {
+		for _, id := range cardRef.FindAllString(line, -1) {
+			found = append(found, docLink{id, i + 1})
 		}
 	}
 	return found

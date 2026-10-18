@@ -171,6 +171,8 @@ func TestCheck(t *testing.T) {
 		{"reading without a link", "M01-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:** the spec\n- **Proves:** `testdata/manifest.txtar`"), "M01-T2 needs a \"- **Read:**\" line that links"},
 		{"empty proof", "M01-host.md", edit(host, "- **Proves:** `testdata/help.txtar`", "- **Proves:**"), "M01-T3 needs a \"- **Proves:**\" line"},
 		{"done card with a missing proof outside a folder", "M00-foundation.md", edit(foundation, "`proof.txt`", "`missing.txt`"), "its proof missing.txt does not exist"},
+		{"unknown card in a milestone", "M01-host.md", edit(host, "It dispatches.", "It dispatches, as M01-T9 says."), "docs/milestones/M01-host.md:8: no milestone defines the card M01-T9"},
+		{"unknown card in a code block of a milestone", "M01-host.md", edit(host, "# a comment in a block is no heading", "# M00-T2 is gone"), "docs/milestones/M01-host.md:30: no milestone defines the card M00-T2"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -196,6 +198,9 @@ func TestCheckDocs(t *testing.T) {
 		{"missing heading", "AGENTS.md", "# AGENTS.md\n\n## Code\n\nSee [Rules](#rules).\n", "AGENTS.md:5: the link #rules points to a missing heading"},
 		{"missing heading in another file", "extensions/skill/spec.md", "[Code](../../AGENTS.md#rules)\n", "extensions/skill/spec.md:1: the link ../../AGENTS.md#rules points to a missing heading"},
 		{"link text in a code span", "README.md", "See [`ncly`](gone.md).\n", "README.md:1: the link gone.md points to a missing file"},
+		{"unknown card", "docs/north-star/vision.md", "M00-T1 is done.\nM00-T2 is not.\n", "docs/north-star/vision.md:2: no milestone defines the card M00-T2"},
+		{"unknown card in a code span", "extensions/skill/spec.md", "Run `M07-T2`.\n", "extensions/skill/spec.md:1: no milestone defines the card M07-T2"},
+		{"unknown card in a code block", "README.md", "# Title\n\n```\nM01-T1\n```\n", "README.md:4: no milestone defines the card M01-T1"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -273,10 +278,12 @@ func TestCheckDocsReportsAnUnreadableFile(t *testing.T) {
 }
 
 func TestCheckDocsPasses(t *testing.T) {
-	root := repository(t, nil)
+	// A card of another milestone is known, in prose and in code, and the
+	// archives keep the card IDs of their time.
+	root := repository(t, map[string]string{"M01-host.md": edit(host, "It dispatches.", "It dispatches, after M00-T1.")})
 	write(t, filepath.Join(root, "AGENTS.md"), "# AGENTS.md\n\n## Code\n")
-	write(t, filepath.Join(root, "docs", "north-star", "vision.md"), "[Code](../../AGENTS.md#code), [site](https://example.com), [folder](../milestones/)\n\n```\n[example](gone.md)\n```\n")
-	write(t, filepath.Join(root, "docs", "archived", "chat.md"), "[old](gone.md)\n")
+	write(t, filepath.Join(root, "docs", "north-star", "vision.md"), "[Code](../../AGENTS.md#code), [site](https://example.com), [folder](../milestones/)\n\nM00-T1 and `M01-T3` hold, as do M01-T2/M01-T1 and M01-T10x.\n\n```\n[example](gone.md)\n```\n")
+	write(t, filepath.Join(root, "docs", "archived", "chat.md"), "[old](gone.md), from M04-T9 before the split\n")
 	write(t, filepath.Join(root, "extensions", "markdown", "testdata", "broken.md"), "[old](gone.md)\n")
 	write(t, filepath.Join(root, "docs", "north-star", "code.md"), "Write `[a](gone.md)` for a link.\n\n- A list\n\n  ~~~\n  [example](gone.md)\n  ~~~\n")
 	write(t, filepath.Join(root, ".github", "notes.md"), "[old](gone.md)\n")
