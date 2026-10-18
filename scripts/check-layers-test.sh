@@ -192,8 +192,10 @@ SCRIPT
 
 set allow-duplicate-recipes
 
-# The stub check of scripts/check-layers-test.sh replaces the real one
-check:
+# The stub check of scripts/check-layers-test.sh replaces the real one, and only lists a dependency, as the real one does
+check: layers-test-check
+
+layers-test-check:
     @bash "${NCLY_LAYERS_TEST}/check.sh"
 JUST
 	cp "${repo_root}/scripts/check-layers.sh" "${root}/seed/scripts/check-layers.sh"
@@ -210,6 +212,11 @@ JUST
 	fct_layer fixed bad fail.txt pass
 	sha_fixed="${layer_sha}"
 	fct_layer gone main gone.txt gone
+	git -C "${root}/seed" switch --quiet --create nojust main
+	git -C "${root}/seed" rm --quiet justfile
+	git -C "${root}/seed" commit --quiet --message nojust
+	git -C "${root}/seed" push --quiet origin nojust
+	sha_nojust="$(git -C "${root}/seed" rev-parse HEAD)"
 	fct_layer moving main moving.txt first
 }
 
@@ -248,6 +255,23 @@ fct_case_deleted_branch() {
 	fct_caller_unchanged
 }
 
+fct_case_missing_justfile() {
+	test_case="layer without a justfile"
+	fct_caller missing-justfile
+	# A justfile above the run's folder, which just would find for a layer that has none.
+	mkdir -p "${root}/cache"
+	cat >"${root}/cache/justfile" <<'JUST'
+check:
+    @echo decoy >>"${NCLY_LAYERS_TEST}/decoy"
+JUST
+	fct_run 1 just check-layers nojust
+	rm "${root}/cache/justfile"
+	[[ ! -e "${root}/decoy" ]] || fct_fail "the justfile above the worktree ran"
+	fct_expect_checks
+	fct_expect_out nojust "${sha_nojust}" FAIL
+	fct_caller_unchanged
+}
+
 fct_case_main_only_refspec() {
 	local sha_moved
 	test_case="main-only refspec"
@@ -268,6 +292,14 @@ fct_case_git_environment() {
 	test_case="inherited GIT_DIR and GIT_WORK_TREE"
 	fct_caller git-environment
 	fct_run 0 env "GIT_DIR=${caller}/.git" "GIT_WORK_TREE=${caller}" just check-layers one two
+	fct_expect_checks "${sha_one}" "${sha_two}"
+	fct_caller_unchanged
+}
+
+fct_case_just_environment() {
+	test_case="inherited JUST_ variables"
+	fct_caller just-environment
+	fct_run 0 env "JUST_JUSTFILE=${caller}/justfile" "JUST_WORKING_DIRECTORY=${caller}" JUST_NO_DEPS=true just check-layers one two
 	fct_expect_checks "${sha_one}" "${sha_two}"
 	fct_caller_unchanged
 }
@@ -328,8 +360,10 @@ fct_main() {
 	fct_case_two_layers
 	fct_case_failing_check
 	fct_case_deleted_branch
+	fct_case_missing_justfile
 	fct_case_main_only_refspec
 	fct_case_git_environment
+	fct_case_just_environment
 	fct_case_discovery
 	fct_case_signal INT 130
 	fct_case_signal TERM 143

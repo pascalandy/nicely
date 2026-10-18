@@ -9,6 +9,10 @@
 set -Eeuo pipefail
 # A hook or a caller can export GIT_DIR, which would point git -C at the caller's repository.
 while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
+# A caller can export JUST_JUSTFILE or JUST_NO_DEPS, which would run the nested just check on the caller, or run nothing.
+for just_variable in $(compgen -e); do
+	if [[ "$just_variable" == JUST_* ]]; then unset "$just_variable"; fi
+done
 
 die() {
 	echo "check-layers: $*" >&2
@@ -44,7 +48,8 @@ for i in "${!branches[@]}"; do
 	git -C "$worktree" checkout --quiet --force --detach "$sha"
 	git -C "$worktree" clean -ffdxq
 	verdict=ok
-	(cd "$worktree" && just check) >"$log" 2>&1 </dev/null || verdict=FAIL
+	# The layer's own justfile, or a FAIL: without it, just would search the folders above the worktree.
+	(cd "$worktree" && just --justfile "$worktree/justfile" --working-directory "$worktree" check) >"$log" 2>&1 </dev/null || verdict=FAIL
 	if [[ "$(git -C "$worktree" rev-parse HEAD)" != "$sha" ]]; then
 		echo "check-layers: HEAD moved off origin/$branch during the check" >>"$log"
 		verdict=FAIL
