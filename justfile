@@ -125,6 +125,12 @@ check-layers *branches:
 verify *args:
     @bash .agents/skills/verify-nicely/scripts/verify.sh "$@"
 
+# Run testscript scenarios by exact name, each N times: just scenario <name>|<group>/<name>... [--count N]
+[group('checks')]
+[positional-arguments]
+scenario *args:
+    @bash scripts/scenario.sh "$@"
+
 # Run the Go tests, the testscript scenarios, and the release script checks
 [group('checks')]
 test *args:
