@@ -116,14 +116,17 @@ fct_expect_checks() {
 	fct_same "${root}/checks.expected" "${root}/checks" "the checks did not run on the expected commits"
 }
 
-# fct_expect_out <branch> <sha> <verdict>... requires these terminal lines, in that order.
-fct_expect_out() {
+# fct_expect_verdicts <branch> <sha> <verdict>... requires these verdicts, in that order, on the terminal and in summary.txt.
+fct_expect_verdicts() {
 	: >"${root}/stdout.expected"
+	: >"${root}/summary.expected"
 	while (($# > 0)); do
 		printf '%s %s %s\n' "${1}" "$(git -C "${caller}" rev-parse --short "${2}")" "${3}" >>"${root}/stdout.expected"
+		printf '%s %s %s\n' "${1}" "${2}" "${3}" >>"${root}/summary.expected"
 		shift 3
 	done
 	fct_same "${root}/stdout.expected" "${root}/stdout" "check-layers printed other verdicts"
+	fct_same "${root}/summary.expected" "${run}/summary.txt" "summary.txt holds other verdicts"
 }
 
 fct_expect_no_worktree() {
@@ -167,6 +170,11 @@ if [[ -e left/over ]]; then state=dirty; fi
 printf '%s %s %s\n' "$(git rev-parse HEAD)" "$(pwd -P)" "${state}" >>"${NCLY_LAYERS_TEST}/checks"
 mkdir -p left
 printf 'left by a layer\n' >left/over
+# A case can move the worktree's HEAD once, during the first check.
+if [[ -e "${NCLY_LAYERS_TEST}/detach" ]]; then
+	git checkout --quiet --detach HEAD~1
+	rm "${NCLY_LAYERS_TEST}/detach"
+fi
 if [[ -e "${NCLY_LAYERS_TEST}/block" ]]; then
 	pwd -P >"${NCLY_LAYERS_TEST}/started.tmp"
 	mv "${NCLY_LAYERS_TEST}/started.tmp" "${NCLY_LAYERS_TEST}/started"
@@ -237,8 +245,8 @@ fct_case_two_layers() {
 	fct_caller two-layers
 	fct_run 0 just check-layers one two
 	fct_expect_checks "${sha_one}" "${sha_two}"
-	fct_expect_out one "${sha_one}" ok two "${sha_two}" ok
-	[[ $(find "${run}" -name '*.log' | wc -l) -eq 2 ]] || fct_fail "expected one log per layer"
+	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" ok
+	[[ "$(ls "${run}")" == "01-one.log"$'\n'"02-two.log"$'\n'"summary.txt" ]] || fct_fail "expected one log per layer and summary.txt"
 	grep -q 'stub check passed' "${run}/01-one.log" || fct_fail "the log of one lacks the check output"
 	grep -q 'stub check passed' "${run}/02-two.log" || fct_fail "the log of two lacks the check output"
 	fct_expect_no_worktree
@@ -250,7 +258,7 @@ fct_case_failing_check() {
 	fct_caller failing-check
 	fct_run 1 just check-layers bad fixed
 	fct_expect_checks "${sha_bad}" "${sha_fixed}"
-	fct_expect_out bad "${sha_bad}" FAIL fixed "${sha_fixed}" ok
+	fct_expect_verdicts bad "${sha_bad}" FAIL fixed "${sha_fixed}" ok
 	grep -q 'stub check failed on purpose' "${run}/01-bad.log" || fct_fail "the log of bad lacks the check output"
 	fct_expect_no_worktree
 	fct_caller_unchanged
@@ -261,7 +269,7 @@ fct_case_coherent_stack() {
 	fct_caller coherent-stack
 	fct_run 0 just check-layers one two three
 	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
-	fct_expect_out one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
+	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
 	fct_expect_no_worktree
 	fct_caller_unchanged
 }
@@ -271,7 +279,7 @@ fct_case_missing_parent() {
 	fct_caller missing-parent
 	fct_run 1 just check-layers one orphan above
 	fct_expect_checks "${sha_one}" "${sha_orphan}" "${sha_above}"
-	fct_expect_out one "${sha_one}" ok orphan "${sha_orphan}" FAIL above "${sha_above}" ok
+	fct_expect_verdicts one "${sha_one}" ok orphan "${sha_orphan}" FAIL above "${sha_above}" ok
 	grep -q "origin/orphan ${sha_orphan} does not contain origin/one ${sha_one}" "${run}/02-orphan.log" || fct_fail "the log of orphan does not name both layers"
 	grep -q 'stub check passed' "${run}/02-orphan.log" || fct_fail "the check of orphan must pass, so that only the ancestry fails it"
 	fct_expect_no_worktree
@@ -285,7 +293,21 @@ fct_case_moved_ref() {
 	fct_run 0 just check-layers one two three
 	[[ ! -e "${root}/move" && "$(git -C "${caller}" rev-parse refs/remotes/origin/two)" == "${sha_bad}" ]] || fct_fail "the stub check did not move origin/two"
 	fct_expect_checks "${sha_one}" "${sha_two}" "${sha_three}"
-	fct_expect_out one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
+	fct_expect_verdicts one "${sha_one}" ok two "${sha_two}" ok three "${sha_three}" ok
+	fct_caller_unchanged
+}
+
+fct_case_moved_head() {
+	test_case="HEAD moved during the check"
+	fct_caller moved-head
+	: >"${root}/detach"
+	fct_run 1 just check-layers one two
+	[[ ! -e "${root}/detach" ]] || fct_fail "the stub check did not move HEAD"
+	fct_expect_checks "${sha_one}" "${sha_two}"
+	fct_expect_verdicts one "${sha_one}" FAIL two "${sha_two}" ok
+	grep -q 'stub check passed' "${run}/01-one.log" || fct_fail "the check of one must pass, so that only the moved HEAD fails it"
+	grep -q 'HEAD moved off origin/one during the check' "${run}/01-one.log" || fct_fail "the log of one does not name the moved HEAD"
+	fct_expect_no_worktree
 	fct_caller_unchanged
 }
 
@@ -313,7 +335,7 @@ JUST
 	rm "${root}/cache/justfile"
 	[[ ! -e "${root}/decoy" ]] || fct_fail "the justfile above the worktree ran"
 	fct_expect_checks
-	fct_expect_out nojust "${sha_nojust}" FAIL
+	fct_expect_verdicts nojust "${sha_nojust}" FAIL
 	fct_caller_unchanged
 }
 
@@ -329,7 +351,7 @@ fct_case_main_only_refspec() {
 	sha_moved="$(git -C "${root}/seed" rev-parse HEAD)"
 	fct_run 0 just check-layers moving
 	fct_expect_checks "${sha_moved}"
-	fct_expect_out moving "${sha_moved}" ok
+	fct_expect_verdicts moving "${sha_moved}" ok
 	fct_caller_unchanged
 }
 
@@ -393,6 +415,7 @@ fct_case_signal() {
 	# just reports an exit code only when the script ended through its trap, and a signal otherwise.
 	grep -q "with exit code ${expected}\$" "${root}/stderr" || fct_fail "check-layers did not end through its SIG${signal} trap"
 	[[ ! -e "${worktree}" ]] || fct_fail "the worktree remains"
+	[[ ! -s "${root}/stdout" && ! -s "${worktree%/worktree}/summary.txt" ]] || fct_fail "check-layers gave a verdict for the interrupted layer"
 	[[ $(wc -l <"${root}/checks") -eq 1 ]] || fct_fail "a check started after the signal"
 	fct_caller_unchanged
 }
@@ -407,6 +430,7 @@ fct_main() {
 	fct_case_coherent_stack
 	fct_case_missing_parent
 	fct_case_moved_ref
+	fct_case_moved_head
 	fct_case_deleted_branch
 	fct_case_missing_justfile
 	fct_case_main_only_refspec

@@ -6,6 +6,8 @@
 #   just check-layers [branch...]
 #
 # Without branches, it reads the layers of the current stack from gh stack.
+# The run's folder keeps one log per layer, and summary.txt, which gives the
+# branch, the full SHA checked, and the verdict of each finished layer.
 # scripts/check-layers-test.sh proves it on a scratch stack. See #58.
 set -Eeuo pipefail
 # A hook or a caller can export GIT_DIR, which would point git -C at the caller's repository.
@@ -36,6 +38,7 @@ for branch in "${branches[@]}"; do shas+=("$(git rev-parse "refs/remotes/origin/
 # Not /tmp: Linux mounts it as tmpfs and macOS purges it, and the logs must outlive the run.
 run="${XDG_CACHE_HOME:-$HOME/.cache}/nicely/check-layers/$(date +%Y%m%d-%H%M%S)-$$"
 worktree="$run/worktree"
+summary="$run/summary.txt"
 mkdir -p "$run"
 trap 'git worktree remove --force "$worktree" 2>/dev/null || true' EXIT
 # Ctrl-C and SIGTERM end the run after the current command, then the EXIT trap removes the worktree.
@@ -65,6 +68,8 @@ for i in "${!branches[@]}"; do
 		verdict=FAIL
 	fi
 	[[ "$verdict" == ok ]] || status=1
+	# Written once the verdict is final, so a layer that a signal interrupts gets no line.
+	echo "$branch $sha $verdict" >>"$summary"
 	echo "$branch $(git rev-parse --short "$sha") $verdict"
 done
 exit "$status"
