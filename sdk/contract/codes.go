@@ -1,6 +1,10 @@
 // Package contract holds the agent contract that every command shares: exit
 // codes, the error registry, answers and their verdict, modes, and command
 // declarations. docs/north-star/contract.md is the source of truth.
+//
+// A change to a machine-readable value or a stored format adds a consumer
+// case to compat_test.go that proves the promised meaning holds, as
+// Compatibility in contract.md asks.
 package contract
 
 import (

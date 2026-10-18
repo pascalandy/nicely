@@ -14,22 +14,10 @@ Done when the scenario fails for the missing behavior. A test of a shared compon
 
 ## Isolate a scenario
 
-- Point `HOME` and the XDG folders at `$WORK`.
 - Put stub executables in `PATH` for harnesses, `uv`, and paid services.
 - Use the test keychain and the boundary hook, which live only in the test binary.
 - Run each command's scenarios once under the pseudo-locale, so text outside the catalog fails a check.
 
 ## Scenario commands
 
-The test binary adds these commands, beside others. The comment above each one, in `cmd/ncly/script_test.go` or `cmd/ncly/scriptcmds_test.go`, gives its usage.
-
-| Command | Does |
-|---|---|
-| `onlyncly` | Keeps on `PATH` only `ncly` and the listed commands, so the other commands of the test binary are no extensions |
-| `pseudo` | Fails on a word of a stream that the pseudo-locale does not mark |
-| `exits` | Asserts an exact exit code, which `! exec` cannot |
-| `answer` | Decodes a stream as one whole JSON answer, or as a failed report |
-| `snapshot`, `unchanged` | Prove that a dry run changed nothing outside Nicely's cache |
-| `agree` | Checks that a help page agrees with the `ncly describe` answer of its command |
-| `schema` | Validates an answer against the schema that describe gives for it |
-| `mentions` | Checks that a skill names only the commands that describe gives and the codes that exist |
+The `Cmds` map of `runScripts`, in `cmd/ncly/script_test.go`, lists the commands that the test binary adds. The comment above each one gives its usage.

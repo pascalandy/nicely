@@ -65,7 +65,7 @@ Done when, after the cleanup, `quote` prints each transcript, `cleanup.txt` incl
 
 ## In a card
 
-Step 6 of a card in `AGENTS.md` runs this skill. The implementer first updates the feature files, as [Drive](#drive) says.
+Step 6 of a card in `AGENTS.md` runs this skill.
 
 - An agent that did not write the change runs the skill, on a small model of the other family than the implementer's, at effort `xhigh`, in the same checkout, so it sees uncommitted changes.
 - The pull request quotes the lines that prove each end state. It names the commit that `evidence/commit.txt` records, followed by `dirty` when the file says so. A dirty run proves the checkout as it was, not that commit alone.

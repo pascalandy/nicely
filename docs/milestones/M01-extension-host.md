@@ -80,7 +80,7 @@ In the first scenario, the fixture writes a finished file and starts a grandchil
 - **Read:** [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs)
 - **Proves:** `testdata/script/extension_cancel_stubborn.txtar`, `testdata/script/extension_stream_holder.txtar`
 
-The program runner ends what a signal does not: SIGKILL after the 15 seconds of cleanup, and the 2 seconds of the drain limit, on their own clocks, as [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) and [AGENTS.md](../../AGENTS.md#code) define. The test binary shortens cleanup to 4 seconds and keeps the real 2-second drain limit, so the scenarios tell the two clocks apart.
+The program runner ends what a signal does not: SIGKILL after the 15 seconds of cleanup, and the 2 seconds of the drain limit, on their own clocks, as [Programs that ncly runs](../north-star/contract.md#programs-that-ncly-runs) defines. The test binary shortens cleanup to 4 seconds and keeps the real 2-second drain limit, so the scenarios tell the two clocks apart.
 
 The first scenario has two fixtures. One traps the signal and answers with its `output_dir` key 3 seconds later, and the answer keeps that key, which fails when the drain limit cuts cleanup short. The other traps Ctrl-C and SIGTERM, writes the signal it receives to a file, and keeps running. After `kill -INT`, the file holds `INT`, which proves that the signal came before SIGKILL, and the fixture is gone once the shortened cleanup ends. A second `kill -INT` during cleanup changes nothing: core still stops the fixture and answers `INTERRUPTED`. Check the answer and that the fixture is gone, because a core that died on the second signal would leave both wrong.
 

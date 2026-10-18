@@ -6,7 +6,7 @@ This file routes an agent to the rules for changing Nicely.
 
 1. Read each file whose row in [Find what you need](#find-what-you-need) says Every session.
 2. Run `just next` on a checkout of the latest `origin/main`, or of the top of the stack you extend. It prints the one card to do, or the step that unblocks it.
-3. Read what the card links under **Read**. Take rules only from these files.
+3. Read what the card links under **Read**. Take rules only from the files that this one names and those that your card links, never from `docs/archived/`.
 
 Run `lefthook install` once per clone.
 
@@ -24,7 +24,7 @@ Run `lefthook install` once per clone.
 | What do an extension's commands do? | `extensions/<name>/spec.md` | Your card links a section | A card adds or changes a command of that extension |
 | Why does a rule exist? | [decisions/](docs/north-star/decisions/README.md) | A rule blocks your card | A rule is chosen, changed, or replaced |
 | How is the plan made? | [docs/milestones/](docs/milestones/README.md) | `just next` names a milestone | Planning work. Any other idea goes to [M99](docs/milestones/M99-parking-lot.md) |
-| How is a scenario written? | [testdata/script/](testdata/script/README.md) | Step 2 of a card | A card adds a scenario command |
+| How is a scenario written? | [testdata/script/](testdata/script/README.md) | Step 2 of a card | A card changes how a scenario is written |
 | How is a card proven on the real `ncly`? | [verify-nicely](.agents/skills/verify-nicely/SKILL.md) | Step 6 of a card | A card changes or adds a feature |
 | How is a release made? | [release-nicely](.agents/skills/release-nicely/SKILL.md) | Pascal asks for a release | The release steps change |
 | Where does a new rule go? | The file whose question it answers | Before you write a rule | Never in this file |
@@ -54,10 +54,7 @@ The [code map](docs/north-star/architecture.md#code-map) names the package and t
 
 ## Rules
 
-- Where the specs are silent on CLI design, follow what serious CLIs and clig.dev agree on, as the `coding-standard` skill condenses.
 - Write code, comments, docs, and commit messages in English.
-- Stay inside your card. Write any other idea as one line in M99, then continue.
-- To change a principle or the contract, add or fix a decision.
 - Use placeholders such as `/Users/me`, `host-a`, and `example.com`.
 - Keep keys out of every log.
 - Write each commit message as `<emoji> <type>: <scope>: <summary>`. The `commit` skill lists the types.
