@@ -38,7 +38,7 @@ Use the `fleet` skill to run macOS checks on the mini. Use the mbp only if the m
 
 Open review-ready pull requests. In `brigade-mode`, the brigade decides when to merge. Otherwise, merge only when Pascal says "merge" for that pull request. Once authorized, ask for no further confirmation. Stop and report only a real blocker.
 
-Stack work on an open pull request when it depends on that pull request. [Make a milestone ready](../../AGENTS.md#make-a-milestone-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
+Stack work on an open pull request when it depends on that pull request. [Make a milestone ready](../milestones/README.md#make-a-milestone-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
 
 Fix review findings on their pull request's branch, with a scenario that fails first. Reply with the fixing commit.
 

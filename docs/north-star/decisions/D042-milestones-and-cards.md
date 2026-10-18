@@ -1,6 +1,6 @@
 # D042 Plan work as milestones of small cards
 
-Decided 2026-10-09. A milestone demonstrates one capability, with at most five agent cards. A card is one pull request. [AGENTS.md](../../../AGENTS.md#make-a-milestone-ready) owns readiness, ownership, dependencies, and format. `just next` selects the work; `just status` reports progress.
+Decided 2026-10-09. A milestone demonstrates one capability, with at most five agent cards. A card is one pull request. [The milestones' README](../../milestones/README.md) owns readiness, ownership, dependencies, and format. `just next` selects the work; `just status` reports progress.
 
 Milestones follow their dependencies, keep one extension's work together, and put Pascal's tools before everyday domains. Only milestones without done cards may be renumbered, in a plan-only pull request.
 

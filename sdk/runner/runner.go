@@ -2,6 +2,15 @@
 // the Programs that ncly runs section of contract.md defines: their
 // environment, their process group, their cancellation, and their exit
 // code.
+//
+// Read a program's stdout and stderr through pipes that the runner owns: a
+// writer that exec.Cmd copies can keep Wait blocked until descendants close
+// the pipe. Send cleanup signals through the runner to the whole process
+// tree, because exec.CommandContext kills only the direct child. Keep the
+// signal handler registered until cleanup ends, because stopping
+// signal.NotifyContext first lets a second Ctrl-C end ncly at once. The test
+// binary shortens the 15 seconds of cleanup, so a scenario proves the
+// SIGKILL path without waiting.
 package runner
 
 import (

@@ -4,6 +4,9 @@
 // verified artifacts that a success answers from. The domain names its
 // steps, declares their effects, and verifies their results; this package
 // never decides what a step does.
+//
+// Write a record during cleanup with a context that cancellation does not
+// end, such as context.WithoutCancel, within the 15 seconds of cleanup.
 package record
 
 import (

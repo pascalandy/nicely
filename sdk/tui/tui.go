@@ -2,6 +2,13 @@
 // help page, the error block, the masked field of a key, and the
 // confirmation. A spinner or a progress bar joins it with the first command
 // that needs one.
+//
+// Build every interactive screen from this package, so every command looks
+// the same. A component joins it after Pascal picks its look from a published
+// mockup, as dev-preferences.md asks, and the spec of each command holds the
+// look that Pascal picked in M07. A command whose spec gives no look reuses
+// the help and error styles of M00 and prints the rest as plain text, so it
+// waits on no mockup.
 package tui
 
 import (

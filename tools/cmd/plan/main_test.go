@@ -19,7 +19,7 @@ func TestRepositoryPlan(t *testing.T) {
 // TestReadyRule keeps the docs that state how a milestone becomes ready in
 // the words of next's message, so the rule cannot drift apart.
 func TestReadyRule(t *testing.T) {
-	for _, name := range []string{"AGENTS.md", "docs/north-star/dev-preferences.md", "docs/north-star/decisions/D042-milestones-and-cards.md"} {
+	for _, name := range []string{"docs/north-star/dev-preferences.md", "docs/north-star/decisions/D042-milestones-and-cards.md"} {
 		data, err := os.ReadFile(filepath.Join("../../..", name))
 		if err != nil {
 			t.Fatal(err)
@@ -278,6 +278,7 @@ func TestCheckDocs(t *testing.T) {
 		name, file, text, want string
 	}{
 		{"missing file", "docs/north-star/vision.md", "See [the spec](spec.md).\n", "docs/north-star/vision.md:1: the link spec.md points to a missing file"},
+		{"missing file in the plan's readme", "docs/milestones/README.md", "See [the spec](spec.md).\n", "docs/milestones/README.md:1: the link spec.md points to a missing file"},
 		{"missing heading", "AGENTS.md", "# AGENTS.md\n\n## Code\n\nSee [Rules](#rules).\n", "AGENTS.md:5: the link #rules points to a missing heading"},
 		{"missing heading in another file", "extensions/skill/spec.md", "[Code](../../AGENTS.md#rules)\n", "extensions/skill/spec.md:1: the link ../../AGENTS.md#rules points to a missing heading"},
 		{"link text in a code span", "README.md", "See [`ncly`](gone.md).\n", "README.md:1: the link gone.md points to a missing file"},
@@ -370,6 +371,8 @@ func TestCheckDocsPasses(t *testing.T) {
 	write(t, filepath.Join(root, "extensions", "markdown", "testdata", "broken.md"), "[old](gone.md)\n")
 	write(t, filepath.Join(root, "docs", "north-star", "code.md"), "Write `[a](gone.md)` for a link.\n\n- A list\n\n  ~~~\n  [example](gone.md)\n  ~~~\n")
 	write(t, filepath.Join(root, ".github", "notes.md"), "[old](gone.md)\n")
+	// The plan's readme is no milestone.
+	write(t, filepath.Join(root, "docs", "milestones", "README.md"), "# Milestones\n\n[Cards](M01-host.md#cards)\n")
 	// The link and its heading read the same fences: a short fence inside a
 	// longer block closes nothing.
 	write(t, filepath.Join(root, "docs", "north-star", "nested.md"), "# Demo\n\n````markdown\n```\n````\n\n## Target\n\n[Target](#target)\n")

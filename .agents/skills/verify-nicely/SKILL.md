@@ -62,3 +62,14 @@ just verify quote "$run" hello
 - Quote the lines that prove each end state, after the cleanup, from the quoted transcript
 
 Done when, after the cleanup, `quote` prints each transcript, `cleanup.txt` included after auth, and the report quotes the lines that prove each end state.
+
+## In a card
+
+Step 6 of a card in `AGENTS.md` runs this skill. The implementer first updates the feature files, as [Drive](#drive) says.
+
+- An agent that did not write the change runs the skill, on a small model of the other family than the implementer's, at effort `xhigh`, in the same checkout, so it sees uncommitted changes.
+- The pull request quotes the lines that prove each end state. It names the commit that `evidence/commit.txt` records, followed by `dirty` when the file says so. A dirty run proves the checkout as it was, not that commit alone.
+- A fix that changes a verified behavior needs a run that covers it. A run at the top of the stack covers it when it drives the features that the fix affects. A restack keeps the recorded commit as it is: the pull request names the new head beside it, and the run that covers each later fix.
+- A card that reaches nothing the scenarios replace, such as the real keychain, a real terminal, a harness, `uv`, or a paid service, marks the step `n/a`.
+
+Done when the quoted evidence names its commit and proves the end state of each feature that the card affects.
