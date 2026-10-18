@@ -1,7 +1,7 @@
 # D044 Let extensions add commands, never change core
 
-Decided 2026-10-09. An extension adds a domain and its commands. It never changes how core or another extension behaves: it has no hook into dispatch, answers, or the run of another command. Core calling a command that an extension declares, such as for completion values or doctor checks, is no hook: the extension answers through the contract, and core decides what to do with the answer. A behavior that several commands share keeps the owners of the [code map](../architecture.md#code-map): core owns host behavior, such as dispatch, answer checks, and grants; the SDK provides shared mechanisms, such as run records and the program runner; and each extension owns its domain's steps, including its paid requests. Being needed by several commands does not make a behavior core's. [M99](../../milestones/M99-parking-lot.md) parks hooks until a need appears.
+Decided 2026-10-09. Extensions add commands without hooks that change core or other domains. Shared behavior keeps its [code-map owner](../architecture.md#code-map). Core calling a declared completion or status command is contract use, not a hook.
 
-**Why.** An extension reaches core only through its environment and the CLI, as [D040](D040-wire-contract.md) decides, so it has nothing to hook into, and a toolbox of domains needs no hook. Each command's behavior stays readable from its own spec, and an extension can be written in any language. Pi extensions also hook the lifecycle of their host, which suits an agent loop that runs in one process.
+**Why.** Each command stays understandable from its spec. A cross-process toolbox needs no lifecycle hooks like Pi's in-process agent loop.
 
-**Rejected.** Hooks that let an extension change core's behavior, as Pi extensions do, because they would need a protocol between processes before any domain needs one, and every hook becomes a promise that the contract keeps forever.
+**Rejected.** Hooks create permanent protocol obligations before a domain needs them. [M99](../../milestones/M99-parking-lot.md) defers them. Use by several commands alone does not transfer behavior to core.

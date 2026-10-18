@@ -1,9 +1,9 @@
 # D035 Track ownership when synchronizing files
 
-Decided 2026-10-05. Synchronization of persistent destinations tracks the files it manages and detects user changes before replacing or removing them. A sync stages and validates each managed destination, then publishes that destination atomically under its lock. Unrelated destinations are not one transaction. Each future synchronization capability must define its publication boundary and recovery.
+Decided 2026-10-05. Persistent synchronization tracks managed files and detects user edits before replacement or removal. Stage and validate each destination, then publish it atomically under its lock. Unrelated destinations are not one transaction. Each synchronization capability must specify its publication boundary and recovery.
 
-**Scope update, 2026-10-17.** Taps, which would install and update extensions, wait in [M99](../../milestones/M99-parking-lot.md#taps). [M21](../../milestones/M21-docs-hub.md) reads project docs and builds disposable cache; it creates no persistent mirror to synchronize. Broader synchronization remains in [M99](../../milestones/M99-parking-lot.md). These scope cuts do not relax ownership guarantees when a future command updates persistent user files.
+**Scope update, 2026-10-17.** [M99](../../milestones/M99-parking-lot.md#taps) defers persistent synchronization. [M21](../../milestones/M21-docs-hub.md) builds disposable cache without a persistent mirror. Future persistent writes still require these guarantees.
 
-**Why.** A repeated sync must remove stale generated files without deleting unrelated files or edits. Readers need a complete result, and an interrupted update must leave enough evidence to recover. Explicit ownership makes those decisions possible.
+**Why.** Ownership permits removal of stale outputs without deleting user work. Atomic publication prevents incomplete results from reaching readers.
 
-**Rejected.** Replacing an entire destination without knowing who owns its files. Preserving every stale output forever. Publishing files one by one while readers can see an incomplete update.
+**Rejected.** Whole-destination replacement without ownership, indefinite retention of stale outputs, and visible file-by-file publication.

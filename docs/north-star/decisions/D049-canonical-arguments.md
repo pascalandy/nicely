@@ -1,7 +1,7 @@
 # D049 Pass an extension its validated call in one canonical form
 
-Decided 2026-10-10, revised 2026-10-12. Once core has validated a call from the manifest, it starts the extension with the words of the command path after the domain, each flag that the caller set as one `--<name>=<value>` word, or one word per value for a variadic flag, then `--` and the positional arguments. `--dry-run` and `--run-id`, which a command accepts when its `modes` sets `dry_run` or `recorded`, pass the same way after the own flags. A flag that has a variable, such as `--json`, reaches the extension only as that variable. [Dispatch](../contract.md#dispatch) holds the rules.
+Decided 2026-10-10, revised 2026-10-12. Core validates and normalizes extension arguments under [Dispatch](../contract.md#dispatch). Resolved global flags travel through environment variables; `--dry-run` and `--run-id` travel as arguments.
 
-**Why.** Core has already parsed the call, including a group of shorthands that mixes the extension's flags with global ones, such as `-vg Hi`, and the precedence rules of [Output](../contract.md#output). One form spares every extension a second parser of those rules: a shell extension reads its call with a `case` statement, and no global flag can pass for one of its own. git passes `git-<name>` the words after `git <name>` untouched, because git validates nothing first. Nicely validates first, so it can pass the simpler form. `--dry-run` and `--run-id` have no variable, so they travel as words, where the SDK's record support reads the caller's run ID.
+**Why.** Extensions need not reimplement mixed shorthands, global precedence, or quoting. Unlike Git, Nicely already parses the call, so a shell extension can consume the simpler form.
 
-**Rejected.** Passing the caller's words unchanged, because every extension would then need the global flags and the parser rules to read them. Passing the call as a JSON document on stdin, because stdin carries the extension's input, such as the material of `ncly agent run`.
+**Rejected.** Unchanged caller arguments duplicate parsing. JSON on stdin would occupy the extension's input.

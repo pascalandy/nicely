@@ -1,7 +1,11 @@
 # D042 Plan work as milestones of small cards
 
-Decided 2026-10-09. A milestone is one capability that a sentence can demonstrate, with at most five agent cards. A card is one pull request, with its dependencies, its owner, the spec sections to read, and the scenarios that prove it. A decision of Pascal's that later cards wait on is a card with the owner Pascal; a step of his that nothing waits on, such as a check on his Mac, sits under **After this milestone** and blocks nothing. No checkbox exists outside a card, so a milestone is done when all its cards are. A planned milestone with open questions becomes ready through work that settles them in the spec and finishes its cards. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests. Without open questions, the first card starts the milestone. Milestones go in order. The order puts first what later milestones build on, keeps the milestones of one extension together, and puts Pascal's own tools before the everyday domains that make a first impression. Only a milestone without a done card changes its number, in a pull request that only changes the plan. `just next` prints the one card to do, and `just status` shows the progress. `just test` checks this format.
+Decided 2026-10-09. A milestone demonstrates one capability, with at most five agent cards. A card is one pull request. [AGENTS.md](../../../AGENTS.md#make-a-milestone-ready) owns readiness, ownership, dependencies, and format. `just next` selects the work; `just status` reports progress.
 
-**Why.** Large milestones with tasks, acceptance boxes, a done-when list, and a to-define list let agents pick one task and leave the rest, and Pascal could no longer follow the project. One computed pointer leaves nothing to interpret, and every piece of work has an owner and a proof.
+Milestones follow their dependencies, keep one extension's work together, and put Pascal's tools before everyday domains. Only milestones without done cards may be renumbered, in a plan-only pull request.
 
-**Rejected.** The first milestone format, described above. Cards by convention without a check. GitHub issues and milestones as the queue, because agents read the repository first and the plan should travel with the code.
+Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
+
+**Why.** The former mix of tasks and acceptance lists let agents finish isolated tasks while leaving progress unclear. Each card now has one owner and proof.
+
+**Rejected.** Unchecked conventions and GitHub as the queue. The plan travels with the code.

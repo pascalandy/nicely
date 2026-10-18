@@ -1,7 +1,9 @@
 # D001 Build from scratch in Go with Cobra and Charm
 
-Decided 2026-10-05, revised 2026-10-14. Nicely is written in Go on Cobra, with Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour for the interface. Until a form needs Huh or Bubble Tea, `sdk/tui` styles text with `x/ansi` and `colorprofile`, both from Charm, without Lip Gloss: Lip Gloss v2.0.6 detects the terminal as its package loads, and inside tmux that runs `tmux info` with no time limit, as [lipgloss#749](https://github.com/charmbracelet/lipgloss/issues/749) reports. Even `ncly --version` could hang. The first form must prove that its packages no longer probe at load, with the scenario `terminal.txtar`. The first command that needs Huh, a Bubbles spinner, or Glamour uses a Lip Gloss version that defers the call: an upstream release, or a fork wired through a `replace` line in `go.mod` and removed once upstream ships the fix. Pascal approved the fork on 2026-10-14, while #749 was still open and v2.0.6 was still the latest release. Until then, that command ships its non-interactive output first.
+Decided 2026-10-05, revised 2026-10-14. Nicely uses Go, Cobra, and Charm's Lip Gloss, Huh, Bubble Tea, Bubbles, and Glamour.
 
-**Why.** Cobra already carries the practices of `gh`, `kubectl`, and the Stripe CLI. The Charm libraries cover forms, spinners, styles, and Markdown in one family.
+Lip Gloss v2.0.6 could hang at package load through `tmux info`, even for `ncly --version`. Pascal approved a temporary fork on 2026-10-14. [M07](../../milestones/M07-forms.md#m07-t2-lip-gloss-route) owns the fix, its proof, and removal after an upstream release. Until that fix, `sdk/tui` uses `x/ansi` and `colorprofile`, and affected commands ship non-interactive output first.
 
-**Rejected.** Forking the Stripe CLI, because most of its code is Stripe-specific, such as login, webhooks, API resources, and fixtures. Fang, because its source hard-codes the help headings `usage`, `flags`, `examples`, and `ERROR` in English and takes `-v` for `--version`, which Nicely uses for `--verbose`. Checked on 2026-10-05.
+**Why.** Cobra follows established CLI practices. Charm covers the interface in one library family.
+
+**Rejected.** The Stripe CLI has too much Stripe-specific code. Fang hard-codes English headings and uses Nicely's `-v` for `--version`. Checked on 2026-10-05.

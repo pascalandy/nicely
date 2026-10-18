@@ -1,9 +1,9 @@
 # D005 Add extensions the Git way and carry them in taps
 
-Decided 2026-10-05, revised 2026-10-09. An executable named `ncly-<domain>` becomes `ncly <domain>` when its manifest declares a compatible protocol and its capabilities. A bundled extension is a Go package compiled into `ncly` with the same manifest, as [Extensions](../contract.md#extensions) defines. A tap is a repository that distributes extensions. Core commands and bundled extensions always win over an external extension with the same name. Source precedence is explicit, and discovery reports the selected source. An extension receives the global flags as the variables in [contract.md](../contract.md#global-flags), and it prefixes its own error codes with its domain.
+Decided 2026-10-05, revised 2026-10-09. Discover `ncly-<domain>` executables through a static manifest. Bundled Go extensions share their contract, as [Extensions](../contract.md#extensions) defines.
 
-**Scope update, 2026-10-17.** Taps wait in [M99](../../milestones/M99-parking-lot.md#taps), including the first install of one official extension, standalone skills, updates, arbitrary remotes, and fleet distribution. `just install` installs the first-party extensions from a checkout. An extension's existing skill folder still ships with that extension.
+**Scope update, 2026-10-17.** [M99](../../milestones/M99-parking-lot.md#taps) defers tap distribution. `just install` installs first-party extensions from a checkout, with their existing skill folders.
 
-**Why.** A script can join Nicely in any language. Its manifest lets an agent inspect what it supports before running it. The same format can later distribute personal tools when that need appears. Git, `kubectl`, and cargo find plugins by executable name, while Nicely also needs to verify their shared output contract.
+**Why.** Executable discovery follows Git, `kubectl`, and cargo. The manifest adds inspectable capabilities and a verifiable output contract without restricting the implementation language.
 
-**Rejected.** A tap for skills only. Translating extension text from core, because core cannot know an extension's strings. Guessing capabilities from an executable's name or version. Accepting malformed protocol output as a successful result.
+**Rejected.** Taps for skills only, capability guesses from names or versions, and successful results from malformed protocol output. Each extension translates its own text because core cannot know its strings.

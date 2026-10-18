@@ -1,7 +1,7 @@
 # D020 Build the extension host before any domain
 
-Decided 2026-10-05, revised 2026-10-09 and 2026-10-12. The extension host comes first, in M01, then the SDK, then `describe`, then `skill` as the first bundled extension, which finds the skills of extensions through `describe`, as [D054](D054-extension-skills-through-describe.md) decides. `doctor`, `auth`, and grants follow. `agent` comes before transcript, with its harnesses, and brings run records. Taps follow. Transcript then arrives through the official tap, in four milestones: transcription, summary, resume, and the rest. The real Python program joins the first complete transcript path.
+Decided 2026-10-05, revised 2026-10-09 and 2026-10-12. Build the extension host before domains, then add capabilities on proven layers. [The milestones](../../milestones/) own the current order and scope. `skill` follows `describe` for the reason in [D054](D054-extension-skills-through-describe.md).
 
-**Why.** A domain built before the host would be rewritten as an extension. Each milestone adds one capability on top of proven layers. `agent run` is a one-step paid command, so it proves records before transcript's two steps and its Python protocol. Early integration still exposes ownership and protocol mismatches while they are cheap to fix.
+**Why.** Domains built before the host need a rewrite. A one-step agent task proves records before more complex workflows. Early integration of the real Python program exposes protocol mismatches.
 
-**Rejected.** The first version of this entry, a day-one milestone with doctor, auth, skill, transcript, profiles, records, and resume in eleven tasks plus separate acceptance lists. Agents picked single tasks and left the rest, and nobody could follow what remained. `skill` before `describe`, the order of the 2026-10-09 revision, for the reason that D054 gives.
+**Rejected.** The original eleven-task day-one milestone mixed many capabilities and separate acceptance lists. Agents finished isolated tasks, leaving progress unclear.

@@ -1,7 +1,13 @@
 # D061 Ship the smallest useful capability before its variants
 
-Decided 2026-10-17. A first capability serves one concrete job with the fewest necessary inputs, outputs, and steps. A brainstorm is not a commitment to every variant. Another provider, input source, authentication path, batch, renderer, distribution method, or command needs its own observed use before it joins the delivery queue. Each milestone delivers its own useful increment, and later milestones are not acceptance criteria for it. [M99](../../milestones/M99-parking-lot.md) holds each deferred capability with the condition to revisit it, as an option and not an obligation. A deferred milestone leaves the queue, because a `planned` file would still schedule it. The milestone files stay the plan, as [D042](D042-milestones-and-cards.md) decides, so an old issue does not bring back a removed requirement.
+Decided 2026-10-17. Start with one concrete job and its necessary inputs, outputs, and steps. Each variant needs its own observed use. Each milestone delivers a useful increment without later milestones as acceptance criteria.
 
-**Why.** The audit of [PR #156](https://github.com/pascalandy/nicely/pull/156) found that the plan had made brainstormed variants into requirements of each first implementation, such as several harnesses for the first agent run. A scope cut still keeps the rules that make a command safe. These are required-key grants and source identity, durable intent before a paid effect, verified results, inspection, and refusal to repeat an unknown effect. Dry run, truthful exits, cancellation, output validation, and overwrite consent also stay where they apply. Reusing the existing contract is smaller than an unsafe shortcut. The CLI toolbox stays the North Star.
+Keep deferred capabilities and revisit conditions in [M99](../../milestones/M99-parking-lot.md), as options rather than obligations. Remove deferred milestones from the queue. The repository plan remains authoritative over old issues.
 
-**Rejected.** Reading the audit as "build only Codex". Building every brainstormed variant under one small-looking card. Deleting safety rules or proven workflows to reduce a line count. A new planner state or framework for deferred work.
+**Why.** [PR #156](https://github.com/pascalandy/nicely/pull/156) found brainstormed variants had become first-release requirements. Scope cuts retain applicable safety guarantees:
+
+- Key grants and source identity
+- Durable intent before paid effects, verified results, inspection, and refusal of unknown repeats
+- Dry run, truthful exits, cancellation, output validation, and overwrite consent
+
+**Rejected.** A Codex-only product, all variants hidden in one card, safety or proven workflows removed for line counts, and a new deferral framework. Nicely remains a CLI toolbox.

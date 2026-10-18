@@ -1,7 +1,7 @@
 # D024 Ship completions with dynamic values
 
-Decided 2026-10-05. Cobra generates zsh, bash, and fish completions. For the first release, Homebrew installs them and the Linux archive ships them. The AUR package will install them when AUR registration reopens. Completion suggests values such as skill names and profiles, and [D055](D055-completion-values-from-a-list-command.md) decides how it gets those that only an extension knows.
+Decided 2026-10-05. Cobra generates zsh, bash, and fish completions. Homebrew installs them; Linux archives ship them. AUR installation waits for registration to reopen. [D055](D055-completion-values-from-a-list-command.md) defines how extensions supply dynamic values.
 
-**Why.** Completion is how a terminal user discovers flags and values. Cobra builds it from the command tree, so it never drifts from the commands.
+**Why.** Generated completion follows the command tree and helps users discover flags and values.
 
 **Rejected.** Hand-written completion scripts.

@@ -1,9 +1,9 @@
 # D032 Keep small run records and resume explicitly
 
-Decided 2026-10-05. The [operation contract](../contract.md#operations) defines preparation, execution, inspection, and recovery. Domains own their steps and recovery rules. The program runner owns subprocess lifecycles. Records preserve evidence with references to outputs rather than copies of their contents. M00 fixed the contract; M10 and M13 are its first planned consumers.
+Decided 2026-10-05. [Operations](../contract.md#operations) separates domain steps and recovery from process lifecycles. Records keep evidence and output references.
 
-**Scope update, 2026-10-17.** Each first consumer has one item and one paid step. M10 implements the needed record support and core's [inspection commands](../core-spec.md#ncly-run). Verified completion replay and refusal of uncertain paid work remain required. [Explicit resume](../../milestones/M99-parking-lot.md#resume), multi-step consumers, and their fixtures wait for a workflow with useful partial work. The record format is not a requirement to build every future recovery path now.
+**Scope update, 2026-10-17.** M10 and M13 first prove one item and one paid step, inspection, verified completion replay, and refusal of uncertain work. [M99](../../milestones/M99-parking-lot.md#resume) defers explicit resume and multi-step consumers until partial work needs reuse.
 
-**Why.** A new session must distinguish verified output from an uncertain paid request. Persisting intent before an effect preserves evidence if the process dies before saving its result. Replay verifies saved outputs and keeps the run's resolved settings. A missing response never proves that nothing happened. Future resume must validate the evidence needed for each step it reuses.
+**Why.** A later session must distinguish verified output from an uncertain paid request. Intent precedes effects, and reuse requires verified evidence and the original resolved settings.
 
-**Rejected.** Restarting every invocation from scratch. Logs as the only record of completed work. Recording keys or duplicating all transcript content in history. A daemon, scheduler, or general workflow engine before a command needs one.
+**Rejected.** Restarting every call, logs as the only evidence, keys or transcript bodies in records, and a daemon or workflow engine without a consumer.

@@ -1,7 +1,7 @@
 # D007 Keep one stable agent contract
 
-Decided 2026-10-05. Command names, flags, JSON keys, error codes, and exit codes stay in English. [Compatibility](../contract.md#compatibility) covers types, units, formats, meaning, required fields, nullability, enum values, and defined array order. Protocols and stored run records have versions from their first use. Each core error code maps to one exit code. Exit `78` means that a human must act. Exit `75` follows the [retry safety rule](../contract.md#retry-safety) for the whole invocation, including finished items in a batch.
+Decided 2026-10-05. Machine identifiers stay in English. [Compatibility](../contract.md#compatibility) protects values and their meaning, with versions for protocols and stored records. Exit 78 requires human action. Exit 75 promises that the whole invocation meets [Retry safety](../contract.md#retry-safety).
 
-**Why.** Agents branch on codes and values, so keeping a key while changing its unit can break a consumer. A temporary failure before a paid request can still follow a file write. Exit `75` therefore requires that all effects so far are safe to repeat, through absence of incompatible effects or proven idempotence. `78` is `EX_CONFIG` in `sysexits.h`, and it lets an agent tell "a human must act" from "the call was wrong".
+**Why.** A stable key with a changed unit still breaks consumers. A temporary failure can follow irreversible work. Exit 78 follows `EX_CONFIG` and distinguishes human action from invalid usage.
 
-**Rejected.** Stability of key names alone. Treating every new enum value as compatible without an explicit rule for unknown values. Recording a breaking change as a decision without a version and migration policy. Returning `75` for a lock conflict after effects that make the invocation unsafe to repeat. A dedicated exit code 3 for a missing key, or exit 2 for a step that only a human can do.
+**Rejected.** Stability of names alone, unversioned breaking changes, and exit 75 after unsafe effects, including a late lock conflict. A missing key needs neither a new exit 3 nor usage exit 2.

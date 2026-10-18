@@ -1,7 +1,7 @@
 # D039 Let yt-dlp update without a release
 
-Decided 2026-10-07. The Python program names a minimum `yt-dlp` version, and `ncly` runs it with `--upgrade-package yt-dlp`, so each run uses the newest release. The other dependencies stay pinned. The Arc cookie adapter checks the `yt-dlp` function that it changes instead of an exact version, and a missing function falls back to anonymous access with a warning.
+Decided 2026-10-07. Declare a minimum `yt-dlp` version and run with `--upgrade-package yt-dlp`. Keep other dependencies pinned. The Arc adapter checks its target function, falling back to anonymous access with a warning if absent.
 
-**Why.** YouTube breaks `yt-dlp` every few weeks, and a fix must reach users without an `ncly` release. Pascal keeps Arc for YouTube, so the adapter stays.
+**Why.** YouTube fixes must reach users without an `ncly` release. Pascal uses Arc for YouTube.
 
-**Rejected.** An exact pin, which needs an `ncly` release for every YouTube change. The `yt-dlp` on `PATH`, because the Arc adapter changes `yt-dlp` inside the same process.
+**Rejected.** Exact pins delay fixes. A `yt-dlp` executable on `PATH` cannot receive the in-process Arc adapter.

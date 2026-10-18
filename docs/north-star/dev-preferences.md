@@ -1,60 +1,59 @@
 # Developer preferences
 
-This file records how Pascal wants changes made, where the principles and the specs are silent. Each rule applies to every agent and every milestone.
+Pascal's preferences apply to every agent and milestone where principles and specs are silent.
 
 ## Decide the look with a published mockup
 
-Every decision about how Nicely looks, in its TUI or in a GUI, goes through a mockup first. This covers a help page, an error block, a form, a progress display, and any later screen.
+Every TUI or GUI appearance decision starts with a mockup, including help, errors, forms, progress, and later screens.
 
-1. Build two or three distinct static mockups in one HTML file with the `html-mode` skill, and check it in a browser.
-2. Publish it with the `html-publish` skill, and give Pascal the URL that the publication verified.
-3. Wait for Pascal's pick before you change `sdk/tui` or any other real component. The rest of the task may continue meanwhile.
+1. Build two or three distinct static options in one HTML file with `html-mode`.
+2. Check the file in a browser.
+3. Publish with `html-publish` and give Pascal the verified URL.
+4. Wait for his pick before changing real components. Other work may continue.
 
-Keep the mockup and its receipt outside the repository, such as in `~/Documents/artifacts/<name>/`, because the receipt names a private host. To revise a mockup, publish the same file again, so the URL stays the same.
+Keep mockups and receipts outside the repository because receipts name private hosts. Republish the same file for revisions to preserve its URL.
 
 ## Keep the docs a tower
 
-The docs form layers like the code: the glossary fixes the words, the vision and the principles say what and why, the architecture says where, the specs say exactly how, and the milestones say when. [Find what you need](../../AGENTS.md#find-what-you-need) maps each question to its file, and [D025](decisions/D025-docs-layout.md) explains why. Keep the tower whenever you change a doc:
+Follow the owners in [Find what you need](../../AGENTS.md#find-what-you-need). [D025](decisions/D025-docs-layout.md) records the rationale.
 
-1. Each file answers one question, which its opening lines state.
-2. A meaning lives in one place. Every other file links to it instead of restating it.
-3. A file read every session holds at most 150 lines: AGENTS.md, vision.md, principles.md, architecture.md, and this file.
-4. One word names one concept in code, docs, help, and commit messages. A new term enters glossary.md before its first use, with its relations and the words it replaces.
-5. A principle links the decisions behind it. Each decision is its own file in decisions/, with a row in its index.
-6. A diagram is Mermaid source inside the doc that it explains, so GitHub, Obsidian, and agents all read it.
-7. `just test` checks every link and heading, the decision index, and the length of each file read every session. It also checks that each card ID names a card of a milestone, and that each code with an explicit role has a source. It rejects an em dash or a curly quote in prose. Fix a problem in the commit that causes it.
+- State each file's one question in its opening
+- Keep each meaning in one place and link from elsewhere
+- Limit each session-read file to 150 lines: AGENTS.md, vision.md, principles.md, architecture.md, and this file
+- Use one term per concept across code, docs, help, and commits. Add new terms, relations, and replaced words to glossary.md before use
+- Link principles to decisions, with one file and index row per decision
+- Keep diagrams as Mermaid source in the doc they explain
+
+Fix documentation errors in the commit that introduces them. `just test` checks links, headings, decision indexes, session-file lengths, card references, and explicit code roles. It rejects em dashes and curly quotes in prose.
 
 ## Write clear technical English
 
-Use these writing practices from ASD-STE100 Simplified Technical English, Issue 9 (January 15, 2025), for English prose. In procedures, give one instruction per sentence and use the imperative form. Limit procedural sentences to 20 words. In descriptive text, give each sentence one topic and limit it to 25 words. Keep command syntax and code identifiers exact.
+Use ASD-STE100 Issue 9 writing practices for English prose. Procedures use imperative sentences, one instruction each, at most 20 words. Descriptive sentences have one topic and at most 25 words. Preserve exact command syntax and identifiers.
 
 ## Run macOS checks on the mini
 
-The `fleet` skill names Pascal's machines. The mini is the agents' Mac and stays on. The mbp is Pascal's laptop, and it is often offline.
-
-1. Run each check that needs macOS on the mini, through the `fleet` skill.
-2. If the mini lacks Nicely or a needed tool, or is offline, use the mbp.
-3. In the report, name the machine. When you used the mbp, give the reason.
+Use the `fleet` skill to run macOS checks on the mini. Use the mbp only if the mini is offline or lacks Nicely or a required tool. Report the machine and the reason for any mbp fallback.
 
 ## Merge on the brigade's rule or Pascal's word
 
-Open each pull request ready for review. In a `brigade-mode` run, the brigade decides when to merge. Otherwise, merge only when Pascal says "merge" for that pull request.
+Open review-ready pull requests. In `brigade-mode`, the brigade decides when to merge. Otherwise, merge only when Pascal says "merge" for that pull request. Once authorized, ask for no further confirmation. Stop and report only a real blocker.
 
-- When later work depends on an open pull request, stack it on that pull request.
-- Make a planned milestone ready as [Make a milestone ready](../../AGENTS.md#make-a-milestone-ready) says. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
-- Fix each review finding on the branch of its pull request, with a scenario that fails first. Reply on the pull request with the commit that fixes it.
+Stack work on an open pull request when it depends on that pull request. [Make a milestone ready](../../AGENTS.md#make-a-milestone-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
 
-To merge a stack, ask for no confirmation, as for one branch. Stop only on a real blocker. Follow Land in the `gh-stack` skill, for a project that pushes a head to its trunk. Add these checks to its steps:
+Fix review findings on their pull request's branch, with a scenario that fails first. Reply with the fixing commit.
 
-1. After `gh stack unstack`, the `gh api` stack check of the `gh-stack` skill must print nothing.
-2. Push each rebased branch with `git push --force-with-lease`, as for one branch.
-3. Check that each branch, its head on origin, and the `headRefOid` of its pull request name one commit.
-4. Run `just signoff-layers` with the branches, bottom to top. It also fails a layer that does not contain the layer below. A new head needs a new run.
-5. After the retarget, run `gh pr view <number> --json baseRefName,closingIssuesReferences` on each pull request. It must show `main` and each Story that its closing keywords name.
-6. Push the last SHA in the `summary.txt` of that run: `git push origin <top-sha>:main`.
-7. Check that `gh pr view <number> --json state` prints `MERGED` for each pull request.
-8. Check that `gh issue view <story> --json state,closedByPullRequestsReferences` shows each Story closed by its pull request.
+For one branch, rebase onto `origin/main`, push with `--force-with-lease`, and run `just signoff`. Then run `git push origin <branch>:main` to preserve the checked commit.
 
-A failed step leaves the merge incomplete, so report it. GitHub can refuse a retarget, or leave a pull request open. Never close an open pull request by hand to report it merged.
+For a stack, follow Land in `gh-stack` for a project that pushes its head to trunk, with these checks:
 
-To merge, ask for no confirmation. Stop only on a real blocker, and report it. Rebase the branch onto `origin/main`. Run `git push --force-with-lease`. Run `just signoff`. Then run `git push origin <branch>:main`, so `main` keeps the commit that was checked.
+1. After `gh stack unstack`, require an empty result from the skill's `gh api` stack check.
+2. Push each rebased branch with `git push --force-with-lease`.
+3. Require identical local, origin, and pull-request `headRefOid` SHAs for each branch.
+4. Run `just signoff-layers` bottom to top. Each layer must contain the one below. Repeat for each new head.
+5. After retargeting, check each pull request with `gh pr view <number> --json baseRefName,closingIssuesReferences`.
+6. Require `main` as base and every Story named by closing keywords.
+7. Push the run's final `summary.txt` SHA with `git push origin <top-sha>:main`.
+8. Require `MERGED` from `gh pr view <number> --json state` for every pull request.
+9. Require each Story closed by its pull request in `gh issue view <story> --json state,closedByPullRequestsReferences`.
+
+Report any failed step as an incomplete merge. Never manually close an open pull request to report it merged.

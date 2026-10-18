@@ -1,7 +1,7 @@
 # D038 Exchange acknowledged JSON Lines with the Python program
 
-Decided 2026-10-07. Go and Python exchange versioned JSON Lines. An initial plan fixes the item set for both dry run and execution. Python announces an intent before user-side output or Deepgram upload. Go records the selected destination before reserving it, completes the persistence barrier, then acknowledges the final folder. [transcript's spec](../../../extensions/transcript/spec.md#protocol-with-the-python-program) holds the messages.
+Decided 2026-10-07. Go and Python use versioned JSON Lines with a fixed plan and durable intent before acknowledgement. [Transcript's protocol](../../../extensions/transcript/spec.md#protocol-with-the-python-program) owns the messages and sequence.
 
-**Why.** One preparation keeps the selected input and destination consistent through execution. Recording a destination after creating it loses ownership on interruption, so Go records it first. No paid call starts before the durable intent; a lost acknowledgement stops Python before upload. Persisted verified artifacts can establish completion after a lost final message, without another request. This is the temporary Python boundary, not a protocol imposed on future extensions.
+**Why.** Recording the destination before reservation preserves ownership after interruption. An acknowledgement gates paid upload. Verified artifacts can resolve a lost final message without another request. This temporary Python boundary does not constrain future extensions.
 
-**Rejected.** Arguments plus one final JSON object, because Go could not record the intent before the upload. A separate file or socket, because stdin and stdout already connect the two processes.
+**Rejected.** One final JSON answer cannot persist intent before upload. Extra files or sockets duplicate the existing stdin and stdout connection.

@@ -1,7 +1,7 @@
 # D060 Style the text that a pipe gets, and let the terminal wrap it
 
-Decided 2026-10-16. On a terminal, styles change only the weight and the color of the text that a pipe gets, so the output without its escape codes equals the output in a pipe. `ncly` never wraps a line itself, so a path or a command copies whole, and the terminal wraps a long line. Styles use the 16 ANSI colors only, and a color never carries a meaning alone. [Output](../contract.md#output) holds the rule and its exceptions.
+Decided 2026-10-16. Style the same text that pipes receive, with 16 ANSI colors and weight only. Let the terminal wrap lines. [Output](../contract.md#output) owns exceptions and non-color meaning.
 
-**Why.** The mockup of [M07](../../milestones/M07-forms.md) kept today's text for a pipe and gave a terminal a second layout, such as a colon after each skill name, so each report would have had two layouts, and nothing said which one a terminal under `NO_COLOR` gets. One layout leaves one text to test and to translate, and `sdk/tui` already turns styles into plain text when color is off. The frames of the doctor report and of `run view` wrapped a long path inside a column and broke it at a hyphen or a space, so the path could no longer be copied or searched. The terminal's own wrap keeps the line whole. ANSI colors follow the human's terminal theme, as the help of [M00](../../milestones/M00-foundation.md) does, and a word or a mark beside each color keeps the meaning without color and through a screen reader.
+**Why.** One layout needs one translation and test. Terminal wrapping preserves copyable paths and commands. ANSI colors follow the user's theme.
 
-**Rejected.** One layout for a terminal and another for a pipe. Wrapping inside a column, which keeps the columns tidy but breaks paths. Colors with 256 or 24-bit values, such as Charm's theme, which ignore the terminal's palette and fall near 2.5:1 on a light background.
+**Rejected.** Separate terminal layouts, column wrapping that breaks paths, and fixed 256-color or true-color palettes that can fail on light themes.

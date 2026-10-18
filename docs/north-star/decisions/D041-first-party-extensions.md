@@ -1,7 +1,7 @@
 # D041 Keep first-party extensions in the Nicely repository
 
-Decided 2026-10-09. First-party extensions live in `extensions/<name>/`, in the same Go module as core. Each folder holds what its extension owns: the manifest, `spec.md`, `SKILL.md`, catalogs, scenarios, and code. A lint rule keeps `sdk/` and `extensions/` away from `internal/`. The repository is also the official tap of these extensions.
+Decided 2026-10-09. Keep first-party extensions in `extensions/<name>/`, in core's Go module and official tap. [Architecture](../architecture.md#code-map) assigns their files; lint enforces the `internal/` boundary.
 
-**Why.** An agent changes the SDK and the extension that uses it in one pull request, with one checkout and one `just next`, while the contract is still young. The lint rule keeps the boundary that separate repositories would give.
+**Why.** One checkout and pull request can change the young SDK and its consumer together.
 
-**Rejected.** One repository per extension, as `gh` extensions do, because every SDK change would then take several pull requests.
+**Rejected.** Separate repositories would require several pull requests per SDK change.
