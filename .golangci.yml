@@ -21,7 +21,7 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/pascalandy/nicely/internal
-              desc: the SDK and the extensions reach core only through the CLI and the environment, as AGENTS.md says
+              desc: the SDK and the extensions reach core only through the CLI and the environment, as architecture.md says
 
 formatters:
   enable:

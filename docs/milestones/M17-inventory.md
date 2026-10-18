@@ -57,7 +57,7 @@ Pascal chooses the first task from the evidence and confirms the result it must 
 
 ### M17-T3 Plan one command
 
-- **Read:** [Scope](#scope), [AGENTS.md](../../AGENTS.md#make-a-milestone-ready)
+- **Read:** [Scope](#scope), [Make a milestone ready](README.md#make-a-milestone-ready)
 - **Proves:** the one candidate milestone and its command spec
 
 Confirm or replace M18 with the approved task.

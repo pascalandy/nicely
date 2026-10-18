@@ -1,6 +1,7 @@
 // Command plan reads the milestone files and prints the next card, shows the
 // progress of every milestone and the order of the current one's cards, or
-// checks that the files keep the format that AGENTS.md describes, that every
+// checks that the files keep the format that docs/milestones/README.md
+// describes, that every
 // link in the docs resolves, that every card and code the docs name exists,
 // and that the prose holds no em dash or curly quote. It takes the
 // repository root:
@@ -46,11 +47,11 @@ var everySession = []string{
 	"docs/north-star/dev-preferences.md",
 }
 
-// skippedDirs hold no links for checkDocs: check reads the milestones itself,
-// and archived history keeps the links of its time. skippedNames are folders
-// of fixtures, dependencies, and builds, wherever they sit.
+// skippedDirs hold no links for checkDocs: archived history keeps the links
+// of its time. skippedNames are folders of fixtures, dependencies, and
+// builds, wherever they sit.
 var (
-	skippedDirs  = []string{milestoneDir, "docs/archived"}
+	skippedDirs  = []string{"docs/archived"}
 	skippedNames = []string{"testdata", "node_modules", "dist"}
 )
 
@@ -77,7 +78,7 @@ var plainForms = map[rune]string{
 const maxAgentCards = 5
 
 // readyRule says how many pull requests make a planned milestone ready.
-// AGENTS.md, dev-preferences.md, and D042 state it in these words.
+// dev-preferences.md and D042 state it in these words.
 const readyRule = "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."
 
 var (
@@ -175,7 +176,7 @@ func run(args []string, out io.Writer) error {
 		return err
 	}
 	if len(problems) > 0 {
-		return fmt.Errorf("%d problems in the docs; fix them as AGENTS.md describes", len(problems))
+		return fmt.Errorf("%d problems in the docs; fix them as each line says", len(problems))
 	}
 	return nil
 }
@@ -187,7 +188,7 @@ func load(root string) ([]*milestone, error) {
 	}
 	var milestones []*milestone
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(root, milestoneDir, e.Name()))
@@ -536,7 +537,8 @@ func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 			}
 			return nil
 		}
-		if !strings.HasSuffix(rel, ".md") {
+		// check reads the milestones, and their links, itself.
+		if !strings.HasSuffix(rel, ".md") || path.Dir(rel) == milestoneDir && path.Base(rel) != "README.md" {
 			return nil
 		}
 		data, err := os.ReadFile(name)
@@ -967,12 +969,12 @@ func currentMilestone(milestones []*milestone) *milestone {
 func next(out *strings.Builder, milestones []*milestone) {
 	m := currentMilestone(milestones)
 	if m == nil {
-		fmt.Fprintln(out, "Every milestone is done. Plan the next one, as \"Make a milestone ready\" in AGENTS.md says.")
+		fmt.Fprintln(out, "Every milestone is done. Plan the next one, as \"Make a milestone ready\" in docs/milestones/README.md says.")
 		return
 	}
 	if m.status == "planned" && (m.open != nil || len(m.cards) == 0) {
 		fmt.Fprintf(out, "Next: make %s %s ready\nFile: %s\n\n", m.id, m.title, m.path)
-		fmt.Fprintf(out, "The milestone is planned. Settle its open questions in the spec, finish its cards, and set its status to ready, as \"Make a milestone ready\" in AGENTS.md says. %s\n", readyRule)
+		fmt.Fprintf(out, "The milestone is planned. Settle its open questions in the spec, finish its cards, and set its status to ready, as \"Make a milestone ready\" in docs/milestones/README.md says. %s\n", readyRule)
 		if len(m.open) > 0 {
 			fmt.Fprintf(out, "\nOpen questions:\n%s\n", strings.Join(m.open, "\n"))
 		}

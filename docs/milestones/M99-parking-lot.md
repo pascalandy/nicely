@@ -37,7 +37,7 @@ Ideas that are kept but belong to no delivery milestone. To start one, select a 
 | Key checks for skills | `ncly doctor` checks the keys that skills declare in `nicely.toml`, replacing `just api-keys-validation` | A selected tap slice carries skills with prerequisite manifests |
 | Man pages | Generated from Cobra and shipped in the packages | A user asks, or Nicely applies to homebrew-core |
 | Build provenance | GitHub artifact attestations for the release archives | Strangers install from the release archives |
-| AUR package | Publishes `ncly-bin` to the AUR, so that `yay -S ncly-bin` installs `ncly` and `ncly <Tab>` completes in bash on Omarchy. It needs an AUR account with the public key `nicely-release-aur`. GoReleaser builds the package that `just release-check` verifies, and `skip_upload: true` in the `aurs` section of `.goreleaser.yaml` keeps it off the AUR. To ship it, delete that line, and say in step 3 of Release in AGENTS.md that the workflow publishes the AUR package | AUR registration reopens |
+| AUR package | Publishes `ncly-bin` to the AUR, so that `yay -S ncly-bin` installs `ncly` and `ncly <Tab>` completes in bash on Omarchy. It needs an AUR account with the public key `nicely-release-aur`. GoReleaser builds the package that `just release-check` verifies, and `skip_upload: true` in the `aurs` section of `.goreleaser.yaml` keeps it off the AUR. To ship it, delete that line, and say in step 3 of the `release-nicely` skill that the workflow publishes the AUR package | AUR registration reopens |
 | homebrew-core | A formula in Homebrew's main repository | Nicely meets Homebrew's notability rules |
 | Windows | Support for Windows | Never planned. Revisit only on real demand |
 

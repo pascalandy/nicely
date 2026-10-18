@@ -2,6 +2,12 @@
 // in their message catalogs, and formats numbers, sizes, and dates for the
 // active language. Every catalog entry carries a description that tells a
 // translator where the text appears.
+//
+// Send every string that a human reads through a catalog. Name each ID
+// <domain>.<thing>, and never reuse an ID for a new meaning. Give every
+// message that holds a number its plural forms. Format numbers, sizes,
+// durations, and dates through this package, and let translated text set its
+// own width.
 package i18n
 
 import (
