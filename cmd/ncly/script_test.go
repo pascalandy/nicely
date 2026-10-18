@@ -136,6 +136,7 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 			"gone":      cmdGone,
 			"term":      cmdTerm,
 			"install":   cmdInstall,
+			"onlyncly":  cmdOnlyncly,
 			"agree":     cmdAgree,
 			"schema":    cmdSchema,
 			"mentions":  cmdMentions,
@@ -154,6 +155,44 @@ func cmdInstall(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("install: no fixture %q", args[0])
 	}
 	ts.Check(install(ts.Getenv("WORK"), ts.Setenv, args[0], e))
+}
+
+// cmdOnlyncly keeps in PATH only ncly, the listed commands of the test
+// binary, and the fixtures of $WORK/bin when the scenario has that folder, so
+// the other commands of the test binary, such as ncly-hello, are no
+// extensions: onlyncly [command...], such as onlyncly exitcode. It links each
+// command into $WORK/nbin, which a scenario may name in a PATH of its own,
+// after $WORK/bin. A program of the system is then reachable only by its
+// absolute path, such as /usr/bin/sed, as the fixtures name it.
+func cmdOnlyncly(ts *testscript.TestScript, neg bool, args []string) {
+	if neg {
+		ts.Fatalf("usage: onlyncly [command...]")
+	}
+	var commands string
+	for _, dir := range filepath.SplitList(ts.Getenv("PATH")) {
+		if info, err := os.Stat(filepath.Join(dir, "ncly")); err == nil && !info.IsDir() {
+			commands = dir
+			break
+		}
+	}
+	if commands == "" {
+		ts.Fatalf("onlyncly: no ncly in PATH")
+	}
+	work := ts.Getenv("WORK")
+	nbin := filepath.Join(work, "nbin")
+	ts.Check(os.Mkdir(nbin, 0o755))
+	for _, name := range append([]string{"ncly"}, args...) {
+		program := filepath.Join(commands, name)
+		if _, err := os.Stat(program); err != nil || strings.HasPrefix(name, "ncly-") {
+			ts.Fatalf("onlyncly: %s is no command of the test binary that onlyncly keeps", name)
+		}
+		ts.Check(os.Symlink(program, filepath.Join(nbin, name)))
+	}
+	path := nbin
+	if info, err := os.Stat(filepath.Join(work, "bin")); err == nil && info.IsDir() {
+		path = filepath.Join(work, "bin") + string(filepath.ListSeparator) + nbin
+	}
+	ts.Setenv("PATH", path)
 }
 
 // install puts a Go extension in the data folder as an external one:
