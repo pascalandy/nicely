@@ -54,11 +54,11 @@ just verify cleanup "$run"
 just verify quote "$run" hello
 ```
 
-`quote <run> [<feature>]` prints the transcripts with `<run>` for the run folder and `/Users/me` for the home folder, ready to paste in a pull request. Proof standards:
+`quote <run> [<feature>]` prints the transcripts with `<run>` for the run folder and `/Users/me` for the home folder, ready to paste in a pull request. After auth, also run `just verify quote "$run" cleanup`, whose `cleanup.txt` proves that the fake key left the keychain. Proof standards:
 
 - Drive the path a user takes, through installed extensions and real commands, never a test hook
 - Capture the action and the resulting state, such as a second command that reads what the first one wrote
 - Check side effects, such as files or a keychain entry, beside the answer
 - Quote the lines that prove each end state, after the cleanup, from the quoted transcript
 
-Done when `quote` prints the transcript of every feature driven after the cleanup, and the report quotes the lines that prove each end state.
+Done when `quote` prints the transcript of every feature driven after the cleanup, with `cleanup.txt` after auth, and the report quotes the lines that prove each end state.
