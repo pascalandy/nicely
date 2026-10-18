@@ -19,16 +19,18 @@ Follow the owners in [Find what you need](../../AGENTS.md#find-what-you-need). [
 
 - State each file's one question in its opening
 - Keep each meaning in one place and link from elsewhere
-- Limit each session-read file to 150 lines: AGENTS.md, vision.md, principles.md, architecture.md, and this file. Limit AGENTS.md to 1250 tokens, its bytes divided by 4, which `just agents-size` checks before each commit
+- Keep each file within 2,500 tokens, its bytes divided by 4, and AGENTS.md within 1,250. `just limits` checks each commit and names skipped files in its [rules](../../tools/cmd/plan/limits.go)
 - Use one term per concept across code, docs, help, and commits. Add new terms, relations, and replaced words to glossary.md before use
 - Link principles to decisions, with one file and index row per decision
 - Keep diagrams as Mermaid source in the doc they explain
 
-Fix documentation errors in the commit that introduces them. `just test` checks links, headings, decision indexes, session-file lengths, card references, and explicit code roles. It rejects em dashes and curly quotes in prose.
+Fix documentation errors in the commit that introduces them. `just test` checks links, headings, decision indexes, card references, and explicit code roles. It rejects em dashes and curly quotes in prose.
 
 ## Write clear technical English
 
 Use ASD-STE100 Issue 9 writing practices for English prose. Procedures use imperative sentences, one instruction each, at most 20 words. Descriptive sentences have one topic and at most 25 words. Preserve exact command syntax and identifiers.
+
+`just limits` refuses a new or changed sentence over 25 words in Markdown or in a full-line Go comment.
 
 ## Follow serious CLIs where the specs are silent
 

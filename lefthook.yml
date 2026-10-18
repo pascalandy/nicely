@@ -15,9 +15,8 @@ pre-commit:
       run: just lint
     3_gitleaks:
       run: just gitleaks-staged
-    4_agents_size:
-      glob: "AGENTS.md"
-      run: just agents-size
+    4_limits:
+      run: just limits
 
 pre-push:
   commands:

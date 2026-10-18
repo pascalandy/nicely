@@ -330,23 +330,6 @@ func TestCheckDecisions(t *testing.T) {
 	}
 }
 
-func TestCheckSessionFiles(t *testing.T) {
-	root := repository(t, nil)
-	write(t, filepath.Join(root, "AGENTS.md"), strings.Repeat("line\n", 151))
-	var out strings.Builder
-	if err := run([]string{"check", root}, &out); err == nil {
-		t.Fatal("check passed a 151-line AGENTS.md")
-	}
-	if !strings.Contains(out.String(), "AGENTS.md: 151 lines, more than the 150") {
-		t.Errorf("check lacks the long file:\n%s", out.String())
-	}
-	write(t, filepath.Join(root, "AGENTS.md"), strings.Repeat("line\n", 150))
-	out.Reset()
-	if err := run([]string{"check", root}, &out); err != nil {
-		t.Fatalf("check refused a 150-line AGENTS.md: %v\n%s", err, out.String())
-	}
-}
-
 func TestCheckDocsReportsAnUnreadableFile(t *testing.T) {
 	root := repository(t, nil)
 	if err := os.Symlink("gone.md", filepath.Join(root, "dangling.md")); err != nil {

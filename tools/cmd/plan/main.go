@@ -7,6 +7,7 @@
 // repository root:
 //
 //	plan next|status|check <root>
+//	plan limits <root> [--base <ref>]
 //
 // next and status check the format first, so a broken plan never yields a
 // pointer that an agent would follow.
@@ -33,19 +34,7 @@ import (
 const (
 	milestoneDir = "docs/milestones"
 	decisionDir  = "docs/north-star/decisions"
-	// maxSessionLines bounds each file that agents read every session, as
-	// "Keep the docs a tower" in dev-preferences.md asks.
-	maxSessionLines = 150
 )
-
-// everySession lists the files that AGENTS.md has agents read every session.
-var everySession = []string{
-	"AGENTS.md",
-	"docs/north-star/vision.md",
-	"docs/north-star/principles.md",
-	"docs/north-star/architecture.md",
-	"docs/north-star/dev-preferences.md",
-}
 
 // skippedDirs hold no links for checkDocs: archived history keeps the links
 // of its time. skippedNames are folders of fixtures, dependencies, and
@@ -139,6 +128,9 @@ func main() {
 }
 
 func run(args []string, out io.Writer) error {
+	if len(args) > 0 && args[0] == "limits" {
+		return runLimits(args[1:])
+	}
 	if len(args) != 2 || !slices.Contains([]string{"next", "status", "check"}, args[0]) {
 		return errors.New("usage: plan next|status|check <repository root>")
 	}
@@ -163,7 +155,6 @@ func run(args []string, out io.Writer) error {
 		}
 		problems = append(problems, broken...)
 		problems = append(problems, checkDecisions(root)...)
-		problems = append(problems, checkSessionFiles(root)...)
 	}
 	switch {
 	case len(problems) > 0:
@@ -600,23 +591,6 @@ func checkDecisions(root string) []string {
 		}
 		if !strings.Contains(string(index), "]("+e.Name()+")") {
 			problems = append(problems, fmt.Sprintf("%s: the decision needs a row in %s/README.md", where, decisionDir))
-		}
-	}
-	return problems
-}
-
-// checkSessionFiles reports a file of everySession longer than
-// maxSessionLines. A missing file is no problem: the link check finds a stale
-// pointer to it.
-func checkSessionFiles(root string) []string {
-	var problems []string
-	for _, name := range everySession {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(name)))
-		if err != nil {
-			continue
-		}
-		if n := len(strings.Split(strings.TrimRight(string(data), "\n"), "\n")); n > maxSessionLines {
-			problems = append(problems, fmt.Sprintf("%s: %d lines, more than the %d of a file read every session", name, n, maxSessionLines))
 		}
 	}
 	return problems
