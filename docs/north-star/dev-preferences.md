@@ -43,4 +43,18 @@ Open each pull request ready for review. In a `brigade-mode` run, the brigade de
 - When later work depends on an open pull request, stack it on that pull request.
 - Fix each review finding on the branch of its pull request, with a scenario that fails first. Reply on the pull request with the commit that fixes it.
 
+To merge a stack, ask for no confirmation, as for one branch. Stop only on a real blocker. Follow Land in the `gh-stack` skill, for a project that pushes a head to its trunk. Add these checks to its steps:
+
+1. After `gh stack unstack`, the `gh api` stack check of the `gh-stack` skill must print nothing.
+2. Push each rebased branch with `git push --force-with-lease`, as for one branch.
+3. Check that each branch, its head on origin, and the `headRefOid` of its pull request name one commit.
+4. Check with `git merge-base --is-ancestor` that each lower head is an ancestor of the next.
+5. Run `just check-layers`, then `just signoff` on the branch of each layer. A new head needs new checks and a new sign-off.
+6. After the retarget, run `gh pr view <number> --json baseRefName,closingIssuesReferences` on each pull request. It must show `main` and each Story that its closing keywords name.
+7. Push the top SHA that the checks and the sign-off covered: `git push origin <top-sha>:main`.
+8. Check that `gh pr view <number> --json state` prints `MERGED` for each pull request.
+9. Check that `gh issue view <story> --json state,closedByPullRequestsReferences` shows each Story closed by its pull request.
+
+A failed step leaves the merge incomplete, so report it. GitHub can refuse a retarget, or leave a pull request open. Never close an open pull request by hand to report it merged.
+
 To merge, ask for no confirmation. Stop only on a real blocker, and report it. Rebase the branch onto `origin/main`. Run `git push --force-with-lease`. Run `just signoff`. Then run `git push origin <branch>:main`, so `main` keeps the commit that was checked.
