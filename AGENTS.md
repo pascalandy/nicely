@@ -67,6 +67,8 @@ A planned milestone without open questions needs no separate pull request: `just
 
 A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, **Cards**, and an optional **After this milestone**. **Cards** holds a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line that links what to read and a **Proves** line that names its proof. `just test` checks this format, including the links. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one. To change the order, renumber only milestones without a done card, in a pull request that only changes the plan.
 
+Each code span of a **Proves** line is a path from the repository root, such as `extensions/transcript/python/` or `justfile`. Name a command, such as just check, without a code span. Once the card is `done`, `just test` checks that each path exists.
+
 ## Rules
 
 - Where the specs are silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in a new decision in [decisions/](docs/north-star/decisions/README.md).

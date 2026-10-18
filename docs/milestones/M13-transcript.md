@@ -54,7 +54,7 @@ Settle each one in [extensions/transcript/spec.md](../../extensions/transcript/s
 ### M13-T1 Python program
 
 - **Read:** [Protocol with the Python program](../../extensions/transcript/spec.md#protocol-with-the-python-program)
-- **Proves:** `extensions/transcript/python/`, whose tests run in `just check`
+- **Proves:** `extensions/transcript/python/`, whose tests run in just check
 
 Copy the program and wire its checks through `uv`.
 Its tests save a transcript through the test-only Deepgram transport.
