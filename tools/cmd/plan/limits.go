@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/scanner"
+	"go/token"
 	"os/exec"
 	"path"
 	"regexp"
@@ -36,8 +38,7 @@ var skipped = []limitRule{
 		if content == nil {
 			content = c.old
 		}
-		lines := bytes.SplitN(content, []byte("\n"), 11)
-		return generatedMarker.Match(bytes.Join(lines[:min(10, len(lines))], []byte("\n")))
+		return generated(content)
 	},
 	// Binary files hold no agent prose.
 	func(c change) bool {
@@ -49,9 +50,25 @@ var skipped = []limitRule{
 	},
 }
 
-// generatedMarker is the header line of a generated Go file. Like go/ast, it
-// accepts a line that ends in CRLF.
-var generatedMarker = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.\r?$`)
+// generatedMarker is the header line of a generated Go file.
+var generatedMarker = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
+
+// generated applies the rule of go/ast. The header is a line of a comment
+// before the package clause. A string that quotes the header does not count.
+// The scanner removes the CR of a CRLF line.
+func generated(src []byte) bool {
+	var s scanner.Scanner
+	s.Init(token.NewFileSet().AddFile("", -1, len(src)), src, nil, scanner.ScanComments)
+	for {
+		_, tok, lit := s.Scan()
+		if tok != token.COMMENT {
+			return false
+		}
+		if generatedMarker.MatchString(lit) {
+			return true
+		}
+	}
+}
 
 const agentsSizeFix = `AGENTS.md only routes an agent to the files it must read. Move the text you added to the file that owns it, as the row "Where does a new rule go?" in "Find what you need" says, and leave a link in its place.`
 
