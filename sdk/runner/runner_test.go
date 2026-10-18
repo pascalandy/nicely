@@ -3,6 +3,7 @@ package runner_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/pascalandy/nicely/sdk/command"
@@ -32,6 +34,78 @@ func TestRunNeverStartsAProgramOnceCtxEnded(t *testing.T) {
 	}
 	if _, err := os.Stat(started); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("the program ran: %v", err)
+	}
+}
+
+// TestRunStopsAfterTheExitOnlyForASignal proves that, once the program has
+// exited, only a signal that ends ctx during the settle wait stops it, as a
+// Ctrl-C that reaches the program and ncly together does. A deadline or a
+// plain cancellation that ends ctx then keeps the program's own result
+// (#188). synctest makes the order certain: its clock stands still while the
+// program runs, because the wait for the exit is a system call, so ctx ends
+// a millisecond after the exit, while Run waits 25 ms for a signal.
+func TestRunStopsAfterTheExitOnlyForASignal(t *testing.T) {
+	cases := []struct {
+		name string
+		// ctx returns a context that ends a millisecond after Run starts.
+		ctx  func(t *testing.T) context.Context
+		want os.Signal
+	}{
+		{"deadline", func(t *testing.T) context.Context {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+			t.Cleanup(cancel)
+			return ctx
+		}, nil},
+		{"cancel", func(t *testing.T) context.Context {
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+			time.AfterFunc(time.Millisecond, cancel)
+			return ctx
+		}, nil},
+		{"signal", func(t *testing.T) context.Context {
+			ctx, cancel := context.WithCancelCause(context.Background())
+			time.AfterFunc(time.Millisecond, func() { cancel(runner.SignalCause{Signal: os.Interrupt}) })
+			return ctx
+		}, os.Interrupt},
+	}
+	for _, limit := range []time.Duration{0, time.Hour} {
+		for _, c := range cases {
+			t.Run(fmt.Sprintf("%s/limit=%v", c.name, limit), func(t *testing.T) {
+				synctest.Test(t, func(t *testing.T) {
+					ctx := c.ctx(t)
+					result, err := runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "exit 0"}, Limit: limit})
+					if err != nil {
+						t.Fatal(err)
+					}
+					if ctx.Err() == nil {
+						t.Fatal("Run returned before ctx ended")
+					}
+					if result.Exit != 0 || result.Signal != c.want || result.TimedOut {
+						t.Fatalf("Run returned %+v, want exit 0 and the signal %v", result, c.want)
+					}
+				})
+			})
+		}
+	}
+}
+
+// TestRunStopsAProgramThatRunsAtTheDeadline proves that a deadline that
+// ends ctx before the program exits stops it with SIGTERM, or with SIGKILL
+// under a limit. The program ends only on a signal, so the deadline came
+// first.
+func TestRunStopsAProgramThatRunsAtTheDeadline(t *testing.T) {
+	for limit, killed := range map[time.Duration]syscall.Signal{0: syscall.SIGTERM, time.Hour: syscall.SIGKILL} {
+		t.Run(fmt.Sprintf("limit=%v", limit), func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+			defer cancel()
+			result, err := runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "exec sleep 30"}, Limit: limit})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Signal != syscall.SIGTERM || result.Exit != 128+int(killed) {
+				t.Fatalf("Run returned %+v, want SIGTERM and exit %d", result, 128+int(killed))
+			}
+		})
 	}
 }
 

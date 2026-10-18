@@ -52,8 +52,10 @@ type Result struct {
 	// that ended it, as a shell reports it. It is -1 when ctx had ended
 	// before the program started, so it never ran.
 	Exit int
-	// Signal is the signal that ended ctx before the program exited, or nil
-	// when the program exited first.
+	// Signal is the signal that ended ctx before the program exited, or
+	// SIGTERM when another cause, such as a deadline, ended it. A signal that
+	// ends ctx within signalSettle after the exit counts too, because it may
+	// have reached the program first. Signal is nil otherwise.
 	Signal os.Signal
 	// TimedOut reports that the program still ran at its Limit.
 	TimedOut bool
@@ -72,9 +74,10 @@ const DrainLimit = 2 * time.Second
 // Run starts the program and waits for it to exit. When ctx ends first, Run
 // sends the signal that ended it, or SIGTERM for any other end, to every
 // descendant of ncly that it can reach, the program included, and sends
-// SIGKILL to what still runs once Cleanup has passed. A later end of ctx
-// changes nothing. Run reads a stream that is not a file for at most
-// DrainLimit after the program exits.
+// SIGKILL to what still runs once Cleanup has passed. A signal that ends
+// ctx within signalSettle after the exit does the same. Any other later end
+// of ctx, such as a deadline, changes nothing. Run reads a stream that is
+// not a file for at most DrainLimit after the program exits.
 func Run(ctx context.Context, p Program) (Result, error) {
 	cmd := exec.Command(p.Path, p.Args...)
 	if p.Name != "" {
@@ -124,24 +127,31 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		close(exited)
 	}()
 	var result Result
+	// stopped reports that an end of ctx stops the program.
+	var stopped bool
 	select {
 	case <-exited:
 		// A Ctrl-C at the terminal reaches the program and ncly together, so
 		// the program may exit, whatever its code, before ncly sees its own
-		// copy.
+		// copy. Any other end of ctx, such as a deadline, came after the
+		// exit, and changes nothing (#188).
 		select {
 		case <-ctx.Done():
+			var cause SignalCause
+			stopped = errors.As(context.Cause(ctx), &cause)
 		case <-time.After(signalSettle):
 		}
 	case <-ctx.Done():
+		stopped = true
 	case <-limit:
 		result.TimedOut = true
+		stopped = ctx.Err() != nil
 	}
-	if p.Limit > 0 && (result.TimedOut || ctx.Err() != nil) {
+	if p.Limit > 0 && (result.TimedOut || stopped) {
 		// A program that has a limit gets no cleanup: at the limit or on a
 		// signal, it ends at once, and so does every descendant that holds
 		// its streams.
-		if ctx.Err() != nil {
+		if stopped {
 			result.Signal = SignalOf(ctx)
 		}
 		signalTree(syscall.SIGKILL)
@@ -151,7 +161,7 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		return result, nil
 	}
 	var cleanupEnds time.Time
-	if ctx.Err() != nil {
+	if stopped {
 		result.Signal = SignalOf(ctx)
 		cleanupEnds = time.Now().Add(Cleanup)
 		signalTree(result.Signal)
