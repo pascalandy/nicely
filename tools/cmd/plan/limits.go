@@ -27,8 +27,11 @@ var skipped = []limitRule{
 	func(c change) bool {
 		return path.Base(path.Dir(c.path)) == "locales" && path.Ext(c.path) == ".toml"
 	},
-	// Generators own generated files.
+	// Generators own generated Go files.
 	func(c change) bool {
+		if path.Ext(c.path) != ".go" {
+			return false
+		}
 		content := c.new
 		if content == nil {
 			content = c.old
@@ -46,9 +49,9 @@ var skipped = []limitRule{
 	},
 }
 
-// generatedMarker is the header line that Go's convention reserves for
-// generated files, so a doc that quotes it is still checked.
-var generatedMarker = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
+// generatedMarker is the header line of a generated Go file. Like go/ast, it
+// accepts a line that ends in CRLF.
+var generatedMarker = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.\r?$`)
 
 const agentsSizeFix = `AGENTS.md only routes an agent to the files it must read. Move the text you added to the file that owns it, as the row "Where does a new rule go?" in "Find what you need" says, and leave a link in its place.`
 
