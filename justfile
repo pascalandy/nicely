@@ -86,7 +86,7 @@ verify *args:
 scenario *args:
     @bash scripts/scenario.sh "$@"
 
-# Run the Go tests, the testscript scenarios, and the release script checks
+# Run the Go tests, the testscript scenarios, and the tests of the scripts
 [group('checks')]
 test *args:
     #!/usr/bin/env bash
@@ -99,6 +99,7 @@ test *args:
     (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
     bash scripts/test-hook-env.sh
+    bash scripts/check-layers-test.sh
 
 # Run the Go tests of sdk and internal under the race detector, without the scenarios
 [group('checks')]

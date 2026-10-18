@@ -20,6 +20,7 @@ fct_main() {
 	cp "${repo_root}/scripts/release-check-test.sh" "${caller}/scripts/release-check-test.sh"
 	cp "${repo_root}/scripts/release-check.sh" "${caller}/scripts/release-check.sh"
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/test-hook-env.sh"
+	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/check-layers-test.sh"
 	cat >"${test_dir}/bin/go" <<'SCRIPT'
 #!/usr/bin/env bash
 set -Eeuo pipefail
