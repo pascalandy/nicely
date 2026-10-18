@@ -147,15 +147,15 @@ tidy-check:
 gitleaks:
     gitleaks git --no-banner --redact --log-level warn
 
-# Fail when the staged AGENTS.md outgrows a router, as rule 3 of "Keep the docs a tower" in dev-preferences.md says
+# Fail when the staged AGENTS.md outgrows a router, as "Keep the docs a tower" in dev-preferences.md says
 [group('checks')]
 agents-size:
     #!/usr/bin/env bash
     set -euo pipefail
     max=1250
-    tokens=$(( $(git show :AGENTS.md | wc -c) / 4 ))
-    if (( tokens > max )); then
-        echo "agents-size: AGENTS.md holds $tokens tokens (bytes/4), more than the $max of a router." >&2
+    bytes=$(git show :AGENTS.md | wc -c)
+    if (( bytes > max * 4 )); then
+        echo "agents-size: AGENTS.md holds $(( (bytes + 3) / 4 )) tokens (bytes/4), more than the $max of a router." >&2
         echo "AGENTS.md only routes an agent to the files it must read. Move the text you added to the file that owns it, as the row \"Where does a new rule go?\" in \"Find what you need\" says, and leave a link in its place." >&2
         exit 1
     fi
