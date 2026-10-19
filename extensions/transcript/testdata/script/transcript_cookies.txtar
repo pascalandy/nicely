@@ -43,6 +43,13 @@ mkdir $PROFILE/Cookies
 exec ncly transcript status --json
 stdout '"status":"warn","code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED",'
 
+# A pipe named Cookies is no cookie file either, and the check never waits on it, so doctor
+# lists the warning well before its --timeout
+rm $PROFILE/Network/Cookies
+exec /usr/bin/mkfifo $PROFILE/Network/Cookies
+exec ncly doctor transcript --timeout 5s --json
+stdout '\{"id":"transcript\.cookies","component":"transcript","status":"warn","code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED",'
+
 # A browser other than arc fails the command with CONFIG_INVALID, which doctor lists
 cp chrome.toml $WORK/.config/nicely/config.toml
 exits 78 ncly transcript status --json

@@ -78,15 +78,17 @@ func cookies(p *i18n.Printer, home, browser string) finding {
 }
 
 // readable reports whether path is a regular file that Go can open for
-// reading.
+// reading. It checks the type first, since opening a pipe blocks.
 func readable(path string) bool {
+	if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
+		return false
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return false
 	}
-	defer func() { _ = f.Close() }()
-	info, err := f.Stat()
-	return err == nil && info.Mode().IsRegular()
+	_ = f.Close()
+	return true
 }
 
 // writeChecks prints the report as ncly doctor does, in the look of sdk/tui.
