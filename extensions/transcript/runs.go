@@ -65,6 +65,23 @@ func resolved(j job) map[string]any {
 	return map[string]any{"output": j.output, "browser": browser}
 }
 
+// restore gives the job the values that the record of a pending run
+// resolved, since a new attempt reads them there instead of picking again.
+// An output parent that no longer exists stops the attempt before any
+// effect, so a human can restore it.
+func restore(p *i18n.Printer, saved *record.Record, file, id string, j *job) *contract.Problem {
+	output, ok := saved.Resolved["output"].(string)
+	browser, named := saved.Resolved["browser"].(string)
+	if !ok || !filepath.IsAbs(output) || named && browser != "arc" || !named && saved.Resolved["browser"] != nil {
+		return unreadable(p, file, id)
+	}
+	if _, err := folder(output); err != nil {
+		return inspect(p, contract.ResumeUnsafe, id, "transcript.run.output_gone", map[string]any{"ID": id, "Dir": output})
+	}
+	j.output, j.browser, j.recorded = output, browser, true
+	return nil
+}
+
 // decide applies Records and replay to the record that holds the ID of the
 // call. It returns the problem of a run that the call may not continue. It
 // returns true for a completed run, which the call replays. It returns

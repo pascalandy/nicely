@@ -61,7 +61,8 @@ ncly transcript run youtube --url <url> [--output <folder>] [--run-id <id>] [--t
   Preserve the full answer and inspect its run before choosing another operation.
 
 Preparation validates the selected URL, output parent, configuration, and required programs before user-side effects.
-A run ID that names a completed run replays first, without the configuration or the programs, which only a new attempt needs.
+A run ID that names a completed run replays first, without the configuration or the programs.
+A new attempt of a pending run needs only the programs, as [Records and replay](spec/records-and-replay.md) says.
 A preparation refusal creates no record and bills nothing.
 Execution checks the granted key before download or output reservation.
 A key outside visible ASCII, such as one with a line break, answers `AUTH_REJECTED` before any record, and the answer never quotes it.

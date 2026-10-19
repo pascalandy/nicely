@@ -41,6 +41,9 @@ type job struct {
 	// browser is arc when the config selects Arc's cookies, and empty
 	// otherwise.
 	browser string
+	// recorded is true once the record of a pending run gave output and
+	// browser, which a new attempt never picks again.
+	recorded bool
 	// uv is where PATH found uv.
 	uv string
 	// cache is Nicely's cache folder.
@@ -72,25 +75,14 @@ func prepare(call extension.Call) (job, *contract.Problem) {
 }
 
 // resolve completes the job for a run of the engine, in the order of
-// Preparation in spec.md. It reads the config, and the output parent that
-// the config selects when --output did not. Then it checks uv and Python.
+// Preparation in spec.md. Unless the record of a pending run gave them, it
+// picks the browser and the output parent. Then it checks uv and Python.
 func resolve(ctx context.Context, call extension.Call, j *job) *contract.Problem {
 	p := call.Printer
-	home, _ := os.UserHomeDir()
-	configured, problem := readSettings(p, home, config.Locate(home, os.LookupEnv), j)
-	if problem != nil {
-		return problem
-	}
-	if !j.given {
-		dir := configured
-		if dir == "" {
-			dir = "."
+	if !j.recorded {
+		if problem := pick(p, j); problem != nil {
+			return problem
 		}
-		abs, err := folder(dir)
-		if err != nil {
-			return &contract.Problem{Code: contract.ConfigInvalid, Message: p.T("transcript.config_output_missing", map[string]any{"Dir": dir}), Hint: p.T("transcript.run.output_invalid_hint", map[string]any{"Dir": dir})}
-		}
-		j.output = abs
 	}
 	for _, name := range []string{"uv", "python3"} {
 		found, problem := checkProgram(ctx, p, name)
@@ -101,6 +93,26 @@ func resolve(ctx context.Context, call extension.Call, j *job) *contract.Problem
 			j.uv = found
 		}
 	}
+	return nil
+}
+
+// pick reads the config, and the output parent that the config selects when
+// --output did not, or else the current folder.
+func pick(p *i18n.Printer, j *job) *contract.Problem {
+	home, _ := os.UserHomeDir()
+	configured, problem := readSettings(p, home, config.Locate(home, os.LookupEnv), j)
+	if problem != nil || j.given {
+		return problem
+	}
+	dir := configured
+	if dir == "" {
+		dir = "."
+	}
+	abs, err := folder(dir)
+	if err != nil {
+		return &contract.Problem{Code: contract.ConfigInvalid, Message: p.T("transcript.config_output_missing", map[string]any{"Dir": dir}), Hint: p.T("transcript.run.output_invalid_hint", map[string]any{"Dir": dir})}
+	}
+	j.output = abs
 	return nil
 }
 

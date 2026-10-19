@@ -102,6 +102,41 @@ exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k5 --json
 answer stderr RESUME_UNSAFE
 grep -count=3 '(?m)^upload ' uploads.log
 
+# A config change between two attempts never moves a pending run: the next attempt writes into
+# the output folder of its record, and its record keeps what the first attempt resolved
+env CFG=$WORK/.config/nicely
+mkdir $CFG $WORK/first $WORK/second $WORK/third
+cp first.toml $CFG/config.toml
+env 'NCLY_TEST_TITLE=Config change'
+env NCLY_TEST_BOUNDARY=before-intent
+exits 1 ncly transcript run youtube --url $URL --run-id k6 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+cp second.toml $CFG/config.toml
+exec ncly transcript run youtube --url $URL --run-id k6 --json
+stdout '"output_dir":"'${WORK@R}'/first/Config_change"'
+! exists $WORK/second/Config_change
+exec ncly run view k6 --json
+stdout '"attempts":2,'
+stdout '"resolved":\{"browser":null,"output":"'${WORK@R}'/first"\}'
+grep -count=4 '(?m)^upload ' uploads.log
+
+# Once the recorded output folder is gone, the next attempt starts nothing, even when the config
+# names a folder that exists
+cp third.toml $CFG/config.toml
+env 'NCLY_TEST_TITLE=Folder gone'
+env NCLY_TEST_BOUNDARY=before-intent
+exits 1 ncly transcript run youtube --url $URL --run-id k7 --json
+env NCLY_TEST_BOUNDARY=
+rm $WORK/third
+cp second.toml $CFG/config.toml
+exits 1 ncly transcript run youtube --url $URL --run-id k7 --json
+answer stderr RESUME_UNSAFE
+stderr '"run_id":"k7"'
+stderr '"message":"The run k7 writes into '${WORK@R}'/third, which is no existing folder\."'
+! exists $WORK/second/Folder_gone
+grep -count=4 '(?m)^upload ' uploads.log
+
 -- bin/uv --
 #!/bin/sh
 echo "$*" >> "$WORK/uv.log"
@@ -110,3 +145,12 @@ exec "$UV" "$@"
 A file that the run never touches.
 -- seed.jsonl --
 {"call":"set","account":"deepgram","key":"dg-test-key"}
+-- first.toml --
+[transcript.youtube]
+output = "~/first"
+-- second.toml --
+[transcript.youtube]
+output = "~/second"
+-- third.toml --
+[transcript.youtube]
+output = "~/third"

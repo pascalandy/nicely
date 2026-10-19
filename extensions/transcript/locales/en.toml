@@ -204,6 +204,10 @@ other = "The run {{.ID}} holds another command, URL, or --output."
 description = "Error of `ncly transcript run youtube`: the run of --run-id may have sent its audio to Deepgram, which may have billed it, so the call starts nothing. {{.ID}} is the run ID."
 other = "The run {{.ID}} may have sent its audio to Deepgram, so the call starts nothing."
 
+["transcript.run.output_gone"]
+description = "Error of `ncly transcript run youtube`: the run of --run-id, whose step is still pending, writes into the output folder that its first attempt selected, and that folder no longer exists. The call starts nothing. {{.ID}} is the run ID, and {{.Dir}} is that folder."
+other = "The run {{.ID}} writes into {{.Dir}}, which is no existing folder."
+
 ["transcript.run.artifact_changed"]
 description = "Error of `ncly transcript run youtube`: a file of a completed run no longer holds what its record says. {{.File}} is the absolute path of the file, and {{.ID}} the run ID."
 other = "{{.File}} no longer holds what the run {{.ID}} recorded."

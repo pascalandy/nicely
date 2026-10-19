@@ -59,6 +59,9 @@ func execute(ctx context.Context, call extension.Call, j job, id string) contrac
 		if completed {
 			return replay(call, run.Record, run.File(), id)
 		}
+		if problem := restore(p, run.Record, run.File(), id, &j); problem != nil {
+			return refusal(problem, id)
+		}
 	}
 	if problem := resolve(ctx, call, &j); problem != nil {
 		if run.Record == nil {
@@ -148,12 +151,11 @@ func (a *attempt) execute(ctx context.Context, key string) contract.Outcome {
 	return a.terminal(ctx, m)
 }
 
-// create durably records the validated plan with its pending step. It
-// writes a new record, or a new attempt of a run whose step is still
-// pending, with the values that this preparation selected.
+// create durably records the validated plan with its pending step. A new
+// record holds the values that this preparation selected. A new attempt of a
+// pending run keeps the values of its record.
 func (a *attempt) create() error {
 	if a.saved {
-		a.run.Record.Resolved = resolved(a.j)
 		return a.run.Again(nclyVersion(), map[string]string{})
 	}
 	return a.run.Create(record.Record{

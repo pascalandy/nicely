@@ -48,6 +48,8 @@ The domain records these `resolved` values, without using them to compare a repe
 | `browser` | string or null | `arc` when selected, otherwise `null` |
 
 A configuration change never redirects a saved result.
+A new attempt of a pending run reads `output` and `browser` from `resolved`, without the configuration.
+Its output parent must still exist, or the call answers `RESUME_UNSAFE` and starts nothing.
 The recorded output folder and verified artifacts determine replay.
 A saved run keeps its original `started_at`.
 
