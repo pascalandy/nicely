@@ -35,130 +35,11 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 ## Architecture
 
-### Relations
-
-- An extension is bundled or external; a first-party extension can be either
-- The SDK implements the contract and the services in Go, for core and every Go extension
-- The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](contract/programs-that-ncly-runs.md) names
-- A Python program lives inside an extension and talks to its Go code in JSON only
-
-### Definitions
-
-- Bundled extension
-  - Def.: an extension compiled into `ncly`, with the same manifest and contract as an external one
-  - Project note: only `skill` is bundled
-- External extension
-  - Def.: an executable named `ncly-<domain>` with a compatible manifest and its catalogs beside it
-- First-party extension
-  - Def.: an extension in `extensions/` of this repository, such as `agent` or `transcript`
-- Platform
-  - Def.: layer 0: the helpers that hide the operating system from the layers above
-  - Project note: the [code map](architecture.md#code-map) lists them
-- Services
-  - Def.: layer 2: what core and extensions share while work runs
-  - Project note: the [code map](architecture.md#code-map) lists them
-  - Distinct from: a network service such as Deepgram, whose key `ncly auth` manages
-- SDK
-  - Def.: the public Go packages in `sdk/` that implement the contract and the shared services, for core and for every Go extension
-  - Distinct from: services, the one layer of the SDK that runs work
-- Program runner
-  - Def.: the service that runs programs for core and extensions, with their environment, timeout, signals, and cleanup
-  - Project note: [Programs that ncly runs](contract/programs-that-ncly-runs.md) defines its scope, including the one program that starts outside it
-- Python program
-  - Def.: Python code that an extension embeds while it moves to Go, such as transcript's
+See [Architecture](glossary/architecture.md).
 
 ## Contract
 
-### Relations
-
-- A command reads domain → resource → verb
-- A manifest holds one command declaration per command
-- Core starts an extension with canonical arguments, and checks its answer; an answer that breaks the contract is a protocol failure
-- An answer and its exit code always agree; exit 75 alone permits an automatic retry
-- A problem names what went wrong with its code, and may name the next command as words
-- A command declares the services whose keys it may need
-- A grant lets one key reach one extension at one source
-- A report command keeps its report on stdout, even when a check fails
-- Doctor lists the checks of an extension's status command under the extension's component
-- Completion takes the values that only an extension knows from a list command
-- Completion and doctor each call a command of an extension themselves: a list command and a status command, which keep their own conditions
-
-### Definitions
-
-- Agent contract
-  - Def.: the scope of the contract that a caller of the CLI relies on: command names, flags, answers, error codes, and exit codes
-  - Project note: [contract.md](contract.md) and the extension specs define it. Translation never changes it
-  - Distinct from: the wire contract, which it overlaps on the answer and the exit code
-- Wire contract
-  - Def.: the scope of the contract that core and an extension exchange: the manifest, the environment, the answer, the exit code, and the run records, as [D040](decisions/D040-wire-contract.md) decides
-  - Distinct from: an RPC protocol through which core serves extensions, which D040 rejects
-- Domain
-  - Def.: a top-level noun that groups actions, such as `video`
-- Resource
-  - Def.: an optional second noun inside a domain, such as `prompt` in `ncly transcript prompt list`
-- Verb
-  - Def.: the action of a command, one per action across domains, such as `list` or `run`
-  - Project note: [Usage](contract/usage.md) lists them
-- Command declaration
-  - Def.: the one description of a command that supplies its help, completion, validation, and discovery
-- Manifest
-  - Def.: the file that declares an extension's commands, effects, modes, and requirements, read without starting the extension
-  - Project note: `ncly-<domain>.toml`, whose schema [Manifest](contract/manifest.md) defines
-- Conditional program
-  - Def.: a program in a manifest's `programs` that a command needs only for some configs or invocations, such as one harness among several
-  - Project note: [Required programs](core-spec.md#required-programs) defines it. Doctor never checks it, and preparation checks it when an invocation selects it
-- Canonical arguments
-  - Def.: the one form in which core passes a validated call to an extension: the command path after the domain, each flag as `--<name>=<value>`, then `--` and the positional arguments
-  - Project note: [Dispatch](contract/dispatch.md) defines it. `--dry-run` and `--run-id` pass as words after the own flags; a flag that has a variable, such as `--json`, reaches the extension as that variable instead
-- Protocol failure
-  - Def.: an answer or an exit code from an extension or an embedded program that breaks the contract
-  - Project note: core answers `RUNTIME` in its place, as [Answer check](contract/answer-check.md) defines
-  - Distinct from: a failure that the extension reports through a valid answer
-- Environment
-  - Def.: the variables that an extension receives: the resolved global flags, the versions, and the keys granted to it
-- Answer
-  - Def.: the one JSON object that a command prints under `--json`, with `ok` and, on failure, `errors`
-- Exit code
-  - Def.: the number a command exits with. Each error code maps to one
-- Problem
-  - Def.: one entry of `errors` or `warnings`: a `code`, a `message`, a `hint`, and an optional `next`
-  - Project note: [Output](contract/output.md) defines it. Agents act on `code` and `next`, never on `message` or `hint`
-- Next command
-  - Def.: the command that a problem's hint names, as an array of words in `next`, present only when it runs as is
-  - Distinct from: a hint, the text for a human, which may wrap the same command in a sentence
-- Report command
-  - Def.: a command whose result is a report, such as `ncly doctor`
-- Status command
-  - Def.: the report command `ncly <domain> status` that an extension's manifest marks for doctor, which runs it and lists its checks under the extension's component
-  - Project note: [Status command](contract/status-command.md) defines it. An agent may also call it alone
-  - Distinct from: `ncly auth status`, a command of core that reports keys
-- List command
-  - Def.: a command whose verb is `list`, such as `ncly skill list`
-  - Project note: [Completion values](contract/completion-values.md) defines when completion may run one: never one that writes a user file or bills
-- Command that core calls
-  - Def.: a command of an installed extension that core starts itself for one of its own commands: completion's list command or doctor's status command
-  - Project note: [Commands that core calls](contract/commands-that-core-calls.md) defines the rules that both share. [Completion values](contract/completion-values.md) and [Status command](contract/status-command.md) keep the conditions, the limit, and the reading of the answer of each
-  - Distinct from: an ordinary dispatch, in which core starts a command for its caller, as when an agent calls a status command alone
-- Grant
-  - Def.: the permission, given by a human in a terminal, for one extension to receive one key
-  - Project note: [Grants](contract/grants.md) binds it to the extension's domain and source, the path where discovery found the extension until taps
-- Optional key
-  - Def.: a service that a command declares but runs without, such as a harness key, whose harness then uses its own login
-  - Project note: the `keys` table of a [manifest](contract/manifest.md) marks it, and a missing one never fails `ncly auth status` or `ncly doctor`
-  - Distinct from: a conditional program, which a command needs only for some configs
-- Service
-  - Def.: a network service whose key `ncly auth` manages, such as Deepgram, named `deepgram`
-  - Project note: [Keys](contract/keys.md) defines its name and the variable of its key, such as `DEEPGRAM_API_KEY`. A command declares its services in the `requires.keys` of its manifest
-  - Distinct from: services, layer 2, and the service field of a keychain entry
-- Interactive mode
-  - Def.: the mode in which `ncly` may ask questions. [Modes](contract/modes.md) defines when it applies
-  - Distinct from: non-interactive mode
-- Non-interactive mode
-  - Def.: every case outside interactive mode. A missing value fails instead of opening a form
-- Plain prompt
-  - Def.: a question in the terminal that the human answers by typing a line, such as a `[y/N]` confirmation, whose look [Modes](contract/modes.md) describes
-  - Project note: [ncly auth](core-spec.md#ncly-auth) defines it. [M07](../milestones/M07-forms.md) replaced the key prompt of M06, which turned echo off, with a masked field, and styled the confirmation, which stays a prompt, as [D059](decisions/D059-no-buttons.md) decides
-  - Distinct from: a form, including the masked field of a key, which the shared tui package builds and [Modes](contract/modes.md) describes
+See [Contract](glossary/contract.md).
 
 ## Operations
 
@@ -276,64 +157,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 ## Design vocabulary
 
-### Relations
-
-- Primitives compose into commands and extensions
-- Layers build abstractions from the bottom up: foundation → runtime layer → application layer
-- An interface hides its implementation
-- An additive extension adds to its host; a behavioral extension changes it
-
-### Definitions
-
-- Abstraction
-  - Def.: something simpler that hides complexity behind it
-  - Project note: each layer is an abstraction over the layers below it
-- Layer
-  - Def.: a level of abstraction that depends only on the levels below it
-  - Project note: platform, contract, services, core, and extensions, drawn in [architecture.md](architecture.md#layers)
-  - Distinct from: a layer of a [stack](#planning), which `just check-layers` checks
-- Foundation
-  - Def.: the lowest layer, which hides the outside world behind one interface
-  - Project note: the platform
-  - Distinct from: Pi's `pi-ai`, its foundation over LLM providers
-- Runtime layer
-  - Def.: the machinery that executes work, apart from what the work is
-  - Project note: the services
-  - Distinct from: a runtime such as Node, which runs code
-- Application layer
-  - Def.: the layer that users and agents talk to
-  - Project note: core
-- Host
-  - Def.: a program that finds, loads, and runs extensions
-  - Project note: core
-- Primitive
-  - Def.: a piece that a layer exposes as fundamental, which nobody decomposes at that level
-  - Project note: [Primitives](contract.md#primitives) lists Nicely's
-  - Distinct from: a construct, a piece of syntax such as `if`, and a built-in, which ships with a system whether or not it is primitive
-- Interface
-  - Def.: what a part promises, apart from how it works
-  - Project note: the wire contract, for extensions, and the agent contract, for every caller of the CLI
-- Implementation
-  - Def.: how a part keeps the promise of its interface
-  - Project note: the SDK implements the contract in Go
-- Composition
-  - Def.: combining small pieces into a bigger one. A piece is composable when it combines without special cases
-  - Project note: extensions compose through the CLI, as transcript calls `ncly agent run --json`
-- Modular
-  - Def.: split into parts with clear boundaries, so each part changes alone
-  - Project note: each part has one owner, one package, and one spec section, in the [code map](architecture.md#code-map)
-- Distribution unit
-  - Def.: what people install and share
-  - Project note: a tap
-- Additive extension
-  - Def.: an extension that adds capabilities without changing how its host behaves
-  - Project note: every Nicely extension, as principle 13 says
-- Behavioral extension
-  - Def.: an extension that changes how its host behaves through hooks, such as blocking a call
-  - Project note: Pi's extensions. Nicely has none
-- Dogfooding
-  - Def.: building your own features with the public interface that outsiders get
-  - Project note: first-party domains are extensions, and core uses the SDK
+See [Design vocabulary](glossary/design-vocabulary.md).
 
 ## Terms to avoid as canonical forms
 
