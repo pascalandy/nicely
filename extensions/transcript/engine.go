@@ -11,8 +11,8 @@ import (
 	"sync"
 )
 
-// engine holds the Python engine: the modules of python/, without its tests,
-// its test launcher, and its notes.
+// engine holds the Python engine: the modules of python/, without its tests
+// and its notes.
 //
 //go:embed python/*.py
 var engine embed.FS
@@ -30,9 +30,6 @@ var Test struct {
 	// Offline adds --offline, so uv runs from that cache without the
 	// network.
 	Offline bool
-	// Launcher, when set, is the script that uv runs instead of the
-	// engine, with the engine's header as its requirements.
-	Launcher string
 }
 
 var engineHash = sync.OnceValue(func() string {
@@ -107,9 +104,6 @@ func uvArgs(dir, cache string) []string {
 	args := []string{"run", "--script", "--upgrade-package", "yt-dlp", "--no-python-downloads", "--cache-dir", uvCache}
 	if Test.Offline {
 		args = append(args, "--offline")
-	}
-	if Test.Launcher != "" {
-		return append(args, "--with-requirements", filepath.Join(dir, script), Test.Launcher)
 	}
 	return append(args, filepath.Join(dir, script))
 }
