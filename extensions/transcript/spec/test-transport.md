@@ -47,5 +47,6 @@ So the fresh session of M16-T2 gets a folder outside any checkout, which holds:
 - A grant of `deepgram` to transcript
 
 Nothing that the session runs reaches YouTube, Deepgram, or the OS keychain.
-No source or spec lies in its folder, though the session can still read files elsewhere.
+Its folder holds no checkout and no spec: only the copied launcher and its fixtures, and the engine that `ncly` extracts into the scratch cache.
+The session can still read files elsewhere.
 Its upload log is `$WORK/uploads.log`, and its evidence is fixture-backed.

@@ -113,7 +113,8 @@ It reads no key, starts no program, and asks nothing of the keychain.
 - A warning names the profile, and gives the hint of the run's warning: open Arc once, or remove `browser` from the `[transcript]` table.
 - The check cannot see whether the keychain unlocks those cookies, or whether yt-dlp still has the function of the Arc adapter.
   A run reports those problems with the same warning in its answer.
-- A broken `[transcript]` table fails the command with `CONFIG_INVALID`, as preparation does, so doctor lists it as `transcript.status`.
+- A broken `[transcript]` or `[transcript.youtube]` table fails the command with `CONFIG_INVALID`, as preparation does, so doctor lists it as `transcript.status`.
+  So the command declares both `transcript.browser` and `transcript.youtube.output` as the config it reads.
 - It declares no `--live`, because no Deepgram document says that a key check bills nothing.
   [Transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md) parks that check.
 
