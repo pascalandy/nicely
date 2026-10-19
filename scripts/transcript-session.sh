@@ -127,18 +127,19 @@ chmod +x "$data/ncly-transcript"
 printf '{"format_version":1,"grants":[{"service":"deepgram","domain":"transcript","path":"%s","granted_at":"%s"}]}\n' \
 	"$data/ncly-transcript" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$home/.local/state/nicely/grants.json"
 
-# seed runs one call of the session's ncly, whose answer the session never sees.
+# seed runs one call of the session's ncly, whose answer the session never sees, then checks
+# that the run record ends with the status that the session must meet.
 seed() {
-	local id="$1" url="$2" title="$3" status="$4"
-	set +e
+	local id="$1" url="$2" title="$3" status="$4" want="$5" got
 	NCLY_NO_INPUT=1 NCLY_JSON=1 NCLY_TEST_TITLE="$title" NCLY_TEST_DEEPGRAM_STATUS="$status" \
-		"$dir/bin/ncly" transcript run youtube --url "$url" --output "$dir/work/videos" --run-id "$id" >/dev/null 2>&1
-	local code=$?
-	set -e
-	log "seeded $id: $url, Deepgram $status, exit $code"
+		"$dir/bin/ncly" transcript run youtube --url "$url" --output "$dir/work/videos" --run-id "$id" >/dev/null 2>&1 || true
+	got="$(NCLY_JSON=1 "$dir/bin/ncly" run view "$id" --json 2>/dev/null |
+		"$tools/python3" -c 'import json, sys; print(json.load(sys.stdin)["run"]["status"])' 2>/dev/null)" || true
+	[[ "$got" == "$want" ]] || die "the run $id ended ${got:-without a record}, not $want"
+	log "seeded $id: $url, Deepgram $status, run $got"
 }
-seed team-sync https://youtu.be/TeamSync001 'Team sync' 200
-seed keynote https://youtu.be/Keynote0001 'Keynote' 401
-seed interview https://youtu.be/Interview01 'Interview' 503
+seed team-sync https://youtu.be/TeamSync001 'Team sync' 200 completed
+seed keynote https://youtu.be/Keynote0001 'Keynote' 401 failed
+seed interview https://youtu.be/Interview01 'Interview' 503 unknown
 [[ "$(wc -l <"$dir/logs/uploads.log")" -eq 3 ]] || die "the seeds made no three uploads"
 echo "$dir"
