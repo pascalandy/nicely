@@ -90,13 +90,15 @@ The `python` recipe runs the checks of the engine, and `check` runs that recipe:
 
 1. `uv tool run ruff@0.16.9 check --isolated`, then `uv tool run ruff@0.16.9 format --isolated --check`
 2. `uv export --script` writes the runtime packages of the header to a requirements file
-3. `uv tool run --with-requirements <file> pyright@1.1.414 --pythonversion 3.12`
+3. `uv tool run --with-requirements <file> --with pytest==9.1.1 pyright@1.1.414 --pythonversion 3.12`
 4. `uv tool run --with-requirements <file> --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto`
 
 The recipe pins only the tools.
 It runs pyright from the engine folder, because pyright resolves a sibling module only from there.
 It sits outside `just test`, so the nested hook fixture of [#230](https://github.com/pascalandy/nicely/issues/230) never reaches it.
+Pyright also reads the tests, so its environment adds pytest.
 At `0c9c4a2`, pyright 1.1.414 reports nine errors in `scripts/`: two in the engine files and seven in the tests.
+Without pytest, it reports six more, one for each `import pytest`.
 
 ## Test transport
 
