@@ -11,4 +11,9 @@ description: Use when transcribing one YouTube video with Deepgram through ncly 
 - Choose the folder that receives the result folder with `--output`, or with `output` in the `[transcript.youtube]` table of the config. That folder must exist. Without either, the call uses the current folder
 - Check the call with `ncly transcript run youtube --url "<url>" --dry-run --json` first. It reads no key, downloads nothing, sends nothing to Deepgram, and writes no user file. It may prepare the cache of `uv`, which can use the network. Its `plan` names the output folder, and its `pending_checks` holds `auth.deepgram`, which only execution checks
 - When the dry run answers `PREREQ_MISSING`, relay the hint: a human installs `uv` or Python. When it answers `RUNTIME` because the program stopped before its plan, check the network and run the dry run again with `--verbose`
+- Run it with a run ID that you choose, and keep the whole answer: `ncly transcript run youtube --url "<url>" --run-id <id> --json`. A human must grant the key of `deepgram` to transcript first. On `KEY_NOT_GRANTED`, `AUTH_MISSING`, or `KEYRING_UNAVAILABLE`, relay `hint` and `next` to the human
+- On success, `results[0].output_dir` is the new result folder, and `results[0].transcript` is its `raw_transcript.txt`, beside `raw_sentences.txt` and `raw_transcript.json`
+- A failed item keeps its cause in `results[0].errors`, and the answer's own code is the verdict of the call. `AUTH_REJECTED` means that Deepgram refused the key: relay its hint to the human, who replaces the key
+- Exit 1 never permits a repeat: read the run with `ncly run view <id> --json` first. The same call with the same `--run-id` returns a completed run again without a charge, and answers `RESUME_UNSAFE` once the audio may have reached Deepgram. Only a human chooses a new run ID, which may bill again
+- Exit 75 with `TEMPORARY` permits the same call again
 - The call stops after `--timeout`, `570s` by default
