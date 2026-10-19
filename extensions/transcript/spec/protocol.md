@@ -83,22 +83,21 @@ Only the overall exit 75 permits repeating the invocation.
 The engine is transcript's Python program: the YouTube path of `authoring/andy/transcript/` in `pascalandy/skills` at `0c9c4a2`.
 It keeps the tests of the code it copies.
 It lives in `extensions/transcript/python/`, and each of its files stays under 10,000 bytes.
-`PROVENANCE.md` names the source SHA, the MIT notice, the removed features, and each intentional change.
+`PROVENANCE.md` names the source SHA, the MIT notice, the removed features, each intentional change, and the nine errors of pyright.
 The PEP 723 header owns every runtime pin: yt-dlp at `2026.7.4` or newer, and one exact version of each other package.
 
 The `python` recipe runs the checks of the engine, and `check` runs that recipe:
 
 1. `uv tool run ruff@0.16.9 check --isolated`, then `uv tool run ruff@0.16.9 format --isolated --check`
 2. `uv export --script` writes the runtime packages of the header to a requirements file
-3. `uv tool run --with-requirements <file> --with pytest==9.1.1 pyright@1.1.414 --pythonversion 3.12`
+3. `uv tool run --with-requirements <file> --with pytest==9.1.1 pyright@1.1.414`
 4. `uv tool run --with-requirements <file> --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto`
 
 The recipe pins only the tools.
 It runs pyright from the engine folder, because pyright resolves a sibling module only from there.
+That folder's `pyrightconfig.json` sets the root of pyright and Python 3.12, or pyright takes the first parent with a `pyproject.toml`, such as a home folder.
 It sits outside `just test`, so the nested hook fixture of [#230](https://github.com/pascalandy/nicely/issues/230) never reaches it.
-Pyright also reads the tests, so its environment adds pytest.
-At `0c9c4a2`, pyright 1.1.414 reports nine errors in `scripts/`: two in the engine files and seven in the tests.
-Without pytest, it reports six more, one for each `import pytest`.
+Pyright also reads the tests, so its environment adds pytest, without which each `import pytest` is an error.
 
 ## Test transport
 
