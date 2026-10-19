@@ -21,7 +21,7 @@ The current build brings:
 - The extensions named `ncly-<domain>`, which it finds, checks, and stops, and the bundled `skill` extension
 - `ncly doctor`, which checks the machine, and `ncly auth`, which keeps the keys and their grants
 - The `agent` extension, which runs one trusted task through Codex and records it
-- The `transcript` extension, whose `--dry-run` plans the transcription of one YouTube video
+- The `transcript` extension, which transcribes one YouTube video with Deepgram and records the run
 - `ncly run list` and `ncly run view`, which read the records of the runs
 
 [The current build](docs/status.md) describes each command. The commands below are planned work.

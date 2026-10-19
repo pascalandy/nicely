@@ -47,7 +47,11 @@ Without `--dry-run`, it runs the task under the ID of `--run-id`, or one that it
 
 `just install` also puts the `transcript` extension in `~/.local/share/nicely/extensions/`. `ncly doctor transcript` checks that `uv` and Python 3.12 or later are installed.
 
-`ncly transcript run youtube --url <url> --dry-run` checks the URL of one video, the output folder, and the `[transcript]` tables of the config. It then runs the transcript program through `uv` and shows its plan, with no request to YouTube or Deepgram. It reads no key and creates no record. Without `--dry-run`, this build refuses the call with `CAPABILITY_UNSUPPORTED`.
+`ncly transcript run youtube --url <url> --dry-run` checks the URL of one video, the output folder, and the `[transcript]` tables of the config. It then runs the transcript program through `uv` and shows its plan, with no request to YouTube or Deepgram. It reads no key and creates no record.
+
+Without `--dry-run`, the call needs the key of `deepgram`, which a human grants to transcript. It records the run in `~/.local/state/nicely/runs/` before the download. It saves each candidate result folder in the record, then creates that folder, before the upload. The folder takes the title of the video, with `-2`, `-3`, and so on when the name is taken. Deepgram gets the audio once, and the folder receives `raw_transcript.txt`, `raw_sentences.txt`, and `raw_transcript.json`. The call checks, hashes, and saves them in the record before it answers `output_dir` and `transcript`.
+
+A key that Deepgram refuses gives `AUTH_REJECTED` in the item, under `RUNTIME`. The same call with the same `--run-id` returns a completed run again, without the program or Deepgram. Once the audio may have reached Deepgram, it answers `RESUME_UNSAFE` instead.
 
 ## Runs
 
