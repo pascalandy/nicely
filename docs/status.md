@@ -51,7 +51,9 @@ Without `--dry-run`, it runs the task under the ID of `--run-id`, or one that it
 
 Without `--dry-run`, the call needs the key of `deepgram`, which a human grants to transcript. A key with a character that no request can carry, such as a line break, answers `AUTH_REJECTED` before any record. It records the run in `~/.local/state/nicely/runs/` before the download. It saves each candidate result folder in the record, then creates that folder, before the upload. The folder takes the title of the video, with `-2`, `-3`, and so on when the name is taken. Deepgram gets the audio once, and the folder receives `raw_transcript.txt`, `raw_sentences.txt`, and `raw_transcript.json`. The call checks, hashes, and saves them in the record before it answers `output_dir` and `transcript`.
 
-A key that Deepgram refuses gives `AUTH_REJECTED` in the item, under `RUNTIME`. The same call with the same `--run-id` returns a completed run again, without the program or Deepgram. Once the audio may have reached Deepgram, it answers `RESUME_UNSAFE` instead.
+A key that Deepgram refuses gives `AUTH_REJECTED` in the item, under `RUNTIME`. Each failure keeps its cause in the item. Only a temporary failure before the result folder exits 75. A Deepgram answer lost after the upload leaves the step `unknown`, and nothing retries the upload.
+
+The same call with the same `--run-id` returns a completed run again, without the program, Deepgram, or a key. It checks each file first, and a file that changed or went missing answers `RESUME_UNSAFE`. A config change never moves a saved result. Once the audio may have reached Deepgram, the same call answers `RESUME_UNSAFE` too. Another URL or `--output` under that ID answers `USAGE_INVALID`. A dry run with the ID plans `reuse`, or refuses as the call would.
 
 ## Runs
 
