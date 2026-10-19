@@ -30,7 +30,7 @@ Unreadable configured cookies fall back to anonymous access with `TRANSCRIPT_BRO
 Anonymous access can still fail to download the video; the warning never means transcription succeeded.
 The Arc adapter checks the `yt-dlp` function it adapts, not the `yt-dlp` version, since the header accepts newer releases.
 A missing function produces the same fallback warning.
-M16 makes `ncly doctor transcript` report the cookie problem as `warn`.
+[ncly transcript status](../spec.md#ncly-transcript-status) reports that problem as a `warn` of `ncly doctor transcript`.
 
 Go selects a result-folder name from the video title, adding `-2`, `-3`, and so on when taken.
 The intent proposes the name, from the source's title cleanup, which turns spaces into underscores.

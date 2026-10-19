@@ -15,8 +15,7 @@ It is parked in [M99](../../docs/milestones/M99-parking-lot/transcript-summary.m
 [transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md).
 
 This specification describes planned behavior.
-The readiness of M13 settled its open questions in these files.
-The open questions of M16 must be resolved before its implementation is ready.
+The readiness of M13 and of M16 settled their open questions in these files.
 
 ## ncly transcript
 
@@ -91,6 +90,34 @@ The same call with an existing completed run ID verifies its saved artifacts and
 
 A refusal during replay fails its dry run with the same `RESUME_UNSAFE`, without changing the record.
 
+## ncly transcript status
+
+`status` is the status command of transcript, as [Status command](../../docs/north-star/contract/status-command.md) defines.
+Its checks follow the host probes of `uv` and `python3` in the `transcript` component of `ncly doctor`, and never repeat them.
+
+```
+ncly transcript status [--json]
+```
+
+Its declaration sets `doctor = true`, has no flag and no key, and declares effects that neither write, bill, nor use the network.
+It reads no key, starts no program, and asks nothing of the keychain.
+
+| Id | Code | When it warns |
+|---|---|---|
+| `transcript.cookies` | `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | `browser = "arc"` is set, and Go cannot open a cookie file of Arc's default profile |
+
+- Without a browser setting, `transcript.cookies` passes, and its message says that downloads use anonymous access.
+- With `arc`, Go looks for `Network/Cookies`, then `Cookies`, in `~/Library/Application Support/Arc/User Data/Default`, the profile that the engine reads.
+  The check passes when Go can open one of them for reading, and its message names that file.
+- A warning names the profile, and gives the hint of the run's warning: open Arc once, or remove `browser` from the `[transcript]` table.
+- The check cannot see whether the keychain unlocks those cookies, or whether yt-dlp still has the function of the Arc adapter.
+  A run reports those problems with the same warning in its answer.
+- A broken `[transcript]` table fails the command with `CONFIG_INVALID`, as preparation does, so doctor lists it as `transcript.status`.
+- It declares no `--live`, because no Deepgram document says that a key check bills nothing.
+  [Transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md) parks that check.
+
+A warning leaves the report `ok`, so `status` exits 0.
+
 ## Codes
 
 Transcript uses core's codes and the following domain code.
@@ -102,7 +129,7 @@ Transcript uses core's codes and the following domain code.
 
 | Warning | When | Since |
 |---|---|---|
-| `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | The configured cookies could not be read, so download attempted anonymous access | M13 |
+| `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` | The configured cookies could not be read, so download attempted anonymous access, or `status` cannot open them | M13 |
 
 ## Examples
 

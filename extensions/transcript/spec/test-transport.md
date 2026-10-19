@@ -31,3 +31,20 @@ The production line failed with exit 2, because `--upgrade-package yt-dlp` asks 
 With `--offline`, the same line ran from the warm cache, so the test binary adds `--offline`.
 After one warm run, the `python` recipe also passed offline, with or without Node on `PATH`.
 Without Node, pyright's PyPI wrapper fetched Node 26.12.0 during the warm run.
+
+## Fresh session
+
+The test binary of `cmd/ncly` picks its command from its name, as `testscript.Main` does.
+Linked as `ncly`, it runs core with the test keychain, but gives no extension the test transport.
+Core finds transcript as `ncly-transcript` in the data folder, as in a release.
+Only its `transcript-external` command carries the transport, with `NCLY_TEST_UV_CACHE`, `NCLY_TEST_LAUNCHER`, and `WORK` for the logs.
+
+So the fresh session of M16-T2 gets a folder outside any checkout, which holds:
+
+- An `ncly` that runs the test binary with a scratch home, its own XDG folders, and a fake `DEEPGRAM_API_KEY`
+- That home's `ncly-transcript`, beside its manifest, catalogs, and skill. It sets the three variables, then runs `transcript-external`
+- A copy of the launcher and its fixtures, and links to the real `uv` and Python
+- A grant of `deepgram` to transcript
+
+The session then reaches no YouTube, Deepgram, OS keychain, source, or spec.
+Its upload log is `$WORK/uploads.log`, and its evidence is fixture-backed.
