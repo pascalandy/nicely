@@ -108,7 +108,8 @@ It reads no key, starts no program, and asks nothing of the keychain.
 
 - Without a browser setting, `transcript.cookies` passes, and its message says that downloads use anonymous access.
 - With `arc`, Go looks for `Network/Cookies`, then `Cookies`, in `~/Library/Application Support/Arc/User Data/Default`, the profile that the engine reads.
-  The check passes when Go can open one of them for reading, and its message names that file.
+  The check passes when one of them is a regular file that Go can open for reading, and its message names that file.
+  Go checks the type before it opens the file, so a pipe or a folder of that name never blocks the check.
 - A warning names the profile, and gives the hint of the run's warning: open Arc once, or remove `browser` from the `[transcript]` table.
 - The check cannot see whether the keychain unlocks those cookies, or whether yt-dlp still has the function of the Arc adapter.
   A run reports those problems with the same warning in its answer.
