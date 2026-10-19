@@ -1,0 +1,84 @@
+# A status command and a version probe get the ordinary 2-second drain after
+# their exit, even with a limit. Doctor leaves their stdout holder running.
+chmod 755 bin/ncly-hello
+chmod 755 bin/heldtool
+env PATH=$WORK/bin:$PATH
+env HOLD=status TIMEOUT=6s
+exec bash measure.sh
+grep '"id":"hello.ready","component":"hello","status":"pass"' answer.json
+grep '^running$' holder.state
+exec awk '$1 < 1.8 || $1 > 4 { print "drain took " $1 " seconds"; exit 1 }' elapsed.txt
+gone holder.pid
+
+env HOLD=probe
+exec bash measure.sh
+grep '"id":"hello.heldtool","component":"hello","status":"pass"' answer.json
+grep '^running$' holder.state
+exec awk '$1 < 1.8 || $1 > 4 { print "drain took " $1 " seconds"; exit 1 }' elapsed.txt
+gone holder.pid
+
+# Expiry after the status command's exit neither cuts its drain short nor kills
+# its descendant. The finished check still passes.
+env HOLD=status TIMEOUT=1s
+exec bash measure.sh
+grep '"id":"hello.ready","component":"hello","status":"pass"' answer.json
+grep '^running$' holder.state
+exec awk '$1 < 1.8 || $1 > 4 { print "drain took " $1 " seconds"; exit 1 }' elapsed.txt
+gone holder.pid
+
+-- measure.sh --
+#!/usr/bin/env bash
+set -Eeuo pipefail
+fct_cleanup() {
+  kill "$(cat holder.pid)" 2>/dev/null || :
+}
+trap fct_cleanup EXIT
+TIMEFORMAT=%R
+{ time ncly doctor hello --timeout "$TIMEOUT" --json > answer.json; } 2> elapsed.txt
+if ps -p "$(cat holder.pid)" -o stat= | awk '$1 !~ /^Z/ { found=1 } END { exit !found }'; then
+  echo running > holder.state
+else
+  echo gone > holder.state
+fi
+cat elapsed.txt holder.state
+-- bin/ncly-hello --
+#!/bin/sh
+if [ "$HOLD" = status ]; then
+  sleep 60 &
+  echo $! > "$WORK/holder.pid"
+fi
+echo '{"ok":true,"contract_version":1,"checks":[{"id":"hello.ready","component":"hello","status":"pass","message":"Ready."}]}'
+-- bin/heldtool --
+#!/bin/sh
+if [ "$HOLD" = probe ]; then
+  sleep 60 &
+  echo $! > "$WORK/holder.pid"
+fi
+echo 'heldtool 1.0'
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello status"
+summary = "hello.status.summary"
+doctor = true
+effects = {}
+requires = { bins = ["heldtool"] }
+result = { kind = "report" }
+
+[programs.heldtool]
+version = "1.0"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.status.summary"]
+description = "Summary of hello status."
+other = "Check hello"

@@ -1,0 +1,118 @@
+# Doctor gives both a status command and a version probe the ordinary cleanup
+# after Ctrl-C or SIGTERM. The test binary shortens its 15 seconds to 4.
+# Their 1-second execution limit must not cut cleanup short after a signal.
+chmod 755 bin/ncly-hello
+chmod 755 bin/cleantool
+env PATH=$WORK/bin:$PATH
+env CHECK=status STOP=late
+
+exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+waitfile fixture.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+grep '^INT$' signals.txt
+exists cleaned
+gone fixture.pid
+
+rm fixture.pid signals.txt cleaned
+exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+waitfile fixture.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+grep '^TERM$' signals.txt
+exists cleaned
+gone fixture.pid
+
+env CHECK=probe
+rm fixture.pid signals.txt cleaned
+exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+waitfile fixture.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+grep '^INT$' signals.txt
+exists cleaned
+gone fixture.pid
+
+rm fixture.pid signals.txt cleaned
+exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+waitfile fixture.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+grep '^TERM$' signals.txt
+exists cleaned
+gone fixture.pid
+
+# A status command that ignores the first signal still gets SIGKILL when
+# cleanup ends. A second signal does not restart or interrupt that cleanup.
+env CHECK=status STOP=stubborn
+rm fixture.pid signals.txt cleaned
+exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+waitfile fixture.pid
+kill -INT
+waitfile signals.txt
+term
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+grep -count=1 '^INT$' signals.txt
+! exists cleaned
+gone fixture.pid
+
+-- clean.sh --
+#!/bin/sh
+fct_stop() {
+  echo "$1" >> "$WORK/signals.txt"
+  if [ "$STOP" = late ]; then
+    sleep 3
+    echo 'done' > "$WORK/cleaned"
+    exit 0
+  fi
+}
+trap 'fct_stop INT' INT
+trap 'fct_stop TERM' TERM
+echo $$ > "$WORK/fixture.tmp"
+mv "$WORK/fixture.tmp" "$WORK/fixture.pid"
+while :; do sleep 0.1; done
+-- bin/ncly-hello --
+#!/bin/sh
+if [ "$CHECK" = status ]; then exec sh "$WORK/clean.sh"; fi
+echo '{"ok":true,"contract_version":1,"checks":[]}'
+-- bin/cleantool --
+#!/bin/sh
+if [ "$CHECK" = probe ]; then exec sh "$WORK/clean.sh"; fi
+echo 'cleantool 1.0'
+-- bin/ncly-hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+
+[[commands]]
+path = "hello status"
+summary = "hello.status.summary"
+doctor = true
+effects = {}
+requires = { bins = ["cleantool"] }
+result = { kind = "report" }
+
+[programs.cleantool]
+version = "1.0"
+-- bin/ncly-hello.locales/en.toml --
+["hello.summary"]
+description = "Summary of the fixture."
+other = "Greet people"
+
+["hello.status.summary"]
+description = "Summary of hello status."
+other = "Check hello"

@@ -44,12 +44,14 @@ type Program struct {
 	// may read the terminal, as an extension does. Any other program starts
 	// in its own process group.
 	Terminal bool
-	// Limit, when set, bounds the program and the reading of its output, as
-	// completion bounds a list command. At the limit, or when ctx ends
-	// first, Run sends SIGKILL to every descendant of ncly at once, without
-	// the cleanup of a signal, and closes the streams instead of starting
-	// the drain limit.
+	// Limit, when set, bounds execution. If it expires before the program
+	// exits, Run sends SIGKILL to every descendant of ncly and closes the
+	// streams at once. Normal exit and cancellation keep their ordinary
+	// drain and cleanup, even when the limit expires during them.
 	Limit time.Duration
+	// Completion also bounds output reading by Limit and skips cleanup on
+	// cancellation, as a list command that completion runs requires.
+	Completion bool
 }
 
 // Result is how a program ended.
@@ -149,13 +151,11 @@ func Run(ctx context.Context, p Program) (Result, error) {
 	case <-ctx.Done():
 		stopped = true
 	case <-limit:
-		result.TimedOut = true
 		stopped = ctx.Err() != nil
+		result.TimedOut = !stopped
 	}
-	if p.Limit > 0 && (result.TimedOut || stopped) {
-		// A program that has a limit gets no cleanup: at the limit or on a
-		// signal, it ends at once, and so does every descendant that holds
-		// its streams.
+	if result.TimedOut || p.Completion && stopped {
+		// Expiry kills at once. Only completion does the same on a signal.
 		if stopped {
 			result.Signal = SignalOf(ctx)
 		}
@@ -183,9 +183,9 @@ func Run(ctx context.Context, p Program) (Result, error) {
 	}
 	// The drain limit counts from the exit, never from the end of cleanup,
 	// so a descendant that outlives the program cannot write into its
-	// answer once the limit has passed. A program with a limit gets no drain
-	// limit: its own limit bounds the reading, and then ends what still runs.
-	if p.Limit > 0 && result.Signal == nil {
+	// answer once the limit has passed. Only completion bounds the reading
+	// by its execution limit and then ends what still runs.
+	if p.Completion && p.Limit > 0 && result.Signal == nil {
 		drain(streams, limitEnds)
 		signalTree(syscall.SIGKILL)
 	} else {

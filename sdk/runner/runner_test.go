@@ -66,12 +66,15 @@ func TestRunStopsAfterTheExitOnlyForASignal(t *testing.T) {
 			return ctx
 		}, os.Interrupt},
 	}
-	for _, limit := range []time.Duration{0, time.Hour} {
+	for _, mode := range []struct {
+		limit      time.Duration
+		completion bool
+	}{{0, false}, {time.Hour, false}, {time.Hour, true}} {
 		for _, c := range cases {
-			t.Run(fmt.Sprintf("%s/limit=%v", c.name, limit), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/limit=%v/completion=%v", c.name, mode.limit, mode.completion), func(t *testing.T) {
 				synctest.Test(t, func(t *testing.T) {
 					ctx := c.ctx(t)
-					result, err := runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "exit 0"}, Limit: limit})
+					result, err := runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "exit 0"}, Limit: mode.limit, Completion: mode.completion})
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -89,19 +92,28 @@ func TestRunStopsAfterTheExitOnlyForASignal(t *testing.T) {
 
 // TestRunStopsAProgramThatRunsAtTheDeadline proves that a deadline that
 // ends ctx before the program exits stops it: Run sends SIGTERM, or SIGKILL
-// under a limit, and reports SIGTERM. The program ends only on a signal, so
-// the deadline came first.
+// for completion, and reports SIGTERM. The program ends only on a signal,
+// so the deadline came first.
 func TestRunStopsAProgramThatRunsAtTheDeadline(t *testing.T) {
-	for limit, killed := range map[time.Duration]syscall.Signal{0: syscall.SIGTERM, time.Hour: syscall.SIGKILL} {
-		t.Run(fmt.Sprintf("limit=%v", limit), func(t *testing.T) {
+	for _, c := range []struct {
+		name       string
+		limit      time.Duration
+		completion bool
+		killed     syscall.Signal
+	}{
+		{"ordinary", 0, false, syscall.SIGTERM},
+		{"limited", time.Hour, false, syscall.SIGTERM},
+		{"completion", time.Hour, true, syscall.SIGKILL},
+	} {
+		t.Run(c.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 			defer cancel()
-			result, err := runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "exec sleep 30"}, Limit: limit})
+			result, err := runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "exec sleep 30"}, Limit: c.limit, Completion: c.completion})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if result.Signal != syscall.SIGTERM || result.Exit != 128+int(killed) {
-				t.Fatalf("Run returned %+v, want SIGTERM and exit %d", result, 128+int(killed))
+			if result.Signal != syscall.SIGTERM || result.Exit != 128+int(c.killed) {
+				t.Fatalf("Run returned %+v, want SIGTERM and exit %d", result, 128+int(c.killed))
 			}
 		})
 	}

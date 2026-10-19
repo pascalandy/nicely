@@ -111,12 +111,13 @@ func listValues(extensions []*extension, g command.Globals, from contract.Values
 	missing, _ := keyVars(context.Background(), nil, e, d.Requires.Keys, false)
 	maps.Copy(vars, missing)
 	program := runner.Program{
-		Path:   e.path,
-		Args:   append(slices.Clone(d.Path[1:]), "--"),
-		Env:    runner.Environ(os.Environ(), vars),
-		Stdout: &stdout,
-		Stderr: stderr,
-		Limit:  valuesLimit,
+		Path:       e.path,
+		Args:       append(slices.Clone(d.Path[1:]), "--"),
+		Env:        runner.Environ(os.Environ(), vars),
+		Stdout:     &stdout,
+		Stderr:     stderr,
+		Limit:      valuesLimit,
+		Completion: true,
 	}
 	if e.bundled {
 		program.Name = executablePrefix + e.domain
