@@ -84,6 +84,27 @@ type = "object"
 required = ["id", "message"]
 properties = { id = { type = "string" }, message = { type = "string" } }
 
+[[commands]]
+path = "transcript status"
+summary = "transcript.status.summary"
+examples = ["ncly transcript status", "ncly transcript status --json", "ncly doctor transcript"]
+effects = {}
+config = ["transcript.browser"]
+doctor = true
+
+[commands.result]
+kind = "report"
+
+[commands.result.schema]
+type = "object"
+required = ["checks"]
+properties = { checks = { type = "array", items = { "$ref" = "#/$defs/check" } } }
+
+[commands.result.schema."$defs".check]
+type = "object"
+required = ["id", "component", "status", "message"]
+properties = { id = { const = "transcript.cookies" }, component = { const = "transcript" }, status = { enum = ["pass", "warn"] }, code = { const = "TRANSCRIPT_BROWSER_COOKIES_SKIPPED" }, message = { type = "string" }, hint = { type = "string" } }
+
 [programs.uv]
 install = { brew = ["brew", "install", "uv"], pacman = ["sudo", "pacman", "-S", "uv"] }
 

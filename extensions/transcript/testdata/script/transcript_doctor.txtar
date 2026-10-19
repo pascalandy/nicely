@@ -1,0 +1,58 @@
+# ncly doctor transcript lists the probes of the programs that the manifest requires, then the
+# one check of ncly transcript status, and never a probe twice. The stub uv and python3 log each
+# call: doctor starts no probe of uv, which declares no version, and starts python3 only with
+# --version. Nothing reads a key or starts the engine, even under --live.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+chmod 755 bin/uv
+chmod 755 bin/python3
+onlyncly transcript-external
+cp seed.jsonl test-keychain.jsonl
+
+# Without a browser setting, transcript.cookies passes after the probes, and the report is ok
+exec ncly doctor transcript --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"transcript\.python3","component":"transcript","status":"pass","message":"python3 3\.13\.1 found at '${WORK@R}'/bin/python3\."\},\{"id":"transcript\.uv","component":"transcript","status":"pass","message":"uv found at '${WORK@R}'/bin/uv\."\},\{"id":"transcript\.cookies","component":"transcript","status":"pass","message":"No browser is set, so downloads use anonymous access\."\}\]\}\n\z'
+! stderr .
+! exists uv.log
+grep '\A--version\n\z' python3.log
+! exists starts.log
+cmp test-keychain.jsonl seed.jsonl
+
+# --live adds nothing, since status declares no live flag and no key
+exec ncly doctor transcript --live --json
+stdout '\{"id":"transcript\.cookies","component":"transcript","status":"pass",'
+! exists uv.log
+! exists starts.log
+cmp test-keychain.jsonl seed.jsonl
+
+# The status command alone answers its one check, with the schema that describe gives
+exec ncly transcript status --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"transcript\.cookies","component":"transcript","status":"pass","message":"No browser is set, so downloads use anonymous access\."\}\]\}\n\z'
+cp stdout status.json
+exec ncly describe 'transcript status' --json
+stdout '"effects":\{"user_writes":false,"network":false,"paid":false\}'
+cp stdout describe.json
+schema status.json describe.json schema
+exec ncly transcript status
+stdout '\Apass  transcript\.cookies  No browser is set, so downloads use anonymous access\.\n\z'
+exec ncly --lang en-XA transcript status
+pseudo stdout transcript.cookies
+
+# A missing uv fails its check with PREREQ_MISSING and exit 78. The stub PATH holds no package
+# manager, so the hint names the program
+rm bin/uv
+exits 78 ncly doctor transcript --json
+stdout '\{"id":"transcript\.uv","component":"transcript","status":"fail","code":"PREREQ_MISSING","message":"uv is not installed\.","hint":"Install uv\."\},\{"id":"transcript\.cookies","component":"transcript","status":"pass",'
+! exists starts.log
+cmp test-keychain.jsonl seed.jsonl
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+echo "uv 0.13.1"
+-- bin/python3 --
+#!/bin/sh
+echo "$*" >> "$WORK/python3.log"
+echo "Python 3.13.1"
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-never-read"}

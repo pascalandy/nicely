@@ -1,0 +1,69 @@
+# With browser = "arc", ncly transcript status looks for a cookie file in Arc's default
+# profile, without the keychain or the engine. A file that Go can open passes. A missing or
+# unreadable one warns with TRANSCRIPT_BROWSER_COOKIES_SKIPPED and the hint of the run's
+# warning, and the report stays ok. A broken [transcript] table fails the command, and doctor
+# lists that failure as transcript.status.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/uv
+chmod 755 bin/python3
+onlyncly transcript-external
+mkdir $WORK/.config/nicely
+cp arc.toml $WORK/.config/nicely/config.toml
+env PROFILE=$WORK/Library/Application' Support/Arc/User Data/Default'
+
+# Without the profile, the check warns and names it
+exec ncly transcript status --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"transcript\.cookies","component":"transcript","status":"warn","code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED","message":"The cookies of Arc cannot be read in '${PROFILE@R}', so downloads try anonymous access\.","hint":"Open Arc once, or remove browser from the \[transcript\] table\."\}\]\}\n\z'
+! stderr .
+
+# Doctor lists the same warning after the probes, and still passes
+exec ncly doctor transcript --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"transcript\.python3",[^}]*\},\{"id":"transcript\.uv",[^}]*\},\{"id":"transcript\.cookies","component":"transcript","status":"warn","code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED",'
+exec ncly doctor transcript
+stdout '^warn  transcript\.cookies +The cookies of Arc cannot be read in '${PROFILE@R}', so downloads try anonymous access\.$'
+stdout '^      TRANSCRIPT_BROWSER_COOKIES_SKIPPED  hint: Open Arc once, or remove browser from the \[transcript\] table\.$'
+
+# A cookie file under Network, where Chromium keeps it, passes and is named
+mkdir $PROFILE/Network
+cp cookies $PROFILE/Network/Cookies
+exec ncly transcript status --json
+stdout '"status":"pass","message":"The cookies of Arc can be read in '${PROFILE@R}'/Network/Cookies\."'
+
+# A file that Go cannot open warns, and the profile's own Cookies file still counts
+chmod 000 $PROFILE/Network/Cookies
+exec ncly transcript status --json
+stdout '"status":"warn","code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED",'
+cp cookies $PROFILE/Cookies
+exec ncly transcript status --json
+stdout '"status":"pass","message":"The cookies of Arc can be read in '${PROFILE@R}'/Cookies\."'
+
+# A folder named Cookies is no cookie file
+rm $PROFILE/Cookies
+mkdir $PROFILE/Cookies
+exec ncly transcript status --json
+stdout '"status":"warn","code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED",'
+
+# A browser other than arc fails the command with CONFIG_INVALID, which doctor lists
+cp chrome.toml $WORK/.config/nicely/config.toml
+exits 78 ncly transcript status --json
+answer stderr CONFIG_INVALID
+stderr 'browser in the \[transcript\] table of '${WORK@R}'/\.config/nicely/config\.toml is chrome, and only arc is known\.'
+! stdout .
+exits 78 ncly doctor transcript --json
+stdout '\{"id":"transcript\.status","component":"transcript","status":"fail","code":"CONFIG_INVALID","message":"browser in the \[transcript\] table of '${WORK@R}'/\.config/nicely/config\.toml is chrome, and only arc is known\.",'
+! stdout 'transcript\.cookies'
+
+-- arc.toml --
+[transcript]
+browser = "arc"
+-- chrome.toml --
+[transcript]
+browser = "chrome"
+-- cookies --
+not a real cookie database
+-- bin/uv --
+#!/bin/sh
+echo "uv 0.13.1"
+-- bin/python3 --
+#!/bin/sh
+echo "Python 3.13.1"

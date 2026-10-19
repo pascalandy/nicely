@@ -34,6 +34,7 @@ var Extension = extension.Extension{
 	Skill:    skill,
 	Handlers: map[string]extension.Handler{
 		"transcript run youtube": run,
+		"transcript status":      status,
 	},
 }
 

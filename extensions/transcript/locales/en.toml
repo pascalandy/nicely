@@ -303,3 +303,27 @@ other = "Open Arc once, or remove browser from the [transcript] table."
 ["transcript.run.reuse"]
 description = "ncly transcript run youtube --dry-run, human text, for a completed run: the call would return its saved transcript. {{.URL}} is the URL and {{.Dir}} the absolute result folder."
 other = "Would return the saved transcript of {{.URL}} in {{.Dir}}."
+
+["transcript.status.summary"]
+description = "Summary of `ncly transcript status`, which checks what a transcription needs beside the programs that ncly doctor probes, such as the cookies of the configured browser."
+other = "Check the setup of transcript, such as the cookies of a browser"
+
+["transcript.status_pass"]
+description = "Report of `ncly transcript status`: the label of a check that passed, before its id, as ncly doctor shows it. A short word, as the label of a warning."
+other = "pass"
+
+["transcript.status_warn"]
+description = "Report of `ncly transcript status`: the label of a check that found a problem, before its id, as ncly doctor shows it."
+other = "warn"
+
+["transcript.cookies_anonymous"]
+description = "Report of `ncly transcript status`: message of the transcript.cookies check when the config sets no browser, so a download uses no cookies."
+other = "No browser is set, so downloads use anonymous access."
+
+["transcript.cookies_readable"]
+description = "Report of `ncly transcript status`: message of the transcript.cookies check when a cookie file of Arc can be opened. Arc is the name of a browser. {{.File}} is the absolute path of that file."
+other = "The cookies of Arc can be read in {{.File}}."
+
+["transcript.cookies_unreadable"]
+description = "Warning TRANSCRIPT_BROWSER_COOKIES_SKIPPED of `ncly transcript status`: the config sets browser = \"arc\", and no cookie file of Arc's default profile can be opened. Arc is the name of a browser. {{.Profile}} is the absolute path of that profile."
+other = "The cookies of Arc cannot be read in {{.Profile}}, so downloads try anonymous access."
