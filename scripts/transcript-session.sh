@@ -5,7 +5,7 @@
 #
 #   bash scripts/transcript-session.sh <folder>
 #
-# <folder> must not exist, must hold no quote or backslash, and must lie outside any git
+# <folder> must not exist, must hold only plain characters, and must lie outside any git
 # checkout. Give the session <folder>/bin first in PATH and <folder>/work as its working
 # folder. Its ncly is the test binary of cmd/ncly, so nothing reaches YouTube, Deepgram, or
 # the OS keychain. Each upload appends one line to <folder>/logs/uploads.log. The script seeds
@@ -29,9 +29,9 @@ case "$1" in
 esac
 [[ ! -e "$dir" && ! -L "$dir" ]] || die "$dir exists: give a new folder"
 # plain refuses a folder that the session files cannot hold: its scripts quote the folder in
-# single quotes, and its grant in JSON.
+# single quotes, and its grant in JSON. Only letters, digits, and _ . / @ + , - and space pass.
 plain() {
-	case "$1" in *[\'\"\\]*) die "$1 holds a quote or a backslash, which the session files cannot hold" ;; esac
+	case "$1" in *[!A-Za-z0-9_./@+,\ -]*) die "$1 holds a character other than letters, digits, and _ . / @ + , - or space" ;; esac
 }
 plain "$dir"
 mkdir -p "$dir"
