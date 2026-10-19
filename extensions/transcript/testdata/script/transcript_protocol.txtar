@@ -67,6 +67,12 @@ env STUB=version
 exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
 answer stderr RUNTIME
 stderr '"message":"The transcript program speaks another version of its protocol\."'
+# An engine that goes on writing after its refused plan still lets the call end, since Go then
+# drains its stdout
+env STUB=flood
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr '"message":"The transcript program speaks another version of its protocol\."'
 env STUB=other
 exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
 answer stderr RUNTIME
@@ -127,6 +133,7 @@ plan() { printf '{"protocol_version":%s,"type":"plan","items":[{"item":"%s","out
 case "$STUB" in
 plan) plan 1 "$URL" ;;
 version) plan 2 "$URL" ;;
+flood) plan 2 "$URL"; i=0; while [ $i -lt 3000 ]; do plan 1 "$URL"; i=$((i + 1)); done ;;
 other) plan 1 https://youtu.be/other ;;
 garbage) echo 'Traceback (most recent call last):' ;;
 extra) plan 1 "$URL"; plan 1 "$URL" ;;

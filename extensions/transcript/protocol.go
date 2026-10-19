@@ -184,6 +184,12 @@ func (s *session) wait() runner.Result {
 // temporary folder.
 func (s *session) close() {
 	s.closeStdin()
+	// Draining the unread messages keeps the engine's stdout flowing, so a
+	// refused engine can still exit.
+	go func() {
+		for range s.messages {
+		}
+	}()
 	s.wait()
 	_ = os.RemoveAll(s.tmp)
 }
