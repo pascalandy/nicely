@@ -1,12 +1,14 @@
 # Doctor gives both a status command and a version probe the ordinary cleanup
-# after Ctrl-C or SIGTERM. The test binary shortens its 15 seconds to 4.
-# Their 1-second execution limit must not cut cleanup short after a signal.
+# after Ctrl-C or SIGTERM. Keep its 15 seconds so that the 10-second execution
+# limit leaves time for startup under load, including concurrent macOS scenarios.
+# The fixture's 11-second cleanup must outlast that limit after each signal.
 chmod 755 bin/ncly-hello
 chmod 755 bin/cleantool
 env PATH=$WORK/bin:$PATH
+env NCLY_TEST_FULL_CLEANUP=1
 env CHECK=status STOP=late
 
-exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+exec exitcode exit.txt ncly doctor hello --timeout 10s --json &
 waitfile fixture.pid
 kill -INT
 wait
@@ -17,7 +19,7 @@ exists cleaned
 gone fixture.pid
 
 rm fixture.pid signals.txt cleaned
-exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+exec exitcode exit.txt ncly doctor hello --timeout 10s --json &
 waitfile fixture.pid
 term
 wait
@@ -29,7 +31,7 @@ gone fixture.pid
 
 env CHECK=probe
 rm fixture.pid signals.txt cleaned
-exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+exec exitcode exit.txt ncly doctor hello --timeout 10s --json &
 waitfile fixture.pid
 kill -INT
 wait
@@ -40,7 +42,7 @@ exists cleaned
 gone fixture.pid
 
 rm fixture.pid signals.txt cleaned
-exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+exec exitcode exit.txt ncly doctor hello --timeout 10s --json &
 waitfile fixture.pid
 term
 wait
@@ -54,7 +56,7 @@ gone fixture.pid
 # cleanup ends. A second signal does not restart or interrupt that cleanup.
 env CHECK=status STOP=stubborn
 rm fixture.pid signals.txt cleaned
-exec exitcode exit.txt ncly doctor hello --timeout 1s --json &
+exec exitcode exit.txt ncly doctor hello --timeout 10s --json &
 waitfile fixture.pid
 kill -INT
 waitfile signals.txt
@@ -71,7 +73,7 @@ gone fixture.pid
 fct_stop() {
   echo "$1" >> "$WORK/signals.txt"
   if [ "$STOP" = late ]; then
-    sleep 3
+    sleep 11
     echo 'done' > "$WORK/cleaned"
     exit 0
   fi
