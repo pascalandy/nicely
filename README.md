@@ -21,6 +21,7 @@ The current build brings:
 - The extensions named `ncly-<domain>`, which it finds, checks, and stops, and the bundled `skill` extension
 - `ncly doctor`, which checks the machine, and `ncly auth`, which keeps the keys and their grants
 - The `agent` extension, which runs one trusted task through Codex and records it
+- The `transcript` extension, whose `--dry-run` plans the transcription of one YouTube video
 - `ncly run list` and `ncly run view`, which read the records of the runs
 
 [The current build](docs/status.md) describes each command. The commands below are planned work.
@@ -65,7 +66,7 @@ install -Dm644 completions/ncly.fish ~/.config/fish/completions/ncly.fish
 
 These commands target the default folders: bash also needs the bash-completion package, and with custom XDG folders, use the folders that your shell reads instead. `~/.local/bin` must be on your `PATH`. For zsh, add `fpath=(~/.local/share/zsh/site-functions $fpath)` to `~/.zshrc` before `compinit` runs.
 
-From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `~/.local/bin/` and the first-party extensions, such as `agent`, into `~/.local/share/nicely/extensions/`, or into `$XDG_DATA_HOME/nicely/extensions/` when `XDG_DATA_HOME` holds an absolute path. The `agent` extension uses the login of an installed Codex, which `ncly doctor agent` checks.
+From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `~/.local/bin/` and the first-party extensions, such as `agent` and `transcript`, into `~/.local/share/nicely/extensions/`, or into `$XDG_DATA_HOME/nicely/extensions/` when `XDG_DATA_HOME` holds an absolute path. The `agent` extension uses the login of an installed Codex, which `ncly doctor agent` checks. The `transcript` extension needs `uv` and Python 3.12 or later, which `ncly doctor transcript` checks.
 
 ## Privacy
 

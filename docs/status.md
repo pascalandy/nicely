@@ -43,6 +43,12 @@ Without `--dry-run`, it runs the task under the ID of `--run-id`, or one that it
 
 `--timeout`, 5 minutes by default, bounds the whole call. Ctrl-C, SIGTERM, and the timeout stop Codex and its child processes, and the record says what happened. A step `failed` ran no task. A step `unknown` may have billed, so the same call then starts nothing.
 
+## transcript
+
+`just install` also puts the `transcript` extension in `~/.local/share/nicely/extensions/`. `ncly doctor transcript` checks that `uv` and Python 3.12 or later are installed.
+
+`ncly transcript run youtube --url <url> --dry-run` checks the URL of one video, the output folder, and the `[transcript]` tables of the config. It then runs the transcript program through `uv` and shows its plan, with no request to YouTube or Deepgram. It reads no key and creates no record. Without `--dry-run`, this build refuses the call with `CAPABILITY_UNSUPPORTED`.
+
 ## Runs
 
 `ncly run list` lists the saved runs, newest first, by command path, item key, or start time, without an index. It marks the ones that a process holds now. `ncly run view <run-id>` shows one record, its steps, artifacts, and errors, and whether a process holds it, without starting any work.
