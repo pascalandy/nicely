@@ -1,0 +1,31 @@
+[
+  {
+    "sentences": [
+      {
+        "text": "Welcome to the caf\u00e9.",
+        "start": 0.08,
+        "end": 1.36
+      },
+      {
+        "text": "Today we test one short recording.",
+        "start": 1.92,
+        "end": 4.4
+      }
+    ],
+    "num_words": 10,
+    "start": 0.08,
+    "end": 4.4
+  },
+  {
+    "sentences": [
+      {
+        "text": "It has two paragraphs, and \"quotes\" too.",
+        "start": 5.12,
+        "end": 8.96
+      }
+    ],
+    "num_words": 7,
+    "start": 5.12,
+    "end": 8.96
+  }
+]

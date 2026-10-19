@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "transaction_key": "deprecated",
+    "request_id": "00000000-0000-4000-8000-000000000013",
+    "sha256": "4b41fdda4be1f60f9bfe3c96541ea7a5b1972fd919e48a9714d90f137951b516",
+    "created": "2026-10-18T12:00:00.000Z",
+    "duration": 9.5,
+    "channels": 1,
+    "models": ["00000000-0000-4000-8000-000000000003"],
+    "model_info": {
+      "00000000-0000-4000-8000-000000000003": {
+        "name": "general-nova-3",
+        "version": "2026-01-01.0",
+        "arch": "nova-3"
+      }
+    }
+  },
+  "results": {
+    "channels": [
+      {
+        "alternatives": [
+          {
+            "transcript": "Welcome to the café. Today we test one short recording. It has two paragraphs, and \"quotes\" too.",
+            "confidence": 0.99,
+            "words": [
+              {"word": "welcome", "start": 0.08, "end": 0.48, "confidence": 0.99, "punctuated_word": "Welcome"},
+              {"word": "to", "start": 0.48, "end": 0.64, "confidence": 0.99, "punctuated_word": "to"},
+              {"word": "the", "start": 0.64, "end": 0.8, "confidence": 0.99, "punctuated_word": "the"},
+              {"word": "café", "start": 0.8, "end": 1.36, "confidence": 0.97, "punctuated_word": "café."},
+              {"word": "today", "start": 1.92, "end": 2.24, "confidence": 0.99, "punctuated_word": "Today"},
+              {"word": "we", "start": 2.24, "end": 2.4, "confidence": 0.99, "punctuated_word": "we"},
+              {"word": "test", "start": 2.4, "end": 2.72, "confidence": 0.99, "punctuated_word": "test"},
+              {"word": "one", "start": 2.72, "end": 2.96, "confidence": 0.99, "punctuated_word": "one"},
+              {"word": "short", "start": 2.96, "end": 3.36, "confidence": 0.99, "punctuated_word": "short"},
+              {"word": "recording", "start": 3.36, "end": 4.4, "confidence": 0.98, "punctuated_word": "recording."},
+              {"word": "it", "start": 5.12, "end": 5.28, "confidence": 0.99, "punctuated_word": "It"},
+              {"word": "has", "start": 5.28, "end": 5.52, "confidence": 0.99, "punctuated_word": "has"},
+              {"word": "two", "start": 5.52, "end": 5.76, "confidence": 0.99, "punctuated_word": "two"},
+              {"word": "paragraphs", "start": 5.76, "end": 6.56, "confidence": 0.98, "punctuated_word": "paragraphs,"},
+              {"word": "and", "start": 6.72, "end": 6.96, "confidence": 0.99, "punctuated_word": "and"},
+              {"word": "quotes", "start": 6.96, "end": 7.52, "confidence": 0.96, "punctuated_word": "\"quotes\""},
+              {"word": "too", "start": 7.52, "end": 8.96, "confidence": 0.99, "punctuated_word": "too."}
+            ],
+            "paragraphs": {
+              "transcript": "\nWelcome to the café. Today we test one short recording.\n\nIt has two paragraphs, and \"quotes\" too.",
+              "paragraphs": [
+                {
+                  "sentences": [
+                    {"text": "Welcome to the café.", "start": 0.08, "end": 1.36},
+                    {"text": "Today we test one short recording.", "start": 1.92, "end": 4.4}
+                  ],
+                  "num_words": 10,
+                  "start": 0.08,
+                  "end": 4.4
+                },
+                {
+                  "sentences": [
+                    {"text": "It has two paragraphs, and \"quotes\" too.", "start": 5.12, "end": 8.96}
+                  ],
+                  "num_words": 7,
+                  "start": 5.12,
+                  "end": 8.96
+                }
+              ]
+            }
+          }
+        ],
+        "detected_language": "en",
+        "language_confidence": 0.98
+      }
+    ]
+  }
+}
