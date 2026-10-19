@@ -71,5 +71,5 @@ Create a separate GitHub issue for each UAT. Keep its task and procedure there, 
 ## Release each accepted milestone
 
 After each completed milestone that Pascal accepts, run the release cycle without a separate request.
-Use [D043](decisions/D043-milestone-versions.md) for numbering and [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
+Use [D043](decisions/D043-milestone-versions.md) for acceptance and numbering, and [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
 Milestone acceptance does not replace the merge authorization above.
