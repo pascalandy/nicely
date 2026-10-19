@@ -47,8 +47,7 @@ answer stderr USAGE_INVALID
 
 # --stdin with a terminal on stdin exits 2 with USAGE_INVALID, before the keychain
 cp test-keychain.jsonl $TMPDIR/before.jsonl
-ttyin -stdin late.txt
-exits 2 ncly auth login openai --stdin --json
+exits 2 ttyin late.txt ncly auth login openai --stdin --json
 answer stderr USAGE_INVALID
 cmp test-keychain.jsonl $TMPDIR/before.jsonl
 

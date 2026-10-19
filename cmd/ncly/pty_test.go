@@ -93,16 +93,8 @@ func runPty(args []string) int {
 			return fail(err)
 		}
 	}
-	err = cmd.Wait()
-	code := 0
-	var exit *exec.ExitError
-	switch {
-	case errors.As(err, &exit):
-		code = exit.ExitCode()
-		if status, ok := exit.Sys().(syscall.WaitStatus); ok && status.Signaled() {
-			code = 128 + int(status.Signal())
-		}
-	case err != nil:
+	code, err := processExitCode(cmd.Wait())
+	if err != nil {
 		return fail(err)
 	}
 	left, err := unix.IoctlGetTermios(int(settingsSide(ptmx, tty).Fd()), ioctlGetTermios)

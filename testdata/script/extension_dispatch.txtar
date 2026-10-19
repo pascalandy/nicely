@@ -81,8 +81,7 @@ stderr 'The extension missing could not start'
 
 # The extension shares the terminal's foreground process group, so it can read the terminal
 [!exec:ps] stop 'needs ps'
-ttyin -stdin tty.txt
-exec ncly hello tty
+exec ttyin tty.txt ncly hello tty
 grep '^foreground$' tty.log
 grep '^read: Ada$' tty.log
 

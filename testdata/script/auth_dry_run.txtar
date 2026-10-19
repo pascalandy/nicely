@@ -31,8 +31,7 @@ cmp test-keychain.jsonl seed.jsonl
 stdin key.txt
 exec ncly auth login deepgram --stdin --dry-run --json
 stdout '"dry_run":true'
-ttyin -stdin key.txt
-exec ncly auth login deepgram --stdin --force --dry-run --json
+exec ttyin key.txt ncly auth login deepgram --stdin --force --dry-run --json
 stdout '"dry_run":true'
 ! stdout dg-unread
 unchanged before

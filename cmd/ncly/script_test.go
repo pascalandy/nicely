@@ -31,6 +31,7 @@ func TestMain(m *testing.M) {
 		"exitcode":   exitCode,
 		"pgroup":     pgroup,
 		"pty":        ptyRun,
+		"ttyin":      ttyinRun,
 		// codes lists the registry of sdk/contract, one code per line,
 		// because no command of ncly lists its codes.
 		"codes":          printCodes,
