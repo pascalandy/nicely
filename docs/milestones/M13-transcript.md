@@ -1,6 +1,6 @@
 # M13 Transcript
 
-Status: active
+Status: done
 Version: v0.13.0
 
 ## Demo
@@ -38,7 +38,7 @@ Each card grows the transcript skill with what it ships.
 | M13-T2 | Protocol and dry run | agent | M13-T1 | done |
 | M13-T3 | Transcription with a record | agent | M13-T2 | done |
 | M13-T4 | Failures and replay | agent | M13-T3 | done |
-| M13-T5 | Interruption and contenders | agent | M13-T3, M13-T4 | todo |
+| M13-T5 | Interruption and contenders | agent | M13-T3, M13-T4 | done |
 
 ### M13-T1 Python engine
 

@@ -55,6 +55,8 @@ A key that Deepgram refuses gives `AUTH_REJECTED` in the item, under `RUNTIME`. 
 
 The same call with the same `--run-id` returns a completed run again, without `uv`, the program, Deepgram, or a key. It checks each file first, and a file that changed or went missing answers `RESUME_UNSAFE`. A config change never moves a saved result or a pending run. Once the audio may have reached Deepgram, the same call answers `RESUME_UNSAFE` too. Another URL or `--output` under that ID answers `USAGE_INVALID`. A dry run with the ID plans `reuse`, or refuses as the call would.
 
+Ctrl-C exits 130 and SIGTERM 143, and neither leaves a `uv`, Python, or yt-dlp process. The answer keeps the result folder. A stop after the upload leaves the step `unknown`, so the same call starts nothing, and a completion before the stop stays complete. A second call under a busy run ID exits 75 and starts nothing. Two runs of one title write two folders.
+
 ## Runs
 
 `ncly run list` lists the saved runs, newest first, by command path, item key, or start time, without an index. It marks the ones that a process holds now. `ncly run view <run-id>` shows one record, its steps, artifacts, and errors, and whether a process holds it, without starting any work.
