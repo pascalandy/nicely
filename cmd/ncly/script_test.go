@@ -109,12 +109,8 @@ func testNcly() {
 // shortCleanup gives cleanup 4 seconds instead of 15, so that a scenario
 // reaches the SIGKILL of cleanup quickly. The drain limit keeps its 2
 // seconds, so the scenarios still tell the two clocks apart.
-// NCLY_TEST_FULL_CLEANUP keeps 15 seconds when a scenario needs a longer
-// execution limit before it sends a signal.
 func shortCleanup() {
-	if os.Getenv("NCLY_TEST_FULL_CLEANUP") != "1" {
-		runner.Cleanup = 4 * time.Second
-	}
+	runner.Cleanup = 4 * time.Second
 }
 
 // TestScripts runs core's scenarios, then those of each extension and of

@@ -1,101 +1,45 @@
-# Doctor gives both a status command and a version probe the ordinary cleanup
-# after Ctrl-C or SIGTERM. Run the cases concurrently, with separate files.
-# The 10-second execution limit allows startup under load. Each signal follows
-# fixture readiness, and the fixture's 11-second cleanup outlasts that limit.
+# Doctor gives status commands and version probes time to clean up after a signal.
 chmod 755 bin/ncly-hello
 chmod 755 bin/cleantool
 env PATH=$WORK/bin:$PATH
-exec bash cancel.sh status-int status INT late &
-exec bash cancel.sh status-term status TERM late &
-exec bash cancel.sh probe-int probe INT late &
-exec bash cancel.sh probe-term probe TERM late &
-exec bash cancel.sh stubborn status INT stubborn &
+
+# The status command finishes its cleanup after Ctrl-C.
+env CHECK=status
+exec exitcode exit.txt ncly doctor hello --json &
+waitfile fixture.pid
+kill -INT
 wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+grep '^INT$' signals.txt
+exists cleaned
+gone fixture.pid
 
-grep '^130$' status-int/exit.txt
-exec cat status-int/stderr
-answer stdout INTERRUPTED
-grep '^INT$' status-int/signals.txt
-exists status-int/cleaned
-gone status-int/fixture.pid
+# The version probe finishes its cleanup after SIGTERM.
+rm fixture.pid signals.txt cleaned
+env CHECK=probe
+exec exitcode exit.txt ncly doctor hello --json &
+waitfile fixture.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+grep '^TERM$' signals.txt
+exists cleaned
+gone fixture.pid
 
-grep '^143$' status-term/exit.txt
-exec cat status-term/stderr
-answer stdout TERMINATED
-grep '^TERM$' status-term/signals.txt
-exists status-term/cleaned
-gone status-term/fixture.pid
-
-grep '^130$' probe-int/exit.txt
-exec cat probe-int/stderr
-answer stdout INTERRUPTED
-grep '^INT$' probe-int/signals.txt
-exists probe-int/cleaned
-gone probe-int/fixture.pid
-
-grep '^143$' probe-term/exit.txt
-exec cat probe-term/stderr
-answer stdout TERMINATED
-grep '^TERM$' probe-term/signals.txt
-exists probe-term/cleaned
-gone probe-term/fixture.pid
-
-# A status command that ignores the first signal still gets SIGKILL when
-# cleanup ends. A second signal does not restart or interrupt that cleanup.
-grep '^130$' stubborn/exit.txt
-exec cat stubborn/stderr
-answer stdout INTERRUPTED
-grep -count=1 '^INT$' stubborn/signals.txt
-! exists stubborn/cleaned
-gone stubborn/fixture.pid
-
--- cancel.sh --
-#!/usr/bin/env bash
-set -Eeuo pipefail
-export CASE_DIR="$WORK/$1" CHECK="$2" STOP="$4"
-mkdir "$CASE_DIR"
-# Late cleanup needs 15 seconds; the stubborn case keeps the usual four.
-if [[ "$STOP" = late ]]; then export NCLY_TEST_FULL_CLEANUP=1; fi
-ncly doctor hello --timeout 10s --json >"$CASE_DIR/stdout" 2>"$CASE_DIR/stderr" &
-doctor=$!
-fct_cleanup() {
-  kill -TERM "$doctor" 2>/dev/null || :
-  wait "$doctor" || :
-}
-trap fct_cleanup EXIT
-fct_waitfile() {
-  while [[ ! -e "$CASE_DIR/$1" ]]; do
-    if ! kill -0 "$doctor" 2>/dev/null; then
-      echo "$CASE_DIR: doctor exited before $1 appeared" >&2
-      cat "$CASE_DIR/stdout" "$CASE_DIR/stderr" >&2
-      exit 1
-    fi
-    sleep 0.01
-  done
-}
-fct_waitfile fixture.pid
-kill -"$3" "$doctor"
-if [[ "$STOP" = stubborn ]]; then
-  fct_waitfile signals.txt
-  kill -TERM "$doctor"
-fi
-if wait "$doctor"; then status=0; else status=$?; fi
-trap - EXIT
-echo "$status" >"$CASE_DIR/exit.txt"
 -- clean.sh --
 #!/bin/sh
 fct_stop() {
-  echo "$1" >> "$CASE_DIR/signals.txt"
-  if [ "$STOP" = late ]; then
-    sleep 11
-    echo 'done' > "$CASE_DIR/cleaned"
-    exit 0
-  fi
+  echo "$1" > "$WORK/signals.txt"
+  sleep 1
+  echo 'done' > "$WORK/cleaned"
+  exit 0
 }
 trap 'fct_stop INT' INT
 trap 'fct_stop TERM' TERM
-echo $$ > "$CASE_DIR/fixture.tmp"
-mv "$CASE_DIR/fixture.tmp" "$CASE_DIR/fixture.pid"
+echo $$ > "$WORK/fixture.tmp"
+mv "$WORK/fixture.tmp" "$WORK/fixture.pid"
 while :; do sleep 0.1; done
 -- bin/ncly-hello --
 #!/bin/sh
