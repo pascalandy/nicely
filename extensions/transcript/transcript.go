@@ -129,14 +129,13 @@ type check struct {
 // dryRun answers what execution would do. A run ID that a record holds
 // decides as execution decides, from a read without the lock. A completed
 // run plans reuse, and a run that the call may not continue refuses alike.
-// Otherwise it asks the engine for its plan, as execution does. It reads no
-// key and creates no record, no result folder, and no user file. Only the
-// extraction of the engine and the cache of uv may write.
+// Otherwise it resolves the job and asks the engine for its plan, as
+// execution does. It reads no key and creates no record, no result folder,
+// and no user file. Only the extraction of the engine and the cache of uv
+// may write.
 func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 	p := call.Printer
-	if problem := resolve(ctx, call, &j); problem != nil {
-		return refused(problem)
-	}
+	held := ""
 	if id, given := call.Flags["run-id"]; given {
 		runs := store()
 		saved, err := runs.Read(id)
@@ -147,6 +146,7 @@ func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 		case err != nil:
 			return refusal(unreadable(p, runs.File(id), id), id)
 		case saved != nil:
+			held = id
 			completed, problem := decide(p, call, j, saved, runs.File(id), id)
 			if problem != nil {
 				return refusal(problem, id)
@@ -155,6 +155,9 @@ func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 				return reuse(call, saved, runs.File(id), id)
 			}
 		}
+	}
+	if problem := resolve(ctx, call, &j); problem != nil {
+		return refusal(problem, held)
 	}
 	s, problem := start(ctx, call, j, true, nil)
 	if problem != nil {

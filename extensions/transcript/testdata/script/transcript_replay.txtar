@@ -1,13 +1,13 @@
 # A completed run replays from its record: the same call checks each artifact, then answers the
-# saved result, with no uv, no upload, and no key. A config change never redirects it. Its dry
-# run plans reuse. A changed or missing artifact, and a record that this build cannot read,
-# refuse with RESUME_UNSAFE, as the dry run does, without changing the record. Another URL or
-# another --output under the same ID is USAGE_INVALID before any effect. bin/uv counts each call
-# of the real uv, and the test launcher counts uploads.
+# saved result, with no uv, no Python, no upload, and no key. A config change never redirects it,
+# even to a missing folder. Its dry run plans reuse. A changed or missing artifact, and a record
+# that this build cannot read, refuse with RESUME_UNSAFE, as the dry run does, without changing the
+# record. Another URL or another --output under the same ID is USAGE_INVALID before any effect.
+# bin/uv and bin/python3 log each call of the real program, and the test launcher counts uploads.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
 chmod 755 bin/uv
-symlink bin/python3 -> $PYTHON3
+chmod 755 bin/python3
 onlyncly transcript-external
 env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
 env OUT=$WORK/out
@@ -27,11 +27,14 @@ cp first.toml $CFG/config.toml
 exec ncly transcript run youtube --url $URL --run-id r1 --json
 stdout '"output_dir":"'${WORK@R}'/first/Test_video"'
 cp stdout r1.json
+cp uv.log uv.before
+cp python3.log python3.before
 cp second.toml $CFG/config.toml
 rm $STATE/grants.json
 exec ncly transcript run youtube --url $URL --run-id r1 --json
 cmp stdout r1.json
-grep -count=1 '(?m)^run ' uv.log
+cmp uv.log uv.before
+cmp python3.log python3.before
 grep -count=1 '(?m)^upload ' uploads.log
 
 # Its dry run checks the artifacts, then plans reuse, with no effect and no pending check
@@ -39,7 +42,18 @@ exec ncly transcript run youtube --url $URL --run-id r1 --dry-run --json
 stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\],"plan":\[\{"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","output_dir":"'${WORK@R}'/first/Test_video","steps":\[\{"id":"transcribe","action":"reuse"\}\],"effects":\{"network":false,"paid":false,"user_writes":false\}\}\]\}\n\z'
 exec ncly transcript run youtube --url $URL --run-id r1 --dry-run
 stdout '\AWould return the saved transcript of https://www\.youtube\.com/watch\?v=EIEc43CxIvY in '${WORK@R}'/first/Test_video\.\n\z'
-grep -count=1 '(?m)^run ' uv.log
+cmp uv.log uv.before
+cmp python3.log python3.before
+
+# A config that names a missing folder changes nothing either: the call and its dry run replay
+cp missing.toml $CFG/config.toml
+exec ncly transcript run youtube --url $URL --run-id r1 --json
+cmp stdout r1.json
+exec ncly transcript run youtube --url $URL --run-id r1 --dry-run --json
+stdout '"output_dir":"'${WORK@R}'/first/Test_video"'
+cp second.toml $CFG/config.toml
+cmp uv.log uv.before
+cmp python3.log python3.before
 
 # Another URL, another --output, or an --output that the run never had: USAGE_INVALID, in the
 # call and its dry run, before uv starts
@@ -50,7 +64,8 @@ exits 2 ncly transcript run youtube --url $URL --output $WORK/second --run-id r1
 answer stderr USAGE_INVALID
 exits 2 ncly transcript run youtube --url https://youtu.be/EIEc43CxIvY --run-id r1 --dry-run --json
 answer stderr USAGE_INVALID
-grep -count=1 '(?m)^run ' uv.log
+cmp uv.log uv.before
+cmp python3.log python3.before
 
 # A changed artifact refuses the call and its dry run, and the record stays as it was
 cp $RUNS/r1.json r1-record.json
@@ -81,6 +96,10 @@ answer stderr RESUME_UNSAFE
 grep -count=2 '(?m)^run ' uv.log
 grep -count=2 '(?m)^upload ' uploads.log
 
+-- bin/python3 --
+#!/bin/sh
+echo "$*" >> "$WORK/python3.log"
+exec "$PYTHON3" "$@"
 -- bin/uv --
 #!/bin/sh
 echo "$*" >> "$WORK/uv.log"
@@ -88,6 +107,9 @@ exec "$UV" "$@"
 -- first.toml --
 [transcript.youtube]
 output = "~/first"
+-- missing.toml --
+[transcript.youtube]
+output = "~/missing"
 -- second.toml --
 [transcript.youtube]
 output = "~/second"
