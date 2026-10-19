@@ -69,16 +69,17 @@ func runLimits(args []string) error {
 	if len(args) != 1 && (len(args) != 3 || args[1] != "--base") {
 		return errors.New("usage: plan limits <repository root> [--base <ref>]")
 	}
-	refs, old, next := []string{"--cached"}, "HEAD", ""
-	if len(args) == 3 {
+	refs, old := []string{"--cached"}, "HEAD"
+	worktree := len(args) == 3
+	if worktree {
 		base, err := limitsGit(args[0], "merge-base", args[2], "HEAD")
 		if err != nil {
 			return err
 		}
-		old, next = strings.TrimSpace(string(base)), "HEAD"
-		refs = []string{old, next}
+		old = strings.TrimSpace(string(base))
+		refs = []string{old}
 	}
-	changes, err := readChanges(args[0], refs, old, next)
+	changes, err := readChanges(args[0], refs, old, worktree)
 	if err != nil {
 		return err
 	}
