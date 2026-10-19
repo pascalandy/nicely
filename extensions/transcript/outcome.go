@@ -105,18 +105,10 @@ func (a *attempt) answer(problem *contract.Problem) contract.Outcome {
 // the run ID only when an earlier attempt recorded the run. A nil problem
 // is a signal, which the SDK answers.
 func (a *attempt) refuse(problem *contract.Problem) contract.Outcome {
-	id := ""
 	if a.saved {
-		id = a.run.ID
+		return failed(problem, a.run.ID)
 	}
-	if problem == nil {
-		o := contract.Outcome{}
-		if id != "" {
-			o.Data = runData{RunID: id}
-		}
-		return o
-	}
-	return refusal(problem, id)
+	return failed(problem, "")
 }
 
 // savedID is the ID of a run that a record already holds, which an answer

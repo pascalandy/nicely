@@ -39,7 +39,7 @@ func execute(ctx context.Context, call extension.Call, j job, id string) contrac
 	case errors.As(err, &bad):
 		return refusal(unreadable(p, bad.File, id), id)
 	case ctx.Err() != nil:
-		return failed(stopCause(ctx, p, j))
+		return failed(stopCause(ctx, p, j), "")
 	case err != nil:
 		return refusal(unsaved(p, runs.Dir), id)
 	}

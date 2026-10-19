@@ -82,12 +82,18 @@ func refused(p *contract.Problem) contract.Outcome {
 }
 
 // failed is the outcome of a call that stopped before it attempted the
-// item: its problem, or none for a signal, which the SDK answers.
-func failed(p *contract.Problem) contract.Outcome {
-	if p == nil {
-		return contract.Outcome{}
+// item: its problem, or none for a signal, which the SDK answers. Either
+// names the run of id, which an earlier attempt recorded, unless id is
+// empty.
+func failed(p *contract.Problem, id string) contract.Outcome {
+	if p != nil {
+		return refusal(p, id)
 	}
-	return refused(p)
+	o := contract.Outcome{}
+	if id != "" {
+		o.Data = runData{RunID: id}
+	}
+	return o
 }
 
 // usage is a USAGE_INVALID problem whose message and hint come from the
@@ -164,7 +170,7 @@ func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 	}
 	s, problem := start(ctx, call, j, true, nil)
 	if problem != nil {
-		return refused(problem)
+		return refusal(problem, held)
 	}
 	defer s.close()
 	problem = s.plan(ctx, p, j)
@@ -172,7 +178,7 @@ func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 		problem = s.finish(ctx, p, j)
 	}
 	if problem != nil || ctx.Err() != nil {
-		return failed(problem)
+		return failed(problem, held)
 	}
 	d := dryRunAnswer{
 		DryRun: true,
