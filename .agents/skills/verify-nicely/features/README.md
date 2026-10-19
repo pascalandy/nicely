@@ -38,3 +38,4 @@ Each feature file starts with an H1 title and one paragraph about what the user 
 - `auth.md` covers `ncly auth` against the real keychain, with a test service and a fake key: status and its grants, login, logout, grant, revoke, the masked field and the confirmations in a terminal, doctor, and the cleanup of the fake key
 - `terminal.md` covers `ncly` on a real terminal inside tmux, whose server does not answer: the version and the root help answer at once
 - `agent.md` covers `just install` in the scratch home and the installed `agent` extension, with a counted stub Codex: discovery, help, its skill, the Codex check of doctor, the dry run of `ncly agent run`, its depth limit, and one recorded run with its saved answer
+- `transcript.md` covers the installed `transcript` extension, with the real `uv` and Python. It drives discovery, help, doctor, its skill, the refusals, and the dry run
