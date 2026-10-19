@@ -46,5 +46,6 @@ So the fresh session of M16-T2 gets a folder outside any checkout, which holds:
 - A copy of the launcher and its fixtures, and links to the real `uv` and Python
 - A grant of `deepgram` to transcript
 
-The session then reaches no YouTube, Deepgram, OS keychain, source, or spec.
+Nothing that the session runs reaches YouTube, Deepgram, or the OS keychain.
+No source or spec lies in its folder, though the session can still read files elsewhere.
 Its upload log is `$WORK/uploads.log`, and its evidence is fixture-backed.

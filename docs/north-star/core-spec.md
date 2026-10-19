@@ -92,7 +92,7 @@ ncly doctor [component] [--live] [--timeout <duration>] [--json]
 | Argument or flag | Effect |
 |---|---|
 | `component` | `core`, `auth`, `extensions`, or the domain of an installed extension, such as `skill` or `transcript`. Without it, doctor checks all of them. |
-| `--live` | Adds network checks against free endpoints only, such as listing Deepgram projects. It never calls an endpoint that bills. Doctor passes it to each status command that declares it. |
+| `--live` | Adds network checks against free endpoints only. It never calls an endpoint that bills. Doctor passes it to each status command that declares it. |
 | `--timeout` | Bounds the checks, including local version probes, status commands, and free network checks, 30 seconds by default. |
 
 - The default checks stay on the machine: binaries and their versions, keys present, the keychain answering, and the config files parsing.
