@@ -529,7 +529,7 @@ func (r *Run) End(item, step int, status StepStatus, p contract.Problem, run Sta
 	s := &r.Record.Items[item].Steps[step]
 	t := now()
 	s.Status, s.Error = status, &Problem{Code: p.Code, Message: p.Message, Hint: p.Hint}
-	if status != StepUnknown {
+	if status == StepFailed {
 		s.FinishedAt = &t
 	}
 	r.Record.Status = run
