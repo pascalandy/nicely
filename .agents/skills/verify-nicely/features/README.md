@@ -39,4 +39,4 @@ Each feature file starts with an H1 title and one paragraph about what the user 
 - `terminal.md` covers `ncly` on a real terminal inside tmux, whose server does not answer: the version and the root help answer at once
 - `agent.md` covers `just install` in the scratch home and the installed `agent` extension, with a counted stub Codex: discovery, help, its skill, the Codex check of doctor, the dry run of `ncly agent run`, its depth limit, and one recorded run with its saved answer
 - `transcript.md` covers the installed `transcript` extension, with the real `uv` and Python. It drives discovery, help, doctor, its skill, the refusals, and the dry run
-- `transcript-run.md` goes on in the run of `transcript.md`. It drives a grant in a terminal, a run with a fake key, its record, and the calls after it
+- `transcript-run.md` goes on in the run of `transcript.md`. It drives a grant in a terminal, a run with a fake key, its record, the calls after it, and a Ctrl-C
