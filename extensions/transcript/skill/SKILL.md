@@ -17,5 +17,5 @@ description: Use when transcribing one YouTube video with Deepgram through ncly 
 - Exit 1 never permits a repeat: read the run with `ncly run view <id> --json` first. The same call with the same `--run-id` returns a completed run again without a charge, and answers `RESUME_UNSAFE` once the audio may have reached Deepgram. Only a human chooses a new run ID, which may bill again
 - Exit 75 with `TEMPORARY` permits the same call again
 - A dry run with the `--run-id` of a saved run decides as the call would. A completed run plans `reuse`, with its `output_dir` and no effect, and a run that cannot continue answers the same refusal
-- `USAGE_INVALID` under a saved `--run-id` means that the ID names another call, with another URL or `--output`. `RESUME_UNSAFE` also answers a saved file that changed or went missing: relay it to the human, who inspects the folder
+- `USAGE_INVALID` under a saved `--run-id` means that the ID names another call, with another URL or `--output`. `RESUME_UNSAFE` also answers a saved file that changed or went missing, or an output folder of the record that is gone. Relay it to the human, who inspects the folder
 - The call stops after `--timeout`, `570s` by default
