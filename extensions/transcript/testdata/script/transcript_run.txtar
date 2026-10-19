@@ -2,14 +2,14 @@
 # with the test launcher of the test binary: yt-dlp copies the fixture audio, and Deepgram reads
 # the whole upload, then answers the fixture response. A granted test key reaches the engine.
 # One run uploads once, saves the three files in a new result folder, and records them, and ncly
-# run view reads that record in a new process. The same call replays the record without uv. A
-# refused key gives AUTH_REJECTED in the item, under RUNTIME, and a key that no request can carry
-# refuses before any record. bin/uv counts each call in $WORK/uv.log, then runs the real uv. The
-# launcher counts downloads and uploads.
+# run view reads that record in a new process. The same call replays the record without uv or
+# Python. A refused key gives AUTH_REJECTED in the item, under RUNTIME, and a key that no request
+# can carry refuses before any record. bin/uv and bin/python3 log each call in $WORK/uv.log and
+# $WORK/python3.log, then run the real program. The launcher counts downloads and uploads.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
 chmod 755 bin/uv
-symlink bin/python3 -> $PYTHON3
+chmod 755 bin/python3
 onlyncly transcript-external
 env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
 env OUT=$WORK/out
@@ -48,9 +48,14 @@ stdout '"tools":\{"transcript":"1\.0\.0","yt-dlp":"\d{4}\.\d+\.\d+[^"]*"\}'
 stdout '"output_dir":"'${DIR@R}'"'
 stdout '"status":"completed"'
 
-# The same call replays the record: the same answer, with no uv, download, or upload
+# The same call replays the record: the same answer, with no call of uv or python3, whatever
+# its arguments, and no download or upload
+cp uv.log uv.before
+cp python3.log python3.before
 exec ncly transcript run youtube --url $URL --output $OUT --run-id r1 --json
 cmp stdout first.json
+cmp uv.log uv.before
+cmp python3.log python3.before
 grep -count=1 '(?m)^run ' uv.log
 grep -count=1 '(?m)^https' downloads.log
 grep -count=1 '(?m)^upload ' uploads.log
@@ -93,6 +98,10 @@ grep -count=3 '(?m)^run ' uv.log
 
 -- bad-key.jsonl --
 {"call":"set","account":"deepgram","key":"dg-bad\nkey"}
+-- bin/python3 --
+#!/bin/sh
+echo "$*" >> "$WORK/python3.log"
+exec "$PYTHON3" "$@"
 -- bin/uv --
 #!/bin/sh
 echo "$*" >> "$WORK/uv.log"

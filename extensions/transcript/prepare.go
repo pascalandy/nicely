@@ -48,53 +48,73 @@ type job struct {
 	timeout time.Duration
 }
 
-// prepare checks the call in the order of Preparation in spec.md, before any
-// effect: the URL, the config, the output parent, then uv and Python.
-func prepare(ctx context.Context, call extension.Call) (job, *contract.Problem) {
+// prepare checks what the call alone states, before any effect: the URL,
+// then an explicit output parent. It reads no config and starts no program,
+// so a completed run replays without them.
+func prepare(call extension.Call) (job, *contract.Problem) {
 	p := call.Printer
 	j := job{url: call.Flags["url"]}
 	if !isVideoURL(j.url) {
 		return j, usage(p, "transcript.run.url_invalid", "transcript.run.url_invalid_hint", map[string]any{"URL": j.url})
 	}
 	home, _ := os.UserHomeDir()
-	paths := config.Locate(home, os.LookupEnv)
-	j.cache = paths.Cache
-	configured, problem := readSettings(p, home, paths, &j)
-	if problem != nil {
-		return j, problem
-	}
+	j.cache = config.Locate(home, os.LookupEnv).Cache
 	dir, given := call.Flags["output"]
 	j.given = given
-	if !given {
-		dir = configured
-	}
-	if dir == "" {
-		dir = "."
-	}
-	abs, err := filepath.Abs(dir)
-	if err == nil {
-		var info os.FileInfo
-		if info, err = os.Stat(abs); err == nil && !info.IsDir() {
-			err = errors.New("not a folder")
+	if given {
+		abs, err := folder(dir)
+		if err != nil {
+			return j, usage(p, "transcript.run.output_invalid", "transcript.run.output_invalid_hint", map[string]any{"Dir": dir})
 		}
+		j.output = abs
 	}
-	if err != nil && given {
-		return j, usage(p, "transcript.run.output_invalid", "transcript.run.output_invalid_hint", map[string]any{"Dir": dir})
+	return j, nil
+}
+
+// resolve completes the job for a run of the engine, in the order of
+// Preparation in spec.md. It reads the config, and the output parent that
+// the config selects when --output did not. Then it checks uv and Python.
+func resolve(ctx context.Context, call extension.Call, j *job) *contract.Problem {
+	p := call.Printer
+	home, _ := os.UserHomeDir()
+	configured, problem := readSettings(p, home, config.Locate(home, os.LookupEnv), j)
+	if problem != nil {
+		return problem
 	}
-	if err != nil {
-		return j, &contract.Problem{Code: contract.ConfigInvalid, Message: p.T("transcript.config_output_missing", map[string]any{"Dir": dir}), Hint: p.T("transcript.run.output_invalid_hint", map[string]any{"Dir": dir})}
+	if !j.given {
+		dir := configured
+		if dir == "" {
+			dir = "."
+		}
+		abs, err := folder(dir)
+		if err != nil {
+			return &contract.Problem{Code: contract.ConfigInvalid, Message: p.T("transcript.config_output_missing", map[string]any{"Dir": dir}), Hint: p.T("transcript.run.output_invalid_hint", map[string]any{"Dir": dir})}
+		}
+		j.output = abs
 	}
-	j.output = abs
 	for _, name := range []string{"uv", "python3"} {
 		found, problem := checkProgram(ctx, p, name)
 		if problem != nil {
-			return j, problem
+			return problem
 		}
 		if name == "uv" {
 			j.uv = found
 		}
 	}
-	return j, nil
+	return nil
+}
+
+// folder is the absolute path of dir, which must be an existing folder.
+func folder(dir string) (string, error) {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
+	info, err := os.Stat(abs)
+	if err == nil && !info.IsDir() {
+		err = errors.New("not a folder")
+	}
+	return abs, err
 }
 
 // isVideoURL reports whether url names one YouTube video in a form that the

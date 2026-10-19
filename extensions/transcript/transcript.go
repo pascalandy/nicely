@@ -64,7 +64,7 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	if id, given := call.Flags["run-id"]; given && !record.ValidID(id) {
 		return refused(usage(p, "transcript.run.run_id_invalid", "transcript.run.run_id_invalid_hint", map[string]any{"ID": id}))
 	}
-	job, problem := prepare(ctx, call)
+	job, problem := prepare(call)
 	if problem != nil {
 		return refused(problem)
 	}
@@ -130,6 +130,9 @@ type check struct {
 // cache of uv may write.
 func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 	p := call.Printer
+	if problem := resolve(ctx, call, &j); problem != nil {
+		return refused(problem)
+	}
 	s, problem := start(ctx, call, j, true, nil)
 	if problem != nil {
 		return refused(problem)
