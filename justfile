@@ -117,7 +117,9 @@ race:
 python:
     #!/usr/bin/env bash
     set -Eeuo pipefail
-    # pyright resolves a sibling module only from the engine folder.
+    # pyright resolves a sibling module only from the engine folder. Its pyrightconfig.json makes
+    # that folder the root of pyright, which otherwise takes the first parent with a pyproject.toml,
+    # such as a home folder, and checks all of it.
     cd extensions/transcript/python
     uv tool run ruff@0.16.9 check --isolated
     uv tool run ruff@0.16.9 format --isolated --check
@@ -125,7 +127,7 @@ python:
     trap 'rm -f "$requirements"' EXIT
     uv export --quiet --no-hashes --script transcript.py > "$requirements"
     # The header pins the runtime packages; this recipe pins only the tools. pyright reads the tests, so it needs pytest.
-    uv tool run --with-requirements "$requirements" --with pytest==9.1.1 pyright@1.1.414 --pythonversion 3.12
+    uv tool run --with-requirements "$requirements" --with pytest==9.1.1 pyright@1.1.414
     uv tool run --with-requirements "$requirements" --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto
 
 # Lint the Go code
