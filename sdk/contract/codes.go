@@ -44,6 +44,9 @@ const (
 	KeyringUnavailable   Code = "KEYRING_UNAVAILABLE"
 	AuthMissing          Code = "AUTH_MISSING"
 	KeyNotGranted        Code = "KEY_NOT_GRANTED"
+	// AuthRejected is a key that a service refused, such as Deepgram
+	// answering 401.
+	AuthRejected Code = "AUTH_REJECTED"
 	// CapabilityUnsupported is a mode or a protocol that the selected
 	// program cannot enforce, such as a harness that cannot turn tools off.
 	CapabilityUnsupported Code = "CAPABILITY_UNSUPPORTED"
@@ -78,6 +81,7 @@ var errorCodes = []codeExit{
 	{KeyringUnavailable, ExitHuman},
 	{AuthMissing, ExitHuman},
 	{KeyNotGranted, ExitHuman},
+	{AuthRejected, ExitHuman},
 	{UsageInvalid, ExitUsage},
 	{ConfirmationRequired, ExitUsage},
 	{NotFound, ExitUsage},

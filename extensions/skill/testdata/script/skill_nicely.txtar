@@ -110,7 +110,7 @@ Check the machine with `ncly inspect` first.
 -- verb.md --
 Check the skills with `ncly skill sing --json`.
 -- code.md --
-Relay AUTH_REJECTED to the human.
+Relay AUTH_EXPIRED to the human.
 -- argument.md --
 Read one with `ncly skill view transcript`, or `ncly describe skill view --json`, on every ncly call. Set `NCLY_JSON=1` and branch on NOT_FOUND.
 -- long.md --

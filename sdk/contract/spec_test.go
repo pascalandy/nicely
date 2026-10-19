@@ -14,7 +14,7 @@ const contractDir = "../../docs/north-star/contract/"
 // shipped lists the milestones whose error codes the registry holds, and
 // shippedWarnings those whose warning codes it holds.
 var (
-	shipped         = []string{"M00", "M01", "M03", "M05", "M06", "M08", "M09", "M10"}
+	shipped         = []string{"M00", "M01", "M03", "M05", "M06", "M08", "M09", "M10", "M13"}
 	shippedWarnings = []string{"M00", "M01", "M03", "M05", "M06", "M08"}
 )
 
