@@ -50,3 +50,10 @@ Nothing that the session runs reaches YouTube, Deepgram, or the OS keychain.
 Its folder holds no checkout and no spec: only the copied launcher and its fixtures, and the engine that `ncly` extracts into the scratch cache.
 The session can still read files elsewhere.
 Its upload log is `$WORK/uploads.log`, and its evidence is fixture-backed.
+
+`scripts/transcript-session.sh <folder>` prepares that folder from a checkout.
+It also seeds three runs for the session to meet:
+
+- `team-sync` completed, and its answer was dropped
+- Deepgram refused the key of `keynote`, so its step failed
+- Deepgram answered 503 to the upload of `interview`, so its outcome is unknown
