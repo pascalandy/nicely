@@ -153,6 +153,9 @@ exits 1 ncly transcript run youtube --url $URL --output $WORK/fourth --run-id k8
 answer stderr RESUME_UNSAFE
 stderr '"run_id":"k8"'
 stderr '"message":"The run k8 writes into '${WORK@R}'/fourth, which is no existing folder\."'
+exits 1 ncly transcript run youtube --url $URL --output $WORK/fourth --run-id k8 --dry-run --json
+answer stderr RESUME_UNSAFE
+stderr '"run_id":"k8"'
 grep -count=4 '(?m)^upload ' uploads.log
 
 -- bin/uv --
