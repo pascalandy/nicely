@@ -1,25 +1,19 @@
 # M17 First everyday task
 
-Status: planned
+Status: done
 Version: v0.17.0
 
 ## Demo
 
-Pascal chooses one recurring task, from a concrete before and after, as Nicely's first useful command requiring no key or configuration.
+Pascal records whether either candidate should become Nicely's first everyday command.
 
 ## Scope
 
 The grooming of 2026-10-18 found two candidates in Pascal's own recipes.
-Pascal picks one of them, or neither.
-Other everyday domains and extra formats stay in [M99](M99-parking-lot/everyday-domains.md).
-This milestone confirms or replaces one candidate; it does not approve a domain family.
-
-| | View one Markdown file | Convert one screen recording |
-|---|---|---|
-| Today | `just sk-read <name>` in Pascal's SKILLS_MONO repository prints a skill's raw Markdown | `video-archive convert --input ./clip.mov -o ./clip.mp4` in Pascal's dotfiles |
-| Result | [M18](M18-markdown.md) renders one file in the terminal | One converted file |
-| Cost | One card, since Nicely already ships the renderer | Several cards: tool checks, overwrite consent, retry safety |
-| Unknown | How often Pascal opens a Markdown file in a terminal | How often Pascal converts one file by hand |
+On 2026-10-19, Pascal picked neither Markdown view nor screen-recording conversion.
+No input or result was selected.
+Both candidates, other everyday domains, and extra formats stay in [M99](M99-parking-lot/everyday-domains.md).
+The next milestone is [M18 Extension template](M18-extension-template.md).
 
 ### Conventions for the everyday domains
 
@@ -41,21 +35,18 @@ Move only the conventions needed by the approved task into its spec.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M17-T1 | Pick the first task | Pascal | — | todo |
-| M17-T2 | Plan one command | agent | M17-T1 | todo |
+| M17-T1 | Pick the first task | Pascal | — | done |
+| M17-T2 | Plan one command | agent | M17-T1 | done |
 
 ### M17-T1 Pick the first task
 
-Pascal picks Markdown, the recording, or neither.
-With a pick, he names one real input he uses and the result it must produce.
+Pascal picked neither candidate on 2026-10-19, so this card selects no everyday command.
 
 ### M17-T2 Plan one command
 
 - **Read:** [Scope](#scope), [Make a milestone ready](README.md#make-a-milestone-ready), [D061](../north-star/decisions/D061-smallest-useful-capability.md)
 - **Proves:** this file's recorded pick, and the milestone that follows from it
 
-Record Pascal's pick and his real input here, and set M17-T1 to done.
-For Markdown, write M18's spec and its one card.
-For the recording, replace M18 with one command's spec and cards.
-Move each rejected candidate to M99 with its revisit condition.
-For neither, move both to M99, delete M18, and plan no other task.
+The pick is recorded in [Scope](#scope).
+Both candidates moved to [M99](M99-parking-lot/everyday-domains.md), each with its revisit condition.
+The Markdown milestone was deleted, and no other everyday task was planned.

@@ -3,6 +3,7 @@
 ## Relations
 
 - An extension is bundled or external; a first-party extension can be either
+- A default extension is external and ships with Nicely
 - The SDK implements the contract and the services in Go, for core and every Go extension
 - The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](../contract/programs-that-ncly-runs.md) names
 - A Python program lives inside an extension and talks to its Go code in JSON only
@@ -14,6 +15,9 @@
   - Project note: only `skill` is bundled
 - External extension
   - Def.: an executable named `ncly-<domain>` with a compatible manifest and its catalogs beside it
+- Default extension
+  - Def.: an external extension that ships with Nicely as a separate executable, through the same path as any external extension
+  - Project note: [D004](../decisions/D004-minimal-core.md) permits everyday domains in the default install
 - First-party extension
   - Def.: an extension in `extensions/` of this repository, such as `agent` or `transcript`
 - Platform
