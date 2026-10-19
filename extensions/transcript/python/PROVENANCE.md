@@ -50,6 +50,7 @@ The tests of each removed feature left with it.
 - Two process tests call `run_child` with a timeout, instead of a signal to the CLI. They come from `test_a_signal_also_stops_what_a_child_started` and `test_a_signal_exits_without_a_traceback_and_stops_children_gently`
 - `test_all_external_pre_summary_calls_receive_bounded_timeouts` becomes `test_every_external_call_receives_a_bounded_timeout`
 - `test_one_recorded_response_saves_the_golden_files` is new, with its fixtures and goldens
+- `alive` in `test_runtime.py` counts a process as gone when reading its `/proc` entry raises `ProcessLookupError`. A process that exits during the read raises it under `pytest -n auto`
 
 ## The nine pyright errors
 

@@ -62,6 +62,8 @@ def alive(pid: int) -> bool:
         return False
     try:
         state = Path(f"/proc/{pid}/stat").read_text().split(") ")[-1]
+    except ProcessLookupError:
+        return False
     except FileNotFoundError:
         return not Path("/proc/self/stat").exists()
     return not state.startswith("Z")
