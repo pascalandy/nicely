@@ -53,7 +53,7 @@ Without `--dry-run`, the call needs the key of `deepgram`, which a human grants 
 
 A key that Deepgram refuses gives `AUTH_REJECTED` in the item, under `RUNTIME`. Each failure keeps its cause in the item. Only a temporary failure before the result folder exits 75. A Deepgram answer lost after the upload leaves the step `unknown`, and nothing retries the upload.
 
-The same call with the same `--run-id` returns a completed run again, without the program, Deepgram, or a key. It checks each file first, and a file that changed or went missing answers `RESUME_UNSAFE`. A config change never moves a saved result. Once the audio may have reached Deepgram, the same call answers `RESUME_UNSAFE` too. Another URL or `--output` under that ID answers `USAGE_INVALID`. A dry run with the ID plans `reuse`, or refuses as the call would.
+The same call with the same `--run-id` returns a completed run again, without `uv`, the program, Deepgram, or a key. It checks each file first, and a file that changed or went missing answers `RESUME_UNSAFE`. A config change never moves a saved result. Once the audio may have reached Deepgram, the same call answers `RESUME_UNSAFE` too. Another URL or `--output` under that ID answers `USAGE_INVALID`. A dry run with the ID plans `reuse`, or refuses as the call would.
 
 ## Runs
 
