@@ -1,6 +1,6 @@
 # M13 Transcript
 
-Status: ready
+Status: active
 Version: v0.13.0
 
 ## Demo
@@ -34,7 +34,7 @@ Each card grows the transcript skill with what it ships.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M13-T1 | Python engine | agent | — | todo |
+| M13-T1 | Python engine | agent | — | done |
 | M13-T2 | Protocol and dry run | agent | M13-T1 | todo |
 | M13-T3 | Transcription with a record | agent | M13-T2 | todo |
 | M13-T4 | Failures and replay | agent | M13-T3 | todo |
