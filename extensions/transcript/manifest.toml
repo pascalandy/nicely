@@ -89,7 +89,7 @@ path = "transcript status"
 summary = "transcript.status.summary"
 examples = ["ncly transcript status", "ncly transcript status --json", "ncly doctor transcript"]
 effects = {}
-config = ["transcript.browser"]
+config = ["transcript.browser", "transcript.youtube.output"]
 doctor = true
 
 [commands.result]

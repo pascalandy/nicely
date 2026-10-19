@@ -31,6 +31,7 @@ stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"transcript\.cookie
 cp stdout status.json
 exec ncly describe 'transcript status' --json
 stdout '"effects":\{"user_writes":false,"network":false,"paid":false\}'
+stdout '\{"key":"transcript\.browser",[^}]*\},\{"key":"transcript\.youtube\.output",'
 cp stdout describe.json
 schema status.json describe.json schema
 exec ncly transcript status
