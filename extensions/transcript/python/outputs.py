@@ -1,5 +1,9 @@
-"""Save the three transcript texts into the result folder."""
+"""Save the three transcript texts and the advisory meta.txt into the result
+folder."""
 
+from contextlib import suppress
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 SAVE_OUTPUT_NAMES = {
@@ -41,3 +45,34 @@ def save_outputs(
     files["json"] = json_path
 
     return files
+
+
+@dataclass
+class Metadata:
+    """The run state that meta.txt shows to a human. No record lists the file,
+    and replay never reads it."""
+
+    title: str
+    source: str
+    method: str
+    started: datetime
+    transcript_status: str = "in progress"
+    audio_bytes: int | None = None
+    error: str | None = None
+
+    def save(self, output_dir: Path) -> None:
+        """Write meta.txt. A write failure is ignored, since the file is
+        advisory and the reported outcome must stay the original one."""
+        lines = [
+            f"Title: {self.title}",
+            f"Date: {self.started.strftime('%Y_%m_%d %Hh%M')}",
+            f"Source: {self.source}",
+            f"YouTube audio method: {self.method}",
+            f"Transcript status: {self.transcript_status}",
+        ]
+        if self.audio_bytes is not None:
+            lines.append(f"Audio upload: complete ({self.audio_bytes} bytes)")
+        if self.error:
+            lines.append(f"Transcript error: {self.error}")
+        with suppress(OSError):
+            write_text_atomic(output_dir / "meta.txt", "\n".join(lines) + "\n")

@@ -1,4 +1,4 @@
-"""Run pinned yt-dlp with Arc's macOS keyring name patched in memory."""
+"""Run yt-dlp with Arc's macOS keyring name patched in memory."""
 
 from __future__ import annotations
 
@@ -7,10 +7,11 @@ from collections.abc import Callable
 from types import ModuleType
 
 import yt_dlp
-from yt_dlp import cookies, version
+from yt_dlp import cookies
 
-SUPPORTED_YTDLP_VERSION = "2026.07.04"
-# A private yt-dlp function, so the type checker cannot see it on the module
+# A private yt-dlp function, so the type checker cannot see it on the module.
+# The adapter checks this function, not the yt-dlp version, so a newer
+# yt-dlp works for as long as the function keeps its contract.
 SETTINGS_FUNCTION = "_get_chromium_based_browser_settings"
 
 
@@ -18,18 +19,8 @@ class ArcCookieAdapterError(RuntimeError):
     """The proven yt-dlp private cookie contract is unavailable."""
 
 
-def install_arc_cookie_adapter(
-    cookies_module: ModuleType,
-    *,
-    runtime_version: str,
-) -> None:
+def install_arc_cookie_adapter(cookies_module: ModuleType) -> None:
     """Patch only Chrome's keyring name so yt-dlp can decrypt Arc cookies."""
-    if runtime_version != SUPPORTED_YTDLP_VERSION:
-        raise ArcCookieAdapterError(
-            f"Arc cookie adapter requires yt-dlp {SUPPORTED_YTDLP_VERSION}; "
-            f"found {runtime_version}"
-        )
-
     original = getattr(cookies_module, SETTINGS_FUNCTION, None)
     if not callable(original):
         raise ArcCookieAdapterError(
@@ -73,7 +64,7 @@ def install_arc_cookie_adapter(
 def main(argv: list[str] | None = None) -> int:
     """Install the checked adapter, then delegate arguments to yt-dlp."""
     try:
-        install_arc_cookie_adapter(cookies, runtime_version=version.__version__)
+        install_arc_cookie_adapter(cookies)
     except ArcCookieAdapterError as error:
         print(f"ERROR: Arc cookie adapter failed: {error}", file=sys.stderr)
         return 1

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import httpx
 
-from runtime import RunBudget
+from runtime import RunBudget, WorkflowTimeoutError
 
 DEEPGRAM_TIMEOUT = 300
 
@@ -24,6 +24,20 @@ AUDIO_CONTENT_TYPES = {
 log = logging.getLogger("transcript")
 
 
+class DeepgramError(RuntimeError):
+    """A failed Deepgram request, with its program code.
+
+    `deepgram_unreachable`, `deepgram_key_rejected`, and `deepgram_failed`
+    mean that Deepgram took no audio or refused it. `deepgram_unknown` means
+    that Deepgram may have received the audio, and `transcript_unusable` that
+    its success answer holds no usable transcript.
+    """
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
 class DeepgramResponseError(ValueError):
     """Deepgram returned a successful response with an unusable schema."""
 
@@ -35,12 +49,26 @@ def get_audio_content_type(audio_path: Path) -> str:
     )
 
 
+def status_code(status: int) -> str:
+    """The program code of a Deepgram answer that is not a success."""
+    if status in {408, 429}:
+        return "deepgram_unreachable"
+    if status in {401, 403}:
+        return "deepgram_key_rejected"
+    if 400 <= status < 500:
+        return "deepgram_failed"
+    return "deepgram_unknown"
+
+
 def transcribe_audio(
     audio_path: Path,
     api_key: str,
     budget: RunBudget,
 ) -> dict:
-    """Transcribe audio using Deepgram API (nova-3 model)."""
+    """Transcribe audio using Deepgram API (nova-3 model), in one request.
+
+    No retry ever repeats the upload. Every failure raises a DeepgramError.
+    """
     url = "https://api.deepgram.com/v1/listen"
     params = {
         "model": "nova-3",
@@ -71,6 +99,10 @@ def transcribe_audio(
                 "Waiting for Deepgram transcription."
             )
 
+        try:
+            timeout = budget.remaining("Deepgram transcription", DEEPGRAM_TIMEOUT)
+        except WorkflowTimeoutError as error:
+            raise DeepgramError("deepgram_unreachable", str(error)) from error
         started = time.monotonic()
         try:
             response = httpx.post(
@@ -78,31 +110,52 @@ def transcribe_audio(
                 params=params,
                 headers=headers,
                 content=chunks(),
-                timeout=budget.remaining("Deepgram transcription", DEEPGRAM_TIMEOUT),
+                timeout=timeout,
             )
+        except (httpx.ConnectError, httpx.ConnectTimeout) as error:
+            raise DeepgramError(
+                "deepgram_unreachable", f"Deepgram is unreachable: {error}"
+            ) from error
         except httpx.WriteTimeout as error:
-            raise httpx.WriteTimeout(
+            raise DeepgramError(
+                "deepgram_unknown",
                 "Deepgram audio upload stalled. "
                 f"At least {sent_bytes}/{total_bytes} bytes sent; "
-                "the current block may be partially sent."
+                "the current block may be partially sent.",
+            ) from error
+        except (httpx.HTTPError, WorkflowTimeoutError, ValueError) as error:
+            raise DeepgramError(
+                "deepgram_unknown",
+                f"{error or type(error).__name__}; "
+                f"{sent_bytes}/{total_bytes} bytes sent",
             ) from error
 
     log.debug(
         "Deepgram answered %s after %.1fs",
-        getattr(response, "status_code", "?"),
+        response.status_code,
         time.monotonic() - started,
     )
-    response.raise_for_status()
-    if sent_bytes != total_bytes:
-        raise ValueError(
-            f"Deepgram responded before the complete audio was sent: "
-            f"{sent_bytes}/{total_bytes} bytes"
+    if not response.is_success:
+        raise DeepgramError(
+            status_code(response.status_code),
+            f"Deepgram answered HTTP {response.status_code}",
         )
-    result = response.json()
-
-    if "error" in result:
-        raise ValueError(f"Deepgram error: {result['error']}")
-
+    if sent_bytes != total_bytes:
+        raise DeepgramError(
+            "deepgram_unknown",
+            f"Deepgram responded before the complete audio was sent: "
+            f"{sent_bytes}/{total_bytes} bytes",
+        )
+    try:
+        result = response.json()
+    except ValueError as error:
+        raise DeepgramError(
+            "transcript_unusable", "Deepgram answered with invalid JSON"
+        ) from error
+    if not isinstance(result, dict) or "error" in result:
+        raise DeepgramError(
+            "transcript_unusable", f"Deepgram error: {str(result)[:200]}"
+        )
     return result
 
 

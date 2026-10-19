@@ -6,9 +6,10 @@ import shlex
 import signal
 import subprocess
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import httpx
 
@@ -36,6 +37,11 @@ class RunBudget:
         """Start a deadline from the current monotonic time."""
         return cls(time.monotonic() + timeout)
 
+    @classmethod
+    def until(cls, deadline: datetime) -> "RunBudget":
+        """Start a deadline at a time, such as the deadline of a request."""
+        return cls(time.monotonic() + (deadline - datetime.now(UTC)).total_seconds())
+
     def remaining(self, operation: str, maximum: float | None = None) -> float:
         """Return a positive timeout or fail before starting an operation."""
         remaining = self.deadline - time.monotonic()
@@ -47,22 +53,28 @@ class RunBudget:
 
 
 def run_child(
-    command: Sequence[str], *, timeout: float | None = None
+    command: Sequence[str],
+    *,
+    timeout: float | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """subprocess.run that stops its child gently.
 
     The child leads its own process group, so what it starts, such as the
     ffmpeg that yt-dlp runs, stops with it. On a timeout or an interrupt, the
     child gets SIGTERM, so it can clean up, and SIGKILL only GRACE seconds
-    later.
+    later. Its stdin is empty, because the protocol owns the stdin of the
+    engine, and `env` adds variables to the environment of the engine.
     """
     log.debug("run %s", _describe(command))
     started = time.monotonic()
     with subprocess.Popen(
         list(command),
+        stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env={**os.environ, **(env or {})},
         process_group=0,
     ) as process:
         try:

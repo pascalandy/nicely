@@ -93,8 +93,11 @@ class TestDeepgramContract:
                 200, json=deepgram_response(), request=httpx.Request("POST", url)
             ),
         )
-        with pytest.raises(ValueError, match="complete audio.*0/5 bytes"):
+        with pytest.raises(
+            deepgram.DeepgramError, match="complete audio.*0/5 bytes"
+        ) as error:
             deepgram.transcribe_audio(audio, "secret", runtime.RunBudget.start())
+        assert error.value.code == "deepgram_unknown"
 
     def test_upload_timeout_reports_completed_bytes(self, tmp_path, monkeypatch):
         audio = tmp_path / "audio.mp3"
@@ -107,8 +110,9 @@ class TestDeepgramContract:
             raise httpx.WriteTimeout("The write operation timed out")
 
         monkeypatch.setattr(httpx, "post", stalled_post)
-        with pytest.raises(httpx.WriteTimeout, match="65536/200000 bytes"):
+        with pytest.raises(deepgram.DeepgramError, match="65536/200000 bytes") as error:
             deepgram.transcribe_audio(audio, "secret", runtime.RunBudget.start())
+        assert error.value.code == "deepgram_unknown"
 
     def test_upload_stops_at_workflow_deadline(self, tmp_path, monkeypatch):
         audio = tmp_path / "audio.mp3"
@@ -123,8 +127,9 @@ class TestDeepgramContract:
             next(chunks)
 
         monkeypatch.setattr(httpx, "post", slow_post)
-        with pytest.raises(runtime.WorkflowTimeoutError, match="upload"):
+        with pytest.raises(deepgram.DeepgramError, match="upload") as error:
             deepgram.transcribe_audio(audio, "secret", runtime.RunBudget(10))
+        assert error.value.code == "deepgram_unknown"
 
     def test_upload_streams_bounded_chunks_without_changing_audio(
         self, tmp_path, monkeypatch, caplog
@@ -215,16 +220,20 @@ def test_every_external_call_receives_a_bounded_timeout(tmp_path, monkeypatch) -
         http_timeouts.append(kwargs["timeout"])
         assert b"".join(kwargs["content"]) == b"audio"
         return SimpleNamespace(
-            raise_for_status=lambda: None,
+            is_success=True,
+            status_code=200,
             json=lambda: deepgram_response(),
         )
 
     monkeypatch.setattr(runtime.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(youtube, "ARC_BROWSER_PROFILE", tmp_path)
     monkeypatch.setattr(youtube, "run_child", fake_run)
     monkeypatch.setattr(httpx, "post", fake_post)
     budget = runtime.RunBudget(20)
 
-    youtube.run_ytdlp(["--get-title", "--get-id"], "url", budget)
+    youtube.run_ytdlp(
+        ["--get-title", "--get-id"], "url", budget, browser="arc", temp_dir=tmp_path
+    )
     deepgram.transcribe_audio(audio, "secret", budget)
 
     assert all(0 < timeout <= 20 for timeout in subprocess_timeouts)

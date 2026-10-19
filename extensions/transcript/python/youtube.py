@@ -12,12 +12,23 @@ from typing import Literal
 from runtime import RunBudget, run_child
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
+# Go extracts the engine into python/<hash>/ inside Nicely's cache
+CACHE_DIR = SCRIPT_DIR.parent.parent
 ARC_BROWSER_PROFILE = Path(
     "~/Library/Application Support/Arc/User Data/Default"
 ).expanduser()
 ARC_ADAPTER_PATH = SCRIPT_DIR / "ytdlp_arc.py"
 YTDLP_MODULE_COMMAND = (sys.executable, "-m", "yt_dlp")
 YTDLP_ATTEMPT_TIMEOUT = 480
+# Every call ignores the user's yt-dlp config, takes one video only, and keeps
+# its cache inside Nicely's cache
+YTDLP_FLAGS = (
+    "--ignore-config",
+    "--no-playlist",
+    "--cache-dir",
+    str(CACHE_DIR / "yt-dlp"),
+)
+COOKIES_SKIPPED = "browser_cookies_skipped"
 
 # The best audio-only stream up to 64 kbit/s, usually Opus. Speech needs no more,
 # and Deepgram takes it as is, so no transcode slows the run
@@ -31,34 +42,34 @@ YTDLP_TEMPORARY = re.compile(
     re.IGNORECASE,
 )
 
-YOUTUBE_URL_PATTERNS = (
-    r"^https?://(www\.)?youtube\.com/watch\?v=(?P<id>[\w-]+)",
-    r"^https?://youtu\.be/(?P<id>[\w-]+)",
-    r"^https?://(www\.)?youtube\.com/shorts/(?P<id>[\w-]+)",
-)
-
 log = logging.getLogger("transcript")
 
-YtDlpMethod = Literal["anonymous", "arc", "chrome"]
+YtDlpMethod = Literal["anonymous", "arc"]
 
 
 class YtDlpError(RuntimeError):
-    """yt-dlp failed with a cleaned diagnostic suitable for CLI output.
+    """yt-dlp failed with a cleaned diagnostic.
 
-    `temporary` is true when the last attempt failed for a network reason.
+    `temporary` is true when the last attempt failed for a network reason, and
+    `warnings` holds the program warnings of the attempts.
     """
 
-    def __init__(self, message: str, temporary: bool = False) -> None:
+    def __init__(
+        self, message: str, temporary: bool = False, warnings: tuple[str, ...] = ()
+    ) -> None:
         super().__init__(message)
         self.temporary = temporary
+        self.warnings = warnings
 
 
 @dataclass(frozen=True)
 class YtDlpResult:
-    """Captured yt-dlp result and the authentication method that succeeded."""
+    """Captured yt-dlp result, the access method that succeeded, and the
+    program warnings of the attempts."""
 
     process: subprocess.CompletedProcess[str]
     method: YtDlpMethod
+    warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -69,79 +80,72 @@ class DownloadedAudio:
     method: YtDlpMethod
     title: str
     video_id: str
+    warnings: tuple[str, ...] = ()
 
 
-def run_ytdlp(args: list[str], url: str, budget: RunBudget) -> YtDlpResult:
-    """Run the pinned yt-dlp module with browser authentication first.
+def run_ytdlp(
+    args: list[str],
+    url: str,
+    budget: RunBudget,
+    *,
+    browser: str | None,
+    temp_dir: Path,
+) -> YtDlpResult:
+    """Run the yt-dlp module, with Arc's cookies first when `browser` is arc.
 
-    Use Arc when its default profile exists, otherwise use Chrome. Anonymous
-    access is a fallback so a valid browser session never pays for a failed
-    unauthenticated request first.
-
-    Args:
-        args: Extra yt-dlp flags (inserted before the URL).
-        url: YouTube URL (appended last).
-        budget: Shared workflow deadline used to bound both attempts.
+    The Arc attempt needs Arc's default profile. When that attempt cannot run
+    or fails, the call tries anonymous access and warns that it skipped the
+    cookies. A child keeps its scratch files in `temp_dir`.
 
     Raises:
-        YtDlpError: If both attempts return a failure status.
+        YtDlpError: If the last attempt returns a failure status.
         WorkflowTimeoutError: If no workflow time remains before an attempt.
     """
-    if ARC_BROWSER_PROFILE.is_dir():
-        authenticated_command = [
-            sys.executable,
-            str(ARC_ADAPTER_PATH),
-            "--cookies-from-browser",
-            f"chrome:{ARC_BROWSER_PROFILE}",
-            *args,
-            url,
-        ]
-        authenticated_operation = "yt-dlp Arc cookie attempt"
-        authenticated_label = "Arc"
-        authenticated_method: YtDlpMethod = "arc"
-    else:
-        authenticated_command = [
-            *YTDLP_MODULE_COMMAND,
-            "--cookies-from-browser",
-            "chrome",
-            *args,
-            url,
-        ]
-        authenticated_operation = "yt-dlp Chrome cookie attempt"
-        authenticated_label = "Chrome"
-        authenticated_method = "chrome"
-    authenticated = run_child(
-        authenticated_command,
-        timeout=budget.remaining(authenticated_operation, YTDLP_ATTEMPT_TIMEOUT),
-    )
-    if authenticated.returncode == 0:
-        return YtDlpResult(authenticated, authenticated_method)
-
-    authenticated_diagnostic = _clean_subprocess_diagnostic(
-        authenticated.stderr or authenticated.stdout
-    )
-    log.info(
-        f"{authenticated_label} YouTube access failed; retrying anonymously. "
-        f"Sign in to YouTube in {authenticated_label} to use your session"
-    )
-    log.debug(f"{authenticated_label} attempt: {authenticated_diagnostic}")
+    tail = [*YTDLP_FLAGS, *args, url]
+    env = {"TMPDIR": str(temp_dir)}
+    warnings: tuple[str, ...] = ()
+    arc_diagnostic = ""
+    if browser == "arc":
+        warnings = (COOKIES_SKIPPED,)
+        if ARC_BROWSER_PROFILE.is_dir():
+            arc = run_child(
+                [
+                    sys.executable,
+                    str(ARC_ADAPTER_PATH),
+                    "--cookies-from-browser",
+                    f"chrome:{ARC_BROWSER_PROFILE}",
+                    *tail,
+                ],
+                timeout=budget.remaining(
+                    "yt-dlp Arc cookie attempt", YTDLP_ATTEMPT_TIMEOUT
+                ),
+                env=env,
+            )
+            if arc.returncode == 0:
+                return YtDlpResult(arc, "arc")
+            arc_diagnostic = _clean_subprocess_diagnostic(arc.stderr or arc.stdout)
+        else:
+            arc_diagnostic = f"no Arc profile at {ARC_BROWSER_PROFILE}"
+        log.info("Arc YouTube access failed; retrying anonymously")
+        log.debug(f"Arc attempt: {arc_diagnostic}")
     anonymous = run_child(
-        [*YTDLP_MODULE_COMMAND, *args, url],
-        timeout=budget.remaining("yt-dlp anonymous fallback", YTDLP_ATTEMPT_TIMEOUT),
+        [*YTDLP_MODULE_COMMAND, *tail],
+        timeout=budget.remaining("yt-dlp anonymous attempt", YTDLP_ATTEMPT_TIMEOUT),
+        env=env,
     )
     if anonymous.returncode == 0:
-        return YtDlpResult(anonymous, "anonymous")
+        return YtDlpResult(anonymous, "anonymous", warnings)
 
     anonymous_diagnostic = _clean_subprocess_diagnostic(
         anonymous.stderr or anonymous.stdout
     )
+    message = f"yt-dlp failed: {anonymous_diagnostic or 'no diagnostic was returned'}"
+    if arc_diagnostic:
+        message = f"Arc attempt: {arc_diagnostic}; anonymous fallback: {message}"
     raise YtDlpError(
-        "yt-dlp failed: "
-        f"{authenticated_label} attempt: "
-        f"{authenticated_diagnostic or 'no diagnostic was returned'}; "
-        "anonymous fallback: "
-        f"{anonymous_diagnostic or 'no diagnostic was returned'}",
+        message,
         temporary=bool(YTDLP_TEMPORARY.search(anonymous_diagnostic)),
+        warnings=warnings,
     )
 
 
@@ -164,21 +168,25 @@ def clean_title(title: str) -> str:
     return cleaned[:50]
 
 
-def download_audio(url: str, output_dir: Path, budget: RunBudget) -> DownloadedAudio:
-    """Download native YouTube audio, and its video's title and ID, in one
-    yt-dlp call."""
+def download_audio(
+    url: str, temp_dir: Path, budget: RunBudget, *, browser: str | None
+) -> DownloadedAudio:
+    """Download native YouTube audio into `temp_dir`, and its video's title
+    and ID, in one yt-dlp call."""
     result = run_ytdlp(
         [
             "-f",
             YTDLP_AUDIO_FORMAT,
             "-o",
-            str(output_dir / "audio.%(ext)s"),
+            str(temp_dir / "audio.%(ext)s"),
             "--no-simulate",
             "--print",
             "after_move:%(.{id,title,filepath})j",
         ],
         url,
         budget,
+        browser=browser,
+        temp_dir=temp_dir,
     )
     try:
         info = json.loads(result.process.stdout.strip().splitlines()[-1])
@@ -189,18 +197,5 @@ def download_audio(url: str, output_dir: Path, budget: RunBudget) -> DownloadedA
         raise ValueError("Video may be private, deleted, or unavailable")
     audio_path = Path(info.get("filepath") or "")
     if not audio_path.is_file():
-        raise FileNotFoundError("Audio download failed")
-    return DownloadedAudio(audio_path, result.method, title, video_id)
-
-
-def youtube_video_id(url: str) -> str | None:
-    """The video ID a YouTube URL names, or None for any other URL."""
-    for pattern in YOUTUBE_URL_PATTERNS:
-        if match := re.match(pattern, url):
-            return match["id"]
-    return None
-
-
-def validate_youtube_url(url: str) -> bool:
-    """Validate YouTube URL format."""
-    return youtube_video_id(url) is not None
+        raise ValueError("Audio download failed")
+    return DownloadedAudio(audio_path, result.method, title, video_id, result.warnings)

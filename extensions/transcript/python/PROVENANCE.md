@@ -11,11 +11,12 @@ This file says where the engine comes from and how it differs from its source.
 
 | Engine file | Source |
 |---|---|
-| `transcript.py` | The PEP 723 header of `transcript.py` |
+| `transcript.py` | The PEP 723 header of `transcript.py`, and a new `main` that speaks the protocol |
+| `protocol.py` | New: the messages of the protocol |
 | `runtime.py` | `RunBudget`, `run_child`, `retry_request`, and their helpers, from `transcript.py` |
-| `youtube.py` | `run_ytdlp`, `download_audio`, `clean_title`, and the URL checks, from `transcript.py` |
+| `youtube.py` | `run_ytdlp`, `download_audio`, and `clean_title`, from `transcript.py` |
 | `deepgram.py` | `transcribe_audio` and `parse_transcript`, from `transcript.py` |
-| `outputs.py` | `save_outputs` and `write_text_atomic`, from `transcript.py` |
+| `outputs.py` | `save_outputs`, `write_text_atomic`, and the `meta.txt` lines of `ResultFolder`, from `transcript.py` |
 | `ytdlp_arc.py` | `ytdlp_arc.py` |
 | `tests/` | The tests of that code, from `tests/test_transcript.py` and `tests/test_contract.py` |
 | `pytest.ini` | The `pytest.ini` at the root of the source repository |
@@ -33,8 +34,10 @@ The tests of each removed feature left with it.
 - The CLI: commands, help, JSON answers, exit codes, signals, dry run, and doctor
 - `validate_env`, which read the Deepgram key from the chezmoi keyring or `DEEPGRAM_API_KEY`
 - `youtube_smoke.py`, its paid check, and the `arc-required` mode of `run_ytdlp` that only it used
-- Result folders: `make_unique_dir`, `ResultFolder`, and its `meta.txt` writer
-- `DeepgramError` and the failure messages of the CLI, which only the CLI read
+- Result folders: `make_unique_dir` and `ResultFolder`, since Go reserves the result folder
+- The failure messages of the CLI, which only the CLI read
+- Chrome cookies, which the source tried when no Arc profile existed
+- `youtube_video_id` and `validate_youtube_url`: Go checks the URL before it starts `uv`, and the engine trusts its request
 
 ## Intentional changes
 
@@ -51,6 +54,17 @@ The tests of each removed feature left with it.
 - `test_all_external_pre_summary_calls_receive_bounded_timeouts` becomes `test_every_external_call_receives_a_bounded_timeout`
 - `test_one_recorded_response_saves_the_golden_files` is new, with its fixtures and goldens
 - `alive` in `test_runtime.py` counts a process as gone when reading its `/proc` entry raises `ProcessLookupError`. A process that exits during the read raises it under `pytest -n auto`
+
+From M13-T2, the engine speaks the [protocol with Go](../spec/protocol.md):
+
+- `main` reads one request on stdin and answers a plan, an intent, and one step on stdout. It waits 10 seconds for the ack of its intent and uploads nothing without it
+- The header asks for `yt-dlp>=2026.7.4` and pins `httpx` and `pycryptodomex`. The Arc adapter checks the function that it patches, not the yt-dlp version
+- yt-dlp runs with `--ignore-config`, `--no-playlist`, and a cache inside Nicely's cache. It reads cookies only when the request names `arc`. A failed Arc attempt goes anonymous with the warning `browser_cookies_skipped`
+- `transcribe_audio` sends one request and retries nothing. Every failure raises `DeepgramError` with its program code. Unlike the source, a 5xx answer is `deepgram_unknown`, never safe to retry
+- `download_audio` raises `ValueError` for a missing audio file, instead of `FileNotFoundError`, so an `OSError` means a failed write
+- `run_child` gives each child an empty stdin, since the protocol owns the stdin of the engine, and adds `TMPDIR` for yt-dlp
+- `Metadata` writes `meta.txt` once the outcome is known, with the lines of `ResultFolder` that do not name a summary
+- The engine's version starts at `1.0.0`
 
 ## The nine pyright errors
 
