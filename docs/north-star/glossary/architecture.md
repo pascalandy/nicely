@@ -35,3 +35,6 @@
   - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines its scope, including the one program that starts outside it
 - Python program
   - Def.: Python code that an extension embeds while it moves to Go, such as transcript's
+- Engine
+  - Def.: transcript's Python program, which it copied from `pascalandy/skills`
+  - Project note: [the transcript spec](../../../extensions/transcript/spec/protocol.md#the-engine) uses this name
