@@ -10,13 +10,6 @@ An author uses the template to wrap one CLI as an extension that follows Nicely'
 ## Scope
 
 [#273](https://github.com/pascalandy/nicely/issues/273) owns the extension requirements.
-Its settled points of 2026-10-19 are:
-
-- Complete the existing contract for external authors, without a separate copy
-- Go with the SDK is the only supported path for now. Other programming languages stay in M99
-- A default extension ships with Nicely as a separate executable through the same path as any extension. It is not compiled into core
-- The template comes first and the author guide last. A small personal script is then the first extension built on the template
-
 [D004](../north-star/decisions/D004-minimal-core.md) records the default-extension rule.
 Pascal settles the remaining requirements in #273 before readiness or implementation starts.
 

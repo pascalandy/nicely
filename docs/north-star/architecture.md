@@ -9,9 +9,7 @@ Nicely is a small core, and everything it does for a user is an extension, in th
 - **Core** is the host: dispatch, help, completion, `describe`, `doctor`, `auth` with grants, `run`, and `tap`. It knows no domain.
 - **Extensions** add domains, such as `transcript`. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill. An **external** extension is an executable named `ncly-<domain>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository. Personal tools can use the same extension format.
 
-Some external extensions may ship by default with Nicely, including everyday domains.
-Each default extension remains a separate executable through the same extension path, as [D004](decisions/D004-minimal-core.md) decides.
-Other extensions can live in their own repositories.
+[D004](decisions/D004-minimal-core.md) defines how default extensions ship with Nicely.
 
 ## Layers
 
