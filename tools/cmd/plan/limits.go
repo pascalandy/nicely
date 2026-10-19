@@ -122,6 +122,18 @@ func runLimits(args []string) error {
 	if len(problems) == 0 {
 		return nil
 	}
+	if worktree {
+		base, err := limitsGit(args[0], "rev-parse", "--short", old)
+		if err != nil {
+			return err
+		}
+		count, err := limitsGit(args[0], "rev-list", "--count", old+"..HEAD")
+		if err != nil {
+			return err
+		}
+		context := fmt.Sprintf("limits: compared working tree with %s (%s), %s commits", strings.TrimSpace(string(base)), args[2], strings.TrimSpace(string(count)))
+		problems = append([]string{context}, problems...)
+	}
 	for _, fix := range []struct {
 		needed bool
 		text   string
