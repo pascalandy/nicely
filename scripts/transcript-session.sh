@@ -5,12 +5,13 @@
 #
 #   bash scripts/transcript-session.sh <folder>
 #
-# <folder> must not exist, and must lie outside any git checkout. Give the session
-# <folder>/bin first in PATH and <folder>/work as its working folder. Its ncly is the test
-# binary of cmd/ncly, so nothing reaches YouTube, Deepgram, or the OS keychain. Each upload
-# appends one line to <folder>/logs/uploads.log. The script seeds three runs for the session:
-# team-sync completed and lost its answer, Deepgram refused the key of keynote, and the upload
-# of interview has an unknown outcome. Its last line on stdout is the folder.
+# <folder> must not exist, must hold no quote or backslash, and must lie outside any git
+# checkout. Give the session <folder>/bin first in PATH and <folder>/work as its working
+# folder. Its ncly is the test binary of cmd/ncly, so nothing reaches YouTube, Deepgram, or
+# the OS keychain. Each upload appends one line to <folder>/logs/uploads.log. The script seeds
+# three runs for the session: team-sync completed and lost its answer, Deepgram refused the key
+# of keynote, and the upload of interview has an unknown outcome. Its last line on stdout is
+# the folder.
 set -Eeuo pipefail
 
 die() {
@@ -27,9 +28,15 @@ case "$1" in
 *) dir="$PWD/$1" ;;
 esac
 [[ ! -e "$dir" && ! -L "$dir" ]] || die "$dir exists: give a new folder"
+# plain refuses a folder that the session files cannot hold: its scripts quote the folder in
+# single quotes, and its grant in JSON.
+plain() {
+	case "$1" in *[\'\"\\]*) die "$1 holds a quote or a backslash, which the session files cannot hold" ;; esac
+}
+plain "$dir"
 mkdir -p "$dir"
 dir="$(cd "$dir" && pwd -P)"
-case "$dir" in *"'"*) die "$dir holds a quote, which the scripts of the session cannot hold" ;; esac
+plain "$dir"
 if git -C "$dir" rev-parse --git-dir >/dev/null 2>&1; then
 	die "$dir lies inside a git checkout, whose source the session could read"
 fi
