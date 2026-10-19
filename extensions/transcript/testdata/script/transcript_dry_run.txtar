@@ -26,6 +26,9 @@ exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgr
 # answers no call, so its file stays as seeded
 snapshot before
 exec ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+# The test launcher logs its one start in $WORK, a file of the test setup that the snapshot leaves out
+grep -count=1 '(?m)^start' starts.log
+rm starts.log
 unchanged before
 stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\{"id":"auth\.deepgram","message":"Authentication is checked only during execution\."\}\],"plan":\[\{"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","output":"'${OUT@R}'","steps":\[\{"id":"transcribe","action":"run"\}\],"effects":\{"network":true,"paid":true,"user_writes":true\}\}\]\}\n\z'
 ! stderr .

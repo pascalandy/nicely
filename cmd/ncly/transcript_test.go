@@ -128,7 +128,7 @@ func warm(t hostTools, scratch string) error {
 		}
 		args = append(args, "--with-requirements", filepath.Join(engine, "transcript.py"), t.launcher, engine)
 		cmd := exec.Command(filepath.Join(bin, "uv"), args...)
-		cmd.Env = []string{"HOME=" + scratch, "PATH=" + bin}
+		cmd.Env = []string{"HOME=" + scratch, "PATH=" + bin, "WORK=" + scratch}
 		cmd.Stdin = strings.NewReader(request)
 		var out []byte
 		if out, err = cmd.CombinedOutput(); err == nil && strings.Contains(string(out), `"type": "plan"`) {

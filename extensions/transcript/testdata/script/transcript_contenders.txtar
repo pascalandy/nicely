@@ -1,0 +1,68 @@
+# Two calls at once never share a run or a result folder, as Records and replay in spec/ defines. The
+# real uv and Python run the engine with the test launcher, whose Deepgram waits under
+# NCLY_TEST_PAUSE=upload once it read the whole upload, until $WORK/release exists. It writes the
+# process ID of Python first. A second call under the busy run ID exits 75 and starts nothing. A
+# second run of the same title takes the next folder name, and each run completes in its own.
+# exitcode writes the exit code of a call in the background.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+mkdir bin
+symlink bin/uv -> $UV
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external exitcode
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# While the run b1 waits for Deepgram, the same call finds its run busy: TEMPORARY with exit 75,
+# a hint that inspects the run, and no engine, download, or upload of its own
+env NCLY_TEST_PAUSE=upload NCLY_TEST_TITLE=busy
+exec exitcode first.txt ncly transcript run youtube --url $URL --output $OUT --run-id b1 --json &
+waitfile engine.pid
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id b1 --json
+! stdout .
+answer stderr TEMPORARY
+stderr '"run_id":"b1"'
+stderr '"hint":"ncly run view b1"'
+grep -count=1 '(?m)^start' starts.log
+grep -count=1 '(?m)^https' downloads.log
+grep -count=1 '(?m)^upload ' uploads.log
+
+# Once Deepgram answers, the run b1 completes in its folder
+mkdir release
+wait
+grep '^0$' first.txt
+stdout '"run_id":"b1","results":\[\{"ok":true,"output_dir":"'${OUT@R}'/busy",'
+exec ncly run view b1 --json
+stdout '"attempts":1,'
+stdout '"status":"completed","tools"'
+
+# While the run t1 waits for Deepgram in its folder, the run t2 of the same title creates the next
+# name and completes there. Then t1 completes in its own folder, and neither touches the other's
+env NCLY_TEST_TITLE=same
+rm engine.pid release
+exec exitcode first.txt ncly transcript run youtube --url $URL --output $OUT --run-id t1 --json &
+waitfile engine.pid
+exists $OUT/same
+env NCLY_TEST_PAUSE=
+exec ncly transcript run youtube --url $URL --output $OUT --run-id t2 --json
+stdout '"run_id":"t2","results":\[\{"ok":true,"output_dir":"'${OUT@R}'/same-2","transcript":"'${OUT@R}'/same-2/raw_transcript\.txt",'
+! exists $OUT/same/raw_transcript.txt
+mkdir release
+wait
+grep '^0$' first.txt
+stdout '"run_id":"t1","results":\[\{"ok":true,"output_dir":"'${OUT@R}'/same","transcript":"'${OUT@R}'/same/raw_transcript\.txt",'
+exists $OUT/same/raw_transcript.txt $OUT/same/raw_sentences.txt $OUT/same/raw_transcript.json
+exists $OUT/same-2/raw_transcript.txt $OUT/same-2/raw_sentences.txt $OUT/same-2/raw_transcript.json
+exec ncly run view t1 --json
+stdout '"output_dir":"'${OUT@R}'/same",'
+exec ncly run view t2 --json
+stdout '"output_dir":"'${OUT@R}'/same-2",'
+grep -count=3 '(?m)^upload ' uploads.log
+
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}

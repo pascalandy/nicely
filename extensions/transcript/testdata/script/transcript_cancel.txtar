@@ -1,0 +1,93 @@
+# Ctrl-C and SIGTERM stop the engine and every process it started, as Cancellation in Programs that
+# ncly runs defines. The real uv and Python run the engine with the test launcher, whose Deepgram
+# waits under NCLY_TEST_PAUSE=upload once it read the whole upload. It writes the process IDs of
+# Python and uv, then waits for $WORK/release. Once the ack left, the audio may be billed, so the
+# step and the run stay unknown, the answer keeps the result folder, and the same call starts
+# nothing. A signal after the durable completion keeps the completion. exitcode passes the signal
+# on to ncly and writes its exit code.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+mkdir bin
+symlink bin/uv -> $UV
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external exitcode
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# Ctrl-C while Deepgram holds the upload: INTERRUPTED with exit 130, the run_id, and the item with
+# its result folder, whose hint inspects the run. Neither Python nor uv runs anymore
+env NCLY_TEST_PAUSE=upload NCLY_TEST_TITLE=interrupted
+exec exitcode exit.txt ncly transcript run youtube --url $URL --output $OUT --run-id c1 --json &
+waitfile engine.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+stderr '"run_id":"c1","results":\[\{"ok":false,"output_dir":"'${OUT@R}'/interrupted","transcript":null,"url":"[^"]+","errors":\[\{"code":"INTERRUPTED","message":"The transcription stopped before it ended\.","hint":"ncly run view c1","next":\["ncly","run","view","c1"\]\}\]'
+gone engine.pid
+gone uv.pid
+exists $OUT/interrupted
+
+# Another process sees the step and the run unknown, with the error of the stop, and the folder
+exec ncly run view c1 --json
+stdout '"active":false,'
+stdout '"error":\{"code":"INTERRUPTED","hint":"ncly run view c1","message":"The transcription stopped before it ended\."\},"finished_at":null,"id":"transcribe","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+stdout '"output_dir":"'${OUT@R}'/interrupted"'
+stdout '"status":"unknown","tools"'
+
+# The same call starts no engine and sends no second upload: RESUME_UNSAFE
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id c1 --json
+answer stderr RESUME_UNSAFE
+grep -count=1 '(?m)^start' starts.log
+grep -count=1 '(?m)^upload ' uploads.log
+
+# SIGTERM at the same place: TERMINATED with exit 143, and the same end
+rm engine.pid uv.pid
+env NCLY_TEST_TITLE=terminated
+exec exitcode exit.txt ncly transcript run youtube --url $URL --output $OUT --run-id c2 --json &
+waitfile engine.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"output_dir":"'${OUT@R}'/terminated","transcript":null,"url":"[^"]+","errors":\[\{"code":"TERMINATED","message":"The transcription stopped before it ended\.","hint":"ncly run view c2"'
+gone engine.pid
+gone uv.pid
+exec ncly run view c2 --json
+stdout '"error":\{"code":"TERMINATED",'
+stdout '"status":"unknown","tools"'
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id c2 --json
+answer stderr RESUME_UNSAFE
+grep -count=2 '(?m)^start' starts.log
+grep -count=2 '(?m)^upload ' uploads.log
+
+# A signal after the durable completion keeps it, at the pause of the boundary hook after the
+# completion: TERMINATED, with the completed item, its transcript and its folder, in the answer
+env NCLY_TEST_PAUSE= NCLY_TEST_TITLE=completed NCLY_TEST_BOUNDARY=pause:after-completion
+exec exitcode exit.txt ncly transcript run youtube --url $URL --output $OUT --run-id c3 --json &
+waitfile paused
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"run_id":"c3","results":\[\{"ok":true,"output_dir":"'${OUT@R}'/completed","transcript":"'${OUT@R}'/completed/raw_transcript\.txt","url":"[^"]+"\}\],"errors":\[\{"code":"TERMINATED","message":"Stopped by SIGTERM\. Finished work is kept\."'
+env NCLY_TEST_BOUNDARY=
+exec ncly run view c3 --json
+stdout '"status":"completed","tools"'
+exists $OUT/completed/raw_transcript.txt
+
+# The same call replays the saved result, with no engine and no upload
+exec ncly transcript run youtube --url $URL --output $OUT --run-id c3 --json
+stdout '"ok":true,'
+stdout '"transcript":"'${OUT@R}'/completed/raw_transcript\.txt"'
+grep -count=3 '(?m)^start' starts.log
+grep -count=3 '(?m)^upload ' uploads.log
+
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}

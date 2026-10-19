@@ -16,9 +16,14 @@ counts as unset:
   cookies that could not be read
 - NCLY_TEST_DEEPGRAM_STATUS is the HTTP status of Deepgram, 200 by default
 - NCLY_TEST_DEEPGRAM_BODY=garbage makes Deepgram answer 200 with no JSON
+- NCLY_TEST_PAUSE=upload makes Deepgram wait before it answers the whole
+  upload. It writes the process IDs of Python and of uv, its parent, to
+  $WORK/engine.pid and $WORK/uv.pid, then waits until $WORK/release exists,
+  for at most 60 seconds
 
-It appends one line per download to $WORK/downloads.log and one line per
-upload to $WORK/uploads.log, without the key.
+It appends one line per start to $WORK/starts.log, one per download to
+$WORK/downloads.log, and one per upload to $WORK/uploads.log, without the
+key.
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ from __future__ import annotations
 import os
 import shutil
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -39,10 +45,22 @@ def log(name: str, text: str) -> None:
         file.write(text + "\n")
 
 
+def pause() -> None:
+    work = Path(os.environ["WORK"])
+    (work / "uv.pid").write_text(f"{os.getppid()}\n")
+    (work / "engine.pid").write_text(f"{os.getpid()}\n")
+    for _ in range(1200):
+        if (work / "release").exists():
+            return
+        time.sleep(0.05)
+
+
 def answer(request: httpx.Request) -> httpx.Response:
     body = request.read()
     authorized = request.headers.get("Authorization", "").startswith("Token ")
     log("uploads.log", f"upload {len(body)} bytes, authorized {authorized}")
+    if os.environ.get("NCLY_TEST_PAUSE") == "upload":
+        pause()
     status = int(os.environ.get("NCLY_TEST_DEEPGRAM_STATUS") or "200")
     if status != 200:
         return httpx.Response(status, json={"err_msg": "test transport"})
@@ -57,6 +75,7 @@ def main() -> int:
     # The engine's modules sit in the folder that Go extracted, not beside
     # this file.
     sys.path.insert(0, sys.argv[1])
+    log("starts.log", "start")
     import transcript
     from youtube import COOKIES_SKIPPED, DownloadedAudio, YtDlpError
 
