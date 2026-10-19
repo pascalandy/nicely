@@ -148,18 +148,34 @@ STUB
 # prepare_transcript installs ncly and the first-party extensions with install_checkout. It
 # links the real uv and Python 3.12 or later into scratch/tools, first in the wrapper's PATH, and
 # points the wrapper at the installed ncly. The engine then runs through them, with the empty uv
-# cache of the scratch home, which it fills from the network.
+# cache of the scratch home, which it fills from the network. The wrapper also sets the fake key
+# of deepgram, whatever the caller holds. Core reads that variable before the keychain, so no
+# call of the run, a tmux one included, ever reaches a real key in the keychain.
 prepare_transcript() {
-	local run="$1" home="$1/scratch/home" tools="$1/scratch/tools" path
+	local run="$1" home="$1/scratch/home" tools="$1/scratch/tools" wrapper="$1/scratch/bin/ncly" path
 	install_checkout "$run"
 	mkdir -p "$tools"
 	link_host_program uv "$home" "$tools" --version
 	link_host_program python3 "$home" "$tools" -c 'import sys; sys.exit(sys.version_info < (3, 12))'
 	path="$(wrapper_path "$run")"
-	write_wrapper "$run/scratch/bin/ncly" "$home/.local/bin/ncly" "$home" "$tools:$path"
+	write_wrapper "$wrapper" "$home/.local/bin/ncly" "$home" "$tools:$path"
+	# The last line of the wrapper is its exec, so the key goes just before it.
+	if ! {
+		sed '$d' "$wrapper"
+		printf '%s\n' "DEEPGRAM_API_KEY='$fake_deepgram_key'" 'export DEEPGRAM_API_KEY'
+		tail -n 1 "$wrapper"
+	} >"$wrapper.new" || ! mv "$wrapper.new" "$wrapper" || ! chmod +x "$wrapper"; then
+		die "could not set the fake key of deepgram in $wrapper"
+	fi
+	grep -q "^DEEPGRAM_API_KEY='$fake_deepgram_key'\$" "$wrapper" || die "$wrapper holds no fake key of deepgram"
 	: >"$run/transcript-prepared"
 	log "the wrapper now runs $home/.local/bin/ncly, with the uv and python3 of $tools first in PATH"
+	log "every ncly call of this run gets DEEPGRAM_API_KEY=$fake_deepgram_key, a fake key that Deepgram refuses"
 }
+
+# fake_deepgram_key is the key of deepgram in each transcript run: no human's key, which
+# Deepgram refuses with 401, so nothing bills.
+fake_deepgram_key="fake-deepgram-key-for-verify"
 
 # link_host_program links into the folder $3 the first program of PATH named $1 that answers the
 # rest of the arguments with exit 0 under the home $2, as in the run. A shim that needs the real
