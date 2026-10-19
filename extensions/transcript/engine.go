@@ -22,7 +22,7 @@ var engine embed.FS
 const script = "transcript.py"
 
 // Test changes how the engine runs, and only the test binary sets it, as
-// Test transport in spec/protocol.md defines. A release leaves it empty.
+// spec/test-transport.md defines. A release leaves it empty.
 var Test struct {
 	// UVCache is the uv cache of the test binary, outside $WORK, which
 	// replaces the one in Nicely's cache.

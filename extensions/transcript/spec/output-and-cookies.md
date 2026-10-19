@@ -52,7 +52,7 @@ Here, `<folder>` is `uv` inside Nicely's cache, such as `~/.cache/nicely/uv`.
 The explicit flag overrides an inherited `UV_CACHE_DIR`.
 Python 3.12 or later must already be installed; `uv` never downloads it.
 The engine runs with `PYTHONDONTWRITEBYTECODE=1`, so the folder of a hash holds only the embedded files.
-Only the test binary adds `--offline`, as [Test transport](protocol.md#test-transport) says.
+Only the test binary adds `--offline`, as [Test transport](test-transport.md) says.
 yt-dlp runs with `--ignore-config`, `--no-playlist`, and a `--cache-dir` named `yt-dlp` inside Nicely's cache.
 The engine finds that cache two folders above its own, `python/<hash>/`.
 

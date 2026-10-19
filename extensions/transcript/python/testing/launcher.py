@@ -1,4 +1,4 @@
-"""Run the engine with the test transport of spec/protocol.md.
+"""Run the engine with the test transport of spec/test-transport.md.
 
 Only the test binary of ncly runs this file, as uv runs
 `--with-requirements <engine>/transcript.py launcher.py <engine>`. yt-dlp

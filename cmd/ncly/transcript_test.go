@@ -17,8 +17,8 @@ import (
 )
 
 // transcriptExternal runs the transcript extension with the test transport
-// of extensions/transcript/spec/protocol.md. It runs uv offline from the uv
-// cache of the test binary, which NCLY_TEST_UV_CACHE names, with the test
+// of extensions/transcript/spec/test-transport.md. It runs uv offline from the
+// uv cache of the test binary, which NCLY_TEST_UV_CACHE names, with the test
 // launcher, which NCLY_TEST_LAUNCHER names. Without both, it refuses to run, so a
 // scenario never reaches YouTube or Deepgram. It installs the boundary hook
 // that NCLY_TEST_BOUNDARY asks for, as agent-external does.

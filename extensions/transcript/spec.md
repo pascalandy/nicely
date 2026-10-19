@@ -68,11 +68,12 @@ Execution checks the granted key before download or output reservation.
 A key outside visible ASCII, such as one with a line break, answers `AUTH_REJECTED` before any record, and the answer never quotes it.
 The command needs no agent extension, profile, or summary prompt.
 
-Three parts of this spec, each in its own file, define the rest of the command:
+Four parts of this spec, each in its own file, define the rest of the command:
 
 - [Output and cookies](spec/output-and-cookies.md)
 - [Records and replay](spec/records-and-replay.md)
 - [Protocol with the Python program](spec/protocol.md)
+- [Test transport](spec/test-transport.md)
 
 ## Dry-run examples
 
