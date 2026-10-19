@@ -1,0 +1,99 @@
+# A completed run replays from its record: the same call checks each artifact, then answers the
+# saved result, with no uv, no upload, and no key. A config change never redirects it. Its dry
+# run plans reuse. A changed or missing artifact, and a record that this build cannot read,
+# refuse with RESUME_UNSAFE, as the dry run does, without changing the record. Another URL or
+# another --output under the same ID is USAGE_INVALID before any effect. bin/uv counts each call
+# of the real uv, and the test launcher counts uploads.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+chmod 755 bin/uv
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+env RUNS=$STATE/runs
+mkdir $STATE
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+mkdir $WORK/first $WORK/second
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# A run without --output takes its folder from the config. After the config names another
+# folder, and with no grant left, the same call answers the first result, from the record alone
+cp first.toml $CFG/config.toml
+exec ncly transcript run youtube --url $URL --run-id r1 --json
+stdout '"output_dir":"'${WORK@R}'/first/Test_video"'
+cp stdout r1.json
+cp second.toml $CFG/config.toml
+rm $STATE/grants.json
+exec ncly transcript run youtube --url $URL --run-id r1 --json
+cmp stdout r1.json
+grep -count=1 '(?m)^run ' uv.log
+grep -count=1 '(?m)^upload ' uploads.log
+
+# Its dry run checks the artifacts, then plans reuse, with no effect and no pending check
+exec ncly transcript run youtube --url $URL --run-id r1 --dry-run --json
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\],"plan":\[\{"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","output_dir":"'${WORK@R}'/first/Test_video","steps":\[\{"id":"transcribe","action":"reuse"\}\],"effects":\{"network":false,"paid":false,"user_writes":false\}\}\]\}\n\z'
+exec ncly transcript run youtube --url $URL --run-id r1 --dry-run
+stdout '\AWould return the saved transcript of https://www\.youtube\.com/watch\?v=EIEc43CxIvY in '${WORK@R}'/first/Test_video\.\n\z'
+grep -count=1 '(?m)^run ' uv.log
+
+# Another URL, another --output, or an --output that the run never had: USAGE_INVALID, in the
+# call and its dry run, before uv starts
+exits 2 ncly transcript run youtube --url https://youtu.be/EIEc43CxIvY --run-id r1 --json
+answer stderr USAGE_INVALID
+stderr '"run_id":"r1",.*"message":"The run r1 holds another command, URL, or --output\.","hint":"ncly run view r1"'
+exits 2 ncly transcript run youtube --url $URL --output $WORK/second --run-id r1 --json
+answer stderr USAGE_INVALID
+exits 2 ncly transcript run youtube --url https://youtu.be/EIEc43CxIvY --run-id r1 --dry-run --json
+answer stderr USAGE_INVALID
+grep -count=1 '(?m)^run ' uv.log
+
+# A changed artifact refuses the call and its dry run, and the record stays as it was
+cp $RUNS/r1.json r1-record.json
+cp changed.txt $WORK/first/Test_video/raw_sentences.txt
+exits 1 ncly transcript run youtube --url $URL --run-id r1 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"'${WORK@R}'/first/Test_video/raw_sentences\.txt no longer holds what the run r1 recorded\."'
+exits 1 ncly transcript run youtube --url $URL --run-id r1 --dry-run --json
+answer stderr RESUME_UNSAFE
+cmp $RUNS/r1.json r1-record.json
+
+# A missing artifact refuses too, as a run with --output shows
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+exec ncly transcript run youtube --url $URL --output $OUT --run-id r2 --json
+rm $OUT/Test_video/raw_transcript.json
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id r2 --json
+answer stderr RESUME_UNSAFE
+exits 2 ncly transcript run youtube --url $URL --run-id r2 --json
+answer stderr USAGE_INVALID
+
+# A record that this build cannot read is never an absent one
+cp garbage.json $RUNS/r3.json
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id r3 --json
+answer stderr RESUME_UNSAFE
+stderr '"message":"'${RUNS@R}'/r3\.json is no record that this build can use\."'
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id r3 --dry-run --json
+answer stderr RESUME_UNSAFE
+grep -count=2 '(?m)^run ' uv.log
+grep -count=2 '(?m)^upload ' uploads.log
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+exec "$UV" "$@"
+-- first.toml --
+[transcript.youtube]
+output = "~/first"
+-- second.toml --
+[transcript.youtube]
+output = "~/second"
+-- changed.txt --
+A sentence that the run never wrote.
+-- garbage.json --
+{"format_version":1,"run_id":"r3"
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}

@@ -111,24 +111,53 @@ func sameValues(a, b map[string]any) bool {
 	return errA == nil && errB == nil && bytes.Equal(x, y)
 }
 
-// replay answers a completed run from its record, once each artifact still
-// holds what the record says, without the engine or Deepgram. A changed or
-// missing file is RESUME_UNSAFE, and evidence that this build cannot read
-// counts as an unreadable record.
-func replay(call extension.Call, saved *record.Record, file, id string) contract.Outcome {
-	p := call.Printer
+// verified checks the saved result of a completed run, as replay asks, and
+// returns its result folder and warnings. A changed or missing file is
+// RESUME_UNSAFE, and evidence that this build cannot read counts as an
+// unreadable record. A dry run and execution share it, so they decide
+// alike.
+func verified(p *i18n.Printer, saved *record.Record, file, id string) (string, []string, *contract.Problem) {
 	item := saved.Items[0]
 	step := item.Steps[0]
 	var ev evidence
 	if item.OutputDir == nil || len(step.Artifacts) != len(artifactNames) || json.Unmarshal(step.Evidence, &ev) != nil || ev.FormatVersion != 1 {
-		return refusal(unreadable(p, file, id), id)
+		return "", nil, unreadable(p, file, id)
 	}
 	for i, a := range step.Artifacts {
 		if !intact(a, *item.OutputDir, artifactNames[i]) {
-			return refusal(inspect(p, contract.ResumeUnsafe, id, "transcript.run.artifact_changed", map[string]any{"File": a.Path, "ID": id}), id)
+			return "", nil, inspect(p, contract.ResumeUnsafe, id, "transcript.run.artifact_changed", map[string]any{"File": a.Path, "ID": id})
 		}
 	}
-	return success(call, id, item.Key, *item.OutputDir, ev.Warnings)
+	return *item.OutputDir, ev.Warnings, nil
+}
+
+// replay answers a completed run from its verified record, without the
+// engine or Deepgram.
+func replay(call extension.Call, saved *record.Record, file, id string) contract.Outcome {
+	dir, codes, problem := verified(call.Printer, saved, file, id)
+	if problem != nil {
+		return refusal(problem, id)
+	}
+	return success(call, id, saved.Items[0].Key, dir, codes)
+}
+
+// reuse is the dry run of a completed run: its verified result folder, with
+// the step transcribe reused, no effect, and no pending check.
+func reuse(call extension.Call, saved *record.Record, file, id string) contract.Outcome {
+	p := call.Printer
+	dir, _, problem := verified(p, saved, file, id)
+	if problem != nil {
+		return refusal(problem, id)
+	}
+	url := saved.Items[0].Key
+	if !call.JSON {
+		_, _ = fmt.Fprintln(call.Stdout, p.T("transcript.run.reuse", map[string]any{"URL": url, "Dir": dir}))
+	}
+	return contract.Outcome{Data: dryRunAnswer{
+		DryRun:  true,
+		Plan:    []planItem{{Key: url, OutputDir: dir, Steps: []planStep{{ID: stepID, Action: "reuse"}}, Effects: map[string]bool{"user_writes": false, "network": false, "paid": false}}},
+		Pending: []check{},
+	}}
 }
 
 // success is the answer of a completed transcription: its run, and the one

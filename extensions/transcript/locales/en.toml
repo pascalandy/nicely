@@ -265,8 +265,8 @@ description = "Hint of the item error transcript.download_failed. --verbose stay
 other = "Check that the video plays in a browser, then run the call again with --verbose."
 
 ["transcript.deepgram_unreachable"]
-description = "Item error of `ncly transcript run youtube`: Deepgram could not be reached or refused the request for now, so no audio was sent. Deepgram is the name of a service."
-other = "Deepgram could not be reached, so no audio was sent."
+description = "Item error of `ncly transcript run youtube`: Deepgram could not be reached, or refused the request for now, such as with HTTP 429. Deepgram is the name of a service."
+other = "Deepgram could not be reached, or refused the request for now."
 
 ["transcript.deepgram_key_rejected"]
 description = "Item error of `ncly transcript run youtube`: Deepgram refused the key, such as with HTTP 401. Deepgram is the name of a service."
@@ -299,3 +299,7 @@ other = "The cookies of Arc could not be read, so the download tried anonymous a
 ["transcript.browser_cookies_skipped_hint"]
 description = "Hint of the warning transcript.browser_cookies_skipped. Arc is the name of a browser, and browser and [transcript] stay as is."
 other = "Open Arc once, or remove browser from the [transcript] table."
+
+["transcript.run.reuse"]
+description = "ncly transcript run youtube --dry-run, human text, for a completed run: the call would return its saved transcript. {{.URL}} is the URL and {{.Dir}} the absolute result folder."
+other = "Would return the saved transcript of {{.URL}} in {{.Dir}}."

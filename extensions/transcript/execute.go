@@ -21,19 +21,12 @@ import (
 const maxCandidates = 1000
 
 // execute runs the prepared job under the run ID of the call, or a new one,
-// as Records and replay in spec/records-and-replay.md defines. It reads the
-// granted key before any record, then takes the run lock. It replays a
-// completed run, refuses an uncertain one, and otherwise resolves the job
-// and starts an attempt.
+// as Records and replay in spec/records-and-replay.md defines. It takes the
+// run lock, then replays a completed run, which needs no key, or refuses an
+// uncertain one. Otherwise it resolves the job, reads the granted key before
+// any record or effect, and starts an attempt.
 func execute(ctx context.Context, call extension.Call, j job, id string) contract.Outcome {
 	p := call.Printer
-	key, problem := call.Key("deepgram")
-	if problem == nil && !headerSafe(key) {
-		problem = keyUnusable(p)
-	}
-	if problem != nil {
-		return refused(problem)
-	}
 	runs := store()
 	if id == "" {
 		id = record.NewID(time.Now())
@@ -64,10 +57,14 @@ func execute(ctx context.Context, call extension.Call, j job, id string) contrac
 		}
 	}
 	if problem := resolve(ctx, call, &j); problem != nil {
-		if run.Record == nil {
-			return refused(problem)
-		}
-		return refusal(problem, id)
+		return refusal(problem, savedID(run))
+	}
+	key, problem := call.Key("deepgram")
+	if problem == nil && !headerSafe(key) {
+		problem = keyUnusable(p)
+	}
+	if problem != nil {
+		return refusal(problem, savedID(run))
 	}
 	a := &attempt{call: call, p: p, j: j, run: run, saved: run.Record != nil}
 	return a.execute(ctx, key)

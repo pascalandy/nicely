@@ -105,12 +105,14 @@ type dryRunAnswer struct {
 }
 
 // planItem is the one item of a dry run. Output is the parent that will hold
-// the result folder of a new run.
+// the result folder of a new run. OutputDir is the result folder of a
+// completed run, which the call reuses.
 type planItem struct {
-	Key     string          `json:"key"`
-	Output  string          `json:"output,omitempty"`
-	Steps   []planStep      `json:"steps"`
-	Effects map[string]bool `json:"effects"`
+	Key       string          `json:"key"`
+	Output    string          `json:"output,omitempty"`
+	OutputDir string          `json:"output_dir,omitempty"`
+	Steps     []planStep      `json:"steps"`
+	Effects   map[string]bool `json:"effects"`
 }
 
 type planStep struct {
@@ -124,14 +126,35 @@ type check struct {
 	Message string `json:"message"`
 }
 
-// dryRun asks the engine for its plan, as execution does, and answers what
-// execution would do. It reads no key and creates no record, no result
-// folder, and no user file. Only the extraction of the engine and the
-// cache of uv may write.
+// dryRun answers what execution would do. A run ID that a record holds
+// decides as execution decides, from a read without the lock. A completed
+// run plans reuse, and a run that the call may not continue refuses alike.
+// Otherwise it asks the engine for its plan, as execution does. It reads no
+// key and creates no record, no result folder, and no user file. Only the
+// extraction of the engine and the cache of uv may write.
 func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 	p := call.Printer
 	if problem := resolve(ctx, call, &j); problem != nil {
 		return refused(problem)
+	}
+	if id, given := call.Flags["run-id"]; given {
+		runs := store()
+		saved, err := runs.Read(id)
+		var bad *record.UnreadableError
+		switch {
+		case errors.As(err, &bad):
+			return refusal(unreadable(p, bad.File, id), id)
+		case err != nil:
+			return refusal(unreadable(p, runs.File(id), id), id)
+		case saved != nil:
+			completed, problem := decide(p, call, j, saved, runs.File(id), id)
+			if problem != nil {
+				return refusal(problem, id)
+			}
+			if completed {
+				return reuse(call, saved, runs.File(id), id)
+			}
+		}
 	}
 	s, problem := start(ctx, call, j, true, nil)
 	if problem != nil {

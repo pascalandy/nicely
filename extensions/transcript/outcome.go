@@ -119,6 +119,15 @@ func (a *attempt) refuse(problem *contract.Problem) contract.Outcome {
 	return refusal(problem, id)
 }
 
+// savedID is the ID of a run that a record already holds, which an answer
+// names, and empty for a new run.
+func savedID(run *record.Run) string {
+	if run.Record == nil {
+		return ""
+	}
+	return run.ID
+}
+
 // stopCause is the problem of a call that its timeout stopped, or nil for a
 // signal, which the SDK answers.
 func stopCause(ctx context.Context, p *i18n.Printer, j job) *contract.Problem {

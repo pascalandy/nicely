@@ -1,0 +1,85 @@
+# Execution needs the key of deepgram, granted to transcript. Without it, the call refuses with
+# the code that core names for the key, before uv starts and before any record. A granted key
+# reaches the engine from its variable or from the keychain. A variable needs no keychain. The
+# stub uv appends its arguments to $WORK/uv.log and where its key came from to $WORK/key.log,
+# never the key, then completes the step. The test keychain logs each of its calls.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+chmod 755 bin/uv
+chmod 755 bin/python3
+onlyncly transcript-external
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+env RUNS=$STATE/runs
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+
+# A key that no human granted: KEY_NOT_GRANTED, whose next grants it, and nothing starts
+exits 78 ncly transcript run youtube --url $URL --output $OUT --run-id k1 --json
+answer stderr KEY_NOT_GRANTED
+stderr '"next":\["ncly","auth","grant","deepgram","transcript"\]'
+! stderr run_id
+! exists uv.log
+! exists $RUNS/k1.json
+
+# Once granted, a key in neither the variable nor the keychain: AUTH_MISSING, whose next logs in
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+cp empty.jsonl test-keychain.jsonl
+exits 78 ncly transcript run youtube --url $URL --output $OUT --run-id k2 --json
+answer stderr AUTH_MISSING
+stderr '"next":\["ncly","auth","login","deepgram"\]'
+! exists uv.log
+! exists $RUNS/k2.json
+
+# A keychain that does not answer, with an empty variable: KEYRING_UNAVAILABLE
+env NCLY_TEST_KEYCHAIN=unavailable
+exits 78 ncly transcript run youtube --url $URL --output $OUT --run-id k3 --json
+answer stderr KEYRING_UNAVAILABLE
+! exists uv.log
+! exists $RUNS/k3.json
+
+# A granted key in its variable reaches the engine, even with a keychain that does not answer,
+# which the call never asks
+cp empty.jsonl test-keychain.jsonl
+env DEEPGRAM_API_KEY=env-key
+exec ncly transcript run youtube --url $URL --output $OUT --run-id k4 --json
+stdout '"ok":true,"contract_version":1,"run_id":"k4"'
+grep -count=1 '(?m)^variable$' key.log
+cmp test-keychain.jsonl empty.jsonl
+env NCLY_TEST_KEYCHAIN=
+env DEEPGRAM_API_KEY=
+
+# A granted key in the keychain reaches the engine too
+cp seed.jsonl test-keychain.jsonl
+exec ncly transcript run youtube --url $URL --output $OUT --run-id k5 --json
+stdout '"ok":true,"contract_version":1,"run_id":"k5"'
+grep -count=1 '(?m)^keychain$' key.log
+grep -count=2 '(?m)^run ' uv.log
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+case "$DEEPGRAM_API_KEY" in
+env-key) echo variable ;;
+dg-test-key) echo keychain ;;
+'') echo none ;;
+*) echo other ;;
+esac >> "$WORK/key.log"
+IFS= read -r request
+out=$(printf '%s\n' "$request" | /usr/bin/sed -n 's/.*"output":"\([^"]*\)".*/\1/p')
+printf '{"protocol_version":1,"type":"plan","items":[{"item":"%s","output":"%s"}]}\n' "$URL" "$out"
+printf '{"protocol_version":1,"type":"intent","item":"%s","step":"transcribe","name":"Title","tools":{"transcript":"1.0.0","yt-dlp":"2026.7.4"}}\n' "$URL"
+IFS= read -r ack || exit 3
+dir=$(printf '%s\n' "$ack" | /usr/bin/sed -n 's/.*"output_dir":"\([^"]*\)".*/\1/p')
+printf 'Welcome.' > "$dir/raw_transcript.txt"
+printf '' > "$dir/raw_sentences.txt"
+printf '[]' > "$dir/raw_transcript.json"
+printf '{"protocol_version":1,"type":"step","item":"%s","step":"transcribe","status":"completed","code":null,"warnings":[],"detail":""}\n' "$URL"
+-- bin/python3 --
+#!/bin/sh
+echo "Python 3.14.0"
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}
+-- empty.jsonl --
