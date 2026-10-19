@@ -70,7 +70,7 @@ install:
 
 # Run every check that signoff requires
 [group('checks')]
-check: fmt-check lint tidy-check test race release-lint gitleaks-rules gitleaks (limits "--base" "origin/main")
+check: fmt-check lint tidy-check test race python release-lint gitleaks-rules gitleaks (limits "--base" "origin/main")
 
 # Run just check on each layer of a stack, bottom to top, as origin holds it
 [group('checks')]
@@ -111,6 +111,22 @@ test *args:
 [group('checks')]
 race:
     go test -race ./sdk/... ./internal/...
+
+# Check the Python engine of transcript with ruff, pyright, and pytest through uv
+[group('checks')]
+python:
+    #!/usr/bin/env bash
+    set -Eeuo pipefail
+    # pyright resolves a sibling module only from the engine folder.
+    cd extensions/transcript/python
+    uv tool run ruff@0.16.9 check --isolated
+    uv tool run ruff@0.16.9 format --isolated --check
+    requirements="$(mktemp)"
+    trap 'rm -f "$requirements"' EXIT
+    uv export --quiet --no-hashes --script transcript.py > "$requirements"
+    # The header pins the runtime packages; this recipe pins only the tools. pyright reads the tests, so it needs pytest.
+    uv tool run --with-requirements "$requirements" --with pytest==9.1.1 pyright@1.1.414 --pythonversion 3.12
+    uv tool run --with-requirements "$requirements" --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto
 
 # Lint the Go code
 [group('checks')]
