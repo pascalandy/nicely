@@ -6,10 +6,16 @@ copies the fixture audio, and Deepgram is an httpx.MockTransport that reads
 the whole upload, then answers the fixture response. Nothing leaves the
 machine.
 
-A scenario steers it through its environment:
+A scenario steers it through its environment, where an empty variable
+counts as unset:
 
 - NCLY_TEST_TITLE is the title of the video, "Test video" by default
+- NCLY_TEST_DOWNLOAD=temporary or failed makes yt-dlp fail, for a network
+  reason or for another one
+- NCLY_TEST_COOKIES=skipped downloads anonymously, with the warning of
+  cookies that could not be read
 - NCLY_TEST_DEEPGRAM_STATUS is the HTTP status of Deepgram, 200 by default
+- NCLY_TEST_DEEPGRAM_BODY=garbage makes Deepgram answer 200 with no JSON
 
 It appends one line per download to $WORK/downloads.log and one line per
 upload to $WORK/uploads.log, without the key.
@@ -37,9 +43,11 @@ def answer(request: httpx.Request) -> httpx.Response:
     body = request.read()
     authorized = request.headers.get("Authorization", "").startswith("Token ")
     log("uploads.log", f"upload {len(body)} bytes, authorized {authorized}")
-    status = int(os.environ.get("NCLY_TEST_DEEPGRAM_STATUS", "200"))
+    status = int(os.environ.get("NCLY_TEST_DEEPGRAM_STATUS") or "200")
     if status != 200:
         return httpx.Response(status, json={"err_msg": "test transport"})
+    if os.environ.get("NCLY_TEST_DEEPGRAM_BODY") == "garbage":
+        return httpx.Response(200, content=b"no transcript")
     return httpx.Response(
         200, content=(FIXTURES / "deepgram_response.json").read_bytes()
     )
@@ -50,7 +58,7 @@ def main() -> int:
     # this file.
     sys.path.insert(0, sys.argv[1])
     import transcript
-    from youtube import DownloadedAudio
+    from youtube import COOKIES_SKIPPED, DownloadedAudio, YtDlpError
 
     def download_audio(
         url: str, temp_dir: Path, budget: object, *, browser: str | None
@@ -58,8 +66,14 @@ def main() -> int:
         path = temp_dir / "audio.webm"
         shutil.copyfile(FIXTURES / "audio.webm", path)
         log("downloads.log", url)
-        title = os.environ.get("NCLY_TEST_TITLE", "Test video")
-        return DownloadedAudio(path, "anonymous", title, "EIEc43CxIvY")
+        failure = os.environ.get("NCLY_TEST_DOWNLOAD")
+        if failure in ("temporary", "failed"):
+            raise YtDlpError("test transport", temporary=failure == "temporary")
+        warnings = ()
+        if os.environ.get("NCLY_TEST_COOKIES") == "skipped":
+            warnings = (COOKIES_SKIPPED,)
+        title = os.environ.get("NCLY_TEST_TITLE") or "Test video"
+        return DownloadedAudio(path, "anonymous", title, "EIEc43CxIvY", warnings)
 
     client = httpx.Client(transport=httpx.MockTransport(answer))
 

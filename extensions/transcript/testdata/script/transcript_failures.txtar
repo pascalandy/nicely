@@ -1,0 +1,100 @@
+# Each program code of a failed step reaches its item, with the step status of the table in
+# spec/protocol.md, under the batch verdict. The real uv and Python run the engine with the test
+# launcher, which fails the download, answers as Deepgram with a status or a body, or reports the
+# cookies of Arc as skipped. It counts each download and upload. A failure before the intent
+# leaves no folder, and only a temporary one with no effect exits 75. After the ack, the folder
+# stays, the answer is RUNTIME, and no failure repeats the upload.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+mkdir bin
+symlink bin/uv -> $UV
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# Deepgram answers 504 after the whole upload: the audio may be billed, so the step stays unknown,
+# and the same call starts nothing. The upload happened once, with no retry
+env NCLY_TEST_TITLE=gateway
+env NCLY_TEST_DEEPGRAM_STATUS=504
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f1 --json
+answer stderr RUNTIME
+stderr '"output_dir":"'${OUT@R}'/gateway","transcript":null,"url":"[^"]+","errors":\[\{"code":"RUNTIME","message":"Deepgram gave no usable answer after the upload, so it may have billed it\.","hint":"ncly run view f1","next":\["ncly","run","view","f1"\]\}\]'
+grep -count=1 '(?m)^upload ' uploads.log
+exec ncly run view f1 --json
+stdout '"finished_at":null,"id":"transcribe","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+stdout '"status":"unknown","tools"'
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f1 --json
+answer stderr RESUME_UNSAFE
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f1 --dry-run --json
+answer stderr RESUME_UNSAFE
+grep -count=1 '(?m)^upload ' uploads.log
+env NCLY_TEST_DEEPGRAM_STATUS=
+
+# A temporary download failure, before the intent: no folder and no effect, so the call exits 75,
+# with the step pending and its cause. The step never started, so it has no finish time either.
+# The same call then runs, as a second attempt
+env NCLY_TEST_TITLE=temporary
+env NCLY_TEST_DOWNLOAD=temporary
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id f2 --json
+answer stderr TEMPORARY
+stderr '"output_dir":null,"transcript":null,"url":"[^"]+","errors":\[\{"code":"TEMPORARY","message":"YouTube did not answer for https://www\.youtube\.com/watch\?v=EIEc43CxIvY, so no audio was downloaded\.","hint":"Run the same call again later\."\}\]'
+! exists $OUT/temporary
+exec ncly run view f2 --json
+stdout '"error":\{"code":"TEMPORARY",[^}]*\},"finished_at":null,"id":"transcribe","started_at":null,"status":"pending"\}\]'
+env NCLY_TEST_DOWNLOAD=
+exec ncly transcript run youtube --url $URL --output $OUT --run-id f2 --json
+stdout '"output_dir":"'${OUT@R}'/temporary"'
+grep -count=2 '(?m)^upload ' uploads.log
+
+# Another download failure: TRANSCRIPT_DOWNLOAD_FAILED in the item, under RUNTIME
+env NCLY_TEST_DOWNLOAD=failed
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f3 --json
+answer stderr RUNTIME
+stderr '"errors":\[\{"code":"TRANSCRIPT_DOWNLOAD_FAILED","message":"yt-dlp could not download the audio of https://www\.youtube\.com/watch\?v=EIEc43CxIvY\.","hint":"Check that the video plays in a browser, then run the call again with --verbose\."\}\]'
+env NCLY_TEST_DOWNLOAD=
+grep -count=2 '(?m)^upload ' uploads.log
+
+# Deepgram refuses for now with 429, or refuses the audio with 400: the step fails, and the item
+# holds TEMPORARY or RUNTIME. The answer stays RUNTIME, because the run reserved its folder
+env NCLY_TEST_TITLE=busy
+env NCLY_TEST_DEEPGRAM_STATUS=429
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f4 --json
+answer stderr RUNTIME
+stderr '"errors":\[\{"code":"TEMPORARY","message":"Deepgram could not be reached, or refused the request for now\.","hint":"ncly run view f4"'
+env NCLY_TEST_TITLE=refused
+env NCLY_TEST_DEEPGRAM_STATUS=400
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f5 --json
+stderr '"errors":\[\{"code":"RUNTIME","message":"Deepgram refused the audio\."'
+exec ncly run view f5 --json
+stdout '"status":"failed"\}\]'
+env NCLY_TEST_DEEPGRAM_STATUS=
+
+# Deepgram answers 200 with no JSON: the transcript is unusable, and the audio may be billed
+env NCLY_TEST_TITLE=unusable
+env NCLY_TEST_DEEPGRAM_BODY=garbage
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f6 --json
+stderr '"errors":\[\{"code":"RUNTIME","message":"Deepgram answered with a transcript that the program cannot read\."'
+exec ncly run view f6 --json
+stdout '"status":"unknown"\}\]'
+env NCLY_TEST_DEEPGRAM_BODY=
+grep -count=5 '(?m)^upload ' uploads.log
+
+# Cookies that could not be read leave a warning, which the evidence keeps for the replay
+env NCLY_TEST_TITLE=cookies
+env NCLY_TEST_COOKIES=skipped
+exec ncly transcript run youtube --url $URL --output $OUT --run-id f7 --json
+stdout '"warnings":\[\{"code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED","message":"The cookies of Arc could not be read, so the download tried anonymous access\.","hint":"Open Arc once, or remove browser from the \[transcript\] table\."\}\]'
+cp stdout cookies.json
+env NCLY_TEST_COOKIES=
+exec ncly transcript run youtube --url $URL --output $OUT --run-id f7 --json
+cmp stdout cookies.json
+grep -count=6 '(?m)^upload ' uploads.log
+
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}
