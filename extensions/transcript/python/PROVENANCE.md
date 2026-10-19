@@ -67,6 +67,8 @@ From M13-T2, the engine speaks the [protocol with Go](../spec/protocol.md):
 - `Metadata` writes `meta.txt` once the outcome is known, with the lines of `ResultFolder` that do not name a summary
 - The engine's version starts at `1.0.0`
 
+From M13-T3, `redact` replaces the key in each detail and in `meta.txt`, as it is, trimmed, or as a bytes repr quotes it.
+
 ## The nine pyright errors
 
 Pyright 1.1.414 reports these errors at `0c9c4a2`, with pytest installed beside the runtime packages.

@@ -23,7 +23,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from deepgram import DeepgramError, parse_transcript, transcribe_audio
+from deepgram import DeepgramError, parse_transcript, redact, transcribe_audio
 from outputs import Metadata, save_outputs
 from protocol import STEP, Inbox, ProtocolError, Request, parse_ack, send
 from runtime import RunBudget, retry_request
@@ -99,7 +99,7 @@ def main(stdin: Iterable[str] = sys.stdin, stdout: TextIO = sys.stdout) -> int:
             status=status,
             code=code,
             warnings=list(warnings),
-            detail=detail,
+            detail=redact(detail, os.environ.get("DEEPGRAM_API_KEY", "")),
         )
         return 0
 
@@ -147,21 +147,24 @@ def transcribe_into(
     status, program code, and diagnostic. From the upload on, a failure may
     have been billed."""
     key = os.environ.get("DEEPGRAM_API_KEY", "")
+
+    def failed(status: str, code: str, error: Exception) -> tuple[str, str, str]:
+        detail = redact(str(error), key)
+        meta.transcript_status, meta.error = "failed", detail
+        return status, code, detail
+
     try:
         response = transcribe_audio(audio_path, key, budget)
         meta.audio_bytes = audio_path.stat().st_size
         texts = parse_transcript(response)
     except DeepgramError as error:
-        meta.transcript_status, meta.error = "failed", str(error)
-        return STATUS[error.code], error.code, str(error)
+        return failed(STATUS[error.code], error.code, error)
     except ValueError as error:
-        meta.transcript_status, meta.error = "failed", str(error)
-        return "unknown", "transcript_unusable", str(error)
+        return failed("unknown", "transcript_unusable", error)
     try:
         save_outputs(output_dir, *texts)
     except OSError as error:
-        meta.transcript_status, meta.error = "failed", str(error)
-        return "unknown", "write_failed", str(error)
+        return failed("unknown", "write_failed", error)
     meta.transcript_status = "complete"
     return "completed", None, ""
 

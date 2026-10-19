@@ -63,6 +63,7 @@ ncly transcript run youtube --url <url> [--output <folder>] [--run-id <id>] [--t
 Preparation validates the selected URL, output parent, configuration, and required programs before user-side effects.
 A preparation refusal creates no record and bills nothing.
 Execution checks the granted key before download or output reservation.
+A key outside visible ASCII, such as one with a line break, answers `AUTH_REJECTED` before any record, and the answer never quotes it.
 The command needs no agent extension, profile, or summary prompt.
 
 Three parts of this spec, each in its own file, define the rest of the command:

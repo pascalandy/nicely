@@ -24,6 +24,15 @@ AUDIO_CONTENT_TYPES = {
 log = logging.getLogger("transcript")
 
 
+def redact(text: str, key: str) -> str:
+    """Replace the key in a diagnostic, as it is, trimmed, or as a bytes
+    repr quotes it, such as the error of httpx for an illegal header."""
+    forms = {key, key.strip(), repr(key.encode())[2:-1]} - {""}
+    for form in sorted(forms, key=len, reverse=True):
+        text = text.replace(form, "<redacted>")
+    return text
+
+
 class DeepgramError(RuntimeError):
     """A failed Deepgram request, with its program code.
 

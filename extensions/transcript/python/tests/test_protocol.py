@@ -6,6 +6,7 @@ import io
 import json
 from datetime import UTC, datetime
 
+import httpx
 import pytest
 from harness import (
     GOLDENS,
@@ -72,6 +73,30 @@ def test_a_run_plans_then_asks_before_it_uploads_and_saves(
         assert (folder / name).read_bytes() == (GOLDENS / name).read_bytes(), name
     assert "Transcript status: complete" in (folder / "meta.txt").read_text()
     assert list((tmp_path / "tmp").iterdir()) == [tmp_path / "tmp" / "audio.webm"]
+
+
+def test_a_key_quoted_by_an_http_error_stays_out_of_the_detail_and_meta(
+    tmp_path, monkeypatch
+) -> None:
+    fake_ytdlp(monkeypatch)
+    key = "fake-key\nsecret-part"
+    monkeypatch.setenv("DEEPGRAM_API_KEY", key)
+
+    def post(*_args, **_kwargs):
+        value = b"Token " + key.encode()
+        raise httpx.LocalProtocolError(f"Illegal header value {value!r}")
+
+    monkeypatch.setattr(httpx, "post", post)
+
+    code, messages = run(request(tmp_path), ack(tmp_path))
+
+    assert code == 0
+    step = messages[-1]
+    meta = (tmp_path / "out" / "A_video" / "meta.txt").read_text()
+    assert step["code"] == "deepgram_unknown"
+    for text in (step["detail"], meta):
+        assert "<redacted>" in text
+        assert "fake-key" not in text and "secret-part" not in text
 
 
 def test_a_title_without_ascii_letters_proposes_the_video_id(

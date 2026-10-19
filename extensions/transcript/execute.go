@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -26,6 +27,9 @@ const maxCandidates = 1000
 func execute(ctx context.Context, call extension.Call, j job, id string) contract.Outcome {
 	p := call.Printer
 	key, problem := call.Key("deepgram")
+	if problem == nil && !headerSafe(key) {
+		problem = keyUnusable(p)
+	}
 	if problem != nil {
 		return refused(problem)
 	}
@@ -57,6 +61,25 @@ func execute(ctx context.Context, call extension.Call, j job, id string) contrac
 	}
 	a := &attempt{call: call, p: p, j: j, run: run, saved: run.Record != nil}
 	return a.execute(ctx, key)
+}
+
+// headerSafe reports whether a key holds only visible ASCII. Only such a
+// key goes into the header of a request as it is, so no error of that
+// request can quote it.
+func headerSafe(key string) bool {
+	for _, r := range key {
+		if r < '!' || r > '~' {
+			return false
+		}
+	}
+	return key != ""
+}
+
+// keyUnusable is the AUTH_REJECTED of a key that no request can carry. It
+// never quotes the key, and a human replaces it as after a refusal.
+func keyUnusable(p *i18n.Printer) *contract.Problem {
+	login := []string{"ncly", "auth", "login", "deepgram"}
+	return &contract.Problem{Code: contract.AuthRejected, Message: p.T("transcript.run.key_unusable"), Hint: strings.Join(login, " "), Next: login}
 }
 
 // attempt is one attempt of a run through the protocol of spec/protocol.md.

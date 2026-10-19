@@ -23,7 +23,7 @@ The set of codes is open: later milestones add core codes, and every extension a
 | `KEY_NOT_GRANTED` | 78 | An extension needs a key that no human granted to it at its source, as [Grants](grants.md) defines | M08 |
 | `CAPABILITY_UNSUPPORTED` | 78 | The selected program cannot enforce a required mode or protocol | M09 |
 | `RESUME_UNSAFE` | 1 | A run cannot safely continue because evidence is missing, changed, uncertain, or unsupported | M10 |
-| `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401 | M13 |
+| `AUTH_REJECTED` | 78 | A service refused a key, such as Deepgram answering 401, or the key holds a character that no request can carry. A human replaces the key | M13 |
 
 Warnings use codes from this table, and an extension's own warnings start with its domain, such as `SKILL_SHADOWED`.
 

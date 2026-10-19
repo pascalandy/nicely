@@ -184,6 +184,10 @@ other = "The transcript program exited with an error."
 description = "ncly transcript run youtube, human text: the transcription completed. {{.URL}} is the URL and {{.Dir}} the absolute result folder that holds the transcript files."
 other = "Transcribed {{.URL}} into {{.Dir}}."
 
+["transcript.run.key_unusable"]
+description = "Error of `ncly transcript run youtube`: the granted key of deepgram holds a character outside visible ASCII, such as a space or a line break, so the call sends no request. The message never quotes the key."
+other = "The key of deepgram holds a space, a line break, or another character that no request can carry."
+
 ["transcript.run.busy"]
 description = "Error of `ncly transcript run youtube`: another process holds the run of --run-id now. {{.ID}} is the run ID."
 other = "Another process runs {{.ID}} now."
