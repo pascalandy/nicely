@@ -16,4 +16,6 @@ description: Use when transcribing one YouTube video with Deepgram through ncly 
 - A failed item keeps its cause in `results[0].errors`, and the answer's own code is the verdict of the call. `AUTH_REJECTED` means that Deepgram refused the key, or that the key holds a character that no request can carry. Relay its hint to the human, who replaces the key
 - Exit 1 never permits a repeat: read the run with `ncly run view <id> --json` first. The same call with the same `--run-id` returns a completed run again without a charge, and answers `RESUME_UNSAFE` once the audio may have reached Deepgram. Only a human chooses a new run ID, which may bill again
 - Exit 75 with `TEMPORARY` permits the same call again
+- A dry run with the `--run-id` of a saved run decides as the call would. A completed run plans `reuse`, with its `output_dir` and no effect, and a run that cannot continue answers the same refusal
+- `USAGE_INVALID` under a saved `--run-id` means that the ID names another call, with another URL or `--output`. `RESUME_UNSAFE` also answers a saved file that changed or went missing: relay it to the human, who inspects the folder
 - The call stops after `--timeout`, `570s` by default

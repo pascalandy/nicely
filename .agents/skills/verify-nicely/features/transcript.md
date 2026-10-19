@@ -14,6 +14,7 @@
 - `transcript-grant` grants the key of `deepgram` to transcript after a typed `y` on a real terminal
 - `transcript-fake-key` runs one transcription with a fake key: Deepgram refuses it, and the item answers `AUTH_REJECTED` under `RUNTIME`, with its result folder
 - `transcript-record` records the run with its failed step, and the same call starts nothing
+- `transcript-other-call` refuses another URL under the run ID of that run with `USAGE_INVALID`, before anything starts
 
 ## How to get to it (user POV)
 
@@ -54,11 +55,12 @@ In `just verify step "$run" transcript <args>`, `transcript` names this feature,
 - **Result folder.** Run `ls -A` on the `output_dir` of Fake key. It prints `meta.txt` alone, since Deepgram answered no transcript. Report its output beside the quote.
 - **Record.** Run `just verify step "$run" transcript run view verify-fake --json`. Exit 0. The run has `"status":"failed"`, `"attempts":1`, and `"tools"` with `"transcript":"1.0.0"` and the version of yt-dlp. Its step `transcribe` has `"effect":"paid"`, `"status":"failed"`, no artifact, and the error `AUTH_REJECTED`. Its `output_dir` is the one of Fake key.
 - **Same call.** Run the call of Fake key again. Exit 1 within a few seconds, and stderr holds the code `RESUME_UNSAFE`, `"run_id":"verify-fake"`, and the hint `ncly run view verify-fake`, because the audio reached Deepgram once.
+- **Another URL.** Run the call of Fake key with `--url 'https://youtu.be/EIEc43CxIvY'`. Exit 2 within a few seconds, because that ID names the call of Fake key. stderr holds the code `USAGE_INVALID`, `"run_id":"verify-fake"`, and the message `The run verify-fake holds another command, URL, or --output.`
 
 ## Gotchas
 
 - Run `prepare` before any `transcript` step. Before it, the wrapper runs the build of `just verify`, without `ncly-transcript`. Its `PATH` may also start with a shim of `uv` that fails under the scratch home
 - Call `ncly` only through `just verify step` or `just verify tmux`, whose wrapper forces the fake key. Core reads `DEEPGRAM_API_KEY` before the keychain, so another call could bill a real key. Never run `ncly auth login deepgram`: it writes the real keychain, where it would replace a real key
-- Only Fake key and Same call run without `--dry-run`. Fake key reaches YouTube and Deepgram, and Same call reaches neither
+- Only Fake key, Same call, and Another URL run without `--dry-run`. Fake key reaches YouTube and Deepgram, and the other two reach neither
 - The dry run reaches PyPI through `uv` only. Nicely's cache in the scratch home holds the engine and the uv cache, and the cleanup removes both
 - The wrapper keeps the caller's variables, so a `UV_OFFLINE` or `UV_INDEX_URL` of the caller reaches `uv`
