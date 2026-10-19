@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -68,22 +69,31 @@ var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed":
 // boundaryHook returns the boundary hook of record support that
 // NCLY_TEST_BOUNDARY asks for, which only the test binary reads: none when
 // it is empty. A boundary name, such as after-intent, kills the process
-// with SIGKILL at that boundary, as a crash would. pause:<boundary> writes
-// $WORK/paused at that boundary, then waits 2 seconds, so a scenario can
-// send a signal there.
+// with SIGKILL at that boundary, as a crash would. <boundary>@<n> kills at
+// its n-th time, such as after-intent@2. pause:<boundary> writes $WORK/paused
+// at that boundary, then waits 2 seconds, so a scenario can send a signal
+// there.
 func boundaryHook(name string) func(string) {
 	if name == "" {
 		return nil
 	}
 	pause, paused := strings.CutPrefix(name, "pause:")
+	kill, count := name, 1
+	if before, n, found := strings.Cut(name, "@"); found {
+		kill = before
+		count, _ = strconv.Atoi(n)
+	}
+	seen := 0
 	return func(at string) {
 		switch {
 		case paused && at == pause:
 			_ = os.WriteFile(filepath.Join(os.Getenv("WORK"), "paused"), nil, 0o644)
 			time.Sleep(2 * time.Second)
-		case at == name:
-			_ = syscall.Kill(os.Getpid(), syscall.SIGKILL)
-			select {}
+		case at == kill:
+			if seen++; seen == count {
+				_ = syscall.Kill(os.Getpid(), syscall.SIGKILL)
+				select {}
+			}
 		}
 	}
 }

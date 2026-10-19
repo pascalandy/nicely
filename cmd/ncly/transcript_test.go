@@ -12,15 +12,25 @@ import (
 
 	"github.com/pascalandy/nicely/extensions/transcript"
 	"github.com/pascalandy/nicely/sdk/extension"
+	"github.com/pascalandy/nicely/sdk/record"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
 // transcriptExternal runs the transcript extension with the test transport
-// of extensions/transcript/spec/protocol.md: the uv cache of the test
-// binary, which NCLY_TEST_UV_CACHE names, offline.
+// of extensions/transcript/spec/protocol.md. It runs uv offline from the uv
+// cache of the test binary, which NCLY_TEST_UV_CACHE names, with the test
+// launcher, which NCLY_TEST_LAUNCHER names. Without both, it refuses to run, so a
+// scenario never reaches YouTube or Deepgram. It installs the boundary hook
+// that NCLY_TEST_BOUNDARY asks for, as agent-external does.
 func transcriptExternal() {
 	shortCleanup()
+	record.Boundary = boundaryHook(os.Getenv("NCLY_TEST_BOUNDARY"))
 	transcript.Test.UVCache = os.Getenv("NCLY_TEST_UV_CACHE")
+	transcript.Test.Launcher = os.Getenv("NCLY_TEST_LAUNCHER")
+	if transcript.Test.UVCache == "" || transcript.Test.Launcher == "" {
+		fmt.Fprintln(os.Stderr, "transcript-external: the test transport needs NCLY_TEST_UV_CACHE and NCLY_TEST_LAUNCHER")
+		os.Exit(1)
+	}
 	transcript.Test.Offline = true
 	extension.Main(transcript.Extension)
 }
@@ -37,10 +47,11 @@ func setupTranscript(env *testscript.Env) error {
 	env.Setenv("UV", tools.uv)
 	env.Setenv("PYTHON3", tools.python)
 	env.Setenv("NCLY_TEST_UV_CACHE", tools.cache)
+	env.Setenv("NCLY_TEST_LAUNCHER", tools.launcher)
 	return nil
 }
 
-type hostTools struct{ uv, python, cache string }
+type hostTools struct{ uv, python, cache, launcher string }
 
 // uvTools finds the real uv and Python 3.12 or later, then warms the uv
 // cache, once per test process. It runs before setupHome moves HOME.
@@ -63,6 +74,9 @@ var uvTools = sync.OnceValues(func() (hostTools, error) {
 		return t, err
 	}
 	t.cache = filepath.Join(cacheRoot, "nicely-test", "uv")
+	if t.launcher, err = filepath.Abs(filepath.Join(engineDir, "testing", "launcher.py")); err != nil {
+		return t, err
+	}
 	return t, warm(t, scratch)
 })
 
@@ -84,8 +98,12 @@ func hostProgram(name, home string, args ...string) (string, error) {
 	return "", fmt.Errorf("the transcript scenarios need %s in PATH", name)
 }
 
-// warm runs the engine's dry run through the production line of uv, first
-// offline, then with the network when the cache lacks a package.
+// engineDir is the engine's folder, from the folder of this package.
+var engineDir = filepath.Join("..", "..", "extensions", "transcript", "python")
+
+// warm runs the engine's dry run through the line of uv that the scenarios
+// run, with the test launcher. It runs offline first, then with the network
+// when the cache lacks a package.
 func warm(t hostTools, scratch string) error {
 	bin := filepath.Join(scratch, "bin")
 	if err := os.Mkdir(bin, 0o755); err != nil {
@@ -96,7 +114,7 @@ func warm(t hostTools, scratch string) error {
 			return err
 		}
 	}
-	script, err := filepath.Abs(filepath.Join("..", "..", "extensions", "transcript", "python", "transcript.py"))
+	engine, err := filepath.Abs(engineDir)
 	if err != nil {
 		return err
 	}
@@ -108,7 +126,8 @@ func warm(t hostTools, scratch string) error {
 		if offline {
 			args = append(args, "--offline")
 		}
-		cmd := exec.Command(filepath.Join(bin, "uv"), append(args, script)...)
+		args = append(args, "--with-requirements", filepath.Join(engine, "transcript.py"), t.launcher, engine)
+		cmd := exec.Command(filepath.Join(bin, "uv"), args...)
 		cmd.Env = []string{"HOME=" + scratch, "PATH=" + bin}
 		cmd.Stdin = strings.NewReader(request)
 		var out []byte

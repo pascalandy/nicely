@@ -19,6 +19,7 @@ This file says where the engine comes from and how it differs from its source.
 | `outputs.py` | `save_outputs`, `write_text_atomic`, and the `meta.txt` lines of `ResultFolder`, from `transcript.py` |
 | `ytdlp_arc.py` | `ytdlp_arc.py` |
 | `tests/` | The tests of that code, from `tests/test_transcript.py` and `tests/test_contract.py` |
+| `testing/launcher.py` | New: the test launcher of the scenarios, which Go never embeds |
 | `pytest.ini` | The `pytest.ini` at the root of the source repository |
 
 ## Removed features

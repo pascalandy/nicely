@@ -25,12 +25,13 @@ exits 2 ncly transcript run youtube --url https://www.youtube.com/@channel --out
 answer stderr USAGE_INVALID
 ! exists $WORK/uv.log
 
-# A good plan answers the dry run. Go sends one request with every key of the protocol table
+# A good plan answers the dry run. Go sends one request with every key of the protocol table.
+# The test binary runs the engine through the test launcher, with the engine's header
 env STUB=plan
 exec ncly transcript run youtube --url $URL --output $OUT --dry-run --json
 stdout '"plan":\[\{"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","output":"'${OUT@R}'",'
 grep '^\{"protocol_version":1,"type":"request","source":"youtube","urls":\["https://www\.youtube\.com/watch\?v=EIEc43CxIvY"\],"zoom":null,"output":"'${OUT@R}'","temp_dir":"[^"]+","browser":null,"dry_run":true,"deadline":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ"\}$' $WORK/request.log
-grep '^run --script --upgrade-package yt-dlp --no-python-downloads --cache-dir \S+ --offline '${WORK@R}'/\.cache/nicely/python/[0-9a-f]{64}/transcript\.py$' $WORK/uv.log
+grep '^run --script --upgrade-package yt-dlp --no-python-downloads --cache-dir \S+ --offline --with-requirements '${WORK@R}'/\.cache/nicely/python/[0-9a-f]{64}/transcript\.py \S+/extensions/transcript/python/testing/launcher\.py '${WORK@R}'/\.cache/nicely/python/[0-9a-f]{64}$' $WORK/uv.log
 ! exists $RUNS
 
 # A watch URL with playlist parameters still selects only its video: the request holds that
