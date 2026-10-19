@@ -33,9 +33,14 @@ A missing function produces the same fallback warning.
 M16 makes `ncly doctor transcript` report the cookie problem as `warn`.
 
 Go selects a result-folder name from the video title, adding `-2`, `-3`, and so on when taken.
+The intent proposes the name, from the source's title cleanup, which turns spaces into underscores.
+A name that holds a slash, is empty, or is `.` or `..` is a protocol failure.
+Go tries at most `name-1000`.
 Go records each candidate path with the intent, then creates the folder with an exclusive `mkdir`.
 When that `mkdir` finds the name taken, Go records the next candidate before it tries again.
 Two new runs never share a result folder or write into an existing one.
+A run that recorded a candidate and died before its `mkdir` never writes there, so a later run may create that folder.
+A folder that cannot be created ends the step `failed`, since no `ack` left, and no audio either.
 After an interrupted reservation, another invocation does not write into that folder.
 Verified-result replay only reads its existing artifacts.
 A new run selects a new folder and may bill Deepgram again.

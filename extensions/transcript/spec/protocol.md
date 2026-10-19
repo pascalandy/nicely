@@ -105,8 +105,13 @@ Pyright also reads the tests, so its environment adds pytest, without which each
 It sets a package variable of the transcript extension, as it sets `record.Boundary`.
 That variable points `uv` at a launcher file in `extensions/transcript/python/testing/`.
 Release builds never embed that folder, and no build tag exists.
+`uv` runs `--with-requirements <hash>/transcript.py <launcher> <hash>`, so the launcher imports the extracted engine.
+The test binary passes the launcher as `NCLY_TEST_LAUNCHER`, and refuses to start the extension without it or the uv cache.
 The launcher patches the downloader to copy a fixture audio file.
 It patches `httpx.post` with an `httpx.MockTransport` that reads the whole upload, logs one line per attempt, and returns a fixture response.
+It appends to `$WORK/downloads.log` and `$WORK/uploads.log`, and never logs the key.
+`NCLY_TEST_TITLE` sets the title of the video, and `NCLY_TEST_DEEPGRAM_STATUS` the HTTP status of the fixture response.
+`NCLY_TEST_BOUNDARY` takes `<boundary>@<n>` to kill at the n-th time of a boundary, such as the intent of a second candidate.
 
 The real-uv scenarios use a test-owned uv cache outside `$WORK`, which only the test binary sets.
 The cache warms once with network, like Go modules, then the scenarios run offline.
