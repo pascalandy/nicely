@@ -109,10 +109,11 @@ Release builds never embed that folder, and no build tag exists.
 The test binary passes the launcher as `NCLY_TEST_LAUNCHER`, and refuses to start the extension without it or the uv cache.
 The launcher patches the downloader to copy a fixture audio file.
 It patches `httpx.post` with an `httpx.MockTransport` that reads the whole upload, logs one line per attempt, and returns a fixture response.
-It appends to `$WORK/downloads.log` and `$WORK/uploads.log`, and never logs the key.
+It appends to `$WORK/starts.log`, `downloads.log`, and `uploads.log`, and never logs the key.
 `NCLY_TEST_TITLE` sets the title of the video, and `NCLY_TEST_DEEPGRAM_STATUS` the HTTP status of the fixture response.
 `NCLY_TEST_DOWNLOAD=temporary` or `failed` fails the download, and `NCLY_TEST_COOKIES=skipped` adds the cookie warning.
 `NCLY_TEST_DEEPGRAM_BODY=garbage` answers 200 with no JSON. An empty variable counts as unset.
+`NCLY_TEST_PAUSE=upload` writes the process IDs of Python and uv, then answers the upload once `$WORK/release` exists.
 `NCLY_TEST_BOUNDARY` takes `<boundary>@<n>` to kill at the n-th time of a boundary, such as the intent of a second candidate.
 
 The real-uv scenarios use a test-owned uv cache outside `$WORK`, which only the test binary sets.
