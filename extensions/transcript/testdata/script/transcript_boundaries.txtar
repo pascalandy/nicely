@@ -137,6 +137,19 @@ stderr '"message":"The run k7 writes into '${WORK@R}'/third, which is no existin
 ! exists $WORK/second/Folder_gone
 grep -count=4 '(?m)^upload ' uploads.log
 
+# So does an output folder that --output named, whose record decides before any folder check
+mkdir $WORK/fourth
+env 'NCLY_TEST_TITLE=Named gone'
+env NCLY_TEST_BOUNDARY=before-intent
+exits 1 ncly transcript run youtube --url $URL --output $WORK/fourth --run-id k8 --json
+env NCLY_TEST_BOUNDARY=
+rm $WORK/fourth
+exits 1 ncly transcript run youtube --url $URL --output $WORK/fourth --run-id k8 --json
+answer stderr RESUME_UNSAFE
+stderr '"run_id":"k8"'
+stderr '"message":"The run k8 writes into '${WORK@R}'/fourth, which is no existing folder\."'
+grep -count=4 '(?m)^upload ' uploads.log
+
 -- bin/uv --
 #!/bin/sh
 echo "$*" >> "$WORK/uv.log"

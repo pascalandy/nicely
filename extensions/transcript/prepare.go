@@ -52,8 +52,8 @@ type job struct {
 }
 
 // prepare checks what the call alone states, before any effect: the URL,
-// then an explicit output parent. It reads no config and starts no program,
-// so a completed run replays without them.
+// and the absolute path of an explicit output parent. It reads no config,
+// checks no folder, and starts no program, so a saved run decides first.
 func prepare(call extension.Call) (job, *contract.Problem) {
 	p := call.Printer
 	j := job{url: call.Flags["url"]}
@@ -65,7 +65,7 @@ func prepare(call extension.Call) (job, *contract.Problem) {
 	dir, given := call.Flags["output"]
 	j.given = given
 	if given {
-		abs, err := folder(dir)
+		abs, err := filepath.Abs(dir)
 		if err != nil {
 			return j, usage(p, "transcript.run.output_invalid", "transcript.run.output_invalid_hint", map[string]any{"Dir": dir})
 		}
@@ -80,7 +80,7 @@ func prepare(call extension.Call) (job, *contract.Problem) {
 func resolve(ctx context.Context, call extension.Call, j *job) *contract.Problem {
 	p := call.Printer
 	if !j.recorded {
-		if problem := pick(p, j); problem != nil {
+		if problem := pick(p, j, call.Flags["output"]); problem != nil {
 			return problem
 		}
 	}
@@ -96,9 +96,15 @@ func resolve(ctx context.Context, call extension.Call, j *job) *contract.Problem
 	return nil
 }
 
-// pick reads the config, and the output parent that the config selects when
+// pick checks that an explicit output parent exists, as flag gives it. Then
+// it reads the config, and the output parent that the config selects when
 // --output did not, or else the current folder.
-func pick(p *i18n.Printer, j *job) *contract.Problem {
+func pick(p *i18n.Printer, j *job, flag string) *contract.Problem {
+	if j.given {
+		if _, err := folder(j.output); err != nil {
+			return usage(p, "transcript.run.output_invalid", "transcript.run.output_invalid_hint", map[string]any{"Dir": flag})
+		}
+	}
 	home, _ := os.UserHomeDir()
 	configured, problem := readSettings(p, home, config.Locate(home, os.LookupEnv), j)
 	if problem != nil || j.given {
