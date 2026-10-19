@@ -67,3 +67,9 @@ Report any failed step as an incomplete merge. Never manually close an open pull
 ## Keep UAT in separate issues
 
 Create a separate GitHub issue for each UAT. Keep its task and procedure there, with only a link in the Epic.
+
+## Release each accepted milestone
+
+After each completed milestone that Pascal accepts, run the release cycle without a separate request.
+Use [D043](decisions/D043-milestone-versions.md) for numbering and [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
+Milestone acceptance does not replace the merge authorization above.

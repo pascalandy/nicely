@@ -54,6 +54,9 @@ jobs:
         with:
           just-version: '1.58.0'
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
       - name: Install check tools
         shell: bash
         run: |
@@ -76,12 +79,16 @@ jobs:
         shell: bash
         run: go run -C tools ./cmd/release-artifacts assets "${TAG}" "${GITHUB_WORKSPACE}"
 
+      - name: Generate release notes
+        shell: bash
+        run: just changelog "${TAG}"
+
       - name: Publish archives
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
-        run: go tool -modfile=tools/go.mod goreleaser release --clean --fail-fast
+        run: go tool -modfile=tools/go.mod goreleaser release --clean --fail-fast --release-notes .release/changelog.md
 
       - name: Render Homebrew source formula
         shell: bash
