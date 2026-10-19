@@ -29,6 +29,9 @@ ncly transcript run youtube --url <url> [--output <folder>] [--run-id <id>] [--t
 - `--url` selects one video using the normal scalar-flag rules.
   Use the download program's single-video mode.
   A playlist-only URL is invalid; a watch URL with playlist parameters still selects only that video.
+  Go checks the URL before it starts `uv`, with the three forms of the source program.
+  They are `youtube.com/watch?v=<id>`, `youtu.be/<id>`, and `youtube.com/shorts/<id>`, over HTTP or HTTPS.
+  `youtube.com` may start with `www.`. Any other URL is `USAGE_INVALID`, and the engine trusts the URL of its request.
 - The manifest declares `deepgram` in the command's `requires.keys`.
   A human must grant the key to transcript.
   Missing credentials or grants use `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, or `KEY_NOT_GRANTED`, as

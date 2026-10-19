@@ -110,6 +110,9 @@ It patches `httpx.post` with an `httpx.MockTransport` that reads the whole uploa
 
 The real-uv scenarios use a test-owned uv cache outside `$WORK`, which only the test binary sets.
 The cache warms once with network, like Go modules, then the scenarios run offline.
+The test binary keeps it in `nicely-test/uv` in the user cache folder, and passes it as `NCLY_TEST_UV_CACHE`.
+It gives the scenarios the first `uv` and Python 3.12 in `PATH` that answer under a scratch `HOME`.
+A shim that needs the real `HOME` never counts.
 "Empty cache" in M13-T2 means Nicely's extraction cache; SP1 and Verify on the real binary prove the cold uv cache.
 
 Spike SP2 ran on 2026-10-18 on Omarchy with uv 0.13.1, offline through `unshare -rn`.

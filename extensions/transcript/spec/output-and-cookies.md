@@ -7,6 +7,7 @@ Temporary audio and child scratch files stay in Go's `temp_dir`, so no other fil
 
 `--output` selects the output parent.
 Without it, `transcript.youtube.output` selects the parent, or the current folder when no value is configured.
+The parent must be an existing folder: `--output` refuses with `USAGE_INVALID` otherwise, and the config with `CONFIG_INVALID`.
 In JSON, `output` names the parent and `output_dir` names the result folder.
 
 ```toml
@@ -21,6 +22,7 @@ Machine-specific paths belong in local config.
 The retained cookie integration is the source program's Arc path on macOS.
 `browser = "arc"` selects it: yt-dlp then runs through the source's `ytdlp_arc.py`, with Arc's cookies.
 Without a browser setting, use anonymous access.
+Any other `browser` value is `CONFIG_INVALID`.
 Scenarios stub cookie reading, and Pascal's paid check after M16 proves the real Arc path.
 Additional browser integrations are not required for this release.
 
@@ -44,8 +46,10 @@ Run it with `uv run --script --upgrade-package yt-dlp --no-python-downloads --ca
 Here, `<folder>` is `uv` inside Nicely's cache, such as `~/.cache/nicely/uv`.
 The explicit flag overrides an inherited `UV_CACHE_DIR`.
 Python 3.12 or later must already be installed; `uv` never downloads it.
+The engine runs with `PYTHONDONTWRITEBYTECODE=1`, so the folder of a hash holds only the embedded files.
 Only the test binary adds `--offline`, as [Test transport](protocol.md#test-transport) says.
 yt-dlp runs with `--ignore-config`, `--no-playlist`, and a `--cache-dir` named `yt-dlp` inside Nicely's cache.
+The engine finds that cache two folders above its own, `python/<hash>/`.
 
 The program uses the newest `yt-dlp` release at or above its declared minimum and pins its other Python dependencies.
 The manifest declares the programs that a cold run needs: `uv`, and `python3` with `version = "3.12"`.
