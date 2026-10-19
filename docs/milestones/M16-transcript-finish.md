@@ -1,6 +1,6 @@
 # M16 Transcript finish
 
-Status: ready
+Status: active
 Version: v0.16.0
 
 ## Demo
@@ -19,7 +19,7 @@ Zoom, prompt discovery, `--open`, progress displays, additional browser support,
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M16-T1 | Doctor for YouTube | agent | — | todo |
+| M16-T1 | Doctor for YouTube | agent | — | done |
 | M16-T2 | Fresh-session check | agent | M16-T1 | todo |
 
 ### M16-T1 Doctor for YouTube

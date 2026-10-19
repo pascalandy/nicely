@@ -66,7 +66,7 @@ install -Dm644 completions/ncly.fish ~/.config/fish/completions/ncly.fish
 
 These commands target the default folders: bash also needs the bash-completion package, and with custom XDG folders, use the folders that your shell reads instead. `~/.local/bin` must be on your `PATH`. For zsh, add `fpath=(~/.local/share/zsh/site-functions $fpath)` to `~/.zshrc` before `compinit` runs.
 
-From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `~/.local/bin/` and the first-party extensions, such as `agent` and `transcript`, into `~/.local/share/nicely/extensions/`, or into `$XDG_DATA_HOME/nicely/extensions/` when `XDG_DATA_HOME` holds an absolute path. The `agent` extension uses the login of an installed Codex, which `ncly doctor agent` checks. The `transcript` extension needs `uv` and Python 3.12 or later, which `ncly doctor transcript` checks.
+From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `~/.local/bin/` and the first-party extensions, such as `agent` and `transcript`, into `~/.local/share/nicely/extensions/`, or into `$XDG_DATA_HOME/nicely/extensions/` when `XDG_DATA_HOME` holds an absolute path. The `agent` extension uses the login of an installed Codex, which `ncly doctor agent` checks. The `transcript` extension needs `uv` and Python 3.12 or later, which `ncly doctor transcript` checks, with the cookies of Arc when the config selects it.
 
 ## Privacy
 

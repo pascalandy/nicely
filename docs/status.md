@@ -45,7 +45,7 @@ Without `--dry-run`, it runs the task under the ID of `--run-id`, or one that it
 
 ## transcript
 
-`just install` also puts the `transcript` extension in `~/.local/share/nicely/extensions/`. `ncly doctor transcript` checks that `uv` and Python 3.12 or later are installed.
+`just install` also puts the `transcript` extension in `~/.local/share/nicely/extensions/`. `ncly doctor transcript` checks that `uv` and Python 3.12 or later are installed. Then `ncly transcript status` checks the cookies of the browser that `[transcript]` sets. Without a browser, it passes. With `browser = "arc"`, it warns with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` when no cookie file of Arc's default profile opens. It reads no key, starts no program, and uses no network.
 
 `ncly transcript run youtube --url <url> --dry-run` checks the URL of one video, the output folder, and the `[transcript]` tables of the config. It then runs the transcript program through `uv` and shows its plan, with no request to YouTube or Deepgram. It reads no key and creates no record.
 

@@ -7,7 +7,8 @@
 - `transcript-install` installs `ncly` and `ncly-transcript` with `just install` in the scratch home, and the wrapper then runs the installed `ncly`
 - `transcript-discovery` lists `transcript` under the extensions of `ncly --help`, from the scratch data folder
 - `transcript-help` shows the help of `ncly transcript run youtube` from the installed manifest
-- `transcript-doctor` passes `transcript.uv` and `transcript.python3`, the programs that the manifest requires
+- `transcript-doctor` passes `transcript.uv` and `transcript.python3`, the programs that the manifest requires, then `transcript.cookies`
+- `transcript-cookies` warns when the config sets `browser = "arc"` and no cookie file of Arc's default profile opens, and passes once one does
 - `transcript-skill` serves the skill installed beside the extension
 - `transcript-refusals` refuses a URL that names no single video and a missing output folder with `USAGE_INVALID`, before the engine is extracted
 - `transcript-dry-run` runs the engine through `uv` from an empty uv cache and answers the plan as JSON and as text. It creates no record and no result folder
@@ -16,7 +17,7 @@
 
 - `just install`, from a checkout
 - `ncly --help` and `ncly transcript run youtube --help`
-- `ncly doctor transcript`
+- `ncly doctor transcript` and `ncly transcript status`
 - `ncly skill view transcript`
 - `ncly transcript run youtube --url <url> --output <folder> --dry-run`, as text and as JSON
 
@@ -34,7 +35,9 @@ In `just verify step "$run" transcript <args>`, `transcript` names this feature,
 - **Install.** Run `just verify prepare "$run" transcript`. It exits 0. Its lines name `<run>/scratch/home/.local/bin/ncly` and `<run>/scratch/home/.local/share/nicely/extensions/ncly-transcript` as installed, then the `uv` and `python3` that it linked into `<run>/scratch/tools`, and the fake key. Report these lines beside the quote.
 - **Discovery.** Run `just verify step "$run" transcript --help`. Exit 0, and the `EXTENSIONS` section lists `transcript:  Transcribe videos with Deepgram`.
 - **Help.** Run `just verify step "$run" transcript transcript run youtube --help`. Exit 0. It shows `ncly transcript run youtube --url <url> [flags]` and the flags `--dry-run`, `--output`, `--run-id`, `--timeout`, and `--url`, and `--timeout` says `570s by default`. Its effects line reads `changes your files, uses the network, may bill`.
-- **Programs.** Run `just verify step "$run" transcript doctor transcript --json`. Exit 0, and the checks `transcript.python3` and `transcript.uv` both `pass`, with messages that name the links of `<run>/scratch/tools`.
+- **Programs.** Run `just verify step "$run" transcript doctor transcript --json`. Exit 0, and the checks `transcript.python3` and `transcript.uv` both `pass`, with messages that name the links of `<run>/scratch/tools`. Last comes `transcript.cookies`, a `pass` with the message `No browser is set, so downloads use anonymous access.`
+- **Cookies.** Run `printf '[transcript]\nbrowser = "arc"\n' > "$run/scratch/home/.config/nicely/config.toml"`. Then run `just verify step "$run" transcript transcript status --json`. Exit 0, and `transcript.cookies` is a `warn` with `TRANSCRIPT_BROWSER_COOKIES_SKIPPED`. Its message names `<run>/scratch/home/Library/Application Support/Arc/User Data/Default`.
+- **Cookie file.** Create the empty file `Network/Cookies` in that profile with `mkdir -p` and `touch`. Run the status call of Cookies again. Exit 0, and `transcript.cookies` passes and names that file. Then run `: > "$run/scratch/home/.config/nicely/config.toml"`, so the next steps run without a browser.
 - **Skill.** Run `just verify step "$run" transcript skill view transcript`. Exit 0, and its first line names the folder `<run>/scratch/home/.local/share/nicely/extensions/ncly-transcript.skill`, followed by the skill `transcript`.
 - **Output folder.** Run `mkdir "$run/scratch/home/videos"`, which the next steps give to `--output`.
 - **Playlist.** Run `just verify step "$run" transcript transcript run youtube --url 'https://www.youtube.com/playlist?list=PL123' --output "$run/scratch/home/videos" --dry-run --json`. Exit 2, stdout is empty, and stderr holds the code `USAGE_INVALID` and the message `https://www.youtube.com/playlist?list=PL123 is no URL of one YouTube video.`
