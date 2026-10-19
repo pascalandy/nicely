@@ -1,6 +1,6 @@
 # M16 Transcript finish
 
-Status: planned
+Status: ready
 Version: v0.16.0
 
 ## Demo
@@ -11,18 +11,9 @@ A fresh agent session discovers, checks, and runs the one-video transcript comma
 
 Finish the YouTube path of [M13](M13-transcript.md) with doctor checks and fresh-session evidence.
 The transcript skill ships with M13, and this milestone adds the doctor step to it.
-The [transcript spec](../../extensions/transcript/spec.md) owns its behavior.
-Zoom, prompt discovery, `--open`, progress displays, and additional browser support remain in
+[ncly transcript status](../../extensions/transcript/spec.md#ncly-transcript-status) and [Fresh session](../../extensions/transcript/spec/test-transport.md#fresh-session) own its behavior.
+Zoom, prompt discovery, `--open`, progress displays, additional browser support, and the `--live` Deepgram check remain in
 [M99](M99-parking-lot/transcript-extras.md).
-
-## Open questions
-
-Settle each one in the [transcript spec](../../extensions/transcript/spec.md), then delete this section.
-
-- The flags and check IDs of `ncly transcript status`. Doctor already probes the programs of the manifest, so status reports only the cookie check and, under `--live`, the Deepgram check
-- Documented proof that `GET /v1/auth/token` bills nothing. Without that proof, ship the local checks and park `--live` in M99
-- How `--live` reports a 401, a timeout, and a 5xx. Only a 401 claims that Deepgram rejected the key
-- Whether the test binary of `cmd/ncly`, linked as `ncly`, gives the fresh session its test transport
 
 ## Cards
 
@@ -33,24 +24,24 @@ Settle each one in the [transcript spec](../../extensions/transcript/spec.md), t
 
 ### M16-T1 Doctor for YouTube
 
-- **Read:** [Output and cookies](../../extensions/transcript/spec/output-and-cookies.md), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract/status-command.md)
+- **Read:** [ncly transcript status](../../extensions/transcript/spec.md#ncly-transcript-status), [Output and cookies](../../extensions/transcript/spec/output-and-cookies.md), [ncly doctor](../north-star/core-spec.md#ncly-doctor), [Status command](../north-star/contract/status-command.md)
 - **Proves:** `extensions/transcript/testdata/script/transcript_doctor.txtar`, `extensions/transcript/testdata/script/transcript_cookies.txtar`
 
 Add `ncly transcript status`, following the status command of the skill extension.
 Its findings follow the host probes in the doctor component and never repeat them.
-Without `--live`, nothing reads a key or starts `uv run`.
+Nothing reads a key or starts `uv`: a stub `uv` logs no call, and a stub `python3` logs only `--version`.
+A missing `uv` fails with `PREREQ_MISSING` and exit 78.
 Unreadable configured cookies produce the specified warning.
-Under `--live`, a server of the test binary sees exactly one request.
 The transcript skill tells an agent to run `ncly doctor transcript` first.
 
 ### M16-T2 Fresh-session check
 
-- **Read:** [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Records and replay](../../extensions/transcript/spec/records-and-replay.md)
-- **Proves:** the session's transcript, attached to the pull request
+- **Read:** [Fresh session](../../extensions/transcript/spec/test-transport.md#fresh-session), [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Records and replay](../../extensions/transcript/spec/records-and-replay.md)
+- **Proves:** the session's transcript and its upload log, attached to the pull request
 
 Give a fresh agent only the line that points to `ncly skill view nicely`.
-Its `ncly` carries the test transport, as the readiness answer says.
-It discovers the transcript command, plans one URL, and runs it under a chosen run ID.
+Its `ncly` carries the test transport, in a folder outside any checkout, as [Fresh session](../../extensions/transcript/spec/test-transport.md#fresh-session) says.
+It discovers the transcript command, dry-runs one fixture URL, and runs it under a chosen run ID.
 It inspects a recorded failure without reading full transcripts or logs.
 It retrieves a verified result after lost stdout and refuses an unknown paid outcome.
 Label the evidence as fixture-backed, and claim live service proof only from Pascal's check.
