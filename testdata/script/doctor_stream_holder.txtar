@@ -9,6 +9,7 @@ grep '"id":"hello.ready","component":"hello","status":"pass"' answer.json
 grep '^running$' holder.state
 exec awk '$1 < 1.8 || $1 > 4 { print "drain took " $1 " seconds"; exit 1 }' elapsed.txt
 gone holder.pid
+rm draining
 
 env HOLD=probe
 exec bash measure.sh
@@ -16,6 +17,7 @@ grep '"id":"hello.heldtool","component":"hello","status":"pass"' answer.json
 grep '^running$' holder.state
 exec awk '$1 < 1.8 || $1 > 4 { print "drain took " $1 " seconds"; exit 1 }' elapsed.txt
 gone holder.pid
+rm draining
 
 # Expiry after the status command's exit neither cuts its drain short nor kills
 # its descendant. The finished check still passes.
@@ -33,8 +35,19 @@ fct_cleanup() {
   kill "$(cat holder.pid)" 2>/dev/null || :
 }
 trap fct_cleanup EXIT
+ncly doctor hello --timeout "$TIMEOUT" --json > answer.json &
+doctor=$!
+# Start the clock once the fixture is ready to exit, after CLI startup.
+while [[ ! -e draining ]]; do
+  if ! kill -0 "$doctor" 2>/dev/null; then
+    wait "$doctor"
+    echo 'doctor exited before fixture readiness' >&2
+    exit 1
+  fi
+  sleep 0.01
+done
 TIMEFORMAT=%R
-{ time ncly doctor hello --timeout "$TIMEOUT" --json > answer.json; } 2> elapsed.txt
+{ time wait "$doctor"; } 2> elapsed.txt
 if ps -p "$(cat holder.pid)" -o stat= | awk '$1 !~ /^Z/ { found=1 } END { exit !found }'; then
   echo running > holder.state
 else
@@ -46,6 +59,7 @@ cat elapsed.txt holder.state
 if [ "$HOLD" = status ]; then
   sleep 60 &
   echo $! > "$WORK/holder.pid"
+  : > "$WORK/draining"
 fi
 echo '{"ok":true,"contract_version":1,"checks":[{"id":"hello.ready","component":"hello","status":"pass","message":"Ready."}]}'
 -- bin/heldtool --
@@ -53,6 +67,7 @@ echo '{"ok":true,"contract_version":1,"checks":[{"id":"hello.ready","component":
 if [ "$HOLD" = probe ]; then
   sleep 60 &
   echo $! > "$WORK/holder.pid"
+  : > "$WORK/draining"
 fi
 echo 'heldtool 1.0'
 -- bin/ncly-hello.toml --
