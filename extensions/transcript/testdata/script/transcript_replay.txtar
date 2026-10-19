@@ -55,6 +55,15 @@ cp second.toml $CFG/config.toml
 cmp uv.log uv.before
 cmp python3.log python3.before
 
+# With the grant back and a keychain that does not answer, core's read of the key fails before
+# the call starts, and the call still replays
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+env NCLY_TEST_KEYCHAIN=unavailable
+exec ncly transcript run youtube --url $URL --run-id r1 --json
+cmp stdout r1.json
+env NCLY_TEST_KEYCHAIN=
+rm $STATE/grants.json
+
 # Another URL, another --output, or an --output that the run never had: USAGE_INVALID, in the
 # call and its dry run, before uv starts
 exits 2 ncly transcript run youtube --url https://youtu.be/EIEc43CxIvY --run-id r1 --json

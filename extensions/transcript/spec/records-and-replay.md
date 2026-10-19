@@ -20,7 +20,8 @@ Go records completion only after it verifies and syncs the required artifacts, a
   A different command, URL, or explicit output argument is `USAGE_INVALID` before effects.
   A busy run returns `TEMPORARY` with a `run view` hint and starts no program.
 - A completed run returns its verified saved result without Python, a dependency upgrade, or a Deepgram request.
-  It needs no key, so the call reads the key only for a new attempt, after the run lock and this decision.
+  It needs no key: the extension reads the key only for a new attempt, after the run lock and this decision.
+  Core may still read a granted key first, as [Keys](../../../docs/north-star/contract/keys.md) defines, and a replay answers even when that read fails.
   A dry run with the same ID reads the record without the lock and decides alike: it plans reuse or refuses.
   Before it returns success, it applies [Verified artifacts](#verified-artifacts) and compares each size and hash with the record.
   Missing, changed, or unsupported evidence returns `RESUME_UNSAFE`.
