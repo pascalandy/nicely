@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pascalandy/nicely/extensions/agent"
+	"github.com/pascalandy/nicely/extensions/transcript"
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/pascalandy/nicely/sdk/record"
@@ -40,6 +41,7 @@ func TestMain(m *testing.M) {
 			record.Boundary = boundaryHook(os.Getenv("NCLY_TEST_BOUNDARY"))
 			extension.Main(agent.Extension)
 		},
+		"transcript-external": transcriptExternal,
 		// ncly-bundled is ncly with the hello fixture bundled. It starts the
 		// fixture as itself under the name ncly-hello, which reaches the
 		// fixture through the routing of run, as in a release.
@@ -58,10 +60,10 @@ func testBundled() {
 }
 
 // fixtures holds the Go extensions that scenarios install as external ones,
-// by domain: the fixtures of testdata/extensions/, and agent of extensions/,
-// which just install installs the same way. The setup of their own
-// scenarios installs each one in the data folder.
-var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension, "agent": agent.Extension}
+// by domain. They are the fixtures of testdata/extensions/, and agent and
+// transcript of extensions/, which just install installs the same way. The
+// setup of their own scenarios installs each one in the data folder.
+var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension, "agent": agent.Extension, "transcript": transcript.Extension}
 
 // boundaryHook returns the boundary hook of record support that
 // NCLY_TEST_BOUNDARY asks for, which only the test binary reads: none when
@@ -109,6 +111,11 @@ func TestScripts(t *testing.T) {
 		domain := filepath.Base(filepath.Dir(filepath.Dir(dir)))
 		t.Run(domain, func(t *testing.T) {
 			runScripts(t, dir, func(env *testscript.Env) error {
+				if domain == "transcript" {
+					if err := setupTranscript(env); err != nil {
+						return err
+					}
+				}
 				if err := setupHome(env); err != nil {
 					return err
 				}

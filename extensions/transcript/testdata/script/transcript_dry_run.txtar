@@ -1,0 +1,68 @@
+# ncly transcript run youtube --dry-run runs the real engine through the real uv and Python of
+# the host, from an empty extraction cache, and answers the plan of the spec. It reads no key,
+# even a granted one, and creates no record, no result folder, and no user file. Only Nicely's
+# cache changes. The setup gives the host programs as $UV and $PYTHON3, and the uv cache of the
+# test binary, warmed once, which the extension runs offline.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+mkdir bin
+symlink bin/uv -> $UV
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external
+# The installed launcher appends to $TMPDIR/external.log instead of $WORK/external.log, so the
+# snapshot of a dry run, which skips $TMPDIR, sees no write of the test setup
+cp launcher $DATA/ncly-transcript
+chmod 755 $DATA/ncly-transcript
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+! exists $WORK/.cache/nicely
+
+# The dry run answers the plan of the spec with the schema that describe gives. The keychain
+# answers no call, so its file stays as seeded
+snapshot before
+exec ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+unchanged before
+stdout '\A\{"ok":true,"contract_version":1,"dry_run":true,"pending_checks":\[\{"id":"auth\.deepgram","message":"Authentication is checked only during execution\."\}\],"plan":\[\{"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","output":"'${OUT@R}'","steps":\[\{"id":"transcribe","action":"run"\}\],"effects":\{"network":true,"paid":true,"user_writes":true\}\}\]\}\n\z'
+! stderr .
+cmp test-keychain.jsonl seed.jsonl
+! exists $STATE/runs
+cp stdout $WORK/dry.json
+exec ncly describe 'transcript run youtube' --json
+cp stdout $WORK/describe.json
+schema $WORK/dry.json $WORK/describe.json dry_run_schema
+
+# The engine was extracted into one folder named after its hash, without its tests
+exec /bin/ls $WORK/.cache/nicely/python
+stdout '\A[0-9a-f]{64}\n\z'
+exec /bin/sh -c '/bin/ls "$WORK"/.cache/nicely/python/*/'
+stdout '\Adeepgram\.py\noutputs\.py\nprotocol\.py\nruntime\.py\ntranscript\.py\nyoutube\.py\nytdlp_arc\.py\n\z'
+
+# Without --output, [transcript.youtube] output selects the parent, from ~/, and the human text
+# names it. Without either, the current folder is the parent
+mkdir $WORK/.config/nicely
+cp output.toml $WORK/.config/nicely/config.toml
+mkdir $WORK/transcripts
+exec ncly transcript run youtube --url $URL --dry-run
+stdout '\AWould transcribe https://www\.youtube\.com/watch\?v=EIEc43CxIvY into a new folder in '${WORK@R}'/transcripts\.\npending  auth\.deepgram  Authentication is checked only during execution\.\n\z'
+rm $WORK/.config/nicely/config.toml
+exec ncly transcript run youtube --url $URL --dry-run --json
+stdout '"output":"'${WORK@R}'",'
+cmp test-keychain.jsonl seed.jsonl
+! exists $STATE/runs
+exec /bin/ls -A $OUT
+! stdout .
+
+-- launcher --
+#!/bin/sh
+echo transcript >> "$TMPDIR/external.log"
+exec transcript-external "$@"
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-never-read"}
+-- output.toml --
+[transcript.youtube]
+output = "~/transcripts"

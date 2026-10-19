@@ -1,0 +1,144 @@
+# ncly transcript run youtube --dry-run checks the URL in Go before uv starts, then asks the
+# engine for its plan through uv, and refuses an engine that breaks the protocol. The stub uv
+# appends its arguments to $WORK/uv.log and the request it reads to $WORK/request.log, then
+# answers as $STUB asks. The stub python3 answers the version probe of preparation.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/uv
+chmod 755 bin/python3
+onlyncly transcript-external codes
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env RUNS=$WORK/.local/state/nicely/runs
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+
+# A URL that names no single video refuses with USAGE_INVALID before uv starts: a playlist page,
+# another site, and a channel
+exits 2 ncly transcript run youtube --url https://www.youtube.com/playlist?list=PL123 --output $OUT --dry-run --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"https://www\.youtube\.com/playlist\?list=PL123 is no URL of one YouTube video\.","hint":"Give --url one video, such as https://www\.youtube\.com/watch\?v=VIDEO_ID, https://youtu\.be/VIDEO_ID, or https://www\.youtube\.com/shorts/VIDEO_ID\."'
+exits 2 ncly transcript run youtube --url https://example.com/watch?v=EIEc43CxIvY --output $OUT --dry-run --json
+answer stderr USAGE_INVALID
+exits 2 ncly transcript run youtube --url https://www.youtube.com/@channel --output $OUT --dry-run --json
+answer stderr USAGE_INVALID
+! exists $WORK/uv.log
+
+# A good plan answers the dry run. Go sends one request with every key of the protocol table
+env STUB=plan
+exec ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+stdout '"plan":\[\{"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","output":"'${OUT@R}'",'
+grep '^\{"protocol_version":1,"type":"request","source":"youtube","urls":\["https://www\.youtube\.com/watch\?v=EIEc43CxIvY"\],"zoom":null,"output":"'${OUT@R}'","temp_dir":"[^"]+","browser":null,"dry_run":true,"deadline":"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ"\}$' $WORK/request.log
+grep '^run --script --upgrade-package yt-dlp --no-python-downloads --cache-dir \S+ --offline '${WORK@R}'/\.cache/nicely/python/[0-9a-f]{64}/transcript\.py$' $WORK/uv.log
+! exists $RUNS
+
+# A watch URL with playlist parameters still selects only its video: the request holds that
+# one URL as supplied, which keys the plan
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY&list=PL123&index=2
+exec ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+stdout '"key":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY\\u0026list=PL123\\u0026index=2"'
+grep '"urls":\["https://www\.youtube\.com/watch\?v=EIEc43CxIvY\\u0026list=PL123\\u0026index=2"\]' $WORK/request.log
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+
+# browser = "arc" in [transcript] reaches the request, and any other browser is CONFIG_INVALID
+cp arc.toml $CFG/config.toml
+exec ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+grep '"browser":"arc"' $WORK/request.log
+cp chrome.toml $CFG/config.toml
+exits 78 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr CONFIG_INVALID
+stderr '"message":"browser in the \[transcript\] table of '${CFG@R}'/config\.toml is chrome, and only arc is known\.","hint":"Fix '${CFG@R}'/config\.toml\."'
+rm $CFG/config.toml
+
+# The output parent must be an existing folder
+exits 2 ncly transcript run youtube --url $URL --output $WORK/missing --dry-run --json
+answer stderr USAGE_INVALID
+stderr '"message":"'${WORK@R}'/missing is no existing folder\."'
+
+# An engine that breaks the protocol is RUNTIME, whose hint asks for --verbose, with no result
+# and no record: a plan that is missing, of another protocol version, or for another URL
+env STUB=missing
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+! stdout .
+answer stderr RUNTIME
+stderr '"message":"The transcript program exited without its plan\.","hint":"Run the call again with --verbose to see the output of the transcript program\."'
+env STUB=version
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr '"message":"The transcript program speaks another version of its protocol\."'
+env STUB=other
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr '"message":"The plan of the transcript program names another URL or folder than the call\."'
+
+# A line that is no message, a second message, and an exit code other than 0 break it too
+env STUB=garbage
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr 'wrote a line that is no message'
+env STUB=extra
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr 'sent a message out of order'
+env STUB=late
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr 'exited with an error'
+
+# uv that exits before any message, as when it cannot prepare the dependencies, names the
+# network in its hint
+env STUB=crash
+exits 1 ncly transcript run youtube --url $URL --output $OUT --dry-run --json
+answer stderr RUNTIME
+stderr '"message":"The transcript program stopped before its plan, with exit code 3\.","hint":"Check the network, which uv needs to prepare the program, then run the call again with --verbose to see why it stopped\."'
+! exists $RUNS
+! exists $WORK/test-keychain.jsonl
+
+# The text of the extension comes from its catalog under the pseudo-locale: help, a usage
+# refusal, a protocol failure, and the plan in human text
+exec ncly --lang en-XA transcript run youtube --help
+pseudo stdout ncly transcript run youtube --url --output --timeout --dry-run --run-id --help --json --lang --no-color --no-input --verbose --version url folder duration id tag -n -h -v [flags] 570s https://www.youtube.com/watch?v=VIDEO_ID video-notes-1
+exits 2 ncly --lang en-XA transcript run youtube --url https://example.com/video --output $OUT --dry-run
+pseudo stderr https://example.com/video https://www.youtube.com/watch?v=VIDEO_ID https://youtu.be/VIDEO_ID https://www.youtube.com/shorts/VIDEO_ID --url
+exits 1 ncly --lang en-XA transcript run youtube --url $URL --output $OUT --dry-run
+pseudo stderr --verbose
+env STUB=plan
+exec ncly --lang en-XA transcript run youtube --url $URL --output $OUT --dry-run
+pseudo stdout $URL $OUT auth.deepgram
+
+# The skill installed beside the extension teaches only commands that this ncly has, and codes
+# of the registry or of the installed manifest
+exec ncly skill view transcript --json
+stdout '"name":"transcript","path":"'${DATA@R}'/ncly-transcript\.skill","source":"extension"'
+exec ncly describe --json
+cp stdout describe.json
+exec /bin/sh -c 'codes && /usr/bin/sed -n "s/^code = \"\(.*\)\"\$/\1/p" "$DATA/ncly-transcript.toml"'
+stdout '^TRANSCRIPT_DOWNLOAD_FAILED$'
+cp stdout codes.txt
+mentions $DATA/ncly-transcript.skill/SKILL.md describe.json codes.txt
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+IFS= read -r request
+printf '%s\n' "$request" >> "$WORK/request.log"
+plan() { printf '{"protocol_version":%s,"type":"plan","items":[{"item":"%s","output":"%s"}]}\n' "$1" "$2" "$OUT"; }
+case "$STUB" in
+plan) plan 1 "$URL" ;;
+version) plan 2 "$URL" ;;
+other) plan 1 https://youtu.be/other ;;
+garbage) echo 'Traceback (most recent call last):' ;;
+extra) plan 1 "$URL"; plan 1 "$URL" ;;
+late) plan 1 "$URL"; exit 1 ;;
+crash) exit 3 ;;
+esac
+-- bin/python3 --
+#!/bin/sh
+echo "Python 3.14.0"
+-- arc.toml --
+[transcript]
+browser = "arc"
+-- chrome.toml --
+[transcript]
+browser = "chrome"

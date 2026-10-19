@@ -1,0 +1,189 @@
+# English catalog of the transcript extension. Each entry needs a description of where the text appears.
+
+["transcript.summary"]
+description = "Summary of the transcript domain in `ncly --help`."
+other = "Transcribe videos with Deepgram"
+
+["transcript.run.summary"]
+description = "Summary of `ncly transcript run`, the group of the sources that transcript reads."
+other = "Transcribe one video from a source"
+
+["transcript.run.youtube.summary"]
+description = "Summary of `ncly transcript run youtube`. YouTube and Deepgram are names of services and stay as is."
+other = "Transcribe one YouTube video with Deepgram"
+
+["transcript.run.youtube.url"]
+description = "Help of `ncly transcript run youtube`: the --url flag, the address of one YouTube video."
+other = "The URL of one YouTube video"
+
+["transcript.run.youtube.output"]
+description = "Help of `ncly transcript run youtube`: the --output flag, the existing folder that receives the result folder. [transcript.youtube] stays as is."
+other = "The folder that receives the result folder, instead of output in [transcript.youtube]"
+
+["transcript.run.youtube.timeout"]
+description = "Help of `ncly transcript run youtube`: the --timeout flag, the limit of the whole call, and its default, 570 seconds. 570s is a duration, which stays as is."
+other = "Stop the call after this duration, 570s by default"
+
+["transcript.run.timeout_invalid"]
+description = "Error of `ncly transcript run youtube`: --timeout holds no valid duration. {{.Value}} is the value of the call."
+other = "{{.Value}} is no duration."
+
+["transcript.run.timeout_invalid_hint"]
+description = "Hint of the error transcript.run.timeout_invalid. 30s, 5m, and 2h are durations, which stay as is."
+other = "Give --timeout a duration above 0, such as 30s, 5m, or 2h."
+
+["transcript.run.run_id_invalid"]
+description = "Error of `ncly transcript run youtube`: --run-id holds no valid run ID. {{.ID}} is the value of the call."
+other = "{{.ID}} is no run ID."
+
+["transcript.run.run_id_invalid_hint"]
+description = "Hint of the error transcript.run.run_id_invalid."
+other = "Give --run-id 1 to 64 lowercase letters, digits, and hyphens, starting with a letter or a digit."
+
+["transcript.run.url_invalid"]
+description = "Error of `ncly transcript run youtube`: --url names no single YouTube video, such as a playlist page. {{.URL}} is the value of the call."
+other = "{{.URL}} is no URL of one YouTube video."
+
+["transcript.run.url_invalid_hint"]
+description = "Hint of the error transcript.run.url_invalid. The URL forms stay as is, with VIDEO_ID as a placeholder."
+other = "Give --url one video, such as https://www.youtube.com/watch?v=VIDEO_ID, https://youtu.be/VIDEO_ID, or https://www.youtube.com/shorts/VIDEO_ID."
+
+["transcript.run.output_invalid"]
+description = "Error of `ncly transcript run youtube`: the --output folder does not exist or is no folder. {{.Dir}} is the value of the call."
+other = "{{.Dir}} is no existing folder."
+
+["transcript.run.output_invalid_hint"]
+description = "Hint of the errors transcript.run.output_invalid and transcript.config_output_missing. {{.Dir}} is the folder."
+other = "Create {{.Dir}}, or give --output an existing folder."
+
+["transcript.config_output_missing"]
+description = "Error of `ncly transcript run youtube`: output in the [transcript.youtube] table of the config names no existing folder. {{.Dir}} is that folder. [transcript.youtube] stays as is."
+other = "output in [transcript.youtube] names {{.Dir}}, which is no existing folder."
+
+["transcript.config_invalid"]
+description = "Error of `ncly transcript run youtube`: a config file cannot be read or parsed. {{.File}} is its absolute path."
+other = "{{.File}} cannot be read."
+
+["transcript.config_invalid_line"]
+description = "Error of `ncly transcript run youtube`: a config file has a syntax error. {{.File}} is its absolute path, and {{.Line}} the number of the line."
+other = "{{.File}} has an error on line {{.Line}}."
+
+["transcript.config_value"]
+description = "Error of `ncly transcript run youtube`: a key of the [transcript] tables holds a value that is not text. {{.Key}} is browser or output, which stays as is, and {{.File}} the config file."
+other = "{{.Key}} in the [transcript] tables of {{.File}} is not text."
+
+["transcript.config_browser"]
+description = "Error of `ncly transcript run youtube`: browser in the [transcript] table names a browser other than arc. {{.Browser}} is the value, {{.File}} the config file, and arc stays as is."
+other = "browser in the [transcript] table of {{.File}} is {{.Browser}}, and only arc is known."
+
+["transcript.config_path"]
+description = "Error of `ncly transcript run youtube`: output in [transcript.youtube] holds a relative path. {{.Path}} is the value, {{.File}} the config file, and ~/ stays as is."
+other = "output in [transcript.youtube] of {{.File}} is {{.Path}}, which is neither absolute nor starts with ~/."
+
+["transcript.config_hint"]
+description = "Hint of the config errors of transcript. {{.File}} is the config file to fix."
+other = "Fix {{.File}}."
+
+["transcript.run.manifest"]
+description = "Error of `ncly transcript run youtube`: the embedded manifest of the extension cannot be read, which only a broken build causes."
+other = "The manifest of transcript cannot be read."
+
+["transcript.program_missing"]
+description = "Error of `ncly transcript run youtube`: a program that the call needs is not in PATH. {{.Program}} is uv or python3, which stays as is."
+other = "{{.Program}} is not installed."
+
+["transcript.program_old"]
+description = "Error of `ncly transcript run youtube`: a program is older than the version that the extension needs. {{.Program}} is its name, {{.Found}} the version found, and {{.Version}} the oldest one that works."
+other = "{{.Program}} {{.Found}} is older than {{.Version}}."
+
+["transcript.program_probe_failed"]
+description = "Error of `ncly transcript run youtube`: the version probe of a program failed or printed no version. {{.Program}} is its name and {{.Path}} where PATH found it."
+other = "{{.Program}} at {{.Path}} gave no version."
+
+["transcript.program_hint"]
+description = "Hint of the program errors of transcript when no install command is known for this machine. {{.Program}} is the name of the program."
+other = "Install {{.Program}}."
+
+["transcript.run.pending_auth"]
+description = "Answer of `ncly transcript run youtube --dry-run`: the Deepgram key is checked only when the call runs. Deepgram is the name of a service."
+other = "Authentication is checked only during execution."
+
+["transcript.run.planned"]
+description = "ncly transcript run youtube --dry-run, human text: what execution would do. {{.URL}} is the URL and {{.Output}} the absolute folder that would receive the result folder."
+other = "Would transcribe {{.URL}} into a new folder in {{.Output}}."
+
+["transcript.run.pending"]
+description = "ncly transcript run youtube --dry-run, human text: one check that only execution makes. {{.ID}} is its id, such as auth.deepgram, which stays as is, and {{.Message}} what it checks."
+other = "pending  {{.ID}}  {{.Message}}"
+
+["transcript.run.execution_unavailable"]
+description = "Error of `ncly transcript run youtube` without --dry-run, in a build that can only plan a transcription."
+other = "This build can plan a transcription but cannot run one."
+
+["transcript.run.execution_unavailable_hint"]
+description = "Hint of the error transcript.run.execution_unavailable. --dry-run stays as is."
+other = "Add --dry-run to the call to see the plan."
+
+["transcript.run.extract_failed"]
+description = "Error of `ncly transcript run youtube`: the embedded Python program cannot be written into Nicely's cache. {{.Dir}} is the cache folder."
+other = "Cannot write the transcript program into {{.Dir}}."
+
+["transcript.run.extract_failed_hint"]
+description = "Hint of the error transcript.run.extract_failed."
+other = "Check that the cache folder is writable and has free space, then run the call again."
+
+["transcript.run.start_failed"]
+description = "Error of `ncly transcript run youtube`: the Python program could not start, such as when no temporary folder can be created."
+other = "The transcript program could not start."
+
+["transcript.run.verbose_hint"]
+description = "Hint of the errors where the Python program of transcript failed. --verbose stays as is."
+other = "Run the call again with --verbose to see the output of the transcript program."
+
+["transcript.run.not_started"]
+description = "Error of `ncly transcript run youtube`: uv or the Python program exited before it sent its plan, such as when uv could not download its dependencies. {{.Exit}} is the exit code. uv stays as is."
+other = "The transcript program stopped before its plan, with exit code {{.Exit}}."
+
+["transcript.run.not_started_hint"]
+description = "Hint of the error transcript.run.not_started. uv and --verbose stay as is."
+other = "Check the network, which uv needs to prepare the program, then run the call again with --verbose to see why it stopped."
+
+["transcript.run.timed_out"]
+description = "Error of `ncly transcript run youtube`: the call reached its timeout. {{.Limit}} is the duration, such as 570s."
+other = "The call reached its limit of {{.Limit}}."
+
+["transcript.run.timed_out_hint"]
+description = "Hint of the error transcript.run.timed_out. --timeout stays as is."
+other = "Give --timeout a longer duration."
+
+["transcript.protocol.malformed"]
+description = "Error of `ncly transcript run youtube`: the Python program wrote a line that is no message of its protocol."
+other = "The transcript program wrote a line that is no message."
+
+["transcript.protocol.version"]
+description = "Error of `ncly transcript run youtube`: the Python program sent a message of another protocol version."
+other = "The transcript program speaks another version of its protocol."
+
+["transcript.protocol.order"]
+description = "Error of `ncly transcript run youtube`: the Python program sent a message out of order, or one too many."
+other = "The transcript program sent a message out of order."
+
+["transcript.protocol.preparation"]
+description = "Error of `ncly transcript run youtube`: the Python program refused its request, which only a broken build causes."
+other = "The transcript program refused its request."
+
+["transcript.protocol.items"]
+description = "Error of `ncly transcript run youtube`: the plan of the Python program holds no item or more than one."
+other = "The plan of the transcript program does not hold exactly one item."
+
+["transcript.protocol.item"]
+description = "Error of `ncly transcript run youtube`: the plan of the Python program names another URL or another folder than the call."
+other = "The plan of the transcript program names another URL or folder than the call."
+
+["transcript.protocol.plan"]
+description = "Error of `ncly transcript run youtube`: the Python program exited without sending its plan."
+other = "The transcript program exited without its plan."
+
+["transcript.protocol.exit"]
+description = "Error of `ncly transcript run youtube`: the Python program exited with a code other than 0 after its messages."
+other = "The transcript program exited with an error."
