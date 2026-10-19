@@ -1,6 +1,6 @@
 # M16 Transcript finish
 
-Status: active
+Status: done
 Version: v0.16.0
 
 ## Demo
@@ -20,7 +20,7 @@ Zoom, prompt discovery, `--open`, progress displays, additional browser support,
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | M16-T1 | Doctor for YouTube | agent | — | done |
-| M16-T2 | Fresh-session check | agent | M16-T1 | todo |
+| M16-T2 | Fresh-session check | agent | M16-T1 | done |
 
 ### M16-T1 Doctor for YouTube
 
@@ -37,7 +37,7 @@ The transcript skill tells an agent to run `ncly doctor transcript` first.
 ### M16-T2 Fresh-session check
 
 - **Read:** [Fresh session](../../extensions/transcript/spec/test-transport.md#fresh-session), [ncly skill](../../extensions/skill/spec.md#ncly-skill), [Records and replay](../../extensions/transcript/spec/records-and-replay.md)
-- **Proves:** the session's transcript and its upload log, attached to the pull request
+- **Proves:** `scripts/transcript-session.sh`, with the session's transcript and its upload log, attached to the pull request
 
 Give a fresh agent only the line that points to `ncly skill view nicely`.
 Its `ncly` carries the test transport, in a folder outside any checkout, as [Fresh session](../../extensions/transcript/spec/test-transport.md#fresh-session) says.
