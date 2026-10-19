@@ -154,6 +154,9 @@ func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 			if completed {
 				return reuse(call, saved, runs.File(id), id)
 			}
+			if problem := restore(p, saved, runs.File(id), id, &j); problem != nil {
+				return refusal(problem, id)
+			}
 		}
 	}
 	if problem := resolve(ctx, call, &j); problem != nil {
