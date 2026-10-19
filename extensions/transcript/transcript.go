@@ -47,8 +47,8 @@ const defaultTimeout = "570s"
 // errTimedOut is the cause of a context that the timeout of the call ended.
 var errTimedOut = errors.New("the call reached its timeout")
 
-// run prepares the call, then answers its dry run. The timeout covers the
-// whole call, from the start of preparation.
+// run prepares the call, then answers its dry run or executes it. The
+// timeout covers the whole call, from the start of preparation.
 func run(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	value, given := call.Flags["timeout"]
@@ -70,7 +70,7 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	}
 	job.timeout = limit
 	if call.Flags["dry-run"] != "true" {
-		return refused(&contract.Problem{Code: contract.CapabilityUnsupported, Message: p.T("transcript.run.execution_unavailable"), Hint: p.T("transcript.run.execution_unavailable_hint")})
+		return execute(ctx, call, job, call.Flags["run-id"])
 	}
 	return dryRun(ctx, call, job)
 }

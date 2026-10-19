@@ -116,14 +116,6 @@ other = "Would transcribe {{.URL}} into a new folder in {{.Output}}."
 description = "ncly transcript run youtube --dry-run, human text: one check that only execution makes. {{.ID}} is its id, such as auth.deepgram, which stays as is, and {{.Message}} what it checks."
 other = "pending  {{.ID}}  {{.Message}}"
 
-["transcript.run.execution_unavailable"]
-description = "Error of `ncly transcript run youtube` without --dry-run, in a build that can only plan a transcription."
-other = "This build can plan a transcription but cannot run one."
-
-["transcript.run.execution_unavailable_hint"]
-description = "Hint of the error transcript.run.execution_unavailable. --dry-run stays as is."
-other = "Add --dry-run to the call to see the plan."
-
 ["transcript.run.extract_failed"]
 description = "Error of `ncly transcript run youtube`: the embedded Python program cannot be written into Nicely's cache. {{.Dir}} is the cache folder."
 other = "Cannot write the transcript program into {{.Dir}}."
@@ -187,3 +179,115 @@ other = "The transcript program exited without its plan."
 ["transcript.protocol.exit"]
 description = "Error of `ncly transcript run youtube`: the Python program exited with a code other than 0 after its messages."
 other = "The transcript program exited with an error."
+
+["transcript.run.done"]
+description = "ncly transcript run youtube, human text: the transcription completed. {{.URL}} is the URL and {{.Dir}} the absolute result folder that holds the transcript files."
+other = "Transcribed {{.URL}} into {{.Dir}}."
+
+["transcript.run.busy"]
+description = "Error of `ncly transcript run youtube`: another process holds the run of --run-id now. {{.ID}} is the run ID."
+other = "Another process runs {{.ID}} now."
+
+["transcript.run.record_unreadable"]
+description = "Error of `ncly transcript run youtube`: the record of the run cannot be read or holds what this build cannot use. {{.File}} is its absolute path."
+other = "{{.File}} is no record that this build can use."
+
+["transcript.run.other_call"]
+description = "Error of `ncly transcript run youtube`: --run-id names a run of another command, URL, or --output. {{.ID}} is the run ID, and --output stays as is."
+other = "The run {{.ID}} holds another command, URL, or --output."
+
+["transcript.run.effect_unknown"]
+description = "Error of `ncly transcript run youtube`: the run of --run-id may have sent its audio to Deepgram, which may have billed it, so the call starts nothing. {{.ID}} is the run ID."
+other = "The run {{.ID}} may have sent its audio to Deepgram, so the call starts nothing."
+
+["transcript.run.artifact_changed"]
+description = "Error of `ncly transcript run youtube`: a file of a completed run no longer holds what its record says. {{.File}} is the absolute path of the file, and {{.ID}} the run ID."
+other = "{{.File}} no longer holds what the run {{.ID}} recorded."
+
+["transcript.run.record_failed"]
+description = "Error of `ncly transcript run youtube`: the record of the run cannot be written. {{.Dir}} is the folder of the runs."
+other = "The record of the run cannot be saved in {{.Dir}}."
+
+["transcript.run.record_failed_hint"]
+description = "Hint of the error transcript.run.record_failed. {{.Dir}} is the folder of the runs."
+other = "Check that {{.Dir}} is writable and has free space, then run the call again."
+
+["transcript.run.reserve_failed"]
+description = "Error of `ncly transcript run youtube`: the result folder cannot be created, so no audio was sent. {{.Dir}} is the output folder that would hold it."
+other = "Cannot create a result folder in {{.Dir}}, so no audio was sent."
+
+["transcript.run.reserve_failed_hint"]
+description = "Hint of the error transcript.run.reserve_failed. {{.Dir}} is the output folder, and --output stays as is."
+other = "Check that {{.Dir}} is writable, or give --output another folder."
+
+["transcript.run.artifacts_invalid"]
+description = "Error of `ncly transcript run youtube`: the transcript program reported success, but its files are missing or unusable, so the run does not count as complete. {{.Dir}} is the result folder."
+other = "The files in {{.Dir}} are no usable transcript, so the run is not complete."
+
+["transcript.run.stopped"]
+description = "Error of `ncly transcript run youtube`: Ctrl-C or SIGTERM stopped the transcription."
+other = "The transcription stopped before it ended."
+
+["transcript.protocol.intent"]
+description = "Error of `ncly transcript run youtube`: the Python program proposed a result folder name or tool versions that Go cannot use."
+other = "The transcript program proposed a folder name or tools that Go cannot use."
+
+["transcript.protocol.code"]
+description = "Error of `ncly transcript run youtube`: the Python program reported a step that its protocol does not define, such as an unknown code."
+other = "The transcript program reported a step that its protocol does not define."
+
+["transcript.protocol.step"]
+description = "Error of `ncly transcript run youtube`: the Python program exited without its last step."
+other = "The transcript program exited without its last step."
+
+["transcript.download_temporary"]
+description = "Item error of `ncly transcript run youtube`: YouTube did not answer, so no audio was downloaded. {{.URL}} is the URL."
+other = "YouTube did not answer for {{.URL}}, so no audio was downloaded."
+
+["transcript.download_temporary_hint"]
+description = "Hint of the item error transcript.download_temporary."
+other = "Run the same call again later."
+
+["transcript.download_failed"]
+description = "Item error of `ncly transcript run youtube`: yt-dlp could not download the audio of the video. yt-dlp stays as is, and {{.URL}} is the URL."
+other = "yt-dlp could not download the audio of {{.URL}}."
+
+["transcript.download_failed_hint"]
+description = "Hint of the item error transcript.download_failed. --verbose stays as is."
+other = "Check that the video plays in a browser, then run the call again with --verbose."
+
+["transcript.deepgram_unreachable"]
+description = "Item error of `ncly transcript run youtube`: Deepgram could not be reached or refused the request for now, so no audio was sent. Deepgram is the name of a service."
+other = "Deepgram could not be reached, so no audio was sent."
+
+["transcript.deepgram_key_rejected"]
+description = "Item error of `ncly transcript run youtube`: Deepgram refused the key, such as with HTTP 401. Deepgram is the name of a service."
+other = "Deepgram refused the key."
+
+["transcript.deepgram_failed"]
+description = "Item error of `ncly transcript run youtube`: Deepgram refused the audio with an HTTP 4xx answer other than a refused key."
+other = "Deepgram refused the audio."
+
+["transcript.deepgram_unknown"]
+description = "Item error of `ncly transcript run youtube`: Deepgram did not answer after the upload, or failed, so it may have billed the audio."
+other = "Deepgram gave no usable answer after the upload, so it may have billed it."
+
+["transcript.transcript_unusable"]
+description = "Item error of `ncly transcript run youtube`: Deepgram answered with a transcript that the program cannot read."
+other = "Deepgram answered with a transcript that the program cannot read."
+
+["transcript.write_failed"]
+description = "Item error of `ncly transcript run youtube`: the Python program could not write the audio or the transcript files."
+other = "The transcript program could not write its files."
+
+["transcript.write_failed_hint"]
+description = "Hint of the item error transcript.write_failed before the result folder exists. --verbose stays as is."
+other = "Check that the temporary folder is writable, then run the call again with --verbose."
+
+["transcript.browser_cookies_skipped"]
+description = "Warning of `ncly transcript run youtube`: the cookies of Arc could not be read, so the download tried anonymous access. Arc is the name of a browser."
+other = "The cookies of Arc could not be read, so the download tried anonymous access."
+
+["transcript.browser_cookies_skipped_hint"]
+description = "Hint of the warning transcript.browser_cookies_skipped. Arc is the name of a browser, and browser and [transcript] stay as is."
+other = "Open Arc once, or remove browser from the [transcript] table."

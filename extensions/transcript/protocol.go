@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"maps"
 	"os"
@@ -51,8 +50,25 @@ type message struct {
 		Item   string `json:"item"`
 		Output string `json:"output"`
 	} `json:"items"`
-	Code   *string `json:"code"`
-	Detail string  `json:"detail"`
+	// intent and step
+	Item     string            `json:"item"`
+	Step     string            `json:"step"`
+	Name     string            `json:"name"`
+	Tools    map[string]string `json:"tools"`
+	Status   string            `json:"status"`
+	Warnings []string          `json:"warnings"`
+	Code     *string           `json:"code"`
+	Detail   string            `json:"detail"`
+}
+
+// ack is the message that Go sends once the record holds the intent and
+// the result folder exists.
+type ack struct {
+	ProtocolVersion int    `json:"protocol_version"`
+	Type            string `json:"type"`
+	Item            string `json:"item"`
+	Step            string `json:"step"`
+	OutputDir       string `json:"output_dir"`
 }
 
 // session is one run of the engine through uv: the request on its stdin,
@@ -264,9 +280,11 @@ func (s *session) broke(p *i18n.Printer, id string) *contract.Problem {
 // answers.
 func (s *session) stopped(ctx context.Context, p *i18n.Printer, j job) *contract.Problem {
 	s.close()
-	if !errors.Is(context.Cause(ctx), errTimedOut) {
-		return nil
-	}
+	return stopCause(ctx, p, j)
+}
+
+// timedOut is the RUNTIME problem of a call that reached its timeout.
+func timedOut(p *i18n.Printer, j job) *contract.Problem {
 	data := map[string]any{"Limit": limitText(j.timeout)}
 	return &contract.Problem{Code: contract.Runtime, Message: p.T("transcript.run.timed_out", data), Hint: p.T("transcript.run.timed_out_hint")}
 }

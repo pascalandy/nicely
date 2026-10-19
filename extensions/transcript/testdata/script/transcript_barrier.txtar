@@ -1,0 +1,130 @@
+# Go completes the persistence barrier before it sends the ack: the record holds the candidate
+# folder and the unknown step, and the folder exists. A failed barrier sends no ack, so the
+# engine uploads nothing. The stub uv sends the plan, then the intent for the title Title, and
+# waits for the ack. With an ack, it copies the record to $WORK/at-ack.json, logs whether the
+# folder exists, appends upload to $WORK/uploads.log, writes the three files, and completes the
+# step. Without one, it logs no ack. $STUB=records makes the runs folder read-only before the
+# intent, once the record exists. $STUB=blank writes a blank transcript, and $STUB=symlink a
+# symlink in its place.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/uv
+chmod 755 bin/python3
+onlyncly transcript-external
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+env RUNS=$STATE/runs
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# When the ack arrives, the record already holds the candidate folder and the unknown step, and
+# the folder exists
+env ID=b1
+exec ncly transcript run youtube --url $URL --output $OUT --run-id b1 --json
+stdout '"output_dir":"'${OUT@R}'/Title"'
+grep '^\{"protocol_version":1,"type":"ack","item":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","step":"transcribe","output_dir":"'${OUT@R}'/Title"\}$' ack.log
+grep '^folder exists at ack$' ack.log
+grep '"output_dir":"'${OUT@R}'/Title","steps":\[\{"id":"transcribe","effect":"paid","status":"unknown","started_at":"[0-9TZ:-]+","finished_at":null,"artifacts":\[\],"error":null\}\]' at-ack.json
+grep -count=1 '(?m)^upload$' uploads.log
+
+# A taken name leaves its folder untouched: Go records the next candidate, then creates it
+env ID=b2
+exec ncly transcript run youtube --url $URL --output $OUT --run-id b2 --json
+stdout '"output_dir":"'${OUT@R}'/Title-2"'
+grep '"output_dir":"'${OUT@R}'/Title-2"' at-ack.json
+exec /bin/ls $OUT
+stdout '\ATitle\nTitle-2\n\z'
+grep -count=2 '(?m)^upload$' uploads.log
+
+# The record of the intent cannot be saved: no ack, no upload, and no result folder. The saved
+# step stays pending, so the same call runs again once the folder is writable
+env ID=b3
+env STUB=records
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id b3 --json
+answer stderr RUNTIME
+stderr '"results":\[\{"ok":false,"output_dir":null,"transcript":null,"url":"[^"]+","errors":\[\{"code":"RUNTIME","message":"The record of the run cannot be saved in '${RUNS@R}'\."'
+chmod 755 $RUNS
+grep -count=1 '(?m)^no ack$' ack.log
+grep -count=2 '(?m)^upload$' uploads.log
+exec /bin/ls $OUT
+stdout '\ATitle\nTitle-2\n\z'
+exec ncly run view b3 --json
+stdout '"output_dir":null,"steps":\[\{"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"transcribe","started_at":null,"status":"pending"\}\]'
+env STUB=
+exec ncly transcript run youtube --url $URL --output $OUT --run-id b3 --json
+stdout '"output_dir":"'${OUT@R}'/Title-3"'
+grep -count=3 '(?m)^upload$' uploads.log
+exec ncly run view b3 --json
+stdout '"attempts":2,'
+
+# The result folder cannot be created: no ack and no upload. The step fails, since no audio
+# left, and its intent stays recorded, so the same call starts nothing
+env ID=b4
+env RO=$WORK/read-only
+mkdir $RO
+chmod 555 $RO
+exits 1 ncly transcript run youtube --url $URL --output $RO --run-id b4 --json
+answer stderr RUNTIME
+stderr '"message":"Cannot create a result folder in '${RO@R}', so no audio was sent\."'
+grep -count=2 '(?m)^no ack$' ack.log
+grep -count=3 '(?m)^upload$' uploads.log
+exec ncly run view b4 --json
+stdout '"output_dir":"'${RO@R}'/Title"'
+stdout '"status":"failed"\}\]'
+exits 1 ncly transcript run youtube --url $URL --output $RO --run-id b4 --json
+answer stderr RESUME_UNSAFE
+chmod 755 $RO
+
+# The engine completes its step, but a transcript that is blank, or a symlink in place of a file,
+# is no verified result: the step stays unknown, with no artifact, and the answer is RUNTIME
+env ID=b5
+env STUB=blank
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id b5 --json
+answer stderr RUNTIME
+stderr '"output_dir":"'${OUT@R}'/Title-4","transcript":null,"url":"[^"]+","errors":\[\{"code":"RUNTIME","message":"The files in '${OUT@R}'/Title-4 are no usable transcript, so the run is not complete\.","hint":"ncly run view b5"'
+exec ncly run view b5 --json
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":\{"code":"RUNTIME".*"status":"unknown"\}\]'
+env ID=b6
+env STUB=symlink
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id b6 --json
+stderr '"message":"The files in '${OUT@R}'/Title-5 are no usable transcript, so the run is not complete\."'
+cmp note.txt $WORK/note.txt
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+IFS= read -r request
+out=$(printf '%s\n' "$request" | /usr/bin/sed -n 's/.*"output":"\([^"]*\)".*/\1/p')
+item="$URL"
+printf '{"protocol_version":1,"type":"plan","items":[{"item":"%s","output":"%s"}]}\n' "$item" "$out"
+if [ "$STUB" = records ]; then
+	while [ ! -f "$RUNS/$ID.json" ]; do /bin/sleep 0.05; done
+	/bin/chmod 555 "$RUNS"
+fi
+printf '{"protocol_version":1,"type":"intent","item":"%s","step":"transcribe","name":"Title","tools":{"transcript":"1.0.0","yt-dlp":"2026.7.4"}}\n' "$item"
+if ! IFS= read -r ack; then
+	echo "no ack" >> "$WORK/ack.log"
+	exit 3
+fi
+echo "$ack" >> "$WORK/ack.log"
+/bin/cp "$RUNS/$ID.json" "$WORK/at-ack.json"
+dir=$(printf '%s\n' "$ack" | /usr/bin/sed -n 's/.*"output_dir":"\([^"]*\)".*/\1/p')
+if [ -d "$dir" ]; then echo "folder exists at ack" >> "$WORK/ack.log"; fi
+echo upload >> "$WORK/uploads.log"
+printf 'Welcome.' > "$dir/raw_transcript.txt"
+printf '' > "$dir/raw_sentences.txt"
+printf '[]' > "$dir/raw_transcript.json"
+case "$STUB" in
+blank) printf '  \n' > "$dir/raw_transcript.txt" ;;
+symlink) /bin/ln -sf "$WORK/note.txt" "$dir/raw_transcript.txt" ;;
+esac
+printf '{"protocol_version":1,"type":"step","item":"%s","step":"transcribe","status":"completed","code":null,"warnings":[],"detail":""}\n' "$item"
+-- note.txt --
+A file outside the result folder.
+-- bin/python3 --
+#!/bin/sh
+echo "Python 3.14.0"
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}

@@ -1,0 +1,112 @@
+# The boundary hook of the test binary kills the extension with SIGKILL, as a crash would, before
+# and after the intent and the completion. ncly then answers RUNTIME. Another process reads the
+# record, the files, and the uploads, then the same call decides from the saved step: a kill
+# before the intent runs again, a kill after the completion replays, and a kill between them
+# starts nothing. The real uv and Python run the engine with the test launcher, which counts
+# uploads. Each case has its own title, so its own folder. bin/uv counts each call of uv.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+chmod 755 bin/uv
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# Before the intent: the step stays pending, with no folder and no upload, so the same call runs,
+# once, as a second attempt
+env 'NCLY_TEST_TITLE=Before intent'
+env NCLY_TEST_BOUNDARY=before-intent
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k1 --json
+answer stderr RUNTIME
+stderr '"message":"The extension transcript exited with 137, which is not an exit code of the contract\."'
+env NCLY_TEST_BOUNDARY=
+exec ncly run view k1 --json
+stdout '"active":false,'
+stdout '"output_dir":null,"steps":\[\{"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"transcribe","started_at":null,"status":"pending"\}\]'
+! exists $OUT/Before_intent
+! exists uploads.log
+exec ncly transcript run youtube --url $URL --output $OUT --run-id k1 --json
+stdout '"output_dir":"'${OUT@R}'/Before_intent"'
+grep -count=1 '(?m)^upload ' uploads.log
+exec ncly run view k1 --json
+stdout '"attempts":2,'
+
+# After the intent: the record holds the candidate and the unknown step, and Go died before the
+# mkdir, so no folder exists and nothing was uploaded. The same call starts nothing
+env 'NCLY_TEST_TITLE=After intent'
+env NCLY_TEST_BOUNDARY=after-intent
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k2 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view k2 --json
+stdout '"output_dir":"'${OUT@R}'/After_intent","steps":\[\{"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"transcribe","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+! exists $OUT/After_intent
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k2 --json
+answer stderr RESUME_UNSAFE
+stderr '"run_id":"k2"'
+grep -count=1 '(?m)^upload ' uploads.log
+
+# Before the completion: the upload happened and the files exist, but the record never verified
+# them, so the step stays unknown, with no artifact, and the same call starts nothing
+env 'NCLY_TEST_TITLE=Before completion'
+env NCLY_TEST_BOUNDARY=before-completion
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k3 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view k3 --json
+stdout '"steps":\[\{"artifacts":\[\],"effect":"paid","error":null,"finished_at":null,"id":"transcribe","started_at":"[0-9TZ:-]+","status":"unknown"\}\]'
+exists $OUT/Before_completion/raw_transcript.txt
+grep -count=2 '(?m)^upload ' uploads.log
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k3 --json
+answer stderr RESUME_UNSAFE
+grep -count=2 '(?m)^upload ' uploads.log
+
+# After the completion: the record holds the verified files, so the same call replays them, with
+# no uv and no upload
+env 'NCLY_TEST_TITLE=After completion'
+env NCLY_TEST_BOUNDARY=after-completion
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k4 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view k4 --json
+stdout '"status":"completed","tools"'
+grep -count=5 '(?m)^run ' uv.log
+exec ncly transcript run youtube --url $URL --output $OUT --run-id k4 --json
+stdout '"ok":true,"contract_version":1,"run_id":"k4","results":\[\{"ok":true,"output_dir":"'${OUT@R}'/After_completion"'
+grep -count=5 '(?m)^run ' uv.log
+grep -count=3 '(?m)^upload ' uploads.log
+
+# A crash after a name collision: Go records the second candidate, then dies before its mkdir.
+# The taken folder keeps what it held, and nothing was uploaded
+mkdir $OUT/Taken
+cp note.txt $OUT/Taken/note.txt
+env NCLY_TEST_TITLE=Taken
+env NCLY_TEST_BOUNDARY=after-intent@2
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k5 --json
+answer stderr RUNTIME
+env NCLY_TEST_BOUNDARY=
+exec ncly run view k5 --json
+stdout '"output_dir":"'${OUT@R}'/Taken-2"'
+stdout '"status":"unknown"\}\]'
+exec /bin/ls -A $OUT/Taken
+stdout '\Anote\.txt\n\z'
+cmp $OUT/Taken/note.txt note.txt
+! exists $OUT/Taken-2
+grep -count=3 '(?m)^upload ' uploads.log
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id k5 --json
+answer stderr RESUME_UNSAFE
+grep -count=3 '(?m)^upload ' uploads.log
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+exec "$UV" "$@"
+-- note.txt --
+A file that the run never touches.
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}

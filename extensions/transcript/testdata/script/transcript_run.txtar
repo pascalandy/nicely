@@ -1,0 +1,97 @@
+# ncly transcript run youtube runs the real engine through the real uv and Python of the host,
+# with the test launcher of the test binary: yt-dlp copies the fixture audio, and Deepgram reads
+# the whole upload, then answers the fixture response. A granted test key reaches the engine.
+# One run uploads once, saves the three files in a new result folder, and records them, and ncly
+# run view reads that record in a new process. The same call replays the record without uv. A
+# refused key gives AUTH_REJECTED in the item, under RUNTIME. bin/uv counts each call in
+# $WORK/uv.log, then runs the real uv. The launcher counts downloads and uploads.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+chmod 755 bin/uv
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env DIR=$OUT/Test_video
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# One run downloads and uploads once, with the key, and answers its result folder and transcript.
+# The engine names the folder after the title, with an underscore for each space
+exec ncly transcript run youtube --url $URL --output $OUT --run-id r1 --json
+stdout '\A\{"ok":true,"contract_version":1,"run_id":"r1","results":\[\{"ok":true,"output_dir":"'${DIR@R}'","transcript":"'${DIR@R}'/raw_transcript\.txt","url":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY"\}\]\}\n\z'
+! stderr .
+cp stdout first.json
+grep -count=1 '^upload 2272 bytes, authorized True$' uploads.log
+grep -count=1 '^https://www\.youtube\.com/watch\?v=EIEc43CxIvY$' downloads.log
+grep -count=1 '(?m)^run ' uv.log
+
+# The folder holds the three files and meta.txt. Each file holds what the source program wrote
+# for the same fixture response, as its goldens in python/tests/goldens/ hold it
+exec /bin/ls -A $DIR
+stdout '\Ameta\.txt\nraw_sentences\.txt\nraw_transcript\.json\nraw_transcript\.txt\n\z'
+exec /bin/sh hashes.sh $DIR
+stdout '\Araw_transcript\.txt 97 b6c96f49b41d125d0eb1535e282aee33eae72a73ed51f4659f684b60b1dbe4af\nraw_sentences\.txt 127 a4857abbefe88e6179a6c6383ea89c07de38ed96324aa8f6df2162f68d2bbf53\nraw_transcript\.json 520 3aa06c60b4fe852329ff2037115b5b1431bc3872fef65aa44ba4810cccaf0a25\n\z'
+
+# ncly run view, in a new process, lists the three artifacts with the sizes and SHA-256 of the
+# files, the versions that the intent reported, and the inputs of the call
+exec ncly run view r1 --json
+stdout '"artifacts":\[\{"path":"'${DIR@R}'/raw_transcript\.txt","sha256":"b6c96f49b41d125d0eb1535e282aee33eae72a73ed51f4659f684b60b1dbe4af","size_bytes":97\},\{"path":"'${DIR@R}'/raw_sentences\.txt","sha256":"a4857abbefe88e6179a6c6383ea89c07de38ed96324aa8f6df2162f68d2bbf53","size_bytes":127\},\{"path":"'${DIR@R}'/raw_transcript\.json","sha256":"3aa06c60b4fe852329ff2037115b5b1431bc3872fef65aa44ba4810cccaf0a25","size_bytes":520\}\]'
+stdout '"evidence":\{"format_version":1,"warnings":\[\]\}'
+stdout '"effect":"paid"'
+stdout '"inputs":\{"output":"'${OUT@R}'","source":"youtube"\}'
+stdout '"tools":\{"transcript":"1\.0\.0","yt-dlp":"\d{4}\.\d+\.\d+[^"]*"\}'
+stdout '"output_dir":"'${DIR@R}'"'
+stdout '"status":"completed"'
+
+# The same call replays the record: the same answer, with no uv, download, or upload
+exec ncly transcript run youtube --url $URL --output $OUT --run-id r1 --json
+cmp stdout first.json
+grep -count=1 '(?m)^run ' uv.log
+grep -count=1 '(?m)^https' downloads.log
+grep -count=1 '(?m)^upload ' uploads.log
+
+# A second run of the same title takes the next free name, and its human text names the folder
+exec ncly transcript run youtube --url $URL --output $OUT --run-id r2
+stdout '\ATranscribed https://www\.youtube\.com/watch\?v=EIEc43CxIvY into '${DIR@R}'-2\.\n\z'
+grep -count=2 '(?m)^upload ' uploads.log
+
+# Deepgram refuses the key with 401 after the whole upload: the item holds AUTH_REJECTED, the
+# answer RUNTIME, because the run reserved its folder and sent its audio. The step fails
+env NCLY_TEST_DEEPGRAM_STATUS=401
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id r3 --json
+! stdout .
+answer stderr RUNTIME
+stderr '"run_id":"r3","results":\[\{"ok":false,"output_dir":"'${DIR@R}'-3","transcript":null,"url":"https://www\.youtube\.com/watch\?v=EIEc43CxIvY","errors":\[\{"code":"AUTH_REJECTED","message":"Deepgram refused the key\.","hint":"ncly auth login deepgram","next":\["ncly","auth","login","deepgram"\]\}\]\}\]'
+grep -count=3 '^upload 2272 bytes, authorized True$' uploads.log
+exec ncly run view r3 --json
+stdout '"error":\{"code":"AUTH_REJECTED","hint":"ncly auth login deepgram","message":"Deepgram refused the key\."\}.*"status":"failed"\}'
+stdout '"status":"failed"'
+
+# The same call starts nothing: the audio of r3 reached Deepgram
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id r3 --json
+answer stderr RESUME_UNSAFE
+stderr '"run_id":"r3"'
+grep -count=3 '(?m)^upload ' uploads.log
+grep -count=3 '(?m)^run ' uv.log
+
+-- bin/uv --
+#!/bin/sh
+echo "$*" >> "$WORK/uv.log"
+exec "$UV" "$@"
+-- hashes.sh --
+# hashes.sh <dir> prints the size and SHA-256 of each transcript file of <dir>, as the tools of
+# the system compute them: sha256sum on Linux, and shasum on macOS.
+for f in raw_transcript.txt raw_sentences.txt raw_transcript.json; do
+	if [ -x /usr/bin/sha256sum ]; then
+		sum=$(/usr/bin/sha256sum "$1/$f")
+	else
+		sum=$(/usr/bin/shasum -a 256 "$1/$f")
+	fi
+	echo "$f $(($(/usr/bin/wc -c < "$1/$f"))) ${sum%% *}"
+done
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}
