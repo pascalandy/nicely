@@ -103,6 +103,8 @@ def main(stdin: Iterable[str] = sys.stdin, stdout: TextIO = sys.stdout) -> int:
         )
         return 0
 
+    # As in the source program, --verbose names a step before it starts.
+    log.info("Starting the audio download...")
     try:
         audio = retry_request(
             lambda: download_audio(

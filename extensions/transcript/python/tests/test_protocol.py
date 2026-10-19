@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 from datetime import UTC, datetime
 
 import httpx
@@ -21,6 +22,7 @@ from harness import (
 )
 
 import transcript
+import youtube
 
 
 def test_a_dry_run_answers_its_plan_and_starts_nothing(tmp_path) -> None:
@@ -97,6 +99,27 @@ def test_a_key_quoted_by_an_http_error_stays_out_of_the_detail_and_meta(
     for text in (step["detail"], meta):
         assert "<redacted>" in text
         assert "fake-key" not in text and "secret-part" not in text
+
+
+def test_verbose_names_the_download_before_yt_dlp_starts(
+    tmp_path, monkeypatch, caplog
+) -> None:
+    caplog.set_level(logging.INFO, logger="transcript")
+    fake_ytdlp(monkeypatch)
+    fake_deepgram(monkeypatch)
+    child = youtube.run_child
+    logged = []
+
+    def run_child(command, **kwargs):
+        logged.append(list(caplog.messages))
+        return child(command, **kwargs)
+
+    monkeypatch.setattr(youtube, "run_child", run_child)
+
+    code, _ = run(request(tmp_path), ack(tmp_path))
+
+    assert code == 0
+    assert logged[0] == ["Starting the audio download..."]
 
 
 def test_a_title_without_ascii_letters_proposes_the_video_id(

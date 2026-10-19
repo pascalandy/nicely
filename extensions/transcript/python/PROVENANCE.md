@@ -69,6 +69,8 @@ From M13-T2, the engine speaks the [protocol with Go](../spec/protocol.md):
 
 From M13-T3, `redact` replaces the key in each detail and in `meta.txt`, as it is, trimmed, or as a bytes repr quotes it.
 
+From M13-T5, `main` logs `Starting the audio download...` under `--verbose`, as the step of the source's progress display logged `Starting Audio download...` without a terminal.
+
 ## The nine pyright errors
 
 Pyright 1.1.414 reports these errors at `0c9c4a2`, with pytest installed beside the runtime packages.
