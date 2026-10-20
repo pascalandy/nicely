@@ -115,15 +115,18 @@ exec ncly --lang en-XA transcript run youtube --url $URL --output $OUT --dry-run
 pseudo stdout $URL $OUT auth.deepgram
 
 # The skill installed beside the extension teaches only commands that this ncly has, and codes
-# of the registry or of the installed manifest
+# of the registry or of the installed manifest: its errors, and the warning codes that its result
+# schemas give as a const. A code that none of them declares still fails. See #271
 exec ncly skill view transcript --json
 stdout '"name":"transcript","path":"'${DATA@R}'/ncly-transcript\.skill","source":"extension"'
 exec ncly describe --json
 cp stdout describe.json
-exec /bin/sh -c 'codes && /usr/bin/sed -n "s/^code = \"\(.*\)\"\$/\1/p" "$DATA/ncly-transcript.toml"'
+exec /bin/sh -c 'codes && /usr/bin/sed -n -e "s/^code = \"\(.*\)\"\$/\1/p" -e "s/.*[{,] code = { const = \"\([^\"]*\)\" }.*/\1/p" "$DATA/ncly-transcript.toml"'
 stdout '^TRANSCRIPT_DOWNLOAD_FAILED$'
+stdout '^TRANSCRIPT_BROWSER_COOKIES_SKIPPED$'
 cp stdout codes.txt
 mentions $DATA/ncly-transcript.skill/SKILL.md describe.json codes.txt
+! mentions not-a-code.md describe.json codes.txt
 
 -- bin/uv --
 #!/bin/sh
@@ -150,3 +153,5 @@ browser = "arc"
 -- chrome.toml --
 [transcript]
 browser = "chrome"
+-- not-a-code.md --
+A run never answers `TRANSCRIPT_NOT_A_CODE`.
