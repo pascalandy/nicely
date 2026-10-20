@@ -33,8 +33,8 @@ func (k *kit) links() []string {
 }
 
 // scenarioLinks reports each command that runs and that no scenario calls
-// as ncly <domain> .... It also reports each call of ncly that exec runs in
-// the foreground, whose answer the kit cannot check.
+// as ncly <domain> .... It also reports each foreground exec of ncly or of
+// ncly-<domain>, by name or by path, whose answer the kit cannot check.
 func (k *kit) scenarioLinks() []string {
 	dir := filepath.Join("testdata", "script")
 	files, err := os.ReadDir(filepath.Join(k.root, dir))
@@ -43,8 +43,9 @@ func (k *kit) scenarioLinks() []string {
 	}
 	covered := map[string]bool{}
 	var problems []string
-	exec := regexp.MustCompile(`^(?:\[[^\]]*\]\s*)*[!?]?\s*exec\s+ncly\s+` + regexp.QuoteMeta(k.manifest.Domain) + `\b`)
+	exec := regexp.MustCompile(`^(?:\[[^\]]*\]\s*)*[!?]?\s*exec\s+["']?(\S*?)["']?(?:\s|$)`)
 	background := regexp.MustCompile(`\s&(?:[a-zA-Z_0-9]+&)?$`)
+	direct := "ncly-" + k.manifest.Domain
 	for _, file := range files {
 		name := file.Name()
 		if file.IsDir() || filepath.Ext(name) != ".txtar" && filepath.Ext(name) != ".txt" {
@@ -62,8 +63,10 @@ func (k *kit) scenarioLinks() []string {
 			for _, path := range k.mentions(line) {
 				covered[path] = true
 			}
-			if exec.MatchString(line) && !background.MatchString(line) {
-				problems = append(problems, fmt.Sprintf("%s:%d: exec runs ncly, so the kit cannot check its answer. Fix: drop exec, and run the kit's ncly command", filepath.Join(dir, name), i+1))
+			if m := exec.FindStringSubmatch(line); m != nil && !background.MatchString(line) {
+				if program := filepath.Base(m[1]); program == "ncly" || program == direct {
+					problems = append(problems, fmt.Sprintf("%s:%d: exec runs %s, so the kit cannot check its answer. Fix: drop exec, and run the kit's command %s", filepath.Join(dir, name), i+1, program, program))
+				}
 			}
 		}
 	}
@@ -106,13 +109,16 @@ func (k *kit) skillLinks() []string {
 }
 
 // mentions returns the command path of each ncly <domain> ... in text, as
-// literal words, without parsing shell or Markdown. After a path that
+// literal words, without parsing shell or Markdown. After a path that only
 // groups other commands, the next word is a command, so a mistyped one
-// shows. After any other path, the next words are its arguments.
+// shows. After a path that runs, the next word is a command only when the
+// manifest declares it, and an argument otherwise.
 func (k *kit) mentions(text string) []string {
 	domain := k.manifest.Domain
-	groups := map[string]bool{}
+	declared, groups, runs := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for _, c := range k.manifest.Commands {
+		path := strings.Join(c.Path, " ")
+		declared[path], runs[path] = true, k.manifest.Runs(c)
 		if len(c.Path) > 1 {
 			groups[strings.Join(c.Path[:len(c.Path)-1], " ")] = true
 		}
@@ -122,10 +128,11 @@ func (k *kit) mentions(text string) []string {
 	for _, m := range pattern.FindAllStringSubmatch(text, -1) {
 		path := domain
 		for _, word := range strings.Fields(m[1]) {
-			if !groups[path] {
+			next := path + " " + word
+			if !groups[path] || runs[path] && !declared[next] {
 				break
 			}
-			path += " " + word
+			path = next
 		}
 		paths = append(paths, path)
 	}

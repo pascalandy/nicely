@@ -19,6 +19,7 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // commands returns the scenario commands that the kit adds, which the
@@ -145,17 +146,17 @@ func (k *kit) fakeChild(ts *testscript.TestScript, neg bool, args []string) {
 // after ncly. It returns the problem, or "" for a call that prints no
 // answer, such as a help page, human text, or a call of another domain.
 func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable string) string {
-	c, d, runs := k.find(words)
-	if c == nil {
+	call, found := k.find(words)
+	if !found {
 		return ""
 	}
 	set := func(name string, fallback bool) bool {
-		if f := c.Flags().Lookup(name); f != nil && f.Changed {
-			on, _ := strconv.ParseBool(f.Value.String())
+		if on, given := call.switches[name]; given {
 			return on
 		}
 		return fallback
 	}
+	d, runs := call.command, call.runs
 	if set("help", false) || set("version", false) || !set("json", jsonVariable == "1") || runs && exit == 0 && d.Result.Kind == contract.ResultText {
 		return ""
 	}
@@ -181,16 +182,27 @@ func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable
 		return fmt.Sprintf("want one line of answer on %s, got %q", stream, answer)
 	}
 	if err := validate(contract.AnswerSchema(kind, data), line); err != nil {
-		return fmt.Sprintf("the answer on %s breaks the schema that manifest.toml declares for `ncly %s`: %v. Fix: make the handler answer what the schema declares, or correct the schema", stream, c.CommandPath()[len("ncly "):], err)
+		return fmt.Sprintf("the answer on %s breaks the schema that manifest.toml declares for `ncly %s`: %v. Fix: make the handler answer what the schema declares, or correct the schema", stream, call.path, err)
 	}
 	return ""
 }
 
-// find returns the command of a call, as the parser of ncly finds it, with
-// its flags parsed, its declaration, and whether it runs. A global flag may
-// come before the domain. The command is nil for a call of core or of
-// another domain.
-func (k *kit) find(words []string) (*cobra.Command, contract.Command, bool) {
+// parsed is what the parser of ncly finds in a call of the extension.
+type parsed struct {
+	// path is the command path, such as "hello run".
+	path    string
+	command contract.Command
+	runs    bool
+	// switches holds the last valid value of each switch that the call
+	// sets, by long name, as command.Resolve reads it.
+	switches map[string]bool
+}
+
+// find returns what the parser of ncly finds in a call, given as the words
+// after ncly. A global flag may come before the domain. An invalid value
+// of a flag stops no switch after it. It returns false for a call of core
+// or of another domain.
+func (k *kit) find(words []string) (parsed, bool) {
 	root := &cobra.Command{Use: "ncly"}
 	command.AddGlobalFlags(root, k.printer)
 	command.AddManifest(root, k.printer, k.printer, k.manifest, func(contract.Command) func(*cobra.Command, []string) error {
@@ -198,12 +210,22 @@ func (k *kit) find(words []string) (*cobra.Command, contract.Command, bool) {
 	})
 	c, rest, err := root.Find(words)
 	if err != nil || c == root {
-		return nil, contract.Command{}, false
+		return parsed{}, false
 	}
-	c.FParseErrWhitelist.UnknownFlags = true
-	_ = c.ParseFlags(rest)
-	d, found := k.manifest.Command(strings.TrimPrefix(c.CommandPath(), "ncly "))
-	return c, d, found && k.manifest.Runs(d)
+	call := parsed{path: strings.TrimPrefix(c.CommandPath(), "ncly "), switches: map[string]bool{}}
+	c.InheritedFlags() // merges the persistent flags of the parents into c.Flags()
+	flags := c.Flags()
+	flags.ParseErrorsAllowlist.UnknownFlags = true
+	_ = flags.ParseAll(rest, func(f *pflag.Flag, value string) error {
+		if on, err := strconv.ParseBool(value); err == nil && f.Value.Type() == "bool" {
+			call.switches[f.Name] = on
+		}
+		return nil
+	})
+	var found bool
+	call.command, found = k.manifest.Command(call.path)
+	call.runs = found && k.manifest.Runs(call.command)
+	return call, true
 }
 
 // validate checks an answer against a schema of draft 2020-12, with a
