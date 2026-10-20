@@ -145,10 +145,12 @@ func waitForPID(t *testing.T, path string) int {
 // of the terminal that ncly inherited above stderr without close-on-exec. A
 // shell can leave one open for its children.
 func TestRunPassesNoInheritedTerminal(t *testing.T) {
-	_, tty, err := pty.Open()
+	ptmx, tty, err := pty.Open()
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The master stays open: once it closes, the slave is no terminal.
+	defer func() { _ = ptmx.Close() }()
 	defer func() { _ = tty.Close() }()
 	script := `for path in /dev/fd/*; do fd=${path##*/}; if [ "$fd" -gt 2 ] && [ -t "$fd" ]; then echo "terminal on $fd"; fi; done`
 	for _, terminal := range []bool{false, true} {
