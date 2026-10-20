@@ -74,7 +74,7 @@ install:
 
 # Run every check that signoff requires
 [group('checks')]
-check: fmt-check lint tidy-check test race python release-lint gitleaks-rules gitleaks (limits "--base" "origin/main")
+check: fmt-check lint tidy-check test race template python release-lint gitleaks-rules gitleaks (limits "--base" "origin/main")
 
 # Run just check on each layer of a stack, bottom to top, as origin holds it
 [group('checks')]
@@ -114,12 +114,17 @@ test *args:
     bash scripts/signoff-test.sh
     bash scripts/scenario-test.sh
 
+# Render the extension template and check the rendered repository
+[group('checks')]
+template:
+    bash scripts/template-test.sh
+
 # Run the Go tests of sdk and internal under the race detector, without the scenarios
 [group('checks')]
 race:
     go test -race ./sdk/... ./internal/...
 
-# Check the Python engine of transcript with ruff, pyright, and pytest through uv
+# Check the Python of transcript and of the extension template with ruff, and transcript with pyright and pytest, through uv
 [group('checks')]
 python:
     #!/usr/bin/env bash
@@ -128,8 +133,8 @@ python:
     # that folder the root of pyright, which otherwise takes the first parent with a pyproject.toml,
     # such as a home folder, and checks all of it.
     cd extensions/transcript/python
-    uv tool run ruff@0.16.9 check --isolated
-    uv tool run ruff@0.16.9 format --isolated --check
+    uv tool run ruff@0.16.9 check --isolated . ../../../template/worker
+    uv tool run ruff@0.16.9 format --isolated --check . ../../../template/worker
     requirements="$(mktemp)"
     trap 'rm -f "$requirements"' EXIT
     uv export --quiet --no-hashes --script transcript.py > "$requirements"
