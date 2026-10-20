@@ -64,7 +64,14 @@ func TestCheckDocsPasses(t *testing.T) {
 	write(t, filepath.Join(root, "docs", "north-star", "code.md"), "Write `[a](gone.md)` for a link.\n\n- A list\n\n  ~~~\n  [example](gone.md)\n  ~~~\n")
 	write(t, filepath.Join(root, ".github", "notes.md"), "[old](gone.md)\n")
 	// A fixture beside the rules of the scenarios keeps its broken link too.
+	// The check never walks a testdata folder, so a fixture folder that it cannot
+	// read fails nothing.
 	write(t, filepath.Join(root, "testdata", "script", "broken.md"), "[old](gone.md)\n")
+	opaque := filepath.Join(root, "testdata", "opaque")
+	if err := os.Mkdir(opaque, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(opaque, 0o700) })
 	// The plan's readme is no milestone.
 	write(t, filepath.Join(root, "docs", "milestones", "README.md"), "# Milestones\n\n[Cards](M01-host.md#cards)\n")
 	// The link and its heading read the same fences: a short fence inside a
