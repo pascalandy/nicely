@@ -48,17 +48,19 @@ Stack work on an open pull request when it depends on that pull request. [Make a
 
 Fix review findings on their pull request's branch, with a scenario that fails first. Reply with the fixing commit.
 
-For one branch, rebase onto `origin/main`, push with `--force-with-lease`, and run `just signoff`. Then run `git push origin <branch>:main` to preserve the checked commit.
+For one branch, rebase onto `origin/main`, push with `--no-verify --force-with-lease`, and run `just signoff`. Then push the SHA of its `Signed off on <sha>` line with `git push --no-verify origin <sha>:main`.
 
-For a stack, follow Land in `gh-stack` for a project that pushes its head to trunk, with these checks:
+These pushes skip the pre-push `just test`, because `just signoff` checks that commit. `main` receives only that signed SHA, even when the branch moves later. An admin push bypasses the `signoff` ruleset, so never push the branch name to `main`. Every other push keeps the hook.
+
+For a stack, follow Land in `gh-stack` for a project that pushes its head to trunk, with these checks. Steps 2 and 7 skip the hook too, because `just signoff-layers` checks each layer:
 
 1. After `gh stack unstack`, require an empty result from the skill's `gh api` stack check.
-2. Push each rebased branch with `git push --force-with-lease`.
+2. Push each rebased branch with `git push --no-verify --force-with-lease`.
 3. Require identical local, origin, and pull-request `headRefOid` SHAs for each branch.
 4. Run `just signoff-layers` bottom to top. Each layer must contain the one below. Repeat for each new head.
 5. After retargeting, check each pull request with `gh pr view <number> --json baseRefName,closingIssuesReferences`.
 6. Require `main` as base and every Story named by closing keywords.
-7. Push the run's final `summary.txt` SHA with `git push origin <top-sha>:main`.
+7. Push the top SHA that the final `summary.txt` marks `ok` with `git push --no-verify origin <top-sha>:main`.
 8. Require `MERGED` from `gh pr view <number> --json state` for every pull request.
 9. Require each Story closed by its pull request in `gh issue view <story> --json state,closedByPullRequestsReferences`.
 
