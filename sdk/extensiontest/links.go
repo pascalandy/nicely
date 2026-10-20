@@ -43,8 +43,6 @@ func (k *kit) scenarioLinks() []string {
 	}
 	covered := map[string]bool{}
 	var problems []string
-	exec := regexp.MustCompile(`^(?:\[[^\]]*\]\s*)*[!?]?\s*exec\s+["']?(\S*?)["']?(?:\s|$)`)
-	background := regexp.MustCompile(`\s&(?:[a-zA-Z_0-9]+&)?$`)
 	direct := "ncly-" + k.manifest.Domain
 	for _, file := range files {
 		name := file.Name()
@@ -56,14 +54,12 @@ func (k *kit) scenarioLinks() []string {
 			return []string{err.Error()}
 		}
 		for i, line := range strings.Split(string(archive.Comment), "\n") {
-			line = strings.TrimSpace(withoutComment(line))
-			for _, path := range k.mentions(line) {
+			args := words(line)
+			for _, path := range k.mentions(strings.Join(args, " ")) {
 				covered[path] = true
 			}
-			if m := exec.FindStringSubmatch(line); m != nil && !background.MatchString(line) {
-				if program := filepath.Base(m[1]); program == "ncly" || program == direct {
-					problems = append(problems, fmt.Sprintf("%s:%d: exec runs %s, so the kit cannot check its answer. Fix: drop exec, and run the kit's command %s", filepath.Join(dir, name), i+1, program, program))
-				}
+			if program := foregroundExec(args); program == "ncly" || program == direct {
+				problems = append(problems, fmt.Sprintf("%s:%d: exec runs %s, so the kit cannot check its answer. Fix: drop exec, and run the kit's command %s", filepath.Join(dir, name), i+1, program, program))
 			}
 		}
 	}
@@ -76,19 +72,58 @@ func (k *kit) scenarioLinks() []string {
 	return problems
 }
 
-// withoutComment returns a script line without its comment, which starts
-// at a # outside single quotes, as testscript reads it.
-func withoutComment(line string) string {
-	quoted := false
-	for i, c := range line {
-		switch {
+// words splits a script line into its words as testscript does, but keeps
+// each $variable as written. Single quotes wrap text, two quotes inside them
+// stand for one, and a # outside them starts a comment.
+func words(line string) []string {
+	var args []string
+	var word strings.Builder
+	inWord, quoted := false, false
+	for i := 0; i < len(line); i++ {
+		switch c := line[i]; {
+		case quoted && c == '\'' && i+1 < len(line) && line[i+1] == '\'':
+			word.WriteByte(c)
+			i++
 		case c == '\'':
-			quoted = !quoted
-		case c == '#' && !quoted:
-			return line[:i]
+			inWord, quoted = true, !quoted
+		case !quoted && strings.IndexByte(" \t\r#", c) >= 0:
+			if inWord {
+				args = append(args, word.String())
+				word.Reset()
+				inWord = false
+			}
+			if c == '#' {
+				return args
+			}
+		default:
+			word.WriteByte(c)
+			inWord = true
 		}
 	}
-	return line
+	if inWord {
+		args = append(args, word.String())
+	}
+	return args
+}
+
+// background matches the last word of an exec that testscript runs in the
+// background: & or &name&.
+var background = regexp.MustCompile(`^&([a-zA-Z_0-9]+&)?$`)
+
+// foregroundExec returns the base name of the program that the words of a
+// script line run with exec in the foreground, after any [condition] and !.
+// It returns "" for any other line.
+func foregroundExec(args []string) string {
+	for len(args) > 0 && strings.HasPrefix(args[0], "[") && strings.HasSuffix(args[0], "]") {
+		args = args[1:]
+	}
+	if len(args) > 0 && args[0] == "!" {
+		args = args[1:]
+	}
+	if len(args) < 2 || args[0] != "exec" || background.MatchString(args[len(args)-1]) {
+		return ""
+	}
+	return filepath.Base(args[1])
 }
 
 // skillLinks reports each ncly <domain> ... command that a file of the

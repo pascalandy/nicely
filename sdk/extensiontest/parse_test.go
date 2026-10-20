@@ -1,7 +1,11 @@
 package extensiontest
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -69,6 +73,55 @@ func TestMentionsTellACommandFromAnArgument(t *testing.T) {
 		if got := k.mentions(text); !slices.Equal(got, want) {
 			t.Errorf("mentions(%q) = %q, want %q", text, got, want)
 		}
+	}
+}
+
+// TestScenarioLinksReadExecAsTestscript reads each exec line word by word,
+// as testscript runs it. Quotes may wrap the program, and a quoted & still
+// sends the program to the background.
+func TestScenarioLinksReadExecAsTestscript(t *testing.T) {
+	k := demoKit(t)
+	k.root = t.TempDir()
+	lines := []struct {
+		line    string
+		refused bool
+	}{
+		{"exec ncly demo run folder", true},
+		{"[linux] ! exec ncly-demo run", true},
+		{"exec 'bin dir/ncly' --version", true},
+		{"exec bin/'ncly-demo' --version", true},
+		{"exec 'it''s/ncly' --version", true},
+		{"exec ncly --version # not in the background &", true},
+		{"exec ncly --version & # in the background", false},
+		{"exec ncly --version '&'", false},
+		{"exec ncly --version &named&", false},
+		{"exec 'ncly #1' --version", false},
+		{"ncly demo run folder", false},
+		{"stdout 'exec ncly'", false},
+	}
+	var script strings.Builder
+	var want []string
+	for i, l := range lines {
+		script.WriteString(l.line + "\n")
+		if l.refused {
+			want = append(want, fmt.Sprintf("exec.txtar:%d:", i+1))
+		}
+	}
+	dir := filepath.Join(k.root, "testdata", "script")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "exec.txtar"), []byte(script.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, problem := range k.scenarioLinks() {
+		if strings.Contains(problem, "exec runs") {
+			got = append(got, strings.TrimPrefix(problem[:strings.Index(problem, " ")], filepath.Join("testdata", "script")+string(filepath.Separator)))
+		}
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("scenarioLinks refused %q, want %q", got, want)
 	}
 }
 
