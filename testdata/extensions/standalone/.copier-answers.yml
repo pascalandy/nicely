@@ -1,0 +1,4 @@
+# The answers that the extension template records. The test kit checks that
+# _commit, the Nicely version of the template, equals the one in go.mod.
+_commit: v0.18.0
+_src_path: gh:pascalandy/nicely

@@ -7,6 +7,10 @@ set tempdir := "/tmp"
 go-tools := 'GOTOOLCHAIN="$(go -C tools env GOVERSION)" go tool -modfile=tools/go.mod'
 golangci := go-tools + " golangci-lint"
 
+# The fixture extension repository of the test kit is a Go module of its own, which ./... skips.
+standalone := "testdata/extensions/standalone"
+standalone-golangci := 'GOTOOLCHAIN="$(go -C tools env GOVERSION)" go -C ' + standalone + ' tool -modfile="' + justfile_directory() + '/tools/go.mod" golangci-lint'
+
 # List the recipes
 default:
     @just --list
@@ -99,6 +103,8 @@ test *args:
     while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
     # ./... skips testdata/, so the Go fixture extensions are named.
     go test ./... ./testdata/extensions/... {{ args }}
+    # Its test kit builds ncly, whose source the test cache of the fixture never rechecks.
+    go -C {{ standalone }} test -count=1 ./... {{ args }}
     # Go's test cache never rechecks a file outside the tools module, such as the docs or the release workflow, so these tests run uncached.
     (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh
@@ -135,12 +141,14 @@ python:
 [group('checks')]
 lint:
     {{ golangci }} run ./... ./testdata/extensions/...
+    {{ standalone-golangci }} run ./...
     cd tools && go tool golangci-lint run ./cmd/...
 
 # Fail when a Go file needs formatting
 [group('checks')]
 fmt-check:
     {{ golangci }} fmt --diff ./... ./testdata/extensions/...
+    {{ standalone-golangci }} fmt --diff
     cd tools && go tool golangci-lint fmt --diff
 
 # Check the shell scripts, those of the skills too, and the dormant manual workflow
@@ -182,6 +190,7 @@ release-verify version:
 [group('checks')]
 tidy-check:
     go mod tidy -diff
+    go -C {{ standalone }} mod tidy -diff
     cd tools && go mod tidy -diff
 
 # Scan the whole history for keys, home folders, and private addresses

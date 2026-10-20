@@ -1,0 +1,18 @@
+# Lip Gloss v2.0.6 runs tmux info as it loads, when a terminal and tmux show.
+# go.mod repeats the replace line of Nicely's go.mod, so the ncly of go tool
+# ncly and ncly-standalone load the fork, which asks tmux nothing as it loads.
+# Without that line, both binaries call the tmux stub, which logs each call.
+chmod 755 bin/tmux
+env TMUX=/tmp/tmux-test/default,1,0
+env TERM=xterm-256color
+env TTY_FORCE=1
+ncly --version
+stdout '^ncly '
+! exists tmux.log
+ncly-standalone --version
+stdout '^ncly-standalone '
+! exists tmux.log
+
+-- bin/tmux --
+#!/bin/sh
+echo "$@" >> "$WORK/tmux.log"

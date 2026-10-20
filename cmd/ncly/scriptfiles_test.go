@@ -13,11 +13,17 @@ import (
 )
 
 // scriptDirs returns the folders of the scenarios under root: core's, then
-// those of each extension and of each fixture extension. TestScripts runs
-// them, and TestFailedReportsUseAnswer reads them.
+// those of each extension and of each fixture extension without a go.mod.
+// TestScripts runs them, and TestFailedReportsUseAnswer reads them. A
+// fixture with a go.mod, such as standalone, is an extension repository.
+// Its own go test runs its scenarios through the test kit.
 func scriptDirs(root string) (core string, others []string) {
 	extensions, _ := filepath.Glob(filepath.Join(root, "extensions", "*", "testdata", "script"))
 	fixtureDirs, _ := filepath.Glob(filepath.Join(root, "testdata", "extensions", "*", "testdata", "script"))
+	fixtureDirs = slices.DeleteFunc(fixtureDirs, func(dir string) bool {
+		_, err := os.Stat(filepath.Join(dir, "..", "..", "go.mod"))
+		return err == nil
+	})
 	return filepath.Join(root, "testdata", "script"), append(extensions, fixtureDirs...)
 }
 

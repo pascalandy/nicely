@@ -1,0 +1,33 @@
+format_version = 1
+contract_version = 1
+domain = "standalone"
+
+[[commands]]
+path = "standalone"
+summary = "standalone.summary"
+examples = ["ncly standalone tally --json", "ncly standalone fetch --json"]
+
+[[commands]]
+path = "standalone tally"
+summary = "standalone.tally.summary"
+examples = ["ncly standalone tally", "ncly standalone tally --json"]
+requires = { bins = ["tally-tool"] }
+
+[commands.result.schema]
+type = "object"
+required = ["count"]
+properties = { count = { type = "integer" } }
+
+[[commands]]
+path = "standalone fetch"
+summary = "standalone.fetch.summary"
+examples = ["ncly standalone fetch", "ncly standalone fetch --json"]
+effects = { network = true }
+requires = { keys = ["example"] }
+
+[commands.result.schema]
+type = "object"
+required = ["sha256"]
+properties = { sha256 = { type = "string" } }
+
+[programs.tally-tool]

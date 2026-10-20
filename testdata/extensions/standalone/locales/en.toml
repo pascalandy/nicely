@@ -1,0 +1,33 @@
+# English catalog of the standalone fixture. Each entry needs a description of where the text appears.
+
+["standalone.summary"]
+description = "Help page: summary of the standalone fixture, the extension repository that the test kit tests."
+other = "Count with tally-tool and check a key"
+
+["standalone.tally.summary"]
+description = "Help page: summary of `ncly standalone tally`, which runs tally-tool and answers the number that it prints."
+other = "Count with tally-tool"
+
+["standalone.tally.missing"]
+description = "Error message of `ncly standalone tally` when no folder of PATH holds tally-tool."
+other = "tally-tool is not installed."
+
+["standalone.tally.missing_hint"]
+description = "Hint of the error when tally-tool is missing: what the user does next."
+other = "Install tally-tool, then run the command again."
+
+["standalone.tally.failed"]
+description = "Error message of `ncly standalone tally` when tally-tool fails or prints something other than a whole number."
+other = "tally-tool printed no whole number."
+
+["standalone.tally.value"]
+description = "Human text of `ncly standalone tally`: the number that tally-tool printed. {{.Value}} is a whole number."
+other = "tally-tool counted {{.Value}}."
+
+["standalone.fetch.summary"]
+description = "Help page: summary of `ncly standalone fetch`, which needs the key of the test service example."
+other = "Check the example key"
+
+["standalone.fetch.digest"]
+description = "Human text of `ncly standalone fetch`: the SHA-256 of the key that the fixture received, never the key. {{.Digest}} is 64 hexadecimal digits."
+other = "The key has the SHA-256 {{.Digest}}."

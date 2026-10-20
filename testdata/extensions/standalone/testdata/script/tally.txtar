@@ -1,0 +1,31 @@
+# The fake child of the test kit stands in for tally-tool. The kit checks each
+# answer below against the schema of standalone tally: a success, then failures.
+fake tally-tool
+ncly standalone tally --json
+stdout '"count":3'
+ncly standalone tally
+stdout 'tally-tool counted 3'
+ncly --json standalone tally
+stdout '"count":3'
+
+# Output that is no whole number fails with RUNTIME, and so does an exit
+# other than 0.
+cp words.fake bin/tally-tool.fake
+exits 1 ncly standalone tally --json
+stderr '"code":"RUNTIME"'
+cp exit.fake bin/tally-tool.fake
+exits 1 ncly standalone tally --json
+stderr '"code":"RUNTIME"'
+
+# Without tally-tool in PATH, the command fails before it starts anything.
+rm bin/tally-tool
+exits 78 ncly standalone tally --json
+stderr '"code":"PREREQ_MISSING"'
+
+-- bin/tally-tool.fake --
+stdout 3
+-- words.fake --
+stdout three
+-- exit.fake --
+stdout 3
+exit 3
