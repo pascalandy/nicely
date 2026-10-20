@@ -21,4 +21,5 @@ Done when the scenario fails for the missing behavior. A test of a shared compon
 ## Scenario commands
 
 The `Cmds` map of `runScripts`, in `cmd/ncly/script_test.go`, lists the commands that the test binary adds. The comment above each one gives its usage.
+Check a failed report on stdout with `answer stdout report`, never with a `stdout` regex. The `^` and `$` of a regex match one line, so `just test` fails on such a regex.
 To give a command a terminal, use `exec ttyin`, never the builtin `ttyin -stdin`, which hangs on macOS. See [#162](https://github.com/pascalandy/nicely/issues/162).
