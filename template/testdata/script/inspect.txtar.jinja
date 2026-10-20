@@ -1,0 +1,100 @@
+# ncly {{ domain }} inspect runs worker/inspect.py with python3 through sdk/wrap. Each
+# case below is a case of Wrapped programs, in the contract that just contract
+# prints. The test kit checks each answer against the schema of the command.
+#
+# The kit gives each scenario a scratch HOME, where the shim of a version
+# manager, such as mise or pyenv, finds no Python. bin/python3, first in PATH,
+# runs the Python of the system instead, or fails as STUB says.
+chmod 755 bin/python3
+
+# The worker reads ./input.md from the caller's folder.
+cd notes
+ncly {{ domain }} inspect ./input.md --json
+stdout '"size_bytes":29'
+stdout '"lines":3'
+ncly {{ domain }} inspect ./input.md
+stdout '^\./input\.md: 3 lines, 29 B$'
+cd $WORK
+
+# The worker gets an empty stdin, whatever ncly reads.
+env STUB=stdin
+stdin notes/input.md
+ncly {{ domain }} inspect notes/input.md --json
+grep '^stdin is empty$' stdin.log
+env STUB=
+
+# An invalid input is a usage error, before python3 starts.
+exits 2 ncly {{ domain }} inspect missing.md --json
+stderr '"code":"USAGE_INVALID"'
+exits 2 ncly {{ domain }} inspect notes/input.md --timeout soon --json
+stderr '"code":"USAGE_INVALID"'
+
+# python3 too old, or a version probe that does not finish in time, is
+# PREREQ_MISSING with exit 78, before the worker starts.
+env STUB=old
+exits 78 ncly {{ domain }} inspect notes/input.md --json
+stderr '"code":"PREREQ_MISSING"'
+env STUB=probe-hang
+exits 78 ncly {{ domain }} inspect notes/input.md --timeout 1s --json
+stderr '"code":"PREREQ_MISSING"'
+
+# An exit other than 0, even the program's own 75, is RUNTIME with exit 1, and
+# so is output that the handler cannot read, or that is over the limit of 1 MB.
+env STUB=fail
+exits 1 ncly {{ domain }} inspect notes/input.md --json
+stderr '"code":"RUNTIME"'
+env STUB=retry
+exits 1 ncly {{ domain }} inspect notes/input.md --json
+stderr '"code":"RUNTIME"'
+env STUB=garbled
+exits 1 ncly {{ domain }} inspect notes/input.md --json
+stderr '"code":"RUNTIME"'
+env STUB=noisy
+exits 1 ncly {{ domain }} inspect notes/input.md --json
+stderr '"code":"RUNTIME"'
+
+# At the timeout, the program stops, and the answer is RUNTIME with exit 1.
+env STUB=hang
+exits 1 ncly {{ domain }} inspect notes/input.md --timeout 1s --json
+stderr '"code":"RUNTIME"'
+
+# Ctrl-C stops the program too, and the answer is INTERRUPTED, whose exit is 130.
+rm hang.pid
+! exec ncly {{ domain }} inspect notes/input.md --json &
+exec sh -c 'i=0; until [ -f hang.pid ]; do i=$((i+1)); [ $i -lt 200 ] || exit 1; sleep 0.05; done'
+kill -INT
+wait
+stderr '"code":"INTERRUPTED"'
+
+# python3 missing from PATH is PREREQ_MISSING with exit 78, before any work.
+env STUB=
+rm bin/python3
+env PATH=$WORK/bin
+exits 78 ncly {{ domain }} inspect notes/input.md --json
+stderr '"code":"PREREQ_MISSING"'
+
+-- notes/input.md --
+# Notes
+First line
+Last line
+-- bin/python3 --
+#!/bin/sh
+# python3 of the scenarios. Without STUB, it runs the Python of the system.
+case "$1:$STUB" in
+--version:) exec /usr/bin/python3 --version ;;
+--version:old) echo 'Python 2.7.18'; exit 0 ;;
+--version:probe-hang) exec sleep 30 ;;
+--version:*) echo 'Python 3.12.0'; exit 0 ;;
+esac
+case "$STUB" in
+stdin)
+  if read -r line; then echo "stdin holds $line"; else echo 'stdin is empty'; fi > "$WORK/stdin.log"
+  echo '{"size_bytes":0,"lines":0}'
+  ;;
+fail) echo 'inspect.py: broken' >&2; exit 3 ;;
+retry) exit 75 ;;
+garbled) echo 'not json' ;;
+noisy) yes | head -c 2000000 ;;
+hang) echo $$ > "$WORK/hang.pid"; exec sleep 30 ;;
+*) exec /usr/bin/python3 "$@" ;;
+esac

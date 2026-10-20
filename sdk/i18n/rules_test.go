@@ -14,7 +14,9 @@ import (
 
 // TestEveryCatalogFollowsTheRules walks every catalog folder of the
 // repository, core's, the SDK's, and each extension's, as SDK in
-// contract.md asks, and checks that core and the SDK share no ID.
+// contract.md asks, and checks that core and the SDK share no ID. It skips
+// template/, whose catalog is a Copier source: extension.Check checks the
+// catalog that it renders, in scripts/template-test.sh.
 func TestEveryCatalogFollowsTheRules(t *testing.T) {
 	root := filepath.Join("..", "..")
 	owners := map[string][]string{}
@@ -22,7 +24,7 @@ func TestEveryCatalogFollowsTheRules(t *testing.T) {
 		switch {
 		case err != nil:
 			return err
-		case d.IsDir() && (d.Name() == ".git" || d.Name() == "node_modules"):
+		case d.IsDir() && (d.Name() == ".git" || d.Name() == "node_modules" || path == filepath.Join(root, "template")):
 			return filepath.SkipDir
 		case !d.IsDir() || d.Name() != "locales":
 			return nil

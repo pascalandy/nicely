@@ -1,0 +1,11 @@
+// Command ncly-{{ domain }} runs the {{ domain }} extension of Nicely. Its main
+// starts nothing before extension.Main, so --help and --version stay safe.
+package main
+
+import (
+	"github.com/pascalandy/nicely/sdk/extension"
+
+	{{ domain }} "{{ module }}"
+)
+
+func main() { extension.Main({{ domain }}.Extension) }

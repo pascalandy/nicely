@@ -1,0 +1,35 @@
+format_version = 1
+contract_version = 1
+domain = "{{ domain }}"
+
+[[commands]]
+path = "{{ domain }}"
+summary = "{{ domain }}.summary"
+examples = ["ncly {{ domain }} inspect notes.md", "ncly {{ domain }} inspect notes.md --json"]
+
+[[commands]]
+path = "{{ domain }} inspect"
+summary = "{{ domain }}.inspect.summary"
+examples = ["ncly {{ domain }} inspect notes.md", "ncly {{ domain }} inspect notes.md --json"]
+effects = {}
+requires = { bins = ["python3"] }
+
+[[commands.args]]
+name = "file"
+summary = "{{ domain }}.inspect.file"
+required = true
+
+[[commands.flags]]
+name = "timeout"
+value = "duration"
+default = "30s"
+summary = "{{ domain }}.inspect.timeout"
+
+[commands.result.schema]
+type = "object"
+required = ["size_bytes", "lines"]
+properties = { size_bytes = { type = "integer", minimum = 0 }, lines = { type = "integer", minimum = 0 } }
+
+[programs.python3]
+version = "3.9"
+install = { brew = ["brew", "install", "python"], pacman = ["sudo", "pacman", "-S", "python"], apt = ["sudo", "apt", "install", "python3"], dnf = ["sudo", "dnf", "install", "python3"] }

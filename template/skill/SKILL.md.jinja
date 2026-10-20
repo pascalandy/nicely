@@ -1,0 +1,13 @@
+---
+name: {{ domain }}
+description: Use when an agent needs the size or the line count of a file before it reads the file or sends it on.
+---
+
+# {{ domain }}
+
+Use `ncly {{ domain }} inspect` to learn the size and the line count of one file. It only reads the file.
+
+- Give a path in your folder: the command reads it there
+- Read `size_bytes` and `lines` from the answer of `--json`
+- Inspect each file of a folder in its own call
+- On `PREREQ_MISSING`, relay `hint` to the human, who installs Python 3.9 or later

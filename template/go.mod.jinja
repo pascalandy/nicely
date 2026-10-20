@@ -1,0 +1,16 @@
+module {{ module }}
+
+go 1.27.0
+
+tool github.com/pascalandy/nicely/cmd/ncly
+
+require github.com/pascalandy/nicely {{ _copier_answers._commit }}
+
+// Lip Gloss v2.0.6 runs `tmux info` as its package loads, with no time limit:
+// https://github.com/charmbracelet/lipgloss/issues/749. Nicely's go.mod
+// replaces it with a fork that holds the fix of
+// https://github.com/charmbracelet/lipgloss/pull/759. A replace never reaches
+// another module, so this repository repeats it, and lipgloss.txtar proves
+// that ncly and the extension get the fork. Remove this line once a release
+// of Lip Gloss ships the fix.
+replace charm.land/lipgloss/v2 => github.com/pascalandy/lipgloss/v2 v2.0.7-0.20261016054459-6d92d28af73f

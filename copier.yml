@@ -1,0 +1,33 @@
+# The extension template, as D062 in docs/north-star/decisions/ decides. Each
+# Nicely tag is a template version, and Extension repository in
+# docs/north-star/contract/extensions.md holds the layout that it renders.
+# An agent creates a repository without prompts, with the Copier that the
+# justfile of the template pins:
+#
+#   uv tool run copier@9.19.1 copy --vcs-ref v0.18.0 --defaults \
+#     --data domain=notes --data module=github.com/me/ncly-notes \
+#     gh:pascalandy/nicely ncly-notes
+#
+# The template has no tasks, no migrations, and no Jinja extension, so
+# Copier needs no --trust. scripts/template-test.sh renders it in just check.
+_subdirectory: template
+
+domain:
+  type: str
+  help: The domain of the extension, lowercase letters and digits that start with a letter, such as notes
+  validator: >-
+    {% if not (domain or "") | regex_search("^[a-z][a-z0-9]*$") %}
+    Give a domain of lowercase letters and digits that starts with a letter: --data domain=notes
+    {% elif domain in ["auth", "completion", "config", "core", "describe", "doctor", "extensions", "help", "run", "skill", "tap", "version"] %}
+    ncly reserves the name {{ domain }}: choose another domain
+    {% elif domain in ["break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto", "if", "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var"] %}
+    {{ domain }} is a Go keyword, which cannot name the Go package: choose another domain
+    {% endif %}
+
+module:
+  type: str
+  help: The Go module path of the repository, such as github.com/me/ncly-notes
+  validator: >-
+    {% if not (module or "") | regex_search("^[a-z0-9][-a-z0-9.]*(/[-A-Za-z0-9._~]+)+$") %}
+    Give the Go module path of the repository: --data module=github.com/me/ncly-{{ domain }}
+    {% endif %}

@@ -1,0 +1,34 @@
+# AGENTS.md
+
+`ncly-{{ domain }}` is a Nicely extension: it adds the `ncly {{ domain }}` commands. One extension is one domain, and each command is one bounded operation.
+
+## Read, in this order
+
+1. `vision.md`: the job of the extension, what it wraps, and what it refuses
+2. `spec.md`: what proves the success of each command, why each effect exists, and its failures
+3. `manifest.toml`: the machine facts of each command, which `ncly describe {{ domain }} --json` shows once the extension is installed
+4. The contract, at the Nicely version that `go.mod` pins. `just contract` prints its folder. Start with "What a great extension does" in its `extensions.md`, and open only the parts that it links
+
+## Change a command
+
+1. `spec.md`: its section, titled `## ncly {{ domain }} <verb>`
+2. `manifest.toml`: its declaration, with its effects, programs, keys, and result schema
+3. `testdata/script/`: its scenarios, which fail before the handler exists. `test-kit.md` in the contract lists their commands
+4. Its handler, such as `inspect.go`, on `sdk/wrap` for one program, or on `sdk/runner` for more. Add it to the handlers of `extension.go`
+5. `locales/en.toml`: its text, each entry with a description
+6. `skill/SKILL.md`: when to use the command, and when not to
+
+A wrapped script goes in `worker/`. To take in a script, or to review the extension when the user asks, use the skill in `.agents/skills/nicely-extension/`.
+
+## Recipes
+
+The recipes need Go, `just`, and `uv`, which runs the pinned Copier of `just update`. Run `lefthook install` once per clone, so `just check` runs before each push.
+
+- `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
+- `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
+- `just update <version>`: moves the repository to another Nicely version, the template first and then the SDK, on a clean Git tree
+- `just contract`: prints the folder of the contract at the Nicely version that `go.mod` pins
+
+## Done when
+
+`just check` passes, and the installed command ran once on real input. For a paid command, its dry run is enough. For a command that needs a key, relay the grant hint to the human and wait.

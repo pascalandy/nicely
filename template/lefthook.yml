@@ -1,0 +1,6 @@
+# Run lefthook install once per clone. Before each push, Lefthook runs just
+# check, the checks of this repository, since the template ships no CI.
+pre-push:
+  commands:
+    check:
+      run: just check
