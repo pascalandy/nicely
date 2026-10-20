@@ -62,13 +62,24 @@ jobs:
         run: |
           set -Eeuo pipefail
           sudo apt-get update
-          sudo apt-get install --yes shellcheck shfmt ruby
+          sudo apt-get install --yes ruby
           curl --fail --silent --show-error --location \
             https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
             --output "${RUNNER_TEMP}/gitleaks.tar.gz"
           printf '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  %s\n' "${RUNNER_TEMP}/gitleaks.tar.gz" | sha256sum --check
+          # Ubuntu's ShellCheck and shfmt lag behind the versions on the maintainers' machines, so pin those
+          curl --fail --silent --show-error --location \
+            https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz \
+            --output "${RUNNER_TEMP}/shellcheck.tar.xz"
+          printf '8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  %s\n' "${RUNNER_TEMP}/shellcheck.tar.xz" | sha256sum --check
+          curl --fail --silent --show-error --location \
+            https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64 \
+            --output "${RUNNER_TEMP}/shfmt"
+          printf 'fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1  %s\n' "${RUNNER_TEMP}/shfmt" | sha256sum --check
           mkdir -p "${RUNNER_TEMP}/check-bin"
           tar -xzf "${RUNNER_TEMP}/gitleaks.tar.gz" -C "${RUNNER_TEMP}/check-bin" gitleaks
+          tar -xJf "${RUNNER_TEMP}/shellcheck.tar.xz" -C "${RUNNER_TEMP}/check-bin" --strip-components=1 shellcheck-v0.11.0/shellcheck
+          install -m 755 "${RUNNER_TEMP}/shfmt" "${RUNNER_TEMP}/check-bin/shfmt"
           printf '%s\n' "${RUNNER_TEMP}/check-bin" >>"${GITHUB_PATH}"
 
       - name: Rehearse without publishing
