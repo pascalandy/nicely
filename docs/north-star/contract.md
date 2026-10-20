@@ -41,6 +41,8 @@ Each part is one file, in reading order.
   - [Status command](contract/status-command.md)
   - [Answer check](contract/answer-check.md)
   - [SDK](contract/sdk.md)
+    - [Wrapped programs](contract/wrap.md)
+    - [Test kit](contract/test-kit.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)
   - [Record format](contract/record-format.md)

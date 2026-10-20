@@ -119,7 +119,7 @@ Ctrl-C, SIGTERM, and the timeout stop Codex and every descendant that `ncly` can
 
 A stop during a dry run answers as a stop before the record, without `run_id`. A repeated call after a failed step answers `RESUME_UNSAFE` too, because the record saved the intent of a paid step, as case 5 of Records and replay says. Only a human decides whether a new run ID may start the task again.
 
-This task supports no explicit resume. A record with no persisted effect intent can retry under the existing run-ID rules. An unknown paid step cannot. Use `ncly run view` to inspect it and let the human decide whether to start a distinct task. A record is not a background worker.
+This task supports no explicit resume. A record with no persisted effect intent can retry under the existing run-ID rules. An unknown paid step cannot. Use `ncly run view` to inspect it and let the human decide whether to start a distinct task. A record is not a daemon.
 
 ## Depth limit
 

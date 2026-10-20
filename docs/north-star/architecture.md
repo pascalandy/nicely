@@ -59,9 +59,11 @@ Each part has one owner: one package and one spec section.
 | 4 | Each extension | Its domain's preparation, business steps, result verification, catalog, skill, and recovery evidence when supported | `extensions/<name>/` | Its `spec.md` |
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract/extensions.md) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
-| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled | `sdk/extension/` | [SDK](contract/sdk.md) |
+| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled, the export of its sidecars, and its embedded workers | `sdk/extension/` | [SDK](contract/sdk.md) |
+| 2 | Wrap helper | One program that a handler runs, such as a worker: its check, input, environment, captured output, and failures | `sdk/wrap/` | [Wrapped programs](contract/wrap.md) |
+| 2 | Test kit | The tests of an extension repository: its checks, its scenarios, and an install into scratch folders | `sdk/extensiontest/` | [Test kit](contract/test-kit.md) |
 | 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract/command-descriptions.md), [Output](contract/output.md) |
-| 2 | Program runner | Child environment, process groups, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract/programs-that-ncly-runs.md), [Required programs](core-spec.md#required-programs) |
+| 2 | Program runner | Child environment, process groups and sessions, captured output, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract/programs-that-ncly-runs.md), [Required programs](core-spec.md#required-programs) |
 | 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/` | [Operations](contract/operations.md) |
 | 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract/configuration.md) |
 | 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract/configuration.md) |
@@ -79,6 +81,7 @@ The other folders:
 - `testdata/script/`: core's testscript scenarios. An extension keeps its own in `extensions/<name>/testdata/script/`, and the test binary of `cmd/ncly` runs both
 - `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` and `just test` name it
 - `testdata/extensions/keyed/`: the Go fixture whose command needs a key, which it reads through `Call.Key`. Only the scenarios install it, so `hello`, which `just verify` installs in every run, declares no key, and doctor passes in a run without one
+- `copier.yml` and `template/`: the extension template, which creates an extension repository
 - `tools/`: a separate module that pins the dev tools and holds the plan checker behind `just next` and `just test`
 
 ## Domains and commands

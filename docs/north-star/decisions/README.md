@@ -18,7 +18,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D010](D010-keychain-or-environment.md) | Keep keys in the keychain or the environment |
 | [D011](D011-local-checks.md) | Check locally by default, test live on request, and install nothing |
 | [D012](D012-translatable-from-day-one.md) | Make every word of core translatable from day one |
-| [D013](D013-go-everywhere.md) | Write core and the first-party extensions in Go |
+| [D013](D013-go-everywhere.md) | Write core and every extension in Go |
 | [D014](D014-public-from-day-one.md) | Publish from the first commit |
 | [D015](D015-macos-and-linux.md) | Target macOS and Linux with the same paths |
 | [D016](D016-local-ci.md) | Run CI locally and release by hand |
@@ -67,3 +67,5 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D059](D059-no-buttons.md) | Let a human type each answer, and show no button |
 | [D060](D060-style-the-plain-text.md) | Style the text that a pipe gets, and let the terminal wrap it |
 | [D061](D061-smallest-useful-capability.md) | Ship the smallest useful capability before its variants |
+| [D062](D062-copier-template.md) | Ship the extension template in the Nicely repository, tied to the SDK by one version |
+| [D063](D063-sdk-test-kit.md) | Let the SDK own the test kit of an extension repository |

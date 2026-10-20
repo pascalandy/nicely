@@ -7,8 +7,47 @@ Core is a small host. Every domain that does work for the user is an extension, 
 
 Core commands and bundled extensions always win over an external extension with the same name. [ncly describe](../core-spec.md#ncly-describe) reports the source of each command that runs. [ncly doctor](../core-spec.md#ncly-doctor) adds where each extension comes from, and every extension that another one hides.
 
-An extension receives the environment that [Programs that ncly runs](programs-that-ncly-runs.md) defines, which carries the global flags as variables. It answers with the envelope of [Output](output.md) and the exit codes of [Exit codes](exit-codes.md). It may use core's [error codes](error-codes.md), and its manifest declares its own. It translates its own text into the language of `NCLY_LANG`. It may be written in any language: a Python extension can be one file with the shebang `#!/usr/bin/env -S uv run --script` and its dependencies inline.
+An extension receives the environment that [Programs that ncly runs](programs-that-ncly-runs.md) defines, which carries the global flags as variables. It answers with the envelope of [Output](output.md) and the exit codes of [Exit codes](exit-codes.md). It may use core's [error codes](error-codes.md), and its manifest declares its own. It translates its own text into the language of `NCLY_LANG`. It is written in Go with the SDK, the one supported way for now, as [D013](../decisions/D013-go-everywhere.md) decides. The wire contract stays open to any language, as [D040](../decisions/D040-wire-contract.md) decides. A program that the extension runs keeps its own language, as a worker of [Programs that ncly runs](programs-that-ncly-runs.md) does.
 
 When a selected workflow composes extensions, it uses the CLI as an agent would. The shipped `skill` extension reads installed extension skill paths through `"$NCLY_BIN" describe --json`. Transcript summary remains in [M99](../../milestones/M99-parking-lot/transcript-summary.md). It writes its run records in the shared format of [Record format](record-format.md), through the SDK for a Go extension, so `ncly run` inspects every recorded operation alike. A Go extension imports only the public `sdk/` packages, so a bundled extension could leave the binary without a rewrite.
 
-Each extension keeps its spec in `extensions/<name>/spec.md`, and ships a skill named after its domain, which teaches an agent to use it. [ncly describe](../core-spec.md#ncly-describe) gives the folder of each external extension's skill, and the bundled `skill` extension ships none of its own, because the `nicely` skill that it serves teaches core and the skill domain.
+Each extension keeps its spec in `spec.md`: in `extensions/<name>/` for a first-party one, and at the root of its repository otherwise. It ships a skill named after its domain, which teaches an agent to use it. [ncly describe](../core-spec.md#ncly-describe) gives the folder of each external extension's skill, and the bundled `skill` extension ships none of its own, because the `nicely` skill that it serves teaches core and the skill domain.
+
+## Extension repository
+
+An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates from M18-T5, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `vision.md`, `worker/`, and `AGENTS.md`:
+
+| File | Holds |
+|---|---|
+| `vision.md` | The job of the extension in one sentence, the source and revision of each program that it wraps, and what it refuses |
+| `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits |
+| `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
+| `worker/` | The scripts that it embeds as workers, one per command that wraps one |
+| Go files | One handler per command, and `cmd/ncly-<domain>/main.go`, which calls `extension.Main` |
+| `testdata/script/` | The scenarios, which the [test kit](test-kit.md) runs |
+| `AGENTS.md` | The reading order, the change steps, and the recipes, for an agent that changes the extension |
+
+`spec.md` holds only what the manifest cannot say, so it never repeats a flag or a type. One extension is one domain.
+
+The repository tests itself through the [test kit](test-kit.md), from M18-T3. From M18-T5, its `justfile` has four recipes:
+
+- `just check` runs every check, an install into scratch folders included
+- `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the domain in the extensions folder of [Discovery](discovery.md), the executable last
+- `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree
+- `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
+
+`just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines. A user installs a fixed version with `git clone --branch <tag>`, then `just install`, which need Go and `just`. Taps, which would install without Go, wait in [M99](../../milestones/M99-parking-lot/taps.md).
+
+## What a great extension does
+
+Every extension meets this bar, a first-party one included. Each line links the parts that hold its rules, and names what checks it. A machine checks what it can. The author and the reviewer judge the rest.
+
+1. **One job.** One sentence states it, in `vision.md` or at the start of a first-party spec. Each command is one bounded operation, never a relay of arbitrary arguments. Judgment
+2. **`ncly describe` is enough to call it right.** The manifest declares every effect, program, and key, as [Manifest](manifest.md) defines. Checked by `extension.Check` and the scenarios
+3. **A machine caller never waits and is never misled.** Machine output never asks, as [D046](../decisions/D046-machine-output-never-asks.md) decides, and success means that the work is proven ([Output](output.md), [Exit codes](exit-codes.md)). Checked by the scenarios, and by the test kit from M18-T3
+4. **A dry run is a faithful preview** ([Global flags](global-flags.md), [Operations](operations.md)). Checked by the scenarios
+5. **A failure says what to do next, and a repeat is safe or refused** ([Output](output.md), [Retry safety](retry-safety.md)). Checked by the scenarios
+6. **It travels whole.** One build gives the executable, its sidecars, and from M18-T4 its embedded workers ([SDK](sdk.md)). Checked by the scratch install of the test kit, from M18-T3
+7. **Its skill teaches when, not how.** `ncly describe` already lists the flags, as [D054](../decisions/D054-extension-skills-through-describe.md) decides. From M18-T3, the test kit checks that the skill names only declared commands. The rest is judgment
+8. **Each promise of its spec has a scenario.** From M18-T3, the test kit checks that each command appears in a scenario. The rest is judgment
+9. **It keeps the rules that the Go types cannot express**, which [SDK](sdk.md#rules-that-the-types-cannot-express) lists. The scenarios catch a broken answer or exit code. The rest is judgment

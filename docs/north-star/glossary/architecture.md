@@ -7,7 +7,9 @@
 - The SDK implements the contract and the services in Go, for core and every Go extension
 - A Go extension calls the SDK, and the SDK calls the extension's handlers
 - The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](../contract/programs-that-ncly-runs.md) names
-- A Python program lives inside an extension and talks to its Go code in JSON only
+- A Python program lives inside a first-party extension and talks to its Go code in JSON only
+- A worker lives inside an extension's executable, and its handler maps the worker's output
+- The extension template creates an extension repository, and the test kit tests it
 
 ## Definitions
 
@@ -38,7 +40,21 @@
   - Def.: the service that runs programs for core and extensions, with their environment, timeout, signals, and cleanup
   - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines its scope, including the one program that starts outside it
 - Python program
-  - Def.: Python code that an extension embeds while it moves to Go, such as transcript's
+  - Def.: Python code that Nicely's own code embeds while it moves to Go, such as transcript's
+  - Distinct from: a worker, which keeps its language
+- Worker
+  - Def.: a program that an extension embeds in its executable and runs like any declared program, such as a user's Bash or Python script
+  - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines it, from M18-T4. Its Go handler maps its exit code and output
+  - Distinct from: a daemon, which Nicely does not have, and a Python program, which talks a versioned protocol
+- Extension repository
+  - Def.: the Git repository of one extension outside Nicely, which is one Go module that pins one Nicely version
+  - Project note: [Extensions](../contract/extensions.md#extension-repository) lays it out
+  - Distinct from: a first-party extension, which lives in `extensions/` of the Nicely repository
+- Extension template
+  - Def.: the Copier template in the Nicely repository that creates an extension repository, from M18-T5, as [D062](../decisions/D062-copier-template.md) decides
+- Test kit
+  - Def.: the SDK package `sdk/extensiontest`, which lets an extension repository test itself, from M18-T3
+  - Project note: [Test kit](../contract/test-kit.md) says what it runs and checks
 - Engine
   - Def.: transcript's Python program, which it copied from `pascalandy/skills`
   - Project note: [the transcript spec](../../../extensions/transcript/spec/protocol.md#the-engine) uses this name
