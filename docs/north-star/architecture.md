@@ -82,7 +82,7 @@ The other folders:
 - `testdata/extensions/hello/`: the Go fixture extension that proves the SDK, laid out as a first-party extension. `./...` skips it, so `just lint` and `just test` name it
 - `testdata/extensions/keyed/`: the Go fixture whose commands need a key: `keyed fetch` reads it through `Call.Key`, and `keyed relay` passes it to a program through `sdk/wrap`. Only the scenarios install it, so `hello`, which `just verify` installs in every run, declares no key, and doctor passes in a run without one
 - `testdata/extensions/standalone/`: the fixture extension repository of the test kit, a Go module of its own whose `go test` runs `sdk/extensiontest` against `go tool ncly`. `./...` skips another module, so `just test`, `just lint`, `just fmt-check`, and `just tidy-check` name it
-- `copier.yml` and `template/`: the extension template, which creates an extension repository
+- `copier.yml` and `template/`: the extension template, which creates an extension repository. Its Go files end in `.jinja`, so `./...` never builds them. `just template` renders it with `scripts/template-test.sh` and checks the rendered repository
 - `tools/`: a separate module that pins the dev tools and holds the plan checker behind `just next` and `just test`
 
 ## Domains and commands

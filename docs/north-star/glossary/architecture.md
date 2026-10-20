@@ -51,7 +51,7 @@
   - Project note: [Extensions](../contract/extensions.md#extension-repository) lays it out
   - Distinct from: a first-party extension, which lives in `extensions/` of the Nicely repository
 - Extension template
-  - Def.: the Copier template in the Nicely repository that creates an extension repository, from M18-T5, as [D062](../decisions/D062-copier-template.md) decides
+  - Def.: the Copier template in the Nicely repository that creates an extension repository, as [D062](../decisions/D062-copier-template.md) decides
 - Test kit
   - Def.: the SDK package `sdk/extensiontest`, which lets an extension repository test itself
   - Project note: [Test kit](../contract/test-kit.md) says what it runs and checks

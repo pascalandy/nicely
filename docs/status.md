@@ -60,3 +60,7 @@ Ctrl-C exits 130 and SIGTERM 143, and neither leaves a `uv`, Python, or yt-dlp p
 ## Runs
 
 `ncly run list` lists the saved runs, newest first, by command path, item key, or start time, without an index. It marks the ones that a process holds now. `ncly run view <run-id>` shows one record, its steps, artifacts, and errors, and whether a process holds it, without starting any work.
+
+## Extension template
+
+`copier.yml` and `template/` hold the extension template. With the Copier that the template pins, an agent creates the repository of an extension outside Nicely, as the `nicely` skill shows. Its example command, `inspect`, runs a Python worker through `sdk/wrap`, and its scenarios cover each failure of a wrapped program. In that repository, `just check` runs the checks and the test kit, and `just install` installs the extension. `just update <version>` carries the repository to another Nicely version, and stops before `go get` on a conflict.

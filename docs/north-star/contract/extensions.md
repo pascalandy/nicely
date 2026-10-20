@@ -15,7 +15,7 @@ Each extension keeps its spec in `spec.md`: in `extensions/<name>/` for a first-
 
 ## Extension repository
 
-An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates from M18-T5, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `vision.md`, `worker/`, and `AGENTS.md`:
+An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `vision.md`, `worker/`, and `AGENTS.md`:
 
 | File | Holds |
 |---|---|
@@ -23,17 +23,21 @@ An author outside Nicely keeps an extension in a Git repository of its own, whic
 | `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
-| Go files | One handler per command, and `cmd/ncly-<domain>/main.go`, which calls `extension.Main` |
+| Go files | One handler per command, `extension_test.go`, which calls the test kit, `cmd/ncly-<domain>/main.go`, which calls `extension.Main`, and `internal/export/`, which calls `extension.Export` for `just install` |
 | `testdata/script/` | The scenarios, which the [test kit](test-kit.md) runs |
 | `AGENTS.md` | The reading order, the change steps, and the recipes, for an agent that changes the extension |
+| `.agents/skills/nicely-extension/` | The skill that takes a script from intake to a verified command, and reviews readiness when the user asks |
+| `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 
 `spec.md` holds only what the manifest cannot say, so it never repeats a flag or a type. One extension is one domain.
 
-The repository tests itself through the [test kit](test-kit.md). From M18-T5, its `justfile` has four recipes:
+An agent creates the repository without prompts, with the Copier that the template pins. It gives `--vcs-ref` a Nicely tag, `--defaults`, and `--data` for `domain` and `module`. The bundled `nicely` skill shows the command. The template has no tasks and no migrations, so Copier needs no `--trust`. It ships no GitHub workflow, since `just` and Lefthook run the checks.
 
-- `just check` runs every check, an install into scratch folders included
+The repository tests itself through the [test kit](test-kit.md). Its `justfile` has four recipes:
+
+- `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the domain in the extensions folder of [Discovery](discovery.md), the executable last
-- `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree
+- `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree. Copier can leave a conflict as markers, a `.rej` file, or an unmerged index entry, and still exit 0. On a conflict, the recipe stops before `go get` and prints the commands that finish the update. It never resets, stashes, or commits
 - `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines. A user installs a fixed version with `git clone --branch <tag>`, then `just install`, which need Go and `just`. Taps, which would install without Go, wait in [M99](../../milestones/M99-parking-lot/taps.md).
