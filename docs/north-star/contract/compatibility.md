@@ -13,4 +13,4 @@ An extension has three version facts:
 
 - The contract version that it speaks, which its manifest declares as `contract_version`
 - Its own version, which `ncly-<domain> --version` prints from the module that built it
-- The Nicely version in its `go.mod`, which pins the SDK. From M18-T3, it also pins the `ncly` that its tests run, and from M18-T5 the extension template
+- The Nicely version in its `go.mod`, which pins the SDK. It also pins the `ncly` that its tests run, and from M18-T5 the extension template

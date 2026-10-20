@@ -15,7 +15,7 @@ Each extension keeps its spec in `spec.md`: in `extensions/<name>/` for a first-
 
 ## Extension repository
 
-An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates from M18-T5, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `vision.md`, `worker/`, and `AGENTS.md`:
+An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates from M18-T5, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `vision.md`, `worker/`, and `AGENTS.md`:
 
 | File | Holds |
 |---|---|
@@ -29,7 +29,7 @@ An author outside Nicely keeps an extension in a Git repository of its own, whic
 
 `spec.md` holds only what the manifest cannot say, so it never repeats a flag or a type. One extension is one domain.
 
-The repository tests itself through the [test kit](test-kit.md), from M18-T3. From M18-T5, its `justfile` has four recipes:
+The repository tests itself through the [test kit](test-kit.md). From M18-T5, its `justfile` has four recipes:
 
 - `just check` runs every check, an install into scratch folders included
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the domain in the extensions folder of [Discovery](discovery.md), the executable last
@@ -44,10 +44,10 @@ Every extension meets this bar, a first-party one included. Each line links the 
 
 1. **One job.** One sentence states it, in `vision.md` or at the start of a first-party spec. Each command is one bounded operation, never a relay of arbitrary arguments. Judgment
 2. **`ncly describe` is enough to call it right.** The manifest declares every effect, program, and key, as [Manifest](manifest.md) defines. Checked by `extension.Check` and the scenarios
-3. **A machine caller never waits and is never misled.** Machine output never asks, as [D046](../decisions/D046-machine-output-never-asks.md) decides, and success means that the work is proven ([Output](output.md), [Exit codes](exit-codes.md)). Checked by the scenarios, and by the test kit from M18-T3
+3. **A machine caller never waits and is never misled.** Machine output never asks, as [D046](../decisions/D046-machine-output-never-asks.md) decides, and success means that the work is proven ([Output](output.md), [Exit codes](exit-codes.md)). Checked by the scenarios, and by the test kit
 4. **A dry run is a faithful preview** ([Global flags](global-flags.md), [Operations](operations.md)). Checked by the scenarios
 5. **A failure says what to do next, and a repeat is safe or refused** ([Output](output.md), [Retry safety](retry-safety.md)). Checked by the scenarios
-6. **It travels whole.** One build gives the executable, its sidecars, and its embedded workers ([SDK](sdk.md)). Checked by the scratch install of the test kit, from M18-T3
-7. **Its skill teaches when, not how.** `ncly describe` already lists the flags, as [D054](../decisions/D054-extension-skills-through-describe.md) decides. From M18-T3, the test kit checks that the skill names only declared commands. The rest is judgment
-8. **Each promise of its spec has a scenario.** From M18-T3, the test kit checks that each command appears in a scenario. The rest is judgment
+6. **It travels whole.** One build gives the executable, its sidecars, and its embedded workers ([SDK](sdk.md)). Checked by the scratch install of the test kit
+7. **Its skill teaches when, not how.** `ncly describe` already lists the flags, as [D054](../decisions/D054-extension-skills-through-describe.md) decides. The test kit checks that the skill names only declared commands. The rest is judgment
+8. **Each promise of its spec has a scenario.** The test kit checks that each command appears in a scenario. The rest is judgment
 9. **It keeps the rules that the Go types cannot express**, which [SDK](sdk.md#rules-that-the-types-cannot-express) lists. The scenarios catch a broken answer or exit code. The rest is judgment

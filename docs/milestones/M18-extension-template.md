@@ -21,7 +21,7 @@ A small personal script becomes the first extension built from the released temp
 |---|---|---|---|---|
 | M18-T1 | Settle the extension requirements | Pascal | — | done |
 | M18-T2 | Make the extension template ready: the external author contract, the bar, and cards T3 to T5 | agent | M18-T1 | done |
-| M18-T3 | Publish the SDK test kit | agent | M18-T2 | todo |
+| M18-T3 | Publish the SDK test kit | agent | M18-T2 | done |
 | M18-T4 | Wrap programs and embed workers through the SDK | agent | M18-T2 | done |
 | M18-T5 | Release the Copier template and the skill entry | agent | M18-T3, M18-T4 | todo |
 
