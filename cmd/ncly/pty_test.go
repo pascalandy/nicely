@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"regexp"
 	"slices"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/creack/pty"
@@ -32,7 +32,8 @@ import (
 // says echo on or echo off, the state that the command left the terminal in,
 // and terminal as found, or terminal changed and what changed: the settings
 // of the terminal, or each mode that the command changed and left changed,
-// such as a hidden cursor.
+// such as a hidden cursor. A command that cannot start fails pty at once,
+// with exit 1 and its error. An error of ptystart names its failed step.
 //
 // testscript's ttyin leaves stdout a pipe, so the call would be
 // non-interactive, and script writes its input before ncly turns echo off,
@@ -65,12 +66,8 @@ func runPty(args []string) int {
 	if err != nil {
 		return fail(err)
 	}
-	cmd := exec.Command(args[1], args[2:]...)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = tty, tty, tty
-	// The command leads its own session, with the terminal as its
-	// controlling one, so Ctrl-C reaches it as SIGINT.
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
-	if err := cmd.Start(); err != nil {
+	cmd, err := ptySession(tty, args[1:])
+	if err != nil {
 		return fail(err)
 	}
 	screen := &ptyScreen{changed: make(chan struct{}, 1)}
@@ -121,6 +118,82 @@ func runPty(args []string) int {
 		fmt.Fprintln(os.Stderr, "terminal changed:", strings.Join(changed, ", "))
 	}
 	return code
+}
+
+// ptySession starts a command with stdin, stdout, and stderr on the
+// terminal, through ptystart, and returns once the command runs or failed
+// to start. ptystart writes a failed step on a pipe that a successful
+// execve closes, as Go reports the errno of its own child.
+func ptySession(tty *os.File, args []string) (*exec.Cmd, error) {
+	// The lookup stays here, so a missing program fails before a session
+	// starts, with the error that exec gives.
+	target := exec.Command(args[0], args[1:]...)
+	if target.Err != nil {
+		return nil, target.Err
+	}
+	self, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	report, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = report.Close() }()
+	cmd := &exec.Cmd{
+		Path:       self,
+		Args:       append([]string{"ptystart", target.Path}, target.Args...),
+		Stdin:      tty,
+		Stdout:     tty,
+		Stderr:     tty,
+		ExtraFiles: []*os.File{w},
+	}
+	err = cmd.Start()
+	_ = w.Close()
+	if err != nil {
+		return nil, err
+	}
+	failed, err := io.ReadAll(report)
+	if err == nil && len(failed) == 0 {
+		return cmd, nil
+	}
+	_ = cmd.Process.Kill()
+	_ = cmd.Wait()
+	if err == nil {
+		err = errors.New(string(failed))
+	}
+	return nil, err
+}
+
+// ptyStart is the ptystart program of pty: ptystart <path> <name> [args...].
+// It makes the command lead its own session, with the terminal on stdin as
+// its controlling one, so Ctrl-C reaches it as SIGINT. It calls setsid, the
+// ioctl TIOCSCTTY, and execve itself, as Go's Setsid and Setctty do in a
+// child. A failure then names its step, its errno, and the kernel release,
+// on descriptor 3, and ptystart exits 1 (#170).
+func ptyStart() {
+	unix.CloseOnExec(3)
+	step := "setsid"
+	_, err := unix.Setsid()
+	if err == nil {
+		step = "TIOCSCTTY"
+		err = unix.IoctlSetInt(0, unix.TIOCSCTTY, tiocscttyArg)
+	}
+	if err == nil {
+		step = "execve"
+		err = unix.Exec(os.Args[1], os.Args[2:], os.Environ())
+	}
+	report := fmt.Sprintf("%s: %v", step, err)
+	if errno, isErrno := errors.AsType[unix.Errno](err); isErrno && unix.ErrnoName(errno) != "" {
+		report += " (" + unix.ErrnoName(errno) + ")"
+	}
+	var uts unix.Utsname
+	release := "unknown"
+	if unix.Uname(&uts) == nil {
+		release = unix.ByteSliceToString(uts.Release[:])
+	}
+	_, _ = unix.Write(3, []byte(report+", kernel "+release))
+	os.Exit(1)
 }
 
 // privateMode is a sequence that sets or resets modes of a terminal, such as
