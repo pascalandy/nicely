@@ -168,3 +168,32 @@ func TestRunPassesNoInheritedTerminal(t *testing.T) {
 		t.Fatalf("a program inherited the terminal: %s", found.Bytes())
 	}
 }
+
+// TestRunNeverWaitsOnATerminalThatNobodyReads proves that the copy to a
+// terminal ends Run at its limit, as a direct write did. A full terminal,
+// such as one that nobody reads, blocks the copy of a program without it.
+func TestRunNeverWaitsOnATerminalThatNobodyReads(t *testing.T) {
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tty.Close() }()
+	ended := make(chan time.Duration, 1)
+	start := time.Now()
+	go func() {
+		_, _ = runner.Run(context.Background(), runner.Program{Path: "/usr/bin/yes", Stdout: tty, Limit: 100 * time.Millisecond})
+		ended <- time.Since(start)
+	}()
+	select {
+	case took := <-ended:
+		if took > runner.DrainLimit+time.Second {
+			t.Fatalf("Run took %v, more than the drain limit", took)
+		}
+	case <-time.After(runner.DrainLimit + 3*time.Second):
+		// Reading the terminal lets the blocked copy end the run.
+		go func() { _, _ = io.Copy(io.Discard, ptmx) }()
+		<-ended
+		t.Fatal("Run waited until the terminal was read")
+	}
+	_ = ptmx.Close()
+}

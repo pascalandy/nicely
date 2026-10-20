@@ -49,6 +49,9 @@ type stream struct {
 	to   io.Writer
 	r, w *os.File
 	done chan struct{}
+	// terminal marks a copy to a terminal, which can wait on the terminal
+	// itself, such as a full one that nobody reads.
+	terminal bool
 }
 
 // attach returns what the program writes to: a file as it is, so that the
@@ -73,7 +76,9 @@ func attach(w io.Writer, terminal bool, streams *[]*stream) (io.Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &stream{to: w, r: r, w: pw, done: make(chan struct{})}
+	// A file reaches this pipe only when it is a terminal.
+	_, toTerminal := w.(*os.File)
+	s := &stream{to: w, r: r, w: pw, done: make(chan struct{}), terminal: toTerminal}
 	go func() {
 		_, _ = io.Copy(w, r)
 		close(s.done)
@@ -109,7 +114,9 @@ func sameWriter(a, b io.Writer) (same bool) {
 }
 
 // drain lets each copy run until its stream ends or until the deadline,
-// then stops it. Output written after the deadline is lost.
+// then stops it. Output written after the deadline is lost. A copy to a
+// terminal can wait in a write that closing its pipe never ends, so drain
+// leaves it at the deadline. That copy then ends after its write.
 func drain(streams []*stream, deadline time.Time) {
 	for _, s := range streams {
 		select {
@@ -117,6 +124,8 @@ func drain(streams []*stream, deadline time.Time) {
 		case <-time.After(time.Until(deadline)):
 		}
 		_ = s.r.Close()
-		<-s.done
+		if !s.terminal {
+			<-s.done
+		}
 	}
 }
