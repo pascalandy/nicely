@@ -85,7 +85,8 @@ update version:
     if [[ -n "$conflicts" ]]; then
         echo "update: the template conflicts with your changes in these files:" >&2
         printf '%s\n' "$conflicts" | sort -u | sed 's/^/  /' >&2
-        echo "Resolve each conflict and delete each .rej file. Then finish the update with these three commands:" >&2
+        echo "Resolve each conflict, mark its file with git add, and delete each .rej file." >&2
+        echo "Then finish the update with these three commands:" >&2
         echo "  go get github.com/pascalandy/nicely@$version" >&2
         echo "  go mod tidy" >&2
         echo "  just check" >&2

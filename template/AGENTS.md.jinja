@@ -22,7 +22,7 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 
 ## Recipes
 
-The recipes need Go, `just`, and `uv`, which runs the pinned Copier of `just update`. Run `lefthook install` once per clone, so `just check` runs before each push.
+The recipes need Go, `just`, and `uv`, which runs the pinned Copier of `just update`. The scenarios of `inspect` run `/usr/bin/python3`, 3.9 or later. Run `lefthook install` once per clone, so `just check` runs before each push.
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install

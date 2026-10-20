@@ -67,7 +67,7 @@ fct_said() {
 }
 
 fct_main() {
-	local root pin scratch src repo data extensions status copier
+	local root pin scratch src repo data extensions status copier lipgloss
 	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
 	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
 	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
@@ -95,7 +95,10 @@ fct_main() {
 
 	# The author's go.mod points at this checkout, so the rendered repository tests the SDK and ncly of this change.
 	go -C "${repo}" mod edit -replace "github.com/pascalandy/nicely=${root}"
-	fct_has "${repo}/go.mod" "$(grep '^replace charm.land/lipgloss/v2 ' "${root}/go.mod")"
+	# The rendered go.mod repeats the replace of Lip Gloss of Nicely's go.mod, or drops it with Nicely's.
+	lipgloss="$(grep '^replace charm.land/lipgloss/v2 ' "${root}/go.mod" || true)"
+	[[ "$(grep '^replace charm.land/lipgloss/v2 ' "${repo}/go.mod" || true)" == "${lipgloss}" ]] ||
+		fct_fail "the go.mod of the template does not repeat \"${lipgloss}\" of Nicely's go.mod"
 	go -C "${repo}" mod tidy
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
