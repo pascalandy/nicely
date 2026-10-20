@@ -33,7 +33,7 @@ Preconditions:
 - **Help.** Run `just verify step "$run" hello hello --help`. Exit 0, and `COMMANDS` lists `check`, `pick`, `run`, `say`, and `wait`.
 - **Greet as text.** Run `just verify step "$run" hello hello run Ada`. Exit 0, stdout is `Hello, Ada!`, and stderr is empty.
 - **Greet as JSON.** Run `just verify step "$run" hello hello run Ada --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"greeting":"Hello, Ada!"}`.
-- **Warning.** Run `just verify step "$run" hello hello run --json`. Exit 0, `ok` is `true`, and `warnings` holds the code `HELLO_UNNAMED`.
+- **Warning.** Run `just verify step "$run" hello hello run --json`. Exit 0, `ok` is `true`, and `warnings` holds the warning `HELLO_UNNAMED`.
 - **Own error.** Run `just verify step "$run" hello hello run --grumpy`. Exit 1, stdout is empty, and stderr starts with `error[HELLO_GRUMPY]: Not today.`
 - **Failed report.** Run `just verify step "$run" hello hello check --json`. Exit 78, and stdout is `{"ok":false,"contract_version":1,"checks":[{"id":"hello.mood","status":"fail"}]}`.
 - **Describe.** Run `just verify step "$run" hello describe hello run --json`. Exit 0, and the one entry of `commands` has the path `hello run` and the source `extension`.

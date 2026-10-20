@@ -13,12 +13,19 @@ import (
 )
 
 // skippedDirs hold no links for checkDocs: archived history keeps the links
-// of its time. skippedNames are folders of fixtures, dependencies, and
-// builds, wherever they sit.
+// of its time. skippedNames are folders of dependencies and builds, wherever
+// they sit. checkDocs also skips each hidden folder but checkedHidden, which
+// holds the skills of this repository's agents. See #237.
 var (
-	skippedDirs  = []string{"docs/archived"}
-	skippedNames = []string{"testdata", "node_modules", "dist"}
+	skippedDirs   = []string{"docs/archived"}
+	skippedNames  = []string{"node_modules", "dist"}
+	checkedHidden = []string{".agents"}
 )
+
+// scriptReadme is the one Markdown file of a testdata folder that checkDocs
+// reads: the rules of the scenarios beside it. The other files are fixtures,
+// which can keep broken links on purpose.
+const scriptReadme = "testdata/script/README.md"
 
 // docLink is a link target, or a card ID, with the line that names it.
 type docLink struct {
@@ -26,9 +33,9 @@ type docLink struct {
 	line   int
 }
 
-// checkDocs reports the broken links of every Markdown file outside the
-// hidden folders and skippedDirs, each card it names that is not in known,
-// and what checkProse finds with codes.
+// checkDocs reads each Markdown file outside the folders that it skips and
+// outside the fixtures. It reports each broken link, each card that is not in
+// known, and what checkProse finds with codes.
 func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 	var problems []string
 	err := filepath.WalkDir(root, func(name string, d fs.DirEntry, err error) error {
@@ -41,13 +48,14 @@ func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 		}
 		rel = filepath.ToSlash(rel)
 		if d.IsDir() {
-			if rel != "." && (strings.HasPrefix(d.Name(), ".") || slices.Contains(skippedDirs, rel) || slices.Contains(skippedNames, d.Name())) {
+			hidden := strings.HasPrefix(d.Name(), ".") && !slices.Contains(checkedHidden, rel)
+			if rel != "." && (hidden || slices.Contains(skippedDirs, rel) || slices.Contains(skippedNames, d.Name())) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 		// check reads the milestones, and their links, itself.
-		if !strings.HasSuffix(rel, ".md") || path.Dir(rel) == milestoneDir && path.Base(rel) != "README.md" {
+		if !strings.HasSuffix(rel, ".md") || path.Dir(rel) == milestoneDir && path.Base(rel) != "README.md" || fixture(rel) {
 			return nil
 		}
 		data, err := os.ReadFile(name)
@@ -69,6 +77,15 @@ func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 		return nil
 	})
 	return problems, err
+}
+
+// fixture reports whether rel, a file, lies in a testdata folder and is not
+// the scriptReadme of one.
+func fixture(rel string) bool {
+	if rel == scriptReadme || strings.HasSuffix(rel, "/"+scriptReadme) {
+		return false
+	}
+	return slices.Contains(strings.Split(path.Dir(rel), "/"), "testdata")
 }
 
 // links returns the Markdown links of text outside code: fenced blocks,

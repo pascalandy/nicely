@@ -19,6 +19,9 @@ func TestCheckDocs(t *testing.T) {
 		{"unknown card", "docs/north-star/vision.md", "M00-T1 is done.\nM00-T2 is not.\n", "docs/north-star/vision.md:2: no milestone defines the card M00-T2"},
 		{"unknown card in a code span", "extensions/skill/spec.md", "Run `M07-T2`.\n", "extensions/skill/spec.md:1: no milestone defines the card M07-T2"},
 		{"unknown card in a code block", "README.md", "# Title\n\n```\nM01-T1\n```\n", "README.md:4: no milestone defines the card M01-T1"},
+		{"missing file in a skill of the agents", ".agents/skills/release-nicely/SKILL.md", "See [D043](gone.md).\n", ".agents/skills/release-nicely/SKILL.md:1: the link gone.md points to a missing file"},
+		{"missing file in the rules of the scenarios", "testdata/script/README.md", "See [the spec](spec.md).\n", "testdata/script/README.md:1: the link spec.md points to a missing file"},
+		{"missing file in the rules of an extension's scenarios", "extensions/agent/testdata/script/README.md", "See [the spec](spec.md).\n", "extensions/agent/testdata/script/README.md:1: the link spec.md points to a missing file"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -60,6 +63,8 @@ func TestCheckDocsPasses(t *testing.T) {
 	write(t, filepath.Join(root, "extensions", "markdown", "testdata", "broken.md"), "[old](gone.md)\n")
 	write(t, filepath.Join(root, "docs", "north-star", "code.md"), "Write `[a](gone.md)` for a link.\n\n- A list\n\n  ~~~\n  [example](gone.md)\n  ~~~\n")
 	write(t, filepath.Join(root, ".github", "notes.md"), "[old](gone.md)\n")
+	// A fixture beside the rules of the scenarios keeps its broken link too.
+	write(t, filepath.Join(root, "testdata", "script", "broken.md"), "[old](gone.md)\n")
 	// The plan's readme is no milestone.
 	write(t, filepath.Join(root, "docs", "milestones", "README.md"), "# Milestones\n\n[Cards](M01-host.md#cards)\n")
 	// The link and its heading read the same fences: a short fence inside a
