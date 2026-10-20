@@ -21,6 +21,11 @@ func (l loaded) handle(s selection, p *i18n.Printer, g command.Globals, codes co
 	call := s.call
 	call.JSON, call.Printer = g.JSON, p
 	call.domain, call.services = l.manifest.Domain, s.command.Requires.Keys
+	call.programs = map[string]contract.Requirement{}
+	for _, name := range s.command.Requires.Bins {
+		call.programs[name] = l.manifest.Requirements[name]
+	}
+	call.workers = &workers{resources: l.Resources, domain: l.manifest.Domain}
 	call.Mode = contract.DetectMode(term.IsTerminal(int(os.Stdin.Fd())), term.IsTerminal(int(stdout.Fd())), g.NoInput, g.JSON, os.LookupEnv)
 	call.Stdin, call.Stdout, call.Stderr = os.Stdin, io.Writer(out), io.Writer(stderr)
 	if g.JSON && kind != contract.ResultText {
@@ -52,6 +57,8 @@ func (l loaded) handle(s selection, p *i18n.Printer, g command.Globals, codes co
 			o = contract.Outcome{}
 		}
 	}
+	// The workers go once the handler returns, or once it gets no more time.
+	call.workers.remove()
 	if ctx.Err() != nil {
 		o.Signal = contract.StopSignal(runner.SignalOf(ctx))
 	}

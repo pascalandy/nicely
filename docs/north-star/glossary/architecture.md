@@ -44,7 +44,7 @@
   - Distinct from: a worker, which keeps its language
 - Worker
   - Def.: a program that an extension embeds in its executable and runs like any declared program, such as a user's Bash or Python script
-  - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines it, from M18-T4. Its Go handler maps its exit code and output
+  - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines it. Its Go handler maps its exit code and output
   - Distinct from: a daemon, which Nicely does not have, and a Python program, which talks a versioned protocol
 - Extension repository
   - Def.: the Git repository of one extension outside Nicely, which is one Go module that pins one Nicely version

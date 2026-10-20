@@ -34,6 +34,10 @@ type Extension struct {
 	// writes them as ncly-<domain>.skill/. It is nil for an extension that
 	// ships no skill.
 	Skill fs.FS
+	// Resources holds worker/, the workers that the extension embeds, such
+	// as a user's script. Call.Worker extracts them for a run. It is nil for
+	// an extension that embeds no worker.
+	Resources fs.FS
 	// Handlers holds one handler per command that runs, keyed by path,
 	// such as "hello run".
 	Handlers map[string]Handler
@@ -67,6 +71,11 @@ type Call struct {
 	// command declares in requires.keys, which Key reads.
 	domain   string
 	services []string
+	// programs holds the entry of each program that the command declares
+	// in requires.bins, which Requirement reads.
+	programs map[string]contract.Requirement
+	// workers extracts the workers of the run for Worker.
+	workers *workers
 }
 
 // Main runs the extension as this process with the arguments of the

@@ -47,7 +47,7 @@ Every extension meets this bar, a first-party one included. Each line links the 
 3. **A machine caller never waits and is never misled.** Machine output never asks, as [D046](../decisions/D046-machine-output-never-asks.md) decides, and success means that the work is proven ([Output](output.md), [Exit codes](exit-codes.md)). Checked by the scenarios, and by the test kit from M18-T3
 4. **A dry run is a faithful preview** ([Global flags](global-flags.md), [Operations](operations.md)). Checked by the scenarios
 5. **A failure says what to do next, and a repeat is safe or refused** ([Output](output.md), [Retry safety](retry-safety.md)). Checked by the scenarios
-6. **It travels whole.** One build gives the executable, its sidecars, and from M18-T4 its embedded workers ([SDK](sdk.md)). Checked by the scratch install of the test kit, from M18-T3
+6. **It travels whole.** One build gives the executable, its sidecars, and its embedded workers ([SDK](sdk.md)). Checked by the scratch install of the test kit, from M18-T3
 7. **Its skill teaches when, not how.** `ncly describe` already lists the flags, as [D054](../decisions/D054-extension-skills-through-describe.md) decides. From M18-T3, the test kit checks that the skill names only declared commands. The rest is judgment
 8. **Each promise of its spec has a scenario.** From M18-T3, the test kit checks that each command appears in a scenario. The rest is judgment
 9. **It keeps the rules that the Go types cannot express**, which [SDK](sdk.md#rules-that-the-types-cannot-express) lists. The scenarios catch a broken answer or exit code. The rest is judgment

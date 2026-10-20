@@ -309,3 +309,15 @@ other = "Export {{.Variable}}, or unlock the keychain."
 ["key.undeclared"]
 description = "Message of RUNTIME when an extension's code asks for the key of a service that its command does not declare in its manifest, so ncly never passes that key. {{.Path}} is the command path, such as transcript run youtube, and {{.Service}} the service. requires.keys stays as is."
 other = "The command {{.Path}} asks for the key of {{.Service}}, which its requires.keys does not declare."
+
+["worker.missing"]
+description = "Message of RUNTIME when an extension's code asks for a worker, an embedded script, that the extension does not embed. Only its developer can fix it. {{.Name}} is the worker, such as count.sh."
+other = "This extension embeds no worker named {{.Name}}."
+
+["worker.extract_failed"]
+description = "Message of RUNTIME when the SDK cannot write a worker, an embedded script, into a temporary folder before it runs. {{.Name}} is the worker, such as count.sh."
+other = "The worker {{.Name}} could not be written to a temporary folder."
+
+["worker.extract_failed_hint"]
+description = "Hint under worker.extract_failed: what the user does next. TMPDIR is a variable and stays as is."
+other = "Free some space, or set TMPDIR to a folder that you can write."
