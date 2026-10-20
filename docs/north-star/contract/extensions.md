@@ -31,7 +31,7 @@ An author outside Nicely keeps an extension in a Git repository of its own, whic
 
 `spec.md` holds only what the manifest cannot say, so it never repeats a flag or a type. One extension is one domain.
 
-An agent creates the repository without prompts, with the Copier that the template pins. It passes a Nicely tag to `--vcs-ref`, then `--defaults`, and `--data` for `domain` and `module`. The bundled `nicely` skill shows the command. The agent then runs `go mod tidy` once, which writes `go.sum`, and commits the repository with Git. The root package of the repository takes the name of the domain, so the template refuses `main` and each Go keyword, such as `type`. The template has no tasks and no migrations, so Copier needs no `--trust`. It ships no GitHub workflow, since `just` and Lefthook run the checks.
+An agent creates the repository without prompts, with the Copier that the template pins. It passes a Nicely tag to `--vcs-ref`, then `--defaults`, and `--data` for `domain` and `module`. The bundled `nicely` skill shows the command. The agent then runs `go mod tidy` once, which writes `go.sum`, and commits the repository with Git. The root package of the repository takes the name of the domain, so the template refuses `main` and each Go keyword, such as `type`. It also refuses `nicely`, because the bundled `nicely` skill would hide the skill of the extension. The template has no tasks and no migrations, so Copier needs no `--trust`. It ships no GitHub workflow, since `just` and Lefthook run the checks.
 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has four recipes:
 

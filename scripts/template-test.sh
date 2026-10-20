@@ -107,10 +107,13 @@ fct_main() {
 		go -C "${scratch}/ncly-${domain}" mod tidy
 		go -C "${scratch}/ncly-${domain}" vet ./... || fct_fail "the repository that the template renders for the domain ${domain} does not build"
 	done
-	# Go builds a package named main as a program, which no package imports, so Copier refuses that domain.
-	if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=main --data module=example.com/ncly-main "${src}" "${scratch}/ncly-main" 2>/dev/null; then
-		fct_fail "Copier accepts the domain main, whose Go package no other package can import"
-	fi
+	# Copier refuses main, which Go builds as a program that no package imports. It refuses nicely, whose skill the bundled one hides.
+	for domain in main nicely; do
+		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${domain}" "${src}" "${scratch}/ncly-${domain}" 2>"${scratch}/refusal.out"; then
+			fct_fail "Copier accepts the domain ${domain}"
+		fi
+		grep -qF "choose another domain" "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${domain} for another reason: $(cat "${scratch}/refusal.out")"
+	done
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
