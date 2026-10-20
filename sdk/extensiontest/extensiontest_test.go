@@ -15,13 +15,17 @@ type edit struct{ file, old, new string }
 // TestEachCheckFailsAndNamesItsFix breaks a copy of the standalone fixture
 // in one way per case, then runs its go test. That test must fail with the
 // fix of the check that the break trips. The fixture's own go test, which
-// just test runs, proves that the unbroken repository passes.
+// just test runs, proves that the unbroken repository passes. The cases run
+// one at a time, because each go test builds and links. In parallel, they
+// slowed the pty scenarios of cmd/ncly past their limit on a 12-core Mac.
 func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 	breakSchema := edit{"manifest.toml", `count = { type = "integer" }`, `count = { type = "string" }`}
 	cases := []struct {
 		name  string
 		edits []edit
 		want  []string
+		// absent holds what the output must not hold.
+		absent []string
 	}{
 		{
 			name:  "a command without a scenario",
@@ -53,11 +57,14 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 			edits: []edit{
 				{"testdata/script/tally.txtar", "\nncly standalone tally --json\n", "\nexec ncly --json standalone tally\n"},
 				{"testdata/script/lipgloss.txtar", "\nncly-standalone --version\n", "\nexec $XDG_DATA_HOME/nicely/extensions/ncly-standalone --version\n"},
+				{"testdata/script/keys.txtar", "\ngrant example\n", "\ngrant example\nexec ncly standalone fetch --json # not in the background &\nexec ncly standalone fetch --json & # in the background\nwait\n"},
 			},
 			want: []string{
 				"testdata/script/tally.txtar:4: exec runs ncly, so the kit cannot check its answer. Fix: drop exec, and run the kit's command ncly",
 				"testdata/script/lipgloss.txtar:12: exec runs ncly-standalone, so the kit cannot check its answer. Fix: drop exec",
+				"testdata/script/keys.txtar:10: exec runs ncly, so the kit cannot check its answer",
 			},
+			absent: []string{"keys.txtar:11:"},
 		},
 		{
 			name:  "an extension without a skill",
@@ -67,7 +74,6 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			t.Parallel()
 			out, err := goTest(t, os.Getenv("PATH"), c.edits...)
 			if err == nil {
 				t.Fatalf("go test passed on the broken copy:\n%s", out)
@@ -75,6 +81,11 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 			for _, want := range c.want {
 				if !strings.Contains(out, want) {
 					t.Errorf("go test failed without %q:\n%s", want, out)
+				}
+			}
+			for _, absent := range c.absent {
+				if strings.Contains(out, absent) {
+					t.Errorf("go test failed with %q:\n%s", absent, out)
 				}
 			}
 		})
@@ -85,7 +96,6 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 // of the caller's PATH, which discovery would find. A scenario that lists
 // the extensions must see only the one under test.
 func TestTheScenariosIgnoreTheCallersExtensions(t *testing.T) {
-	t.Parallel()
 	outside := t.TempDir()
 	for name, content := range map[string]string{
 		"ncly-outsider":                 "#!/bin/sh\nexit 0\n",

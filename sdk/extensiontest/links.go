@@ -56,10 +56,7 @@ func (k *kit) scenarioLinks() []string {
 			return []string{err.Error()}
 		}
 		for i, line := range strings.Split(string(archive.Comment), "\n") {
-			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "#") {
-				continue
-			}
+			line = strings.TrimSpace(withoutComment(line))
 			for _, path := range k.mentions(line) {
 				covered[path] = true
 			}
@@ -77,6 +74,21 @@ func (k *kit) scenarioLinks() []string {
 		}
 	}
 	return problems
+}
+
+// withoutComment returns a script line without its comment, which starts
+// at a # outside single quotes, as testscript reads it.
+func withoutComment(line string) string {
+	quoted := false
+	for i, c := range line {
+		switch {
+		case c == '\'':
+			quoted = !quoted
+		case c == '#' && !quoted:
+			return line[:i]
+		}
+	}
+	return line
 }
 
 // skillLinks reports each ncly <domain> ... command that a file of the

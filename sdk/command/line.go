@@ -104,9 +104,12 @@ func (line *Line) set(f *pflag.Flag, value string) {
 	line.values[f.Name] = value
 }
 
-// switchOn reports the last valid value of a switch. An invalid value, such
-// as --json=bad, is the parser's to report, and never cancels an earlier one.
-func (line Line) switchOn(name string) (on, given bool) {
+// Switch returns the last valid value of a switch, by long name, and
+// whether the line sets it at all. An invalid value, such as --json=bad, is
+// the parser's to report, and never cancels an earlier one. The test kit
+// reads the switches of each call of a scenario with it, so it sees what
+// ncly sees.
+func (line Line) Switch(name string) (on, given bool) {
 	value, given := line.values[name]
 	on, _ = strconv.ParseBool(value)
 	return on, given
@@ -114,13 +117,13 @@ func (line Line) switchOn(name string) (on, given bool) {
 
 // Help reports whether the line asks for help.
 func (line Line) Help() bool {
-	on, _ := line.switchOn("help")
+	on, _ := line.Switch("help")
 	return on
 }
 
 // Version reports whether the line asks for the version.
 func (line Line) Version() bool {
-	on, _ := line.switchOn("version")
+	on, _ := line.Switch("version")
 	return on
 }
 
@@ -167,7 +170,7 @@ func (g Globals) Vars() map[string]string {
 func Resolve(line Line) Globals {
 	env := os.Getenv
 	switchOr := func(name string, fallback bool) bool {
-		if on, given := line.switchOn(name); given {
+		if on, given := line.Switch(name); given {
 			return on
 		}
 		return fallback

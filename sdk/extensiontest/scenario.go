@@ -19,7 +19,6 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // commands returns the scenario commands that the kit adds, which the
@@ -151,7 +150,7 @@ func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable
 		return ""
 	}
 	set := func(name string, fallback bool) bool {
-		if on, given := call.switches[name]; given {
+		if on, given := call.line.Switch(name); given {
 			return on
 		}
 		return fallback
@@ -193,35 +192,25 @@ type parsed struct {
 	path    string
 	command contract.Command
 	runs    bool
-	// switches holds the last valid value of each switch that the call
-	// sets, by long name, as command.Resolve reads it.
-	switches map[string]bool
+	// line holds the switches of the call, which command.Scan reads as the
+	// parser does, past an unknown flag or an invalid value.
+	line command.Line
 }
 
 // find returns what the parser of ncly finds in a call, given as the words
-// after ncly. A global flag may come before the domain. An invalid value
-// of a flag stops no switch after it. It returns false for a call of core
-// or of another domain.
+// after ncly. A global flag may come before the domain. It returns false
+// for a call of core or of another domain.
 func (k *kit) find(words []string) (parsed, bool) {
 	root := &cobra.Command{Use: "ncly"}
 	command.AddGlobalFlags(root, k.printer)
 	command.AddManifest(root, k.printer, k.printer, k.manifest, func(contract.Command) func(*cobra.Command, []string) error {
 		return func(*cobra.Command, []string) error { return nil }
 	})
-	c, rest, err := root.Find(words)
+	c, _, err := root.Find(words)
 	if err != nil || c == root {
 		return parsed{}, false
 	}
-	call := parsed{path: strings.TrimPrefix(c.CommandPath(), "ncly "), switches: map[string]bool{}}
-	c.InheritedFlags() // merges the persistent flags of the parents into c.Flags()
-	flags := c.Flags()
-	flags.ParseErrorsAllowlist.UnknownFlags = true
-	_ = flags.ParseAll(rest, func(f *pflag.Flag, value string) error {
-		if on, err := strconv.ParseBool(value); err == nil && f.Value.Type() == "bool" {
-			call.switches[f.Name] = on
-		}
-		return nil
-	})
+	call := parsed{path: strings.TrimPrefix(c.CommandPath(), "ncly "), line: command.Scan(c, words)}
 	var found bool
 	call.command, found = k.manifest.Command(call.path)
 	call.runs = found && k.manifest.Runs(call.command)

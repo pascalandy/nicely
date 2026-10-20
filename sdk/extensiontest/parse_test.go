@@ -73,26 +73,30 @@ func TestMentionsTellACommandFromAnArgument(t *testing.T) {
 }
 
 // TestFindReadsEverySwitch reads the switches as ncly resolves them. A flag
-// may come before the domain, and an invalid value of one flag hides no
-// later switch.
+// may come before the domain, and an invalid value or a malformed flag
+// hides no later switch.
 func TestFindReadsEverySwitch(t *testing.T) {
 	k := demoKit(t)
 	cases := []struct {
-		words []string
-		path  string
-		json  bool
+		words      []string
+		path       string
+		json, help bool
 	}{
-		{[]string{"demo", "run", "Ada", "--json"}, "demo run", true},
-		{[]string{"--json", "demo", "run", "Ada"}, "demo run", true},
-		{[]string{"demo", "run", "Ada", "--no-input=bad", "--json"}, "demo run", true},
-		{[]string{"demo", "run", "--json", "--json=bad"}, "demo run", true},
-		{[]string{"demo", "run", "--json", "--json=false"}, "demo run", false},
-		{[]string{"--lang", "fr", "demo", "pick", "one", "--json"}, "demo pick one", true},
+		{[]string{"demo", "run", "Ada", "--json"}, "demo run", true, false},
+		{[]string{"--json", "demo", "run", "Ada"}, "demo run", true, false},
+		{[]string{"demo", "run", "Ada", "--no-input=bad", "--json"}, "demo run", true, false},
+		{[]string{"demo", "run", "--json", "--json=bad"}, "demo run", true, false},
+		{[]string{"demo", "run", "--json", "--json=false"}, "demo run", false, false},
+		{[]string{"demo", "run", "--json", "--=bad", "--help"}, "demo run", true, true},
+		{[]string{"demo", "run", "--=bad", "-h"}, "demo run", false, true},
+		{[]string{"--lang", "fr", "demo", "pick", "one", "--json"}, "demo pick one", true, false},
 	}
 	for _, c := range cases {
 		call, found := k.find(c.words)
-		if !found || call.path != c.path || call.switches["json"] != c.json {
-			t.Errorf("find(%q) = %q with json %t (found %t), want %q with json %t", c.words, call.path, call.switches["json"], found, c.path, c.json)
+		json, _ := call.line.Switch("json")
+		help, _ := call.line.Switch("help")
+		if !found || call.path != c.path || json != c.json || help != c.help {
+			t.Errorf("find(%q) = %q with json %t and help %t (found %t), want %q with json %t and help %t", c.words, call.path, json, help, found, c.path, c.json, c.help)
 		}
 	}
 	if _, found := k.find([]string{"doctor", "--json"}); found {
