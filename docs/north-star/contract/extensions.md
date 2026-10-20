@@ -2,10 +2,10 @@
 
 Core is a small host. Every domain that does work for the user is an extension, as [D004](../decisions/D004-minimal-core.md) decides. An extension comes in one of two transports, with one manifest format and one contract:
 
-- A **bundled** extension is a Go package compiled into `ncly`, with its manifest and catalogs embedded. Only what an agent needs to operate Nicely is bundled: `skill`, in M04
+- A **bundled** extension is a Go package compiled into `ncly`, with its manifest and catalogs embedded. Only what an agent needs to operate Nicely is bundled: `skill`
 - An **external** extension is an executable named `ncly-<domain>`, with its manifest `ncly-<domain>.toml` and its catalogs in the folder `ncly-<domain>.locales/` beside it, as [D048](../decisions/D048-static-manifest-and-catalogs.md) decides, and its skill in the folder `ncly-<domain>.skill/`, as [D054](../decisions/D054-extension-skills-through-describe.md) decides. Core finds it as [Discovery](discovery.md) defines. Taps, which would bring more, wait in [M99](../../milestones/M99-parking-lot/taps.md). The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
 
-Core commands and bundled extensions always win over an external extension with the same name. [ncly describe](../core-spec.md#ncly-describe), from M03, reports the source of each command that runs, and [ncly doctor](../core-spec.md#ncly-doctor), from M05, adds where each extension comes from and every extension that another one hides.
+Core commands and bundled extensions always win over an external extension with the same name. [ncly describe](../core-spec.md#ncly-describe) reports the source of each command that runs. [ncly doctor](../core-spec.md#ncly-doctor) adds where each extension comes from, and every extension that another one hides.
 
 An extension receives the environment that [Programs that ncly runs](programs-that-ncly-runs.md) defines, which carries the global flags as variables. It answers with the envelope of [Output](output.md) and the exit codes of [Exit codes](exit-codes.md). It may use core's [error codes](error-codes.md), and its manifest declares its own. It translates its own text into the language of `NCLY_LANG`. It may be written in any language: a Python extension can be one file with the shebang `#!/usr/bin/env -S uv run --script` and its dependencies inline.
 

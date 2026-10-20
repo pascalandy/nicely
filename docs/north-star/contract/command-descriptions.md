@@ -1,6 +1,6 @@
 # Command descriptions
 
-One declaration per command supplies help, completion, validation, and discovery. M00 implements the fields that its commands use. Each later command adds input constraints, result types, prerequisites, and configuration sources as it needs them. An extension's manifest holds the same declarations, so help, completion, validation, and discovery treat every command alike. Domain code owns the behavior. The declaration is not a workflow language.
+One declaration per command supplies help, completion, validation, and discovery. An extension's manifest holds the same declarations, so help, completion, validation, and discovery treat every command alike. Domain code owns the behavior. The declaration is not a workflow language.
 
 Effects distinguish user writes, network access, and paid requests. Modes distinguish dry run, recorded execution, and resume. A missing declaration is not permission to assume a capability. A command may support recorded execution without supporting resume.
 

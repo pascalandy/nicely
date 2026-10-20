@@ -9,7 +9,7 @@ When `just next` names a planned milestone with open questions, make it ready. [
 1. Settle each open question in the spec that it names, then delete the **Open questions** section. Ask Pascal only what is his to decide, such as a look, a cost, or a principle.
 2. Finish the cards. Trace each card through the [code map](../north-star/architecture.md#code-map): name the package that it changes, and check that this package may reach what the card needs. A part that the package may not import, such as the host's discovery for an extension, is reached through the CLI, after the milestone that adds its command. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. Split a milestone of more than five agent cards into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.
 3. Keep the demo to one sentence that the cards prove together.
-4. Set the status to `ready`. `just next` then prints the first card.
+4. Set the status to `ready` once the sections that its cards read are written: in contract.md, in core-spec.md, or in the extension's spec. `just next` then prints the first card.
 
 A planned milestone without open questions needs no separate pull request: `just next` prints its first card, and that card's pull request also sets the milestone to `active`.
 

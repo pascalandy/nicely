@@ -2,7 +2,7 @@
 
 `config.toml` is the shared config: the setup the user wants, which can travel between machines, for example through dotfiles. `config.local.toml`, in the same folder, is the local config: what belongs to this machine only.
 
-Core owns the top-level keys, such as `lang`. Each extension owns the table named after its domain, such as `[skill]` or `[agent]`, and its spec defines that table. The keys of an installed extension's table are the config keys that its manifest declares, from [M03](../../milestones/M03-describe.md), as dotted paths that start with its domain. A declared table key covers every key beneath it; a scalar declaration such as `agent.model` covers that value.
+Core owns the top-level keys, such as `lang`. Each extension owns the table named after its domain, such as `[skill]` or `[agent]`, and its spec defines that table. The keys of an installed extension's table are the config keys that its manifest declares, as dotted paths that start with its domain. A declared table key covers every key beneath it; a scalar declaration such as `agent.model` covers that value.
 
 Precedence, highest first: flags, environment variables, `config.local.toml`, `config.toml`, then defaults. A table, such as `[transcript.youtube]`, merges key by key across the files: an empty table adds no key over the keys that a lower file sets beneath it, and otherwise is the value of its key, which differs from an absent key. A list, such as `[skill] paths`, from a higher source replaces the whole list below it. Each resolved value keeps its source: the flag, the variable, the file that set it, or the default. [ncly describe](../core-spec.md#ncly-describe) reports it, and a hint about a configured value names it, such as the file that lists a missing folder.
 

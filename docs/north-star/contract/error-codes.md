@@ -1,8 +1,8 @@
 # Error codes
 
-Each code maps to exactly one exit code. This table holds core's codes, and a milestone adds core's new codes here. Every extension may answer with these codes too. An extension's own codes start with its domain, such as `TRANSCRIPT_DOWNLOAD_FAILED` or `FLEET_HOST_DOWN`, live in its spec and its [manifest](manifest.md), and map to one exit code each, with the meaning that this file defines.
+Each code maps to exactly one exit code. This table holds core's codes. Every extension may answer with these codes too. An extension's own codes start with its domain, such as `TRANSCRIPT_DOWNLOAD_FAILED` or `FLEET_HOST_DOWN`, live in its spec and its [manifest](manifest.md), and map to one exit code each, with the meaning that this file defines.
 
-The set of codes is open: later milestones add core codes, and every extension adds its own. A caller that meets an error code it does not know acts on the exit code, whose meaning never changes, and relays the hint. An unknown warning code is still a warning.
+The set of codes is open: a later release adds core codes, and every extension adds its own. A caller that meets an error code it does not know acts on the exit code, whose meaning never changes, and relays the hint. An unknown warning code is still a warning.
 
 | Code | Exit | When | Since |
 |---|---|---|---|

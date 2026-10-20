@@ -19,7 +19,7 @@ Run `lefthook install` once per clone.
 | Where does each part live, and who owns it? | [architecture.md](docs/north-star/architecture.md) | Every session | A layer, a part, a package, or a domain appears |
 | How does Pascal want changes made? | [dev-preferences.md](docs/north-star/dev-preferences.md) | Every session | Pascal states a new preference |
 | What does a word mean? | [glossary.md](docs/north-star/glossary.md) | A word is unclear | Before the first use of a new term |
-| Which rules does every command follow? | [contract.md](docs/north-star/contract.md) | Your card links a section | A card adds a primitive, a flag, a code, or a format |
+| Which rules does every command follow? | [contract.md](docs/north-star/contract.md) | Your card links a section | A card adds a primitive, a verb, a flag, a code, or a format |
 | What do core's commands do? | [core-spec.md](docs/north-star/core-spec.md) | Your card links a section | A card adds or changes a command of core |
 | What do an extension's commands do? | `extensions/<name>/spec.md` | Your card links a section | A card adds or changes a command of that extension |
 | Why does a rule exist? | [decisions/](docs/north-star/decisions/README.md) | A rule blocks your card | A rule is chosen, changed, or replaced |
