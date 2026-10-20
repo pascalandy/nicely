@@ -1,0 +1,77 @@
+# A program that ncly runs without the terminal starts in a new session, which gives it its
+# own process group and no controlling terminal, as Programs that ncly runs defines. A read of
+# /dev/tty then fails at once, instead of stopping the program until its timeout. ttyin gives
+# ncly a terminal on stdin, where it types Ada, and pty gives it one on stdin, stdout, and
+# stderr. try-tty.sh writes to $WORK/tty.log what one program found: a line from /dev/tty,
+# its stdin, and whether its stdout or stderr is a terminal. The programs are doctor's version
+# probe and the status command that doctor calls. The extension that core dispatches keeps the
+# process group of ncly and reads the terminal, as extension_dispatch shows.
+chmod 755 bin/ncly-term
+chmod 755 bin/termtool
+env PATH=$WORK/bin:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+
+# Doctor's version probe and the status command that doctor calls find no terminal at once,
+# and an empty stdin, so both checks pass long before --timeout
+exec ttyin tty.txt ncly doctor term --timeout 20s --json
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"term\.termtool","component":"term","status":"pass","message":"termtool 1\.0 found at '${WORK@R}'/bin/termtool\."\},\{"id":"term\.session","component":"term","status":"pass","message":"The status command ran\."\}\]\}\n\z'
+cmp tty.log want-doctor.log
+rm tty.log
+
+# With the terminal on stdin, stdout, and stderr of ncly, neither program gets it
+exec pty none.txt ncly doctor term --timeout 20s
+stdout 'term\.session'
+cmp tty.log want-doctor.log
+
+-- tty.txt --
+Ada
+-- none.txt --
+-- want-doctor.log --
+termtool --version: no /dev/tty, stdin is empty, no terminal output
+status: no /dev/tty, stdin is empty, no terminal output
+-- try-tty.sh --
+# try-tty.sh appends one line for $label to $WORK/tty.log. stderr is redirected before
+# /dev/tty opens, so a failed open writes nothing.
+if read -r line 2>/dev/null </dev/tty; then tty="read $line from /dev/tty"; else tty="no /dev/tty"; fi
+if [ -t 0 ]; then stdin="stdin is a terminal"; elif read -r line; then stdin="stdin holds $line"; else stdin="stdin is empty"; fi
+if [ -t 1 ] || [ -t 2 ]; then out="terminal output"; else out="no terminal output"; fi
+echo "$label: $tty, $stdin, $out" >> "$WORK/tty.log"
+-- bin/termtool --
+#!/bin/sh
+label="termtool $*"
+. "$WORK/try-tty.sh"
+echo "termtool 1.0"
+-- bin/ncly-term --
+#!/bin/sh
+label=status
+. "$WORK/try-tty.sh"
+echo '{"ok":true,"contract_version":1,"checks":[{"id":"term.session","component":"term","status":"pass","message":"The status command ran."}]}'
+-- bin/ncly-term.toml --
+format_version = 1
+contract_version = 1
+domain = "term"
+
+[[commands]]
+path = "term"
+summary = "term.summary"
+
+[[commands]]
+path = "term status"
+summary = "term.status.summary"
+doctor = true
+effects = {}
+requires = { bins = ["termtool"] }
+
+[commands.result]
+kind = "report"
+
+[programs.termtool]
+version = "1.0"
+-- bin/ncly-term.locales/en.toml --
+["term.summary"]
+description = "Summary of the fixture."
+other = "Read the terminal"
+
+["term.status.summary"]
+description = "Summary of term status."
+other = "Check term"

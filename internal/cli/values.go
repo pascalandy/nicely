@@ -86,8 +86,8 @@ func (e *stoppedError) Error() string { return "stopped by " + e.signal.String()
 // listValues dispatches the list command that from names through the
 // extension that discovery found, once its own declaration qualifies, and
 // returns the field of each object under the key of its answer. The command
-// runs in its own process group with the global flags of g and NCLY_JSON=1,
-// never asks, and gets valuesLimit, after which SIGKILL ends it and its
+// runs in a new session, with the global flags of g and NCLY_JSON=1, and
+// never asks. It gets valuesLimit, after which SIGKILL ends it and its
 // descendants at once.
 func listValues(extensions []*extension, g command.Globals, from contract.ValuesFrom) ([]string, error) {
 	path := strings.Join(from.Command, " ")

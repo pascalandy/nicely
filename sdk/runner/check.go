@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -58,26 +57,30 @@ func (c ProgramCheck) Failed() bool {
 	return c.Verdict != ProgramFound && c.Verdict != ProgramTimedOut
 }
 
-// CheckProgram checks one program that a manifest requires: it looks name
-// up in the PATH of env, then, when r declares a version, runs the probe
-// with stdin closed, in its own process group, for at most limit, and
-// compares the version that it prints with r's. A failed check names the
-// install command of this system. Doctor and a Go extension's status
-// command share it, so neither copies the rule.
+// probeOutput bounds what a version probe keeps of each stream. A version
+// comes first, so a probe that writes without end never fills memory.
+const probeOutput = 64 << 10
+
+// CheckProgram checks one program that a manifest requires. It looks name
+// up in the PATH of env. When r declares a version, it runs the probe for at
+// most limit, with stdin closed, in a new session. It then compares the
+// version that the probe prints with r's. A failed check names the install
+// command of this system. Doctor, sdk/wrap, and a Go extension's status
+// command share it, so none copies the rule.
 func CheckProgram(ctx context.Context, name string, r contract.Requirement, env []string, limit time.Duration) (ProgramCheck, error) {
 	path := pathOf(env)
 	c := ProgramCheck{Verdict: ProgramFound, Path: Lookup(name, path)}
 	if c.Path == "" {
 		c.Verdict = ProgramMissing
 	} else if r.Version != "" {
-		var stdout, stderr bytes.Buffer
+		stdout, stderr := Capture{Limit: probeOutput}, Capture{Limit: probeOutput}
 		result, err := Run(ctx, Program{Path: c.Path, Args: r.ProbeArgs(), Env: env, Stdout: &stdout, Stderr: &stderr, Limit: limit})
 		if err != nil {
 			return ProgramCheck{}, err
 		}
-		c.Version = versionIn(stdout.String())
+		c.Version = versionIn(string(stdout.Bytes()))
 		if c.Version == "" {
-			c.Version = versionIn(stderr.String())
+			c.Version = versionIn(string(stderr.Bytes()))
 		}
 		switch {
 		case result.TimedOut || result.Signal != nil:

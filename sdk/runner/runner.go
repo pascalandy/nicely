@@ -1,7 +1,13 @@
 // Package runner runs the programs that ncly and its extensions start, as
-// the Programs that ncly runs section of contract.md defines: their
-// environment, their process group, their cancellation, and their exit
-// code.
+// the Programs that ncly runs section of contract.md defines. It owns their
+// environment, their session or process group, their cancellation, their
+// captured output, and their exit code.
+//
+// Start a program without the terminal with Setsid alone, never with
+// Setpgid too, because setpgid refuses a session leader (D047). Give such a
+// program no descriptor of the terminal, because a process outside the
+// terminal's session reads it without a stop. Bound what a caller keeps of
+// noisy output with Capture.
 //
 // Read a program's stdout and stderr through pipes that the runner owns: a
 // writer that exec.Cmd copies can keep Wait blocked until descendants close
@@ -40,7 +46,10 @@ type Program struct {
 	Stderr io.Writer
 	// Terminal keeps the program in the process group of ncly, because it
 	// may read the terminal, as an extension does. Any other program starts
-	// in its own process group.
+	// in a new session, with no controlling terminal, so an open of /dev/tty
+	// fails at once. Such a program also gets no descriptor of the terminal.
+	// A terminal on its stdin fails Run. A terminal on its stdout or stderr
+	// reaches it through a pipe that the runner reads.
 	Terminal bool
 	// Limit, when set, bounds execution. If it expires before the program
 	// exits, Run sends SIGKILL to every descendant of ncly and closes the
@@ -90,17 +99,17 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		cmd.Args[0] = p.Name
 	}
 	cmd.Env = p.Env
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: !p.Terminal}
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: !p.Terminal}
 	if ctx.Err() != nil {
 		return Result{Exit: -1, Signal: SignalOf(ctx)}, nil
 	}
-	copyStdin, err := feed(cmd, p.Stdin)
+	copyStdin, err := feed(cmd, p.Stdin, p.Terminal)
 	var streams []*stream
 	if err == nil {
-		cmd.Stdout, err = attach(p.Stdout, &streams)
+		cmd.Stdout, err = attach(p.Stdout, p.Terminal, &streams)
 	}
 	if err == nil {
-		cmd.Stderr, err = attach(p.Stderr, &streams)
+		cmd.Stderr, err = attach(p.Stderr, p.Terminal, &streams)
 	}
 	if err == nil {
 		// A descendant whose parent exits becomes a child of ncly, so

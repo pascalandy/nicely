@@ -1,20 +1,30 @@
 package runner
 
 import (
+	"errors"
 	"io"
 	"os"
 	"os/exec"
 	"time"
+
+	"golang.org/x/term"
 )
+
+// errTerminalStdin is the error of Run for a program without the terminal
+// whose stdin is a terminal.
+var errTerminalStdin = errors.New("runner: a program without the terminal cannot read it on stdin")
 
 // feed connects r to what the program reads: a file as it is, and
 // otherwise a pipe, and returns the function that starts filling that pipe
 // from r once the program has started. Run never waits for that copy,
 // because a Read from r may block until its owner closes r, as the
 // documentation of exec.Cmd warns of its own copy. Wait closes the pipe
-// once the program exits.
-func feed(cmd *exec.Cmd, r io.Reader) (func(), error) {
-	if _, isFile := r.(*os.File); isFile || r == nil {
+// once the program exits. A terminal fails a program without the terminal.
+func feed(cmd *exec.Cmd, r io.Reader, terminal bool) (func(), error) {
+	if f, isFile := r.(*os.File); isFile || r == nil {
+		if isFile && !terminal && isTerminal(f) {
+			return nil, errTerminalStdin
+		}
 		cmd.Stdin = r
 		return func() {}, nil
 	}
@@ -42,13 +52,14 @@ type stream struct {
 // attach returns what the program writes to: a file as it is, so that the
 // program sees a terminal when it is one, and otherwise the write end of a
 // pipe whose copy to w the runner controls. A writer that wraps a file, such
-// as the stdout of an SDK handler, passes its file. Two streams to the same
+// as the stdout of an SDK handler, passes its file. A terminal reaches a
+// program without the terminal through a pipe too. Two streams to the same
 // writer share one pipe, as exec.Cmd does, so their writes never overlap.
-func attach(w io.Writer, streams *[]*stream) (io.Writer, error) {
+func attach(w io.Writer, terminal bool, streams *[]*stream) (io.Writer, error) {
 	if wrapper, wraps := w.(interface{ File() *os.File }); wraps {
 		w = wrapper.File()
 	}
-	if _, isFile := w.(*os.File); isFile || w == nil {
+	if f, isFile := w.(*os.File); w == nil || isFile && (terminal || !isTerminal(f)) {
 		return w, nil
 	}
 	for _, s := range *streams {
@@ -68,6 +79,9 @@ func attach(w io.Writer, streams *[]*stream) (io.Writer, error) {
 	*streams = append(*streams, s)
 	return pw, nil
 }
+
+// isTerminal reports whether f is a terminal.
+func isTerminal(f *os.File) bool { return term.IsTerminal(int(f.Fd())) }
 
 // sameWriter reports whether a and b are the same writer. Comparing two
 // values of a type that is not comparable panics, and then they differ.
