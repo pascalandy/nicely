@@ -100,6 +100,17 @@ fct_main() {
 	[[ "$(grep '^replace charm.land/lipgloss/v2 ' "${repo}/go.mod" || true)" == "${lipgloss}" ]] ||
 		fct_fail "the go.mod of the template does not repeat \"${lipgloss}\" of Nicely's go.mod"
 	go -C "${repo}" mod tidy
+	# A domain that names an import of the template, or init, still gives a repository that builds.
+	for domain in extension fmt init; do
+		"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${domain}" "${src}" "${scratch}/ncly-${domain}"
+		go -C "${scratch}/ncly-${domain}" mod edit -replace "github.com/pascalandy/nicely=${root}"
+		go -C "${scratch}/ncly-${domain}" mod tidy
+		go -C "${scratch}/ncly-${domain}" vet ./... || fct_fail "the repository that the template renders for the domain ${domain} does not build"
+	done
+	# Go builds a package named main as a program, which no package imports, so Copier refuses that domain.
+	if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=main --data module=example.com/ncly-main "${src}" "${scratch}/ncly-main" 2>/dev/null; then
+		fct_fail "Copier accepts the domain main, whose Go package no other package can import"
+	fi
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
