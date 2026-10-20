@@ -31,7 +31,7 @@ Run `lefthook install` once per clone.
 
 ## Work on a card
 
-A card is one pull request. Do the card that `just next` prints, and only that card. When `just next` lists a card waiting on Pascal, prepare what it asks if nobody has yet, such as a mockup, tell Pascal, and stop once no agent card can start.
+A card is one pull request. Do the card that `just next` prints, and only that card. When Pascal assigns you an issue outside the plan, that issue is your card, and its pull request says it is outside the plan. When `just next` lists a card waiting on Pascal, prepare what it asks if nobody has yet, such as a mockup, tell Pascal, and stop once no agent card can start.
 
 Copy this checklist into the pull request. Tick each step when its condition holds, or mark it `n/a` with its reason.
 
