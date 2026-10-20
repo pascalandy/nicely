@@ -30,7 +30,7 @@ type sentence struct {
 }
 
 func extractSentences(file string, content []byte) []sentence {
-	ext := path.Ext(file)
+	ext := path.Ext(strings.TrimSuffix(file, ".jinja"))
 	if ext != ".md" && ext != ".go" {
 		return nil
 	}

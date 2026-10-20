@@ -30,7 +30,7 @@ Fix documentation errors in the commit that introduces them. `just test` checks 
 
 Use ASD-STE100 Issue 9 writing practices for English prose. Procedures use imperative sentences, one instruction each, at most 20 words. Descriptive sentences have one topic and at most 25 words. Preserve exact command syntax and identifiers.
 
-`just limits` refuses a new or changed sentence over 25 words in Markdown or in a full-line Go comment.
+`just limits` refuses a new or changed sentence over 25 words in Markdown or in a full-line Go comment. It reads the `.jinja` sources of the extension template the same way.
 
 ## Follow serious CLIs where the specs are silent
 

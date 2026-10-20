@@ -56,6 +56,9 @@ func TestLimitsProse(t *testing.T) {
 		{"line directive", "notes.go", "", "package notes\n//line example.go:100\n// " + long, []string{"notes.go:3 holds a sentence of 26 words, more than 25"}},
 		{"comment sentences", "notes.go", "package notes\n// " + words(26) + "\n", "package notes\n// " + words(26) + "\n// Another sentence.\n", nil},
 		{"inline comment", "notes.go", "", "package notes\nvar x = 1 // " + long, nil},
+		{"template Markdown", "notes.md.jinja", "", "# {{ domain }}\n\n" + long, []string{"notes.md.jinja:3 holds a sentence of 26 words, more than 25"}},
+		{"template comment", "notes.go.jinja", "", "package {{ domain }}\n// " + long, []string{"notes.go.jinja:2 holds a sentence of 26 words, more than 25"}},
+		{"template catalog", "notes.toml.jinja", "", long, nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
