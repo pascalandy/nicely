@@ -33,8 +33,7 @@
   - Distinct from: services, the one layer of the SDK that runs work
 - Handler
   - Def.: the Go function that runs one command of an extension
-  - Project note: the author writes it, and `extension.Main` calls it with an `extension.Call`, its context object, as [SDK](../contract/sdk.md) defines. The SDK calls the author's code, not the reverse, which is inversion of control
-  - Distinct from: the `ctx` of a handler, a Go `context.Context` that only carries cancellation
+  - Project note: the author writes it. `extension.Main` calls it with an `extension.Call`, its context object, and a Go `ctx`, which only carries cancellation, as [SDK](../contract/sdk.md) defines. The SDK calls the author's code, not the reverse, which is inversion of control
 - Program runner
   - Def.: the service that runs programs for core and extensions, with their environment, timeout, signals, and cleanup
   - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines its scope, including the one program that starts outside it

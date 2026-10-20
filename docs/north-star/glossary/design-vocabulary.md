@@ -34,7 +34,7 @@
   - Project note: core
 - Plugin architecture
   - Def.: a small, stable core that extensions plug into. Mark Richards calls it the microkernel architecture
-  - Project note: core and its extensions, as [D004](../decisions/D004-minimal-core.md) decides. Nicely's runs out of process: an extension registers through its manifest, only the wire contract crosses the boundary, and no hook exists
+  - Project note: core and its extensions, as [D004](../decisions/D004-minimal-core.md) decides. Nicely's runs out of process: an extension registers through its manifest, and only the wire contract crosses the boundary
   - Distinct from: a plugin, which Nicely calls an extension
 - Boundary
   - Def.: where one part stops and another starts. Only what an interface allows crosses it. An in-process boundary separates code in one process, as in Pi. A process boundary separates programs
@@ -45,8 +45,8 @@
   - Project note: an extension registers through its manifest, which core reads without starting it, as [Discovery](../contract/discovery.md) defines. Its extension points are its commands, its status command for doctor, its list commands for completion, its catalogs, and its skill
   - Distinct from: Pi's registration, which runs extension code such as `pi.registerTool()`, and a package registry, which Nicely does not have
 - Hook
-  - Def.: a call from a host into an extension at a moment of the host's own work. An event only notifies, as in the observer pattern. An interceptor, also called a filter, changes or blocks what the host does
-  - Project note: Nicely has none. Core calls an extension only to run one of its commands, as for a [command that core calls](../contract/commands-that-core-calls.md). Extensions share no event bus and compose through the CLI
+  - Def.: a call from a host that lets an extension observe or change the host's own work. An event only notifies, as in the observer pattern. An interceptor, also called a filter, changes or blocks what the host does
+  - Project note: Nicely has none. A [command that core calls](../contract/commands-that-core-calls.md), such as a status command for doctor, is an extension point: it reports, and changes nothing in core. Extensions share no event bus and compose through the CLI
   - Distinct from: a Git hook, which Lefthook runs
 - Primitive
   - Def.: a piece that a layer exposes as fundamental, which nobody decomposes at that level
@@ -57,7 +57,7 @@
   - Project note: the wire contract, for extensions, and the agent contract, for every caller of the CLI
 - API
   - Def.: the functions and types that a part offers to the code that calls it
-  - Project note: the SDK's public packages are the API of a Go extension. No function call crosses the boundary between core and an extension, as [D040](../decisions/D040-wire-contract.md) decides, so the wire contract stands where Pi has an extension API
+  - Project note: the SDK's public packages are the Go API of a Go extension. Between core and an extension, the interface is the wire contract: arguments, environment, answer, and exit code, with no function call, as [D040](../decisions/D040-wire-contract.md) decides
   - Distinct from: an SPI, or service provider interface, which a part provides for another to call, such as a Go extension's [handlers](architecture.md#definitions)
 - Implementation
   - Def.: how a part keeps the promise of its interface
