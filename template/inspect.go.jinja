@@ -16,8 +16,8 @@ import (
 // inspect gives the size and the line count of a file. python3 runs the
 // worker inspect.py through sdk/wrap, which answers each failure that Wrapped
 // programs in the contract lists. The handler checks its input before the
-// worker starts, and maps the end of the worker: an exit other than 0, or
-// output that it cannot read, is never a success.
+// worker starts. It never maps an exit other than 0, or output that it cannot
+// read, to a success.
 func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	file := call.Args[0]
