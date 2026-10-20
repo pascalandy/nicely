@@ -5,6 +5,8 @@
 - Primitives compose into commands and extensions
 - Layers build abstractions from the bottom up: foundation → runtime layer → application layer
 - An interface hides its implementation
+- A contract describes what crosses a boundary. An API is what one side offers to call, and an SPI is what the other side provides to be called
+- In a plugin architecture, an extension registers with its host, and the host calls the extension
 - An additive extension adds to its host; a behavioral extension changes it
 
 ## Definitions
@@ -30,6 +32,22 @@
 - Host
   - Def.: a program that finds, loads, and runs extensions
   - Project note: core
+- Plugin architecture
+  - Def.: a small, stable core that extensions plug into. Mark Richards calls it the microkernel architecture
+  - Project note: core and its extensions, as [D004](../decisions/D004-minimal-core.md) decides. Nicely's runs out of process: an extension registers through its manifest, only the wire contract crosses the boundary, and no hook exists
+  - Distinct from: a plugin, which Nicely calls an extension
+- Boundary
+  - Def.: where one part stops and another starts. Only what an interface allows crosses it. An in-process boundary separates code in one process, as in Pi. A process boundary separates programs
+  - Project note: core and an extension meet at a process boundary. Core starts every extension as a child process, a bundled one included, as [D051](../decisions/D051-bundled-child-process.md) decides. A program that an extension runs sits behind another process boundary
+  - Distinct from: a [step boundary](../glossary.md#operations), a moment of record support
+- Registration
+  - Def.: how an extension tells its host what it adds. The host keeps it in a registry, and each place where an extension can add something is an extension point
+  - Project note: an extension registers through its manifest, which core reads without starting it, as [Discovery](../contract/discovery.md) defines. Its extension points are its commands, its status command for doctor, its list commands for completion, its catalogs, and its skill
+  - Distinct from: Pi's registration, which runs extension code such as `pi.registerTool()`, and a package registry, which Nicely does not have
+- Hook
+  - Def.: a call from a host into an extension at a moment of the host's own work. An event only notifies, as in the observer pattern. An interceptor, also called a filter, changes or blocks what the host does
+  - Project note: Nicely has none. Core calls an extension only to run one of its commands, as for a [command that core calls](../contract/commands-that-core-calls.md). Extensions share no event bus and compose through the CLI
+  - Distinct from: a Git hook, which Lefthook runs
 - Primitive
   - Def.: a piece that a layer exposes as fundamental, which nobody decomposes at that level
   - Project note: [Primitives](../contract.md#primitives) lists Nicely's
@@ -37,6 +55,10 @@
 - Interface
   - Def.: what a part promises, apart from how it works
   - Project note: the wire contract, for extensions, and the agent contract, for every caller of the CLI
+- API
+  - Def.: the functions and types that a part offers to the code that calls it
+  - Project note: the SDK's public packages are the API of a Go extension. No function call crosses the boundary between core and an extension, as [D040](../decisions/D040-wire-contract.md) decides, so the wire contract stands where Pi has an extension API
+  - Distinct from: an SPI, or service provider interface, which a part provides for another to call, such as a Go extension's [handlers](architecture.md#definitions)
 - Implementation
   - Def.: how a part keeps the promise of its interface
   - Project note: the SDK implements the contract in Go

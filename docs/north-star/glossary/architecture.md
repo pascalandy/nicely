@@ -5,6 +5,7 @@
 - An extension is bundled or external; a first-party extension can be either
 - A default extension is external and ships with Nicely
 - The SDK implements the contract and the services in Go, for core and every Go extension
+- A Go extension calls the SDK, and the SDK calls the extension's handlers
 - The program runner starts the programs that core or an extension runs, except the one that [Programs that ncly runs](../contract/programs-that-ncly-runs.md) names
 - A Python program lives inside an extension and talks to its Go code in JSON only
 
@@ -30,6 +31,10 @@
 - SDK
   - Def.: the public Go packages in `sdk/` that implement the contract and the shared services, for core and for every Go extension
   - Distinct from: services, the one layer of the SDK that runs work
+- Handler
+  - Def.: the Go function that runs one command of an extension
+  - Project note: the author writes it, and `extension.Main` calls it with an `extension.Call`, its context object, as [SDK](../contract/sdk.md) defines. The SDK calls the author's code, not the reverse, which is inversion of control
+  - Distinct from: the `ctx` of a handler, a Go `context.Context` that only carries cancellation
 - Program runner
   - Def.: the service that runs programs for core and extensions, with their environment, timeout, signals, and cleanup
   - Project note: [Programs that ncly runs](../contract/programs-that-ncly-runs.md) defines its scope, including the one program that starts outside it
