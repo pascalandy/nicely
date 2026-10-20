@@ -150,22 +150,23 @@ func TestRunPassesNoInheritedTerminal(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = tty.Close() }()
-	// Dup gives a descriptor without close-on-exec, as a shell passes one.
-	fd, err := unix.Dup(int(tty.Fd()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = unix.Close(fd) }()
-	var found runner.Capture
-	found.Limit = 1000
 	script := `for path in /dev/fd/*; do fd=${path##*/}; if [ "$fd" -gt 2 ] && [ -t "$fd" ]; then echo "terminal on $fd"; fi; done`
 	for _, terminal := range []bool{false, true} {
-		if _, err := runner.Run(context.Background(), runner.Program{Path: "/bin/sh", Args: []string{"-c", script}, Stdout: &found, Terminal: terminal}); err != nil {
+		// Dup gives a descriptor without close-on-exec, as a shell passes
+		// one. Each case gets its own, because Run marks the one it finds.
+		fd, err := unix.Dup(int(tty.Fd()))
+		if err != nil {
 			t.Fatal(err)
 		}
-	}
-	if len(found.Bytes()) > 0 {
-		t.Fatalf("a program inherited the terminal: %s", found.Bytes())
+		found := runner.Capture{Limit: 1000}
+		_, err = runner.Run(context.Background(), runner.Program{Path: "/bin/sh", Args: []string{"-c", script}, Stdout: &found, Terminal: terminal})
+		_ = unix.Close(fd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(found.Bytes()) > 0 {
+			t.Fatalf("a program with Terminal %t inherited the terminal: %s", terminal, found.Bytes())
+		}
 	}
 }
 
