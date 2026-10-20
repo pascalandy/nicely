@@ -6,8 +6,8 @@
 //
 // A run that asks for a worker gets every worker of Resources in a private
 // temporary folder. The SDK removes that folder once the handler returns,
-// or once the handler gets no more time after a signal, so no handler
-// deletes it.
+// so no handler deletes it. After a signal, the folder goes a second before
+// cleanup ends at the latest, because core then sends SIGKILL.
 package extension
 
 import (

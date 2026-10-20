@@ -86,6 +86,19 @@ gone hang.pid
 gone child.pid
 exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
 
+# A program that ignores Ctrl-C runs until the SIGKILL of core's cleanup, 4 seconds in the
+# test binary, and the folder of the worker is gone before that SIGKILL
+rm hang.pid child.pid worker.path
+env STUB=stubborn
+exec exitcode exit.txt ncly hello count input.md --json &
+waitfile stubborn.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+gone stubborn.pid
+exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
+
 # A version probe that does not finish in time is PREREQ_MISSING with exit 78, before work
 rm worker.path
 env STUB=probe-hang
@@ -186,6 +199,12 @@ hang)
   while [ ! -f "$WORK/child.pid" ]; do /bin/sleep 0.01; done
   echo $$ > "$WORK/hang.tmp"
   mv "$WORK/hang.tmp" "$WORK/hang.pid"
+  exec /bin/sleep 30
+  ;;
+stubborn)
+  trap '' INT TERM
+  echo $$ > "$WORK/stubborn.tmp"
+  mv "$WORK/stubborn.tmp" "$WORK/stubborn.pid"
   exec /bin/sleep 30
   ;;
 env)

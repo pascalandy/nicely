@@ -12,6 +12,10 @@ import (
 	"golang.org/x/term"
 )
 
+// workersMargin is how long before the end of cleanup the workers of a
+// signaled run go, at the latest.
+const workersMargin = time.Second
+
 // handle runs the handler of a validated call and prints its result by the
 // kind of the command's result. The first Ctrl-C or SIGTERM ends the
 // handler's context and decides the verdict. A handler that has not
@@ -50,7 +54,11 @@ func (l loaded) handle(s selection, p *i18n.Printer, g command.Globals, codes co
 	case <-ctx.Done():
 		// The runner ends the handler's programs with SIGKILL when cleanup
 		// ends, then reads their streams for the drain limit, so the handler
-		// gets that long to return what it has.
+		// gets that long to return what it has. Under ncly, core kills the
+		// extension when its own cleanup ends. The workers therefore go a
+		// second before that, even if a program still runs.
+		early := time.AfterFunc(max(runner.Cleanup-workersMargin, 0), call.workers.remove)
+		defer early.Stop()
 		select {
 		case o = <-done:
 		case <-time.After(runner.Cleanup + runner.DrainLimit):
