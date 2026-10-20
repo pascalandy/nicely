@@ -136,6 +136,32 @@ type = "object"
 required = ["planned", "args", "flags", "lists"]
 properties = { planned = { const = "picked" }, args = { type = "array", items = { type = "string" } }, flags = { type = "object" }, lists = { type = "object" } }
 
+[[commands]]
+path = "hello count"
+summary = "hello.count.summary"
+examples = ["ncly hello count notes.md", "ncly hello count notes.md --json"]
+effects = {}
+requires = { bins = ["bash"] }
+
+[[commands.args]]
+name = "file"
+summary = "hello.count.file"
+required = true
+
+[[commands.flags]]
+name = "timeout"
+value = "duration"
+default = "10s"
+summary = "hello.count.timeout"
+
+[commands.result.schema]
+type = "object"
+required = ["lines"]
+properties = { lines = { type = "integer", minimum = 0 } }
+
+[programs.bash]
+version = "3.2"
+
 [[errors]]
 code = "HELLO_GRUMPY"
 exit = 1

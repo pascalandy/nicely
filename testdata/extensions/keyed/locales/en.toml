@@ -19,3 +19,11 @@ other = "Answered from the cache, without a key."
 ["keyed.fetch.digest"]
 description = "Human text of `ncly keyed fetch`: the SHA-256 of the key that the fixture received, never the key. {{.Digest}} is 64 hexadecimal digits."
 other = "The key has the SHA-256 {{.Digest}}."
+
+["keyed.relay.summary"]
+description = "Help page: summary of keyed relay, which passes the key of deepgram to a program."
+other = "Pass the key to a program"
+
+["keyed.relay.done"]
+description = "Text of keyed relay once the program that received the key exits."
+other = "The program received the key."

@@ -67,7 +67,7 @@ pseudo stderr hello run Ada
 exec ncly --lang en-XA hello run
 pseudo stderr hello run Ada
 exec ncly --lang en-XA hello --help
-pseudo stdout hello run check say wait pick
+pseudo stdout hello run check say wait pick count
 
 # Run directly from the data folder, the fixture gives the same answer as through ncly
 exec $DATA/ncly-hello run --json -- Ada

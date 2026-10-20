@@ -21,3 +21,12 @@ summary = "keyed.fetch.cached"
 type = "object"
 required = ["source"]
 properties = { source = { enum = ["cache", "key"] }, sha256 = { type = "string" } }
+
+[[commands]]
+path = "keyed relay"
+summary = "keyed.relay.summary"
+examples = ["ncly keyed relay", "ncly keyed relay --json"]
+effects = { network = true }
+requires = { bins = ["keytool"], keys = ["deepgram"] }
+
+[programs.keytool]

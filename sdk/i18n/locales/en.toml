@@ -310,6 +310,58 @@ other = "Export {{.Variable}}, or unlock the keychain."
 description = "Message of RUNTIME when an extension's code asks for the key of a service that its command does not declare in its manifest, so ncly never passes that key. {{.Path}} is the command path, such as transcript run youtube, and {{.Service}} the service. requires.keys stays as is."
 other = "The command {{.Path}} asks for the key of {{.Service}}, which its requires.keys does not declare."
 
+["wrap.undeclared"]
+description = "Message of RUNTIME when an extension's code runs a program through sdk/wrap that its command does not declare in its manifest. {{.Path}} is the command path, such as hello count, and {{.Name}} the program, such as bash. requires.bins stays as is."
+other = "The command {{.Path}} runs {{.Name}}, which its requires.bins does not declare."
+
+["wrap.missing"]
+description = "Message of PREREQ_MISSING when a program that a command runs is in no folder of PATH. {{.Name}} is the program, such as bash."
+other = "{{.Name}} is not installed."
+
+["wrap.too_old"]
+description = "Message of PREREQ_MISSING when a program that a command runs is older than the version that the command needs. {{.Name}} is the program, {{.Found}} the version that it printed, such as 3.1, and {{.Version}} the oldest version that works."
+other = "{{.Name}} {{.Found}} is older than {{.Version}}."
+
+["wrap.probe_failed"]
+description = "Message of PREREQ_MISSING when the version probe of a program that a command runs exited with an error. {{.Probe}} is the command that ran, such as bash --version, which stays as is, and {{.Exit}} its exit code."
+other = "{{.Probe}} exited with {{.Exit}}, so its version is unknown."
+
+["wrap.no_version"]
+description = "Message of PREREQ_MISSING when the version probe of a program that a command runs printed no version number. {{.Probe}} is the command that ran, such as bash --version, which stays as is."
+other = "{{.Probe}} printed no version."
+
+["wrap.probe_timeout"]
+description = "Message of PREREQ_MISSING when the version probe of a program that a command runs did not finish within its time limit. {{.Probe}} is the command that ran, such as bash --version, which stays as is."
+other = "{{.Probe}} did not print its version in time."
+
+["wrap.probe_timeout_hint"]
+description = "Hint under wrap.probe_timeout: what the user does next. {{.Probe}} is the command that ran, such as bash --version, which stays as is."
+other = "Check that {{.Probe}} prints a version and exits."
+
+["wrap.install"]
+description = "Hint of PREREQ_MISSING for a program that a command runs, when no install command is known for this machine. {{.Name}} is the program, such as bash."
+other = "Install {{.Name}}."
+
+["wrap.start_failed"]
+description = "Message of RUNTIME when a program that a command runs through sdk/wrap could not start. {{.Name}} is the program, such as bash."
+other = "{{.Name}} could not start."
+
+["wrap.timeout"]
+description = "Message of RUNTIME when a program that a command runs did not finish within the command's timeout, so ncly stopped it. {{.Name}} is the program, such as bash, and {{.Timeout}} the timeout, such as 10 s."
+other = "{{.Name}} did not finish within {{.Timeout}}, so it was stopped."
+
+["wrap.output_over"]
+description = "Message of RUNTIME when a program that a command runs wrote more on stdout than the command reads. {{.Name}} is the program, such as bash, and {{.Limit}} the limit, such as 1 MB."
+other = "{{.Name}} wrote more than {{.Limit}} of output."
+
+["wrap.failed"]
+description = "Message of RUNTIME when a program that a command runs exited with a code that the command does not expect. {{.Name}} is the program, such as bash, and {{.Exit}} its exit code."
+other = "{{.Name}} failed with exit {{.Exit}}."
+
+["wrap.malformed"]
+description = "Message of RUNTIME when a program that a command runs gave output that the command cannot read, such as invalid JSON. {{.Name}} is the program, such as bash."
+other = "{{.Name}} gave output that this command cannot read."
+
 ["worker.missing"]
 description = "Message of RUNTIME when an extension's code asks for a worker, an embedded script, that the extension does not embed. Only its developer can fix it. {{.Name}} is the worker, such as count.sh."
 other = "This extension embeds no worker named {{.Name}}."

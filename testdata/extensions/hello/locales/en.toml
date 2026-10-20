@@ -115,3 +115,27 @@ other = "Pick the left side"
 ["hello.pick.right"]
 description = "Help page: the --right flag of hello pick."
 other = "Pick the right side"
+
+["hello.count.summary"]
+description = "Help page: summary of hello count, which counts the lines of a file through a worker, a script that the fixture embeds."
+other = "Count the lines of a file"
+
+["hello.count.file"]
+description = "Help page: the file argument of hello count."
+other = "File to count"
+
+["hello.count.timeout"]
+description = "Help page: the --timeout flag of hello count, which bounds the run of its worker."
+other = "Stop the count after this duration"
+
+["hello.count.no_file"]
+description = "Message of USAGE_INVALID when the file of hello count is missing or is no regular file. {{.File}} is the path that the caller gave."
+other = "{{.File}} is no file that hello can count."
+
+["hello.count.bad_timeout"]
+description = "Message of USAGE_INVALID when the --timeout of hello count is no positive duration. {{.Timeout}} is the value that the caller gave, and --timeout stays as is."
+other = "--timeout {{.Timeout}} is no positive duration, such as 30s."
+
+["hello.count.lines"]
+description = "Text of hello count: the number of lines of the file. {{.File}} is the path that the caller gave, and {{.Lines}} the number."
+other = "Lines in {{.File}}: {{.Lines}}"

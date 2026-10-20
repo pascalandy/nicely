@@ -1,0 +1,205 @@
+# The Go fixture's hello count runs its worker count.sh with bash, its declared program,
+# through sdk/wrap, as Wrapped programs defines. keyed relay passes a key to the program
+# keytool the same way. stub/bash stands in for bash: it answers the version probe, writes the
+# path of the worker and the mode of its folder, then does what STUB says, by default running
+# the real bash. stub/keytool writes the name of each key variable that it receives, with the
+# SHA-256 of its value, never the key. The setup installs hello in the data folder $DATA.
+chmod 755 stub/bash
+chmod 755 stub/keytool
+env PATH=$WORK/stub:$PATH
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+
+# The worker reads ./input.md from the caller's folder. It lives in a private folder under
+# TMPDIR, which is gone once the command answers
+cd notes
+exec ncly hello count ./input.md --json
+stdout '\A\{"ok":true,"contract_version":1,"lines":3\}\n\z'
+! stderr .
+cd $WORK
+grep '^'${WORK@R}'/\.tmp/ncly-hello-[^/]+/count\.sh$' worker.path
+grep '^drwx------' worker.mode
+exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
+cd notes
+exec ncly hello count ./input.md
+stdout '\ALines in \./input\.md: 3\n\z'
+exec ncly --lang en-XA hello count ./input.md
+pseudo stdout ./input.md
+cd $WORK
+
+# The worker gets an empty stdin, whatever ncly reads
+env STUB=stdin
+stdin stdin.txt
+exec ncly hello count input.md --json
+cmp stdin.log want-stdin.log
+
+# An invalid input is a usage error, before the worker starts
+rm worker.path
+exits 2 ncly hello count missing.md --json
+answer stderr USAGE_INVALID
+stderr '"message":"missing\.md is no file that hello can count\.","hint":"ncly hello count notes\.md"'
+exits 2 ncly hello count input.md --timeout soon --json
+answer stderr USAGE_INVALID
+! exists worker.path
+
+# An exit other than 0, even the program's own 75, is RUNTIME with exit 1, and so is output
+# that the handler cannot read or that is over the limit of 1 MB
+env STUB=fail
+exits 1 ncly hello count input.md --json
+! stdout .
+answer stderr RUNTIME
+stderr '"message":"bash failed with exit 3\.","hint":"Check the results before you run anything again\."\}'
+exits 1 ncly --lang en-XA hello count input.md
+pseudo stderr bash
+env STUB=retry
+exits 1 ncly hello count input.md --json
+answer stderr RUNTIME
+stderr '"message":"bash failed with exit 75\.'
+env STUB=garbled
+exits 1 ncly hello count input.md --json
+answer stderr RUNTIME
+stderr '"message":"bash gave output that this command cannot read\.'
+env STUB=noisy
+exits 1 ncly hello count input.md --json
+answer stderr RUNTIME
+stderr '"message":"bash wrote more than 1 MB of output\.'
+
+# At the timeout, the whole process tree stops, a child in its own process group included,
+# with exit 1, and the folder of the worker goes
+env STUB=hang
+exits 1 ncly hello count input.md --timeout 1s --json
+answer stderr RUNTIME
+stderr '"message":"bash did not finish within 1 s, so it was stopped\.'
+gone hang.pid
+gone child.pid
+exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
+
+# Ctrl-C stops the process tree too, with exit 130, and the folder of the worker goes
+rm hang.pid child.pid worker.path
+exec exitcode exit.txt ncly hello count input.md --json &
+waitfile hang.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+gone hang.pid
+gone child.pid
+exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
+
+# A version probe that does not finish in time is PREREQ_MISSING with exit 78, before work
+rm worker.path
+env STUB=probe-hang
+exits 78 ncly hello count input.md --timeout 1s --json
+answer stderr PREREQ_MISSING
+stderr '"message":"bash --version did not print its version in time\.","hint":"Check that bash --version prints a version and exits\."\}'
+gone probe.pid
+! exists worker.path
+
+# The program gets the variables of its caller, except each key that its command does not
+# pass: hello count passes none, even run directly with a key in its environment
+env STUB=env
+env OTHER_API_KEY=leak
+env HELLO_PLAIN=kept
+exec ncly hello count input.md --json
+cmp env.log want-no-key.log
+exec $DATA/ncly-hello count input.md --json
+cmp env.log want-no-key.log
+
+# keyed relay declares deepgram and passes it, so its granted key reaches keytool, and no
+# other key does, through ncly and run directly
+install keyed
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+exec /bin/sh -c '/usr/bin/sed "s|@WORK@|$WORK|g" grants.tmpl > "$STATE/grants.json"'
+env DEEPGRAM_API_KEY=dg-sentinel
+exec ncly keyed relay --json
+stdout '\A\{"ok":true,"contract_version":1\}\n\z'
+cmp keys.log want-keys.log
+exec ncly keyed relay
+stdout '\AThe program received the key\.\n\z'
+rm keys.log
+exec $DATA/ncly-keyed relay --json
+cmp keys.log want-keys.log
+
+# Without the grant, the call stops with the problem of Call.Key, before keytool starts
+rm $STATE/grants.json keys.log
+exits 78 ncly keyed relay --json
+answer stderr KEY_NOT_GRANTED
+! exists keys.log
+
+# A program that PATH lacks is PREREQ_MISSING with exit 78, before any work
+onlyncly hello-external
+exits 78 ncly hello count input.md --json
+answer stderr PREREQ_MISSING
+stderr '"message":"bash is not installed\.","hint":"Install bash\."\}'
+exits 78 ncly --lang en-XA hello count input.md
+pseudo stderr bash
+
+-- notes/input.md --
+# Notes
+One line
+The last line has no newline
+-- input.md --
+One line
+-- stdin.txt --
+Ada
+-- want-stdin.log --
+stdin is empty
+-- want-no-key.log --
+HELLO_PLAIN=kept
+-- want-keys.log --
+DEEPGRAM_API_KEY c80d260f9714b7fa16564b76cb5fb1359ccc0a6284eb5cc4b152b3fdd6290ba7
+-- grants.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"keyed","path":"@WORK@/.local/share/nicely/extensions/ncly-keyed","granted_at":"2026-10-20T04:00:00Z"}]}
+-- stub/bash --
+#!/bin/sh
+if [ "$1" = --version ]; then
+  if [ "$STUB" = probe-hang ]; then
+    echo $$ > "$WORK/probe.pid"
+    exec /bin/sleep 30
+  fi
+  echo 'GNU bash, version 5.2.0(1)-release'
+  exit 0
+fi
+echo "$1" > "$WORK/worker.path"
+/bin/ls -ld "${1%/*}" > "$WORK/worker.mode"
+case "$STUB" in
+stdin)
+  if read -r line; then echo "stdin holds $line"; else echo "stdin is empty"; fi > "$WORK/stdin.log"
+  echo '{"lines":0}'
+  ;;
+fail)
+  echo 'count.sh: broken' >&2
+  exit 3
+  ;;
+retry)
+  exit 75
+  ;;
+garbled)
+  echo 'not json'
+  ;;
+noisy)
+  /usr/bin/yes | /usr/bin/head -c 2000000
+  ;;
+hang)
+  pgroup /bin/sh -c 'echo $$ > "$WORK/child.tmp"; mv "$WORK/child.tmp" "$WORK/child.pid"; exec /bin/sleep 30' >/dev/null 2>&1 &
+  while [ ! -f "$WORK/child.pid" ]; do /bin/sleep 0.01; done
+  echo $$ > "$WORK/hang.tmp"
+  mv "$WORK/hang.tmp" "$WORK/hang.pid"
+  exec /bin/sleep 30
+  ;;
+env)
+  { /usr/bin/env | /usr/bin/sed -n 's/^\([A-Za-z0-9_]*_API_KEY\)=.*/key \1/p'; echo "HELLO_PLAIN=$HELLO_PLAIN"; } > "$WORK/env.log"
+  echo '{"lines":0}'
+  ;;
+*)
+  exec /bin/bash "$@"
+  ;;
+esac
+-- stub/keytool --
+#!/bin/sh
+/usr/bin/env | /usr/bin/sed -n 's/^\([A-Za-z0-9_]*_API_KEY\)=.*/\1/p' | while read -r name; do
+  eval "value=\$$name"
+  if [ -x /usr/bin/sha256sum ]; then digest=$(printf '%s' "$value" | /usr/bin/sha256sum); else digest=$(printf '%s' "$value" | /usr/bin/shasum -a 256); fi
+  echo "$name ${digest%% *}"
+done > "$WORK/keys.log"

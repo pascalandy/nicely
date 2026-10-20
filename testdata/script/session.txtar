@@ -4,10 +4,13 @@
 # ncly a terminal on stdin, where it types Ada, and pty gives it one on stdin, stdout, and
 # stderr. try-tty.sh writes to $WORK/tty.log what one program found: a line from /dev/tty,
 # its stdin, and whether its stdout or stderr is a terminal. The programs are doctor's version
-# probe and the status command that doctor calls. The extension that core dispatches keeps the
-# process group of ncly and reads the terminal, as extension_dispatch shows.
+# probe, the status command that doctor calls, and the worker that sdk/wrap runs for the Go
+# fixture hello, whose stub bash runs the real bash afterward. The extension that core
+# dispatches keeps the process group of ncly and reads the terminal, as extension_dispatch shows.
+install hello
 chmod 755 bin/ncly-term
 chmod 755 bin/termtool
+chmod 755 bin/bash
 env PATH=$WORK/bin:$PATH
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 
@@ -18,17 +21,33 @@ stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"term\.termtool","c
 cmp tty.log want-doctor.log
 rm tty.log
 
-# With the terminal on stdin, stdout, and stderr of ncly, neither program gets it
+# The probe of the program that sdk/wrap checks, and the worker, find no terminal either
+exec ttyin tty.txt ncly hello count input.md --json
+stdout '\A\{"ok":true,"contract_version":1,"lines":2\}\n\z'
+cmp tty.log want-worker.log
+rm tty.log
+
+# With the terminal on stdin, stdout, and stderr of ncly, none of these programs gets it
 exec pty none.txt ncly doctor term --timeout 20s
 stdout 'term\.session'
 cmp tty.log want-doctor.log
+rm tty.log
+exec pty none.txt ncly hello count input.md
+stdout '^Lines in input\.md: 2$'
+cmp tty.log want-worker.log
 
 -- tty.txt --
 Ada
 -- none.txt --
+-- input.md --
+# Notes
+One line
 -- want-doctor.log --
 termtool --version: no /dev/tty, stdin is empty, no terminal output
 status: no /dev/tty, stdin is empty, no terminal output
+-- want-worker.log --
+bash --version: no /dev/tty, stdin is empty, no terminal output
+bash worker: no /dev/tty, stdin is empty, no terminal output
 -- try-tty.sh --
 # try-tty.sh appends one line for $label to $WORK/tty.log. stderr is redirected before
 # /dev/tty opens, so a failed open writes nothing.
@@ -41,6 +60,14 @@ echo "$label: $tty, $stdin, $out" >> "$WORK/tty.log"
 label="termtool $*"
 . "$WORK/try-tty.sh"
 echo "termtool 1.0"
+-- bin/bash --
+#!/bin/sh
+case "$1" in
+--version) label="bash --version" ;;
+*) label="bash worker" ;;
+esac
+. "$WORK/try-tty.sh"
+exec /bin/bash "$@"
 -- bin/ncly-term --
 #!/bin/sh
 label=status
