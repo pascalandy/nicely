@@ -22,12 +22,14 @@ fct_main() {
 	# The nested just test runs each line of the recipe, with the stub go below. A script test gets a stub
 	# when it needs the real go, a file that this fixture does not copy, or would run this file again.
 	# The outer just test runs it for real. release-verify-test.sh needs the real go. check-layers-test.sh
-	# and signoff-test.sh copy check-layers.sh and signoff.sh. test-hook-env.sh is this file.
+	# and signoff-test.sh copy check-layers.sh and signoff.sh. scenario-test.sh runs scenario.sh, which this
+	# fixture does not copy. test-hook-env.sh is this file.
 	# release-check-test.sh runs here for real, since it stubs go itself. See #96 and #230.
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/test-hook-env.sh"
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/check-layers-test.sh"
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/release-verify-test.sh"
 	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/signoff-test.sh"
+	printf '#!/usr/bin/env bash\nexit 0\n' >"${caller}/scripts/scenario-test.sh"
 	cat >"${test_dir}/bin/go" <<'SCRIPT'
 #!/usr/bin/env bash
 set -Eeuo pipefail

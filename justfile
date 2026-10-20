@@ -106,6 +106,7 @@ test *args:
     bash scripts/test-hook-env.sh
     bash scripts/check-layers-test.sh
     bash scripts/signoff-test.sh
+    bash scripts/scenario-test.sh
 
 # Run the Go tests of sdk and internal under the race detector, without the scenarios
 [group('checks')]
