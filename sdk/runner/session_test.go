@@ -140,3 +140,31 @@ func waitForPID(t *testing.T, path string) int {
 	t.Fatalf("%s never appeared", path)
 	return 0
 }
+
+// TestRunPassesNoInheritedTerminal proves that no program gets a descriptor
+// of the terminal that ncly inherited above stderr without close-on-exec. A
+// shell can leave one open for its children.
+func TestRunPassesNoInheritedTerminal(t *testing.T) {
+	_, tty, err := pty.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tty.Close() }()
+	// Dup gives a descriptor without close-on-exec, as a shell passes one.
+	fd, err := unix.Dup(int(tty.Fd()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = unix.Close(fd) }()
+	var found runner.Capture
+	found.Limit = 1000
+	script := `for path in /dev/fd/*; do fd=${path##*/}; if [ "$fd" -gt 2 ] && [ -t "$fd" ]; then echo "terminal on $fd"; fi; done`
+	for _, terminal := range []bool{false, true} {
+		if _, err := runner.Run(context.Background(), runner.Program{Path: "/bin/sh", Args: []string{"-c", script}, Stdout: &found, Terminal: terminal}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(found.Bytes()) > 0 {
+		t.Fatalf("a program inherited the terminal: %s", found.Bytes())
+	}
+}

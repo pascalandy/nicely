@@ -49,7 +49,8 @@ type Program struct {
 	// in a new session, with no controlling terminal, so an open of /dev/tty
 	// fails at once. Such a program also gets no descriptor of the terminal.
 	// A terminal on its stdin fails Run. A terminal on its stdout or stderr
-	// reaches it through a pipe that the runner reads.
+	// reaches it through a pipe that the runner reads. No program inherits a
+	// descriptor of the terminal above stderr.
 	Terminal bool
 	// Limit, when set, bounds execution. If it expires before the program
 	// exits, Run sends SIGKILL to every descendant of ncly and closes the
@@ -115,6 +116,7 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		// A descendant whose parent exits becomes a child of ncly, so
 		// cleanup still reaches it. Only Linux offers this.
 		_ = platform.BecomeSubreaper()
+		closeInheritedTerminals()
 		err = cmd.Start()
 	}
 	for _, s := range streams {

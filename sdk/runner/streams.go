@@ -5,8 +5,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
+	"golang.org/x/sys/unix"
 	"golang.org/x/term"
 )
 
@@ -78,6 +80,22 @@ func attach(w io.Writer, terminal bool, streams *[]*stream) (io.Writer, error) {
 	}()
 	*streams = append(*streams, s)
 	return pw, nil
+}
+
+// closeInheritedTerminals marks close-on-exec each descriptor of a terminal
+// above stderr, so no program inherits one that the caller of ncly left
+// open. Go opens its own files close-on-exec, so only an inherited one stays
+// open across exec. Other inherited descriptors, such as a pipe, pass on.
+func closeInheritedTerminals() {
+	entries, err := os.ReadDir("/dev/fd")
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if fd, err := strconv.Atoi(entry.Name()); err == nil && fd > 2 && term.IsTerminal(fd) {
+			unix.CloseOnExec(fd)
+		}
+	}
 }
 
 // isTerminal reports whether f is a terminal.
