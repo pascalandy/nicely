@@ -3,6 +3,11 @@
 // started by it under that name. Either way it parses the call with its
 // manifest, runs the handler of the command, and prints the answer by the
 // kind of the command's result.
+//
+// A run that asks for a worker gets every worker of Resources in a private
+// temporary folder. The SDK removes that folder once the handler returns,
+// or once the handler gets no more time after a signal, so no handler
+// deletes it.
 package extension
 
 import (
