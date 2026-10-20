@@ -27,6 +27,10 @@ grep 'under `services`' nicely.md
 grep '`AUTH_MISSING`, `KEYRING_UNAVAILABLE`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human' nicely.md
 grep 'grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`' nicely.md
 grep 'Never type or pipe a key yourself, and never grant one' nicely.md
+# The skill gives the command that creates an extension repository from the template, with
+# the Copier that the template pins, and links Extensions
+grep '^uv tool run copier@[0-9.]+ copy --vcs-ref v0\.18\.0 --defaults --data domain=DOMAIN --data module=MODULE gh:pascalandy/nicely ncly-DOMAIN$' nicely.md
+grep '\[Extensions\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md\)' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'

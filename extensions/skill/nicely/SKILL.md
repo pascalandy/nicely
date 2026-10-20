@@ -22,3 +22,11 @@ description: Use before running any ncly command.
 - `ncly run view` exits 0 for a run that failed: read `run.status`. While `run.active` is true, a process still holds the run: never start the same work beside it
 - Give the shell a timeout longer than the command's `--timeout` plus 15 seconds of cleanup
 - Each extension ships a skill named after its domain: `ncly skill view DOMAIN`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill, and `ncly skill status --json` checks their folders, names, and files
+
+## Build an extension
+
+Create the repository of a new extension from the extension template, at the version that `ncly --version` prints, such as v0.18.0. Then follow the `AGENTS.md` of the new repository. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
+
+```sh
+uv tool run copier@9.19.1 copy --vcs-ref v0.18.0 --defaults --data domain=DOMAIN --data module=MODULE gh:pascalandy/nicely ncly-DOMAIN
+```
