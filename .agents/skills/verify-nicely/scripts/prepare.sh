@@ -27,8 +27,14 @@ prepare() {
 		prepare_transcript "$run"
 		return
 		;;
+	template)
+		# shellcheck source=/dev/null
+		. "$script_dir/prepare-template.sh"
+		prepare_template "$run"
+		return
+		;;
 	auth) ;;
-	*) die "only the auth, agent, and transcript features have a fixture" ;;
+	*) die "only the auth, agent, transcript, and template features have a fixture" ;;
 	esac
 	if [[ "$(uname -s)" == Darwin && "${3:-}" != --mac-keychain ]]; then
 		die "on macOS, the keychain may ask for a password, so only a human runs the auth feature there, with --mac-keychain"
