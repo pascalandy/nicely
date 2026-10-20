@@ -42,25 +42,31 @@ func TestFailedReportsUseAnswer(t *testing.T) {
 		t.Fatalf("no scenario folder of an extension under %s", root)
 	}
 	for _, dir := range append([]string{core}, others...) {
-		files, err := filepath.Glob(filepath.Join(dir, "*.txtar"))
+		entries, err := os.ReadDir(dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(files) == 0 {
-			t.Fatalf("no scenario in %s", dir)
-		}
-		for _, file := range files {
-			data, err := os.ReadFile(file)
+		read := 0
+		for _, entry := range entries {
+			// testscript runs each .txt and .txtar file of the folder.
+			if !strings.HasSuffix(entry.Name(), ".txtar") && !strings.HasSuffix(entry.Name(), ".txt") {
+				continue
+			}
+			data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
 			if err != nil {
 				t.Fatal(err)
 			}
-			name, err := filepath.Rel(root, file)
+			name, err := filepath.Rel(root, filepath.Join(dir, entry.Name()))
 			if err != nil {
 				t.Fatal(err)
 			}
 			for _, finding := range failedReportRegexes(filepath.ToSlash(name), data) {
 				t.Error(finding)
 			}
+			read++
+		}
+		if read == 0 {
+			t.Fatalf("no scenario in %s", dir)
 		}
 	}
 }
@@ -68,15 +74,31 @@ func TestFailedReportsUseAnswer(t *testing.T) {
 // failedReportRegexes lists each line of a scenario's script that checks a
 // failed report with a stdout regex. It reads only the script, before the
 // first file of the archive, so a fixture may still print such a report.
+// It skips a comment, which may name such a regex.
 func failedReportRegexes(name string, data []byte) []string {
 	var found []string
 	for i, line := range strings.Split(string(txtar.Parse(data).Comment), "\n") {
-		line = strings.TrimSpace(line)
+		line = strings.TrimSpace(withoutComment(line))
 		if stdoutLine.MatchString(line) && strings.Contains(line, failedReport) {
 			found = append(found, fmt.Sprintf("%s:%d: a stdout regex checks a failed report: use answer stdout report", name, i+1))
 		}
 	}
 	return found
+}
+
+// withoutComment cuts a script line at its first # outside single quotes,
+// where testscript ends the line.
+func withoutComment(line string) string {
+	quoted := false
+	for i, c := range line {
+		switch {
+		case c == '\'':
+			quoted = !quoted
+		case c == '#' && !quoted:
+			return line[:i]
+		}
+	}
+	return line
 }
 
 // TestFailedReportRegexes proves what the check flags and what it allows.
@@ -95,6 +117,8 @@ func TestFailedReportRegexes(t *testing.T) {
 		{"a failure on stderr", `stderr '^\{"ok":false,"contract_version":1,"errors"'` + "\n", nil},
 		{"a success on stdout", `stdout '^\{"ok":true,"contract_version":1,'` + "\n", nil},
 		{"a comment", `# stdout '\{"ok":false,"contract_version":1'` + "\n", nil},
+		{"a success with a comment after it", `stdout '^\{"ok":true,"contract_version":1\}$' # not \{"ok":false,"contract_version":1` + "\n", nil},
+		{"a quoted hash", `stdout '\{"ok":false,"contract_version":1,"hint":"#'` + "\n", []int{1}},
 		{"another command", `exec echo stdout '\{"ok":false,"contract_version":1'` + "\n", nil},
 		{"a fixture", "exec sh report.sh\n-- report.sh --\n" + `stdout '\{"ok":false,"contract_version":1'` + "\n", nil},
 	}
