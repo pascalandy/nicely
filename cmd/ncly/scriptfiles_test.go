@@ -12,6 +12,15 @@ import (
 	"github.com/rogpeppe/go-internal/txtar"
 )
 
+// scriptDirs returns the folders of the scenarios under root: core's, then
+// those of each extension and of each fixture extension. TestScripts runs
+// them, and TestFailedReportsUseAnswer reads them.
+func scriptDirs(root string) (core string, others []string) {
+	extensions, _ := filepath.Glob(filepath.Join(root, "extensions", "*", "testdata", "script"))
+	fixtureDirs, _ := filepath.Glob(filepath.Join(root, "testdata", "extensions", "*", "testdata", "script"))
+	return filepath.Join(root, "testdata", "script"), append(extensions, fixtureDirs...)
+}
+
 // failedReport starts the envelope of a failed report, as a scenario's regex
 // writes it.
 const failedReport = `\{"ok":false,"contract_version":1`
@@ -25,16 +34,20 @@ var stdoutLine = regexp.MustCompile(`^(\[\S+\]\s+)*(!\s+)?stdout\s`)
 // match one line. A second line or an errors key then passes unseen, as #199
 // found. answer stdout report reads the whole stream instead. No scenario can
 // check the other scenarios, so this test reads the folders of TestScripts.
+// A folder without a scenario fails it, so a wrong list cannot pass empty.
 func TestFailedReportsUseAnswer(t *testing.T) {
 	root := filepath.Join("..", "..")
-	for _, dir := range []string{
-		filepath.Join(root, "testdata", "script"),
-		filepath.Join(root, "extensions", "*", "testdata", "script"),
-		filepath.Join(root, "testdata", "extensions", "*", "testdata", "script"),
-	} {
+	core, others := scriptDirs(root)
+	if len(others) == 0 {
+		t.Fatalf("no scenario folder of an extension under %s", root)
+	}
+	for _, dir := range append([]string{core}, others...) {
 		files, err := filepath.Glob(filepath.Join(dir, "*.txtar"))
-		if err != nil || len(files) == 0 {
-			t.Fatalf("no scenario in %s: %v", dir, err)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(files) == 0 {
+			t.Fatalf("no scenario in %s", dir)
 		}
 		for _, file := range files {
 			data, err := os.ReadFile(file)

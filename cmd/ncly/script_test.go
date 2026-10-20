@@ -116,11 +116,9 @@ func shortCleanup() {
 // TestScripts runs core's scenarios, then those of each extension and of
 // each fixture extension, which keep theirs in their own folder.
 func TestScripts(t *testing.T) {
-	root := filepath.Join("..", "..")
-	t.Run("core", func(t *testing.T) { runScripts(t, filepath.Join(root, "testdata", "script"), setupHome) })
-	extensions, _ := filepath.Glob(filepath.Join(root, "extensions", "*", "testdata", "script"))
-	fixtureDirs, _ := filepath.Glob(filepath.Join(root, "testdata", "extensions", "*", "testdata", "script"))
-	for _, dir := range append(extensions, fixtureDirs...) {
+	core, others := scriptDirs(filepath.Join("..", ".."))
+	t.Run("core", func(t *testing.T) { runScripts(t, core, setupHome) })
+	for _, dir := range others {
 		domain := filepath.Base(filepath.Dir(filepath.Dir(dir)))
 		t.Run(domain, func(t *testing.T) {
 			runScripts(t, dir, func(env *testscript.Env) error {
