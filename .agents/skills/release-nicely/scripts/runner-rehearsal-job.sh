@@ -38,11 +38,20 @@ git branch -q -D main
 git rev-parse -q --verify "refs/tags/${tag}" >/dev/null || git tag "${tag}" "${sha}"
 
 # Each step of the release job through the rehearsal becomes files: NN.name, then NN.uses and
-# NN.with.<key>, or NN.run.
+# NN.with.<key>, or NN.run. A key without a stand-in, such as if or defaults, stops the rehearsal
+# before any step runs, because GitHub would run the steps otherwise.
 ruby - "${tag}" "${steps}" <<'RUBY'
 require "yaml"
 tag, dir = ARGV
-job = YAML.load_file(".github/workflows/release.yml").fetch("jobs").fetch("release")
+only = lambda do |where, keys, known|
+  extra = keys.map(&:to_s) - known
+  abort "runner-rehearsal: #{where} sets #{extra.join(", ")}, which has no stand-in" unless extra.empty?
+end
+workflow = YAML.load_file(".github/workflows/release.yml")
+# YAML 1.1 reads the key on as true.
+only.("release.yml", workflow.keys, %w[name on true permissions concurrency jobs])
+job = workflow.fetch("jobs").fetch("release")
+only.("the release job", job.keys, %w[runs-on env steps])
 abort "runner-rehearsal: the job runs on #{job["runs-on"]}, not ubuntu-24.04" unless job["runs-on"] == "ubuntu-24.04"
 expand = lambda do |value|
   text = value.to_s.gsub("${{ inputs.tag }}", tag)
@@ -54,10 +63,11 @@ job.fetch("steps").each_with_index do |step, index|
   file = format("%s/%02d", dir, index)
   File.write("#{file}.name", step.fetch("name"))
   if step["uses"]
+    only.(step["name"], step.keys, %w[name uses with])
     File.write("#{file}.uses", step["uses"].split("@").first)
     (step["with"] || {}).each { |key, value| File.write("#{file}.with.#{key}", expand.(value)) }
   else
-    abort "runner-rehearsal: #{step["name"]} sets its own env, which has no stand-in" if step["env"]
+    only.(step["name"], step.keys, %w[name run shell])
     abort "runner-rehearsal: #{step["name"]} runs in #{step["shell"]}, not bash" unless step["shell"] == "bash"
     File.write("#{file}.run", expand.(step.fetch("run")))
   end
