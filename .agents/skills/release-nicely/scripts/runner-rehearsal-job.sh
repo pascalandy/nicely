@@ -97,6 +97,8 @@ fct_action() {
 	local step="${1}" version file
 	case "$(cat "${step}.uses")" in
 	actions/checkout)
+		# The action clears what earlier steps left in the workspace.
+		find "${GITHUB_WORKSPACE}" -mindepth 1 -delete
 		rmdir "${GITHUB_WORKSPACE}"
 		mv "${clone}" "${GITHUB_WORKSPACE}"
 		cd "${GITHUB_WORKSPACE}"
