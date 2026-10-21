@@ -111,13 +111,15 @@ fct_state() {
 }
 
 # Runs release-verify with the fixture in place of GitHub, and checks its exit code.
+# The toolchain log leaves out the caller's GOTOOLCHAIN. setup-go exports GOTOOLCHAIN=local,
+# and the go env reads of the caller's folders would log it, as the release run of v0.18.0 showed.
 fct_verify() {
 	local expected="${1}" dist="${2}" status=0
 	shift 2
 	: >"${test_root}/calls"
 	: >"${test_root}/toolchains"
 	fct_state >"${test_root}/state.before"
-	(cd "${caller}" && env "PATH=${test_root}/bin:${PATH}" "TMPDIR=${test_root}/tmp" "NCLY_TEST_DIST=${dist}" "NCLY_TEST_CALLS=${test_root}/calls" \
+	(cd "${caller}" && env -u GOTOOLCHAIN "PATH=${test_root}/bin:${PATH}" "TMPDIR=${test_root}/tmp" "NCLY_TEST_DIST=${dist}" "NCLY_TEST_CALLS=${test_root}/calls" \
 		GIT_ALLOW_PROTOCOL=file ${hook_env[@]+"${hook_env[@]}"} bash "${script}" "$@") >"${test_root}/stdout" 2>"${test_root}/stderr" || status=$?
 	fct_state >"${test_root}/state.after"
 	if [[ "${status}" != "${expected}" ]]; then
