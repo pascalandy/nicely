@@ -4,7 +4,7 @@
 
 # fct_case_signal <signal> <exit> sends the signal to check-layers once the stub check runs in the worktree.
 fct_case_signal() {
-	local signal="${1}" expected="${2}" pid status=0 worktree layers
+	local signal="${1}" expected="${2}" pid status=0 worktree layers ends
 	test_case="SIG${signal}"
 	fct_caller "signal-${signal}"
 	: >"${root}/checks"
@@ -20,9 +20,10 @@ fct_case_signal() {
 	worktree="$(cat "${root}/started")"
 	[[ "${worktree}" == "${root}/cache/nicely/check-layers/"*/worktree ]] || fct_fail "the stub check ran outside the worktree: ${worktree}"
 	kill "-${signal}" -- "-${pid}"
-	# Repeat the signal until check-layers exits, as just repeats a SIGTERM to its child (#316).
+	# Repeat the signal until check-layers exits, for at most 30 seconds, as just repeats a SIGTERM to its child (#316).
 	layers="${worktree%/worktree}"
-	while kill "-${signal}" "${layers##*-}" 2>/dev/null; do :; done
+	ends=$((SECONDS + 30))
+	while ((SECONDS < ends)) && kill "-${signal}" "${layers##*-}" 2>/dev/null; do :; done
 	fct_wait_for "check-layers to exit after SIG${signal}" fct_gone "${pid}"
 	wait "${pid}" || status=$?
 	LAYERS_TEST_GROUP=""
