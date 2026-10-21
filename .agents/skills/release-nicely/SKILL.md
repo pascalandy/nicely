@@ -20,6 +20,7 @@ Copy this checklist and tick each step:
 - [ ] 5. Start: one workflow_dispatch run of release.yml names the tag and that SHA
 - [ ] 6. Wait: the workflow run succeeds
 - [ ] 7. Verify: `just release-verify vX.Y.Z` passes, and the report gives each result
+- [ ] 8. Mac: `brew-qa.sh vX.Y.Z` passes on the mini, or on Pascal's Mac when the mini is offline
 ```
 
 ## Generate the changelog and check
@@ -34,6 +35,7 @@ Copy this checklist and tick each step:
 7. Review `.release/changelog.md` against the commits since the previous release tag.
    The recipe uses pinned git-cliff through `uv` and [cliff.toml](../../../cliff.toml) to parse Nicely's commit format.
    An explicit previous tag is supported, such as `just changelog v0.16.0 v0.2.1`.
+   Pass the last tag that has a GitHub release when a newer tag never got one.
    Notes live in the GitHub release, with this ignored file as their publication input.
    No changelog commit changes the checked SHA.
 8. Run `just release-check vX.Y.Z` in the same checkout.
@@ -66,4 +68,9 @@ GitHub Actions runs only for this manual publication.
 
 1. Run `just release-verify vX.Y.Z`.
 2. Report the release URL, tag, SHA, workflow run, and results for the assets and Homebrew tap.
-3. Ask Pascal to check `brew install pascalandy/tap/ncly` and `ncly <Tab>` in zsh on his Mac.
+3. On the mini, run `bash .agents/skills/release-nicely/scripts/brew-qa.sh vX.Y.Z` in a clone of origin/main, through the `fleet` skill.
+   It installs or upgrades `ncly` from the tap, checks its version, and types `ncly <Tab>` in a clean zsh.
+   `ncly` stays installed on the mini, so the next release tests the upgrade.
+   If the mini is offline, ask Pascal to run it on his Mac, because it changes the Homebrew of that Mac.
+   If it fails, report its log and stop.
+4. Report its result with the others.

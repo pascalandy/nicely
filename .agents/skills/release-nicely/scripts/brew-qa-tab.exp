@@ -1,0 +1,25 @@
+# brew-qa-tab.exp types "ncly <Tab>" in an interactive zsh with an empty home, set up as
+# Homebrew documents, and fails unless zsh lists the subcommands of ncly.
+# Usage: expect brew-qa-tab.exp <Homebrew prefix>
+set timeout 30
+set prefix [lindex $argv 0]
+set tmp [expr {[info exists env(TMPDIR)] ? $env(TMPDIR) : "/tmp"}]
+set home [exec mktemp -d "$tmp/ncly-tab.XXXXXXXX"]
+set rc [open "$home/.zshrc" w]
+puts $rc "FPATH=\"$prefix/share/zsh/site-functions:\$FPATH\""
+puts $rc {autoload -Uz compinit && compinit -u}
+puts $rc {PROMPT='READY> '}
+close $rc
+spawn env -i HOME=$home ZDOTDIR=$home TERM=xterm-256color PATH=$prefix/bin:/usr/bin:/bin /bin/zsh -i
+expect "READY> "
+send "ncly \t"
+set status 0
+expect {
+	-re "completion +-- " { puts "\nbrew-qa: zsh lists the subcommands of ncly" }
+	timeout { puts "\nbrew-qa: zsh listed no subcommand of ncly"; set status 1 }
+}
+send "\003"
+send "exit\r"
+expect eof
+exec rm -rf $home
+exit $status
