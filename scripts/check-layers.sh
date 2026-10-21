@@ -54,8 +54,9 @@ mkdir -p "$run"
 trap 'git worktree remove --force "$worktree" 2>/dev/null || true' EXIT
 # Ctrl-C and SIGTERM end the run after the current command, then the EXIT trap removes the worktree.
 # Without these traps, Ctrl-C moves on to the next layer, and SIGTERM can leave the worktree behind.
-trap 'exit 130' INT
-trap 'exit 143' TERM
+# Each trap ignores a repeat, such as the SIGTERM that just passes on, which would skip the EXIT trap's removal (#316).
+trap 'trap "" INT TERM; exit 130' INT
+trap 'trap "" INT TERM; exit 143' TERM
 git worktree add --quiet --detach "$worktree" "${shas[0]}"
 echo "$name: logs in $run" >&2
 status=0
