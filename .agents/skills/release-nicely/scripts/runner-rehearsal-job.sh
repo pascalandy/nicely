@@ -52,6 +52,13 @@ workflow = YAML.load_file(".github/workflows/release.yml")
 only.("release.yml", workflow.keys, %w[name on true permissions concurrency jobs])
 job = workflow.fetch("jobs").fetch("release")
 only.("the release job", job.keys, %w[runs-on env steps])
+# The inputs that each stand-in reads. Any other input could change what GitHub runs.
+inputs = {
+  "actions/checkout" => %w[ref fetch-depth persist-credentials],
+  "actions/setup-go" => %w[go-version-file cache-dependency-path],
+  "extractions/setup-just" => %w[just-version],
+  "astral-sh/setup-uv" => [],
+}
 abort "runner-rehearsal: the job runs on #{job["runs-on"]}, not ubuntu-24.04" unless job["runs-on"] == "ubuntu-24.04"
 expand = lambda do |value|
   text = value.to_s.gsub("${{ inputs.tag }}", tag)
@@ -64,8 +71,16 @@ job.fetch("steps").each_with_index do |step, index|
   File.write("#{file}.name", step.fetch("name"))
   if step["uses"]
     only.(step["name"], step.keys, %w[name uses with])
-    File.write("#{file}.uses", step["uses"].split("@").first)
-    (step["with"] || {}).each { |key, value| File.write("#{file}.with.#{key}", expand.(value)) }
+    action = step["uses"].split("@").first
+    abort "runner-rehearsal: no stand-in for the action #{action}" unless inputs.key?(action)
+    with = step["with"] || {}
+    only.("#{step["name"]} (#{action})", with.keys, inputs[action])
+    # The clone gives the tag's commit with every branch and tag, as these inputs ask.
+    if action == "actions/checkout" && (expand.(with["ref"]) != "refs/tags/#{tag}" || with["fetch-depth"].to_s != "0")
+      abort "runner-rehearsal: #{step["name"]} must check out refs/tags/#{tag} with fetch-depth 0"
+    end
+    File.write("#{file}.uses", action)
+    with.each { |key, value| File.write("#{file}.with.#{key}", expand.(value)) }
   else
     only.(step["name"], step.keys, %w[name run shell])
     abort "runner-rehearsal: #{step["name"]} runs in #{step["shell"]}, not bash" unless step["shell"] == "bash"
