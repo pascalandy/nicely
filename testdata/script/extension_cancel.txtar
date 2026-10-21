@@ -134,7 +134,10 @@ wait)
   # the sh of macOS, exits 129 when Ctrl-C interrupts wait.
   trap 'trap - INT; kill -INT $$' INT
   if [ "$2" = "--trap=true" ]; then
-    trap 'echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\"}"; exit 0' INT TERM
+    # A Ctrl-C at the terminal reaches the fixture twice, from the terminal and from core.
+    # A trap that runs again prints a second answer, so this one ignores the repeat, as
+    # Process groups in contract.md asks (#314).
+    trap 'trap "" INT TERM; echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\"}"; exit 0' INT TERM
   fi
   if [ "$2" = "--stopped=true" ]; then
     trap 'echo "{\"ok\":false,\"contract_version\":1,\"output_dir\":\"/Users/me/out\",\"errors\":[{\"code\":\"INTERRUPTED\",\"message\":\"Stopped by the fixture.\",\"hint\":\"ncly hello wait\"}]}" >&2; exit 130' INT
