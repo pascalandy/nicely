@@ -15,7 +15,7 @@ Copy this checklist and tick each step:
 ```
 - [ ] 1. Ready: the milestone's cards are merged on origin/main, and Pascal accepted it as D043 says
 - [ ] 2. Changelog: `just changelog vX.Y.Z` writes this version's notes, reviewed against its commits
-- [ ] 3. Check: `just release-check vX.Y.Z` passes in a clean checkout of origin/main
+- [ ] 3. Check: `just release-check vX.Y.Z` passes in a clean checkout of origin/main, and so does `runner-rehearsal.sh vX.Y.Z`
 - [ ] 4. Tag: vX.Y.Z on origin names the SHA of step 3
 - [ ] 5. Start: one workflow_dispatch run of release.yml names the tag and that SHA
 - [ ] 6. Wait: the workflow run succeeds
@@ -39,7 +39,10 @@ Copy this checklist and tick each step:
    Notes live in the GitHub release, with this ignored file as their publication input.
    No changelog commit changes the checked SHA.
 8. Run `just release-check vX.Y.Z` in the same checkout.
-   If it fails, fix the cause through a merged pull request and restart the cycle.
+   Then run `bash .agents/skills/release-nicely/scripts/runner-rehearsal.sh vX.Y.Z` there, on Linux x86_64 with podman.
+   It runs the steps of release.yml through the check in ubuntu:24.04, with the runner's tools, and publishes nothing.
+   It caught the failures of v0.18.0 and v0.18.1, which passed on the host.
+   If either fails, fix the cause through a merged pull request and restart the cycle.
 9. Require empty output from `git status --porcelain` and the same SHA from `git rev-parse HEAD`.
 
 ## Tag and publish once
