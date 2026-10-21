@@ -4,7 +4,7 @@ This folder holds the plan: one file per milestone, named like `M01-short-title.
 
 ## Make a milestone ready
 
-When `just next` names a planned milestone with open questions, make it ready. [dev-preferences.md](../north-star/dev-preferences.md#merge-on-the-brigades-rule-or-pascals-word) says how many pull requests this takes.
+When `just next` names a planned milestone with open questions, make it ready. [dev-preferences.md](../north-star/dev-preferences.md#merge-after-an-independent-review) says how many pull requests this takes.
 
 1. Settle each open question in the spec that it names, then delete the **Open questions** section. Ask Pascal only what is his to decide, such as a look, a cost, or a principle.
 2. Finish the cards. Trace each card through the [code map](../north-star/architecture.md#code-map): name the package that it changes, and check that this package may reach what the card needs. A part that the package may not import, such as the host's discovery for an extension, is reached through the CLI, after the milestone that adds its command. A card changes one capability, in one pull request that a reviewer reads in one sitting. It links what to read and names the scenarios that prove it. Split a milestone of more than five agent cards into two milestones. A decision that only Pascal can make, such as a pick, is a card whose owner is `Pascal`, and the cards that wait for it depend on it. A step that waits on Pascal while no card waits on it, such as a check on his Mac, goes under **After this milestone** instead, so it never blocks the next milestone.
