@@ -57,6 +57,7 @@ func run(args []string) error {
 	}
 }
 
+// writeFormula names the shells of ncly completion. Homebrew asks for pwsh too by default, and ncly has no completion for it.
 func writeFormula(version, dist string) error {
 	name := "ncly_" + strings.TrimPrefix(version, "v") + "_source.tar.gz"
 	hash, err := fileHash(filepath.Join(dist, name))
@@ -74,7 +75,7 @@ func writeFormula(version, dist string) error {
 
   def install
     system "go", "build", "-trimpath", "-buildvcs=false", "-ldflags=-s -w -X github.com/pascalandy/nicely/internal/cli.version=%s", "-o", bin/"ncly", "./cmd/ncly"
-    generate_completions_from_executable(bin/"ncly", shell_parameter_format: :cobra)
+    generate_completions_from_executable(bin/"ncly", shells: [:bash, :zsh, :fish], shell_parameter_format: :cobra)
     (pkgshare/"licenses").install "LICENSE", "THIRD_PARTY_LICENSES"
   end
 

@@ -143,7 +143,7 @@ func TestReleaseArtifacts(t *testing.T) {
 			testCommand(t, tree, nil, tool, "formula", "v0.0.1", dist)
 			formula := string(testRead(t, filepath.Join(dist, "Formula/ncly.rb")))
 			hash := sha256.Sum256(testRead(t, filepath.Join(dist, "ncly_0.0.1_source.tar.gz")))
-			for _, want := range []string{fmt.Sprintf("sha256 \"%x\"", hash), "ncly_0.0.1_source.tar.gz", "internal/cli.version=v0.0.1", "generate_completions_from_executable", "THIRD_PARTY_LICENSES"} {
+			for _, want := range []string{fmt.Sprintf("sha256 \"%x\"", hash), "ncly_0.0.1_source.tar.gz", "internal/cli.version=v0.0.1", "shells: [:bash, :zsh, :fish]", "THIRD_PARTY_LICENSES"} {
 				if !strings.Contains(formula, want) {
 					t.Fatalf("formula missing %q: %s", want, formula)
 				}
