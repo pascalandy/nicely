@@ -26,28 +26,29 @@ fi
 
 export CI=true GITHUB_ACTIONS=true RUNNER_TEMP=/home/runner/work/_temp GITHUB_WORKSPACE=/home/runner/work/nicely/nicely
 export GITHUB_PATH="${RUNNER_TEMP}/github_path" PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-steps="${RUNNER_TEMP}/steps" tools=/home/runner/tools
-mkdir -p "${steps}" "${tools}"
+steps="${RUNNER_TEMP}/steps" tools=/home/runner/tools clone=/home/runner/clone
+mkdir -p "${steps}" "${tools}" "${GITHUB_WORKSPACE}"
 : >"${GITHUB_PATH}"
-# actions/checkout, as the workflow asks: the commit, detached, with every branch and tag.
-git clone -q https://github.com/pascalandy/nicely.git "${GITHUB_WORKSPACE}"
-cd "${GITHUB_WORKSPACE}"
-git checkout -q --detach "${sha}"
-git branch -q -D main
+# The checkout of the workflow, staged apart: the commit, detached, with every branch and tag.
+git clone -q https://github.com/pascalandy/nicely.git "${clone}"
+git -C "${clone}" checkout -q --detach "${sha}"
+git -C "${clone}" branch -q -D main
 # The tag does not exist yet before a release, so the clone gets it. A tag on GitHub stays as it is.
-git rev-parse -q --verify "refs/tags/${tag}" >/dev/null || git tag "${tag}" "${sha}"
+git -C "${clone}" rev-parse -q --verify "refs/tags/${tag}" >/dev/null || git -C "${clone}" tag "${tag}" "${sha}"
+# Each step runs in the workspace, which stays empty until the checkout step, as on GitHub.
+cd "${GITHUB_WORKSPACE}"
 
 # Each step of the release job through the rehearsal becomes files: NN.name, then NN.uses and
 # NN.with.<key>, or NN.run. A key without a stand-in, such as if or defaults, stops the rehearsal
 # before any step runs, because GitHub would run the steps otherwise.
-ruby - "${tag}" "${steps}" <<'RUBY'
+ruby - "${tag}" "${steps}" "${clone}/.github/workflows/release.yml" <<'RUBY'
 require "yaml"
-tag, dir = ARGV
+tag, dir, path = ARGV
 only = lambda do |where, keys, known|
   extra = keys.map(&:to_s) - known
   abort "runner-rehearsal: #{where} sets #{extra.join(", ")}, which has no stand-in" unless extra.empty?
 end
-workflow = YAML.load_file(".github/workflows/release.yml")
+workflow = YAML.load_file(path)
 # YAML 1.1 reads the key on as true.
 only.("release.yml", workflow.keys, %w[name on true permissions concurrency jobs])
 job = workflow.fetch("jobs").fetch("release")
@@ -95,7 +96,11 @@ while IFS= read -r variable; do export "${variable?}"; done <"${steps}/env"
 fct_action() {
 	local step="${1}" version file
 	case "$(cat "${step}.uses")" in
-	actions/checkout) ;;
+	actions/checkout)
+		rmdir "${GITHUB_WORKSPACE}"
+		mv "${clone}" "${GITHUB_WORKSPACE}"
+		cd "${GITHUB_WORKSPACE}"
+		;;
 	actions/setup-go)
 		file="$(cat "${step}.with.go-version-file")"
 		version="$(sed -n 's/^toolchain go//p' "${file}")"
