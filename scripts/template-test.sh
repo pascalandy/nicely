@@ -122,7 +122,8 @@ fct_main() {
 		[[ -f "${extensions}/${file}" ]] || fct_fail "just install wrote no ${extensions}/${file}"
 	done
 	# The installed extension runs under ncly. /usr/bin comes first, so the shim of a version manager never answers for python3.
-	XDG_DATA_HOME="${data}" PATH="/usr/bin:${PATH}" go -C "${repo}" tool ncly probe inspect "${repo}/go.mod" --json >"${scratch}/inspect.out"
+	# go stays the caller's: the /usr/bin/go of the release runner is older than go.mod allows.
+	XDG_DATA_HOME="${data}" PATH="/usr/bin:${PATH}" "$(command -v go)" -C "${repo}" tool ncly probe inspect "${repo}/go.mod" --json >"${scratch}/inspect.out"
 	grep -qF '"ok":true' "${scratch}/inspect.out" || fct_fail "the installed ncly probe inspect failed: $(cat "${scratch}/inspect.out")"
 	[[ "$(cd "${repo}" && just contract)" == "${root}/docs/north-star/contract" ]] || fct_fail "just contract does not print ${root}/docs/north-star/contract"
 
