@@ -28,6 +28,12 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 		absent []string
 	}{
 		{
+			name:   "a manifest that names a missing catalog ID",
+			edits:  []edit{{"manifest.toml", "standalone.tally.summary", "standalone.missing.summary"}},
+			want:   []string{`locales/en.toml lacks the ID "standalone.missing.summary" that the manifest names.`},
+			absent: []string{"map[", "<no value>"},
+		},
+		{
 			name:  "a command without a scenario",
 			edits: []edit{{file: "testdata/script/keys.txtar"}},
 			want:  []string{"testdata/script: no scenario runs `ncly standalone fetch`. Fix: add a scenario that runs it"},

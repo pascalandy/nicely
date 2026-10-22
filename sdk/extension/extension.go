@@ -12,9 +12,11 @@ package extension
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"os/signal"
 	"slices"
@@ -103,7 +105,7 @@ func load(e Extension) (loaded, error) {
 	l := loaded{Extension: e}
 	var err error
 	if l.manifest, err = contract.ParseManifest(e.Manifest, ""); err != nil {
-		return l, fmt.Errorf("manifest: %w", err)
+		return l, ruleError(err, "manifest.toml")
 	}
 	locales, err := fs.Sub(e.Locales, "locales")
 	if err != nil {
@@ -114,7 +116,7 @@ func load(e Extension) (loaded, error) {
 		return l, fmt.Errorf("catalogs: %w", err)
 	}
 	if err := l.manifest.CheckCatalog(own.Has); err != nil {
-		return l, fmt.Errorf("catalogs: %w", err)
+		return l, ruleError(err, "locales/en.toml")
 	}
 	if l.catalogs, err = i18n.Load(i18n.Locales(), locales); err != nil {
 		return l, fmt.Errorf("catalogs: %w", err)
@@ -131,6 +133,21 @@ func load(e Extension) (loaded, error) {
 		}
 	}
 	return l, nil
+}
+
+// ruleError renders a contract rule with its repository file name.
+func ruleError(err error, file string) error {
+	var rule *contract.RuleError
+	if !errors.As(err, &rule) {
+		return err
+	}
+	catalogs, err := i18n.Load(i18n.Locales())
+	if err != nil {
+		return err
+	}
+	data := map[string]any{"File": file}
+	maps.Copy(data, rule.Data)
+	return errors.New(catalogs.Printer("en").T(rule.Rule, data))
 }
 
 // Check reports what Main would refuse, a catalog that breaks the catalog

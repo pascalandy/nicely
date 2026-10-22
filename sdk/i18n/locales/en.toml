@@ -1,6 +1,162 @@
 # The SDK's English catalog: the text that the SDK renders for core and every
 # Go extension. Each entry needs a description of where the text appears.
 
+["extension.file_syntax"]
+description = "Reason inside extension.invalid. {{.File}} is the name of the file, such as ncly-hello.toml, and {{.Line}} a line number. TOML is the name of a file format and stays as is."
+other = "{{.File}} has a TOML syntax error on line {{.Line}}."
+
+["extension.file_invalid"]
+description = "Reason inside extension.invalid, when a file is not valid TOML or not a catalog. {{.File}} is the name of the file, such as ncly-hello.locales/en.toml."
+other = "{{.File}} is not in the expected format."
+
+["extension.format_version"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, format_version a key that stays as is, {{.Value}} the number it holds, and {{.Want}} the only number this ncly reads."
+other = "{{.File}} has format_version {{.Value}}, and this ncly reads only {{.Want}}."
+
+["extension.contract_version"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, contract_version a key that stays as is, {{.Value}} the number it holds, and {{.Want}} the only number this ncly speaks."
+other = "{{.File}} has contract_version {{.Value}}, and this ncly speaks only {{.Want}}."
+
+["extension.domain"]
+description = "Reason inside extension.invalid, when the manifest names a domain other than its executable's. {{.File}} is the manifest's name, {{.Value}} the domain it declares, and {{.Want}} the domain of the executable."
+other = "{{.File}} declares the domain \"{{.Value}}\" instead of {{.Want}}."
+
+["extension.domain_command"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} the domain, such as hello, which needs a command of its own."
+other = "{{.File}} declares no command for the domain {{.Path}}."
+
+["extension.path"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run."
+other = "{{.File}} declares the command \"{{.Path}}\", whose words must be lowercase letters, digits, and hyphens."
+
+["extension.path_domain"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Domain}} the extension's domain, which must be its first word."
+other = "{{.File}} declares the command \"{{.Path}}\", which does not start with {{.Domain}}."
+
+["extension.path_twice"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run."
+other = "{{.File}} declares the command \"{{.Path}}\" twice."
+
+["extension.parent"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path such as hello profile list, and {{.Parent}} the path above it, such as hello profile."
+other = "{{.File}} declares the command \"{{.Path}}\" without \"{{.Parent}}\" above it."
+
+["extension.result"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Value}} the kind of result it declares, which ncly does not know."
+other = "{{.File}} gives the command \"{{.Path}}\" the unknown result kind \"{{.Value}}\"."
+
+["extension.name"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of one of its flags, arguments, or values."
+other = "{{.File}} gives the command \"{{.Path}}\" the name \"{{.Name}}\", which must be lowercase letters, digits, and hyphens."
+
+["extension.shorthand"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the shorthand of one of its flags, such as g in -g."
+other = "{{.File}} gives the command \"{{.Path}}\" the shorthand \"{{.Name}}\", which must be one ASCII letter."
+
+["extension.values_from_switch"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of one of its flags, a switch. values_from is a key and stays as is."
+other = "{{.File}} gives the switch \"{{.Name}}\" of the command \"{{.Path}}\" a values_from, which only an argument or a flag that takes a value may have."
+
+["extension.values_from_empty"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of one of its arguments or flags. values_from, command, key, and field are keys and stay as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" a values_from without its command, key, and field."
+
+["extension.values_from_command"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} the name of one of its arguments or flags, and {{.Command}} the path of a command of the same manifest. values_from and list are words of the contract and stay as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" a values_from on \"{{.Command}}\", which must be a list command of the manifest that takes no argument, answers an object, and declares effects that neither write user files nor bill."
+
+["extension.flag_taken"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a flag such as --json, --dry-run, or -v. --dry-run and --run-id are flags and stay as is."
+other = "{{.File}} gives the command \"{{.Path}}\" the flag {{.Name}}, which a global flag, --dry-run, --run-id, or another of its flags already uses."
+
+["extension.type"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} the name of one of its arguments or flags, and {{.Value}} the type it declares. string, boolean, integer, and number are type names and stay as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" the type \"{{.Value}}\", and a value is a string, boolean, integer, or number, a switch a boolean."
+
+["extension.required"]
+description = "Reason inside extension.invalid, when a switch or an argument after an optional one is required. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag."
+other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" required, which neither a switch nor an argument after an optional one may be."
+
+["extension.variadic"]
+description = "Reason inside extension.invalid, when a switch or an argument other than the last takes several values. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag."
+other = "{{.File}} makes \"{{.Name}}\" of the command \"{{.Path}}\" take several values, which only the last argument and a flag that takes a value may."
+
+["extension.values"]
+description = "Reason inside extension.invalid, when the accepted values of an argument or a flag do not fit it. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the argument or the flag. values is a key and stays as is."
+other = "{{.File}} gives \"{{.Name}}\" of the command \"{{.Path}}\" values that do not fit it: none, one that appears twice, one that its type does not read, or values on a switch."
+
+["extension.default"]
+description = "Reason inside extension.invalid, when the default of a flag does not fit it. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the name of the flag."
+other = "{{.File}} gives the flag \"{{.Name}}\" of the command \"{{.Path}}\" a default that does not fit it: of another type, a number that is not finite, a default on a required flag or a flag with several values, or a switch's default other than false."
+
+["extension.flag_group"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Value}} the flags of one of its groups, such as --latest, --path. min and max are keys and stay as is."
+other = "{{.File}} gives the command \"{{.Path}}\" the group of flags {{.Value}}, and a group names at least two of the command's own flags, each once, with 0 <= min <= max <= their number and max at least 1."
+
+["extension.bin"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a program name from its requires.bins. requires.bins and programs are keys and stay as is."
+other = "{{.File}} lists \"{{.Name}}\" in requires.bins of the command \"{{.Path}}\", which must name a key of programs once."
+
+["extension.program_version"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Name}} a program of its programs table, such as ffmpeg, and {{.Value}} the version that it declares."
+other = "{{.File}} gives the program \"{{.Name}}\" the version \"{{.Value}}\", which must be numbers joined by dots, such as 6.0."
+
+["extension.program_probe"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg, whose probe, the arguments that make it print its version, is empty."
+other = "{{.File}} gives the program \"{{.Name}}\" an empty probe, which must hold at least one argument."
+
+["extension.program_install"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Name}} a program of its programs table, such as ffmpeg, and {{.Manager}} the name of a package manager, such as brew or pacman, which stays as is."
+other = "{{.File}} gives the program \"{{.Name}}\" an empty install command for \"{{.Manager}}\"."
+
+["extension.doctor"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run, which sets doctor, a key that stays as is, as do report, live, timeout, effects, and the mode names."
+other = "{{.File}} sets doctor on the command \"{{.Path}}\", which must be the status command of its domain: <domain> status, a report without arguments or flag groups, whose only flags are live, a switch that defaults to false, and timeout, a string, neither required nor with values, with effects that neither write nor bill, live when they use the network, and no mode."
+
+["extension.key"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} a service name from its requires.keys, such as deepgram. requires.keys, keychain, and grants stay as is."
+other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain and grants."
+
+["extension.config_key"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} a config key that the command declares, such as hello.greeting, and {{.Domain}} the extension's domain, which starts each key. config is a key and stays as is."
+other = "{{.File}} lists \"{{.Name}}\" in config of the command \"{{.Path}}\", which must name a key under {{.Domain}} once, as words of lowercase letters, digits, hyphens, and underscores joined by dots."
+
+["extension.schema"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Name}} the key of a schema, schema or dry_run_schema, which stays as is, as do JSON Schema, $ref, type, properties, required, title, description, and text."
+other = "{{.File}} gives the command \"{{.Path}}\" a {{.Name}} that is not a JSON Schema of an object's keys, with only type, properties, required, title, and description at its top and local $ref only, or that a text result, or a command without dry run for dry_run_schema, cannot have."
+
+["extension.program"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a program of its programs table, such as ffmpeg. programs and requires.bins are keys and stay as is."
+other = "{{.File}} declares the program \"{{.Name}}\" in programs, which must be a file name without / that the requires.bins of a command names."
+
+["extension.key_table"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a service of its keys table, such as anthropic. keys and requires.keys are keys and stay as is."
+other = "{{.File}} declares the service \"{{.Name}}\" in keys, which must be a service that the requires.keys of a command names."
+
+["extension.key_optional"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Name}} a service of its keys table, such as anthropic, whose optional, a key that stays as is, holds a value that is not a boolean. true and false stay as is."
+other = "{{.File}} gives the service \"{{.Name}}\" an optional that is neither true nor false."
+
+["extension.code_prefix"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Prefix}} the start that the extension's codes need, such as HELLO_."
+other = "{{.File}} declares the error code {{.Code}}, which does not start with {{.Prefix}}."
+
+["extension.code_core"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Code}} an error code that belongs to ncly itself."
+other = "{{.File}} declares the error code {{.Code}}, which belongs to ncly."
+
+["extension.code_twice"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Code}} an error code."
+other = "{{.File}} declares the error code {{.Code}} twice."
+
+["extension.code_exit"]
+description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Value}} the exit code it maps to. 1, 2, and 78 are exit codes and stay as is."
+other = "{{.File}} maps the error code {{.Code}} to exit {{.Value}}, and an extension's code maps to 1, 2, or 78."
+
+["extension.catalog_id"]
+description = "Reason inside extension.invalid. {{.File}} is the name of the extension's English catalog, such as ncly-hello.locales/en.toml, and {{.Value}} a catalog ID that the manifest names."
+other = "{{.File}} lacks the ID \"{{.Value}}\" that the manifest names."
+
 ["flag.help"]
 description = "Help page: description of the -h, --help flag."
 other = "Show help for a command"

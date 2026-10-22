@@ -24,6 +24,7 @@ The current build brings:
 - The `transcript` extension, which transcribes one YouTube video with Deepgram, records the run, replays it, and stops cleanly on Ctrl-C
 - `ncly run list` and `ncly run view`, which read the records of the runs
 - The extension template, which creates the repository of an extension outside Nicely, with its tests and its recipes
+- SDK checks that explain broken manifest rules and missing catalog IDs in English, with their repository file names
 
 [The current build](docs/status.md) describes each command. The commands below are planned work.
 

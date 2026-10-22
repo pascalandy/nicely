@@ -75,7 +75,13 @@ func TestCheckRejectsWhatMainWouldRefuse(t *testing.T) {
 	}{
 		{"an own code without the domain prefix", func(e *Extension) {
 			e.Manifest = []byte(strings.Replace(validManifest, "DEMO_FAILED", "FAILED", 1))
-		}, "extension.code_prefix"},
+		}, "manifest.toml declares the error code FAILED, which does not start with DEMO_."},
+		{"invalid TOML in the manifest", func(e *Extension) {
+			e.Manifest = []byte("format_version = [")
+		}, "manifest.toml has a TOML syntax error on line 1."},
+		{"an invalid manifest field type", func(e *Extension) {
+			e.Manifest = []byte(strings.Replace(validManifest, "format_version = 1", `format_version = "one"`, 1))
+		}, "manifest.toml is not in the expected format."},
 		{"a command that runs without a handler", func(e *Extension) {
 			e.Handlers = map[string]Handler{}
 		}, `"demo run" runs but has no handler`},
@@ -117,6 +123,9 @@ func TestCheckRejectsWhatMainWouldRefuse(t *testing.T) {
 			err := Check(e)
 			if err == nil || !strings.Contains(err.Error(), c.want) {
 				t.Errorf("Check = %v, want an error about %s", err, c.want)
+			}
+			if err != nil && strings.Contains(err.Error(), "map[") {
+				t.Errorf("Check exposes rule data: %v", err)
 			}
 		})
 	}
