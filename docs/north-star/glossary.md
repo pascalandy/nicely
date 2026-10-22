@@ -61,7 +61,6 @@ See [Contract](glossary/contract.md).
   - Def.: a simulation that uses the same preparation as execution and changes nothing outside Nicely's cache
 - Run
   - Def.: one recorded operation, from its first call to its last, which one run ID names and one run record describes
-  - Project note: each call that safely starts its work again is one more attempt, as `attempts` in [Record format](contract/record-format.md) counts
   - Distinct from: the verb `run`, as in `ncly agent run`
 - Run record
   - Def.: the durable evidence of one operation, identified by `run_id`, including its step outcomes and artifact references
@@ -82,7 +81,6 @@ See [Contract](glossary/contract.md).
 - Step
   - Def.: one unit of work of an item, such as `transcribe`, which the domain names and whose effect it declares
   - Project note: record support persists its intent and its final status, as [Record format](contract/record-format.md) defines
-  - Distinct from: a step of a card's checklist in AGENTS.md
 - Step boundary
   - Def.: the moment just before or just after record support persists a change to a step: its intent, the evidence of one artifact, or its final status
   - Project note: the boundary scenario of a recorded operation kills it at every step boundary, as [the scenario rules](../../testdata/script/README.md) ask

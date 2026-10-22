@@ -26,7 +26,7 @@
 - Domain
   - Def.: a top-level noun that groups actions, such as `video`
 - Resource
-  - Def.: an optional second noun inside a domain, between the domain and the verb. No command uses one yet
+  - Def.: an optional second noun inside a domain, between the domain and the verb
 - Verb
   - Def.: the action of a command, one per action across domains, such as `list` or `run`
   - Project note: [Usage](../contract/usage.md) lists them
