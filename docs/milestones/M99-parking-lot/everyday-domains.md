@@ -28,7 +28,7 @@ resume. A safe one-file transformation does not inherit all of those capabilitie
 
 Writing commands still need dry run, destination validation, overwrite consent, and truthful retry behavior for their actual effects.
 
-The unselected video and image suites of M19 and M20 are removed from the delivery queue.
+The unselected video and image suites, once numbered M19 and M20, are removed from the delivery queue.
 Keep their ideas here: video encode, cut, and extract audio; image encode, resize, and compress.
 Revisit one operation when a concrete daily job warrants it, and write only its contract and
 one fixture. Neither domain implies that the whole command suite ships together.

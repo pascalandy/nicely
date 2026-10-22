@@ -17,7 +17,7 @@ After a plan pull request merges, fix the stale card and milestone references of
 
 ## Format
 
-A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, **Cards**, and an optional **After this milestone**. **Cards** holds a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line that links what to read and a **Proves** line that names its proof. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one. `just test` checks this format, including the links.
+A milestone file holds `Status`, `Version`, and the sections **Demo**, an optional **Scope**, **Open questions** while it is planned, **Cards**, and an optional **After this milestone**. **Cards** holds a table with the columns Card, Title, Owner, Depends on, and Status, then one `### <card> <title>` section per card. An agent card's section starts with a **Read** line that links what to read and a **Proves** line that names its proof. No milestone file holds a checkbox: work that matters is a card. A new milestone takes the number after the last one, unless its dependencies place it before a planned milestone. It then takes a free number before that milestone, as M18 and M19 did. `just test` checks this format, including the links.
 
 Each code span of a **Proves** line is a path from the repository root, such as `extensions/transcript/python/` or `justfile`. Name a command, such as just check, without a code span. Once the card is `done`, `just test` checks that each path exists.
 

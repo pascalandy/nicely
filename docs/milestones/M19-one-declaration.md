@@ -104,4 +104,8 @@ Make the `nicely` skill give the release tag for `--vcs-ref`, never the pseudo-v
 ## After this milestone
 
 Once v0.19.0 ships, rerun the operator, author, and maintainer drives against the release.
+A drive gives a fresh agent one job in scratch folders, and it logs each call with its bytes.
+The operator starts from an installed `ncly` and no docs.
+The author wraps one program from the released template.
+The maintainer follows AGENTS.md to the next card.
 Compare their calls, bytes, files touched, and places per fact with the baseline in [Scope](#scope).
