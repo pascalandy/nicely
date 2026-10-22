@@ -26,9 +26,9 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 ## Remove the example
 
 1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
-2. Remove the `inspect` command and `[programs.python3]` from `manifest.toml`. Replace the `inspect` examples of the domain command. Remove the `inspect` entries from `locales/en.toml`
+2. Remove the `inspect` command and `[programs.python3]` from `manifest.toml`. Replace the `inspect` examples of the domain command. Remove the `inspect` entries from `locales/en.toml`. Rewrite `{{ domain }}.summary` for the remaining commands
 3. Remove the `inspect` section and the introduction line that names it from `spec.md`. Remove its mentions from `vision.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`
-4. Remove its handler entry from `extension.go`. When `worker/` is empty, also remove `//go:embed worker`, its variable, and `Resources`
+4. Remove its handler entry from `extension.go`. When `worker/` is empty, also remove `//go:embed worker`, its variable, and `Resources`. Then run `gofmt -w .`
 
 ## Recipes
 
