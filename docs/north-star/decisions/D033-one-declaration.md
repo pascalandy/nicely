@@ -9,6 +9,6 @@ Decided 2026-10-05, revised 2026-10-21. One [command declaration](../contract/co
 
 No handler, extension spec, or skill restates a declared fact. The test kit checks each link that a machine can check, for every extension, from M19-T5. Declare only enforceable capabilities and add fields with their first consumers.
 
-**Why.** Agents can build and parse a call without trial execution or unrelated domains. Shared declarations prevent conflicting promises. Discovery reports possible effects; preparation selects the invocation's effects. The agent drives of 2026-10-21 found surfaces that skip the declaration, such as a dry run that answered `ok` without a key. One command of the author drive held 13 facts in 63 places, and a changed default passed `just check`.
+**Why.** Agents can build and parse a call without trial execution or unrelated domains. Shared declarations prevent conflicting promises. Discovery reports possible effects; preparation selects the invocation's effects. The agent drives of 2026-10-21 found surfaces that skip the declaration, such as a dry run that answered `ok` without a key. They also found facts copied by hand that drift, as [M19](../../milestones/M19-one-declaration.md#scope) measures.
 
 **Rejected.** Separate agent catalogs, full-tree dumps for targeted lookups, and unknown capabilities treated as supported. Copies kept in sync by review. A keychain read in a dry run, which [Keys](../contract/keys.md) forbids.
