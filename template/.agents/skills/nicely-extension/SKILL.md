@@ -44,7 +44,7 @@ Write each fact that nobody can give as an open question in `spec.md`.
 
 ## Verification
 
-1. Write the scenarios of the command in `testdata/script/` first. Each case of its spec gets one, and each fails before the handler exists
+1. Follow "Change a command" in `AGENTS.md`. Give each case of the command's spec a scenario
 2. Run `just check`. Its test kit installs the extension into scratch folders and runs the scenarios
 3. Run `just install`, then run the installed command once on real input. For a paid command, run only its dry run
 4. For a command that needs a key, relay the grant hint to the human and wait. Never grant a key yourself

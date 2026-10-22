@@ -4,9 +4,11 @@
 # An agent creates a repository without prompts, with the Copier that the
 # line copier := of template/justfile pins, as the nicely skill shows:
 #
-#   uv tool run copier@<pinned version> copy --vcs-ref v0.18.0 --defaults \
+#   uv tool run copier@<pinned version> copy --vcs-ref VERSION --defaults \
 #     --data domain=notes --data module=github.com/me/ncly-notes \
 #     gh:pascalandy/nicely ncly-notes
+#
+# VERSION is the release tag that ncly --version prints.
 #
 # The template has no tasks, no migrations, and no Jinja extension, so
 # Copier needs no --trust. scripts/template-test.sh renders it in just check.

@@ -30,7 +30,7 @@ Preconditions:
 - A new run from `just verify`, whose Doctor step passed
 - `uv`, `just`, and a `python3` of 3.9 or later, which answers under the scratch home
 
-- **Template command.** Run `just verify step "$run" template skill view nicely`. Exit 0. The skill holds the section `## Build an extension`, and in its code block the line `uv tool run copier@<version> copy --vcs-ref v0.18.0 --defaults --data domain=DOMAIN --data module=MODULE gh:pascalandy/nicely ncly-DOMAIN`. `<version>` is the one of the line `copier :=` in `template/justfile`.
+- **Template command.** Run `just verify step "$run" template skill view nicely`. Exit 0. The skill holds the section `## Build an extension`, and in its code block the line `uv tool run copier@<version> copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data module=MODULE gh:pascalandy/nicely ncly-DOMAIN`. `<version>` is the one of the line `copier :=` in `template/justfile`.
 - **Render and install.** Run `just verify prepare "$run" template`. It exits 0. Its log names `just install` of `probe`, the line `installed <run>/scratch/home/.local/share/nicely/extensions/ncly-probe`, and the `python3` that it puts first in the PATH of the wrapper. Then run `ls "$run/scratch/home/.local/share/nicely/extensions"`: it lists `ncly-probe`, `ncly-probe.locales`, `ncly-probe.skill`, and `ncly-probe.toml`, beside the four files of `hello`. Report the output of `prepare` and of `ls` beside the quote.
 - **Discovery.** Run `just verify step "$run" template --help`. Exit 0, and the `EXTENSIONS` section lists `probe:  Inspect files` beside `hello` and `skill`.
 - **Help.** Run `just verify step "$run" template probe --help`. Exit 0, and `COMMANDS` lists `inspect:  Give the size and the line count of a file`.

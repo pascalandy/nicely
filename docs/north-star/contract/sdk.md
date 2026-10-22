@@ -48,7 +48,7 @@ func ParseSkill(data []byte) (Frontmatter, error)
 
 `Main` parses the call with the manifest, prints the help of a group, and calls the handler of the path. A variadic flag reaches the handler in `Lists` alone, with its values in the caller's order, so `Flags` keeps one string for each other flag, and no handler reads one value of a variadic flag as its only one. `Call.Key` takes a service that the command declares, and returns its key or the problem that `NCLY_MISSING_KEYS` names for it. That problem has the hint and `next` of [Grants](grants.md), so a handler returns it and never builds one. A service whose variable is empty and that `NCLY_MISSING_KEYS` does not name, as when `ncly-<domain>` runs directly, gets `AUTH_MISSING`, and a service that the command does not declare gets `RUNTIME`, because core never passes its key. `Main` prints the result by its kind, from the command's `result`:
 
-- `object` and `batch`: in human mode, the handler writes its text to `Stdout`. With `--json`, it writes nothing there, and the SDK prints the answer from the outcome
+- `object` and `batch`: in human mode, the handler writes its text to `Stdout`. With `--json`, the SDK discards what the handler writes to `Stdout` and prints the answer from the outcome
 - `report`: in human mode, the handler writes its report to `Stdout`. With `--json`, the SDK prints the findings from the outcome's data on stdout, in an answer without `errors`, as [Output](output.md) says. In both modes, the handler returns its findings in that data, and sets the outcome's `HumanNeeded` when a finding needs a human, which makes the exit code 78 instead of 0, and `ok` false with `--json`. Core's doctor uses the same outcome
 - `text`: the handler writes its text to `Stdout`, whatever `--json` says
 
@@ -70,7 +70,6 @@ The Go types of `sdk/extension` cannot enforce these rules, so each extension ke
 - `main` and `init` start nothing before `extension.Main`: no program, no request, and no write. `--help` and `--version` therefore stay safe
 - When `ctx` ends, a handler returns, and leaves no program running, as [Programs that ncly runs](programs-that-ncly-runs.md) defines
 - A handler reports a failure through its outcome. It never prints an answer, exits, or panics
-- With `--json`, a handler of an `object` or a `batch` command writes nothing to `Stdout`, as `Main` above says
 - A handler starts each program through `sdk/runner` or `sdk/wrap`, never through `os/exec` alone
 - A handler calls `Call.Key` only on the path that needs the key, never in a dry run, which receives no key, as [Grants](grants.md) defines. It passes the key only to the program that its spec names
 - A dry run shares preparation with execution and starts no effect, as [Global flags](global-flags.md) defines

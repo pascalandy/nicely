@@ -13,12 +13,22 @@
 
 1. `spec.md`: its section, titled `## ncly {{ domain }} <verb>`
 2. `manifest.toml`: its declaration, with its effects, programs, keys, and result schema
-3. `testdata/script/`: its scenarios, which fail before the handler exists. `test-kit.md` in the contract lists their commands
-4. Its handler, such as `inspect.go`, on `sdk/wrap` for one program, or on `sdk/runner` for more. Add it to the handlers of `extension.go`
-5. `locales/en.toml`: its text, each entry with a description
-6. `skill/SKILL.md`: when to use the command, and when not to
+3. `locales/en.toml`: its text, each entry with a description
+4. Add a placeholder handler that compiles, and register it in `extension.go`
+5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands
+6. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more
+7. `skill/SKILL.md`: when to use the command, and when not to
+
+`extension.Check` must pass before a scenario can fail for the missing behavior. Steps 1 through 4 prepare that check.
 
 A wrapped script goes in `worker/`. To take in a script, or to review the extension when the user asks, use the skill in `.agents/skills/nicely-extension/`.
+
+## Remove the example
+
+1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
+2. Remove the `inspect` command and `[programs.python3]` from `manifest.toml`. Replace the `inspect` examples of the domain command. Remove the `inspect` entries from `locales/en.toml`
+3. Remove the `inspect` section and the introduction line that names it from `spec.md`. Remove its mentions from `vision.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`
+4. Remove its handler entry from `extension.go`. When `worker/` is empty, also remove `//go:embed worker`, its variable, and `Resources`
 
 ## Recipes
 

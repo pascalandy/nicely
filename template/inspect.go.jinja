@@ -55,10 +55,3 @@ func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 		return contract.Outcome{Data: map[string]any{"size_bytes": *answer.Size, "lines": *answer.Lines}}
 	})
 }
-
-// usage returns the USAGE_INVALID outcome of a message, with a call that
-// works as its hint.
-func usage(message, hint string) contract.Outcome {
-	problem := contract.Problem{Code: contract.UsageInvalid, Message: message, Hint: hint}
-	return contract.Outcome{Errors: []contract.Problem{problem}}
-}

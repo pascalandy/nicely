@@ -7,6 +7,7 @@ package {{ domain }}
 import (
 	"embed"
 
+	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
 )
 
@@ -32,4 +33,11 @@ var Extension = extension.Extension{
 	Handlers: map[string]extension.Handler{
 		"{{ domain }} inspect": inspect,
 	},
+}
+
+// usage returns the USAGE_INVALID outcome of a message, with a call that
+// works as its hint.
+func usage(message, hint string) contract.Outcome {
+	problem := contract.Problem{Code: contract.UsageInvalid, Message: message, Hint: hint}
+	return contract.Outcome{Errors: []contract.Problem{problem}}
 }
