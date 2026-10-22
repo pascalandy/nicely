@@ -27,7 +27,7 @@ Core gains no command: each card completes one projection of the declaration, or
 - **Read:** [Grants](../north-star/contract/grants.md), [Keys](../north-star/contract/keys.md), [Dry-run answer](../north-star/contract/dry-run-answer.md), [Operations](../north-star/contract/operations.md), [Required keys](../north-star/core-spec.md#required-keys), [ncly auth](../north-star/core-spec.md#ncly-auth), [SDK](../north-star/contract/sdk.md), [D033](../north-star/decisions/D033-one-declaration.md), [D058](../north-star/decisions/D058-grants-by-path.md)
 - **Proves:** `testdata/script/dry_run_keys.txtar`, `testdata/script/doctor_auth.txtar`, `testdata/script/auth_status.txtar`, and `extensions/transcript/testdata/script/transcript_dry_run.txtar`. They cover a dry run whose key has no grant, and one whose key has a grant, which keeps its check pending. The call log of the test keychain stays empty. They also cover a key both missing and ungranted
 
-In the operator drive, a dry run without a key or a grant answered `ok`, so only the paid call would fail.
+In the operator drive, a dry run without a key or a grant answered `ok`, so the failure waited for the real call.
 The hint of `ncly auth status` named the login alone, although the grant was missing too.
 
 A dry run answers `KEY_NOT_GRANTED` for a declared key that no human granted at the extension's path, as execution does.
