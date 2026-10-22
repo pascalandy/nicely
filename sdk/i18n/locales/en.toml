@@ -25,6 +25,10 @@ other = "{{.File}} declares the domain \"{{.Value}}\" instead of {{.Want}}."
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} the domain, such as hello, which needs a command of its own."
 other = "{{.File}} declares no command for the domain {{.Path}}."
 
+["extension.domain_name"]
+description = "SDK Check error for an invalid embedded manifest domain. {{.File}} is manifest.toml, and {{.Value}} is its domain. Domains start with a lowercase letter and contain only lowercase letters and digits."
+other = "{{.File}} declares the invalid domain \"{{.Value}}\". Use lowercase letters and digits, starting with a letter."
+
 ["extension.path"]
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} a command path, such as hello run."
 other = "{{.File}} declares the command \"{{.Path}}\", whose words must be lowercase letters, digits, and hyphens."

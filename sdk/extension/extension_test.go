@@ -75,13 +75,16 @@ func TestCheckRejectsWhatMainWouldRefuse(t *testing.T) {
 	}{
 		{"an own code without the domain prefix", func(e *Extension) {
 			e.Manifest = []byte(strings.Replace(validManifest, "DEMO_FAILED", "FAILED", 1))
-		}, "manifest.toml declares the error code FAILED, which does not start with DEMO_."},
+		}, "manifest.toml declares the error code FAILED, which does not start with DEMO_"},
 		{"invalid TOML in the manifest", func(e *Extension) {
 			e.Manifest = []byte("format_version = [")
-		}, "manifest.toml has a TOML syntax error on line 1."},
+		}, "manifest.toml has a TOML syntax error on line 1"},
 		{"an invalid manifest field type", func(e *Extension) {
 			e.Manifest = []byte(strings.Replace(validManifest, "format_version = 1", `format_version = "one"`, 1))
-		}, "manifest.toml is not in the expected format."},
+		}, "manifest.toml is not in the expected format"},
+		{"an invalid domain name", func(e *Extension) {
+			e.Manifest = []byte(strings.Replace(validManifest, `domain = "demo"`, `domain = "my-tool"`, 1))
+		}, `manifest.toml declares the invalid domain "my-tool". Use lowercase letters and digits, starting with a letter`},
 		{"a command that runs without a handler", func(e *Extension) {
 			e.Handlers = map[string]Handler{}
 		}, `"demo run" runs but has no handler`},

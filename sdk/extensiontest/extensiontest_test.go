@@ -30,8 +30,8 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 		{
 			name:   "a manifest that names a missing catalog ID",
 			edits:  []edit{{"manifest.toml", "standalone.tally.summary", "standalone.missing.summary"}},
-			want:   []string{`locales/en.toml lacks the ID "standalone.missing.summary" that the manifest names.`},
-			absent: []string{"map[", "<no value>"},
+			want:   []string{`locales/en.toml lacks the ID "standalone.missing.summary" that the manifest names. Fix the extension until extension.Check accepts it`},
+			absent: []string{"map[", "<no value>", "names.."},
 		},
 		{
 			name:  "a command without a scenario",

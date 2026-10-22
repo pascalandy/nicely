@@ -147,7 +147,12 @@ func ruleError(err error, file string) error {
 	}
 	data := map[string]any{"File": file}
 	maps.Copy(data, rule.Data)
-	return errors.New(catalogs.Printer("en").T(rule.Rule, data))
+	id := rule.Rule
+	// load takes the domain from the manifest, so this rule means its name is invalid.
+	if id == "extension.domain" {
+		id = "extension.domain_name"
+	}
+	return errors.New(strings.TrimSuffix(catalogs.Printer("en").T(id, data), "."))
 }
 
 // Check reports what Main would refuse, a catalog that breaks the catalog

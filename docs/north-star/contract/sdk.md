@@ -63,10 +63,6 @@ The same value serves both transports, so they cannot drift, as [D051](../decisi
 
 The SDK accepts the error codes that the manifest declares, and every warning code that starts with the domain and an underscore, beside core's codes, so the verdict and the answer follow [Output](output.md). The SDK's catalog holds the text that the SDK renders: help pages, global flags, usage errors, error labels, outcome summaries, size units, and the error of an extension that does not match its own manifest. An extension's printer takes an ID that starts with its domain and a dot from the extension's catalogs, and any other ID from the SDK's, so an extension never overrides the SDK's text. Core's printer takes an ID from core's catalog when that catalog holds it, and from the SDK's otherwise. The catalog rules are these: every entry has a description, every language holds exactly the IDs of `en`, an extension's IDs start with its domain and a dot, and core's IDs differ from the SDK's. In each language, an entry whose `other` form reads a field named `Count` or `N`, which holds a number, also has a `one` form that is not empty. `Check` applies them to an extension. In the Nicely repository, one parity test also applies them to every catalog folder: core's, the SDK's, and each extension's.
 
-`Check` renders manifest and catalog-reference rule errors in English from the SDK's catalog.
-Their file names are the repository paths `manifest.toml` and `locales/en.toml`.
-Core uses the same rule sentences with the installed file names.
-
 ## Rules that the types cannot express
 
 The Go types of `sdk/extension` cannot enforce these rules, so each extension keeps them:
