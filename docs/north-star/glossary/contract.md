@@ -26,7 +26,7 @@
 - Domain
   - Def.: a top-level noun that groups actions, such as `video`
 - Resource
-  - Def.: an optional second noun inside a domain, such as `prompt` in `ncly transcript prompt list`
+  - Def.: an optional second noun inside a domain, between the domain and the verb. No command uses one yet
 - Verb
   - Def.: the action of a command, one per action across domains, such as `list` or `run`
   - Project note: [Usage](../contract/usage.md) lists them
@@ -46,7 +46,7 @@
   - Project note: core answers `RUNTIME` in its place, as [Answer check](../contract/answer-check.md) defines
   - Distinct from: a failure that the extension reports through a valid answer
 - Environment
-  - Def.: the variables that an extension receives: the resolved global flags, the versions, and the keys granted to it
+  - Def.: the variables that an extension receives, which [Programs that ncly runs](../contract/programs-that-ncly-runs.md) lists
 - Answer
   - Def.: the one JSON object that a command prints under `--json`, with `ok` and, on failure, `errors`
 - Exit code

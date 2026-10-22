@@ -64,7 +64,7 @@
   - Project note: the SDK implements the contract in Go
 - Composition
   - Def.: combining small pieces into a bigger one. A piece is composable when it combines without special cases
-  - Project note: extensions compose through the CLI, as transcript calls `ncly agent run --json`
+  - Project note: extensions compose through the CLI, as the `skill` extension finds the skills of installed extensions through `ncly describe --json`
 - Modular
   - Def.: split into parts with clear boundaries, so each part changes alone
   - Project note: each part has one owner, one package, and one spec section, in the [code map](../architecture.md#code-map)

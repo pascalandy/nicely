@@ -64,7 +64,7 @@ Each part has one owner: one package and one spec section.
 | 2 | Test kit | The tests of an extension repository: its checks, its scenarios, and an install into scratch folders | `sdk/extensiontest/` | [Test kit](contract/test-kit.md) |
 | 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract/command-descriptions.md), [Output](contract/output.md) |
 | 2 | Program runner | Child environment, process groups and sessions, captured output, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract/programs-that-ncly-runs.md), [Required programs](core-spec.md#required-programs) |
-| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/` | [Operations](contract/operations.md) |
+| 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/record/` | [Operations](contract/operations.md) |
 | 2 | Config | Shared and local config files, environment, flags, and XDG paths | `sdk/config/` | [Configuration](contract/configuration.md) |
 | 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract/configuration.md) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
@@ -102,5 +102,5 @@ The other folders:
 
 [Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key.
 M17 selected neither everyday candidate.
-[M18](../milestones/M18-extension-template.md) plans the extension template before any particular extension.
+[M18](../milestones/M18-extension-template.md) shipped the extension template before any particular extension.
 Markdown view and additional media domains remain in [M99](../milestones/M99-parking-lot/everyday-domains.md), alongside other deferred variants.

@@ -36,7 +36,7 @@ A card is one pull request. Do the card that `just next` prints, and only that c
 Copy this checklist into the pull request. Tick each step when its condition holds, or mark it `n/a` with its reason.
 
 ```
-- [ ] 1. Spec: the sections that the card reads cover every command, flag, JSON key, and error code you add or change
+- [ ] 1. Spec: the card's spec sections cover what you add or change, except what an extension's manifest declares
 - [ ] 2. Scenario: each scenario that the card proves fails for the missing behavior
 - [ ] 3. Code: those scenarios pass
 - [ ] 4. Text: each new user-facing string is a catalog entry with a description

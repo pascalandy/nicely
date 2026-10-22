@@ -59,6 +59,10 @@ See [Contract](glossary/contract.md).
   - Def.: the work prepared and performed by a command. The domain owns its steps
 - Dry run
   - Def.: a simulation that uses the same preparation as execution and changes nothing outside Nicely's cache
+- Run
+  - Def.: one recorded operation, from its first call to its last, which one run ID names and one run record describes
+  - Project note: each call that safely starts its work again is one more attempt, as `attempts` in [Record format](contract/record-format.md) counts
+  - Distinct from: the verb `run`, as in `ncly agent run`
 - Run record
   - Def.: the durable evidence of one operation, identified by `run_id`, including its step outcomes and artifact references
 - Run ID
@@ -71,6 +75,14 @@ See [Contract](glossary/contract.md).
 - Effect
   - Def.: what an operation does outside Nicely's cache and state and the run's temporary files, such as a user write, network access, or a paid request
   - Project note: each step of a run record declares the strongest effect that it can make, as [Record format](contract/record-format.md) lists
+- Item
+  - Def.: one input of an operation, such as one URL, with its key, its output folder, and its steps
+  - Project note: a run record and a dry-run plan hold one item per input, in input order, and a batch answers one result per item
+  - Distinct from: an entry that a `list` command shows, which [Usage](contract/usage.md) also calls an item
+- Step
+  - Def.: one unit of work of an item, such as `transcribe`, which the domain names and whose effect it declares
+  - Project note: record support persists its intent and its final status, as [Record format](contract/record-format.md) defines
+  - Distinct from: a step of a card's checklist in AGENTS.md
 - Step boundary
   - Def.: the moment just before or just after record support persists a change to a step: its intent, the evidence of one artifact, or its final status
   - Project note: the boundary scenario of a recorded operation kills it at every step boundary, as [the scenario rules](../../testdata/script/README.md) ask

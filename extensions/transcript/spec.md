@@ -14,7 +14,7 @@ It is parked in [M99](../../docs/milestones/M99-parking-lot/transcript-summary.m
 [resume](../../docs/milestones/M99-parking-lot/resume.md) and
 [transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md).
 
-This specification describes planned behavior.
+This specification describes the behavior that M13 and M16 shipped.
 The readiness of M13 and of M16 settled their open questions in these files.
 
 ## ncly transcript
