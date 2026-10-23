@@ -28,5 +28,5 @@ description: Use before running any ncly command.
 Create the repository of a new extension from the extension template at VERSION. Replace VERSION with the release tag that `ncly --version` prints. Then follow the `AGENTS.md` of the new repository. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
 
 ```sh
-uv tool run copier@9.19.1 copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data module=MODULE gh:pascalandy/nicely ncly-DOMAIN
+uv tool run copier@9.19.1 copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data module=github.com/me/ncly-DOMAIN gh:pascalandy/nicely ncly-DOMAIN
 ```
