@@ -35,6 +35,7 @@ exits 78 ncly describe video --json
 answer stderr EXTENSION_INVALID
 
 # A later whole-domain extension hides every earlier named extension.
+exec /bin/sh setup.sh
 exec /bin/sh whole.sh second
 exec ncly video run --json
 answer stdout ok
@@ -82,7 +83,8 @@ exec ncly describe --json
 ! stdout '"path":"doctor extra"'
 ! stdout '"path":"skill extra"'
 ! stdout '"path":"video color grade"'
-! grep forbidden ran
+exits 2 ncly video color grade --json
+answer stderr USAGE_INVALID
 
 -- setup.sh --
 set -eu
