@@ -1,0 +1,44 @@
+# Direct lookup needs search permission, not directory listing permission.
+exec /bin/sh setup.sh
+onlyncly
+env NCLY_PATH=$PATH
+env PATH=$WORK/first:$WORK/late:$NCLY_PATH
+exec ncly hello run --json
+answer stdout ok
+stdout '"winner":"first"'
+exec ncly hello run --json
+stdout '"winner":"first"'
+
+chmod 111 first
+exec ncly hello run --json
+answer stdout ok
+stdout '"winner":"first"'
+env PATH=$WORK/first:$NCLY_PATH
+exec ncly hello run --json
+answer stdout ok
+stdout '"winner":"first"'
+chmod 755 first
+
+-- setup.sh --
+set -eu
+for folder in first late; do
+    mkdir -p "$folder/ncly-hello.locales"
+    printf '#!/bin/sh\nprintf '\''{"ok":true,"contract_version":1,"winner":"%s"}\\n'\''\n' "$folder" > "$folder/ncly-hello"
+    chmod 755 "$folder/ncly-hello"
+    cp hello.toml "$folder/ncly-hello.toml"
+    cp en.toml "$folder/ncly-hello.locales/en.toml"
+done
+-- hello.toml --
+format_version = 1
+contract_version = 1
+domain = "hello"
+[[commands]]
+path = "hello"
+summary = "hello.summary"
+[[commands]]
+path = "hello run"
+summary = "hello.summary"
+-- en.toml --
+["hello.summary"]
+description = "Summary of the discovery fixture."
+other = "Run the selected fixture"
