@@ -1,6 +1,6 @@
-// Package {{ domain }} is the {{ domain }} extension of Nicely. Its one value,
+// Package {{ domain }} is the {{ slug }} extension of Nicely. Its one value,
 // Extension, holds the manifest, the catalogs, the skill, the workers, and
-// one handler per command. cmd/ncly-{{ domain }} runs it, and
+// one handler per command. cmd/ncly-{{ slug }} runs it, and
 // extension_test.go tests it.
 package {{ domain }}
 
@@ -23,7 +23,7 @@ var skill embed.FS
 //go:embed worker
 var workers embed.FS
 
-// Extension is the {{ domain }} extension. Each command of manifest.toml that
+// Extension is the {{ slug }} extension. Each command of manifest.toml that
 // runs has its handler here, keyed by its path.
 var Extension = extension.Extension{
 	Manifest:  manifest,
@@ -31,7 +31,7 @@ var Extension = extension.Extension{
 	Skill:     skill,
 	Resources: workers,
 	Handlers: map[string]extension.Handler{
-		"{{ domain }} inspect": inspect,
+		"{{ example_command }}": inspect,
 	},
 }
 

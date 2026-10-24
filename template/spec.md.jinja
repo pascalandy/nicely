@@ -1,6 +1,6 @@
-# {{ domain }} spec
+# {{ slug }} spec
 
-`manifest.toml` holds the machine facts of each command, and `ncly describe {{ domain }} --json` shows them. This file holds only what the manifest cannot say, so it never repeats a flag or a type.
+`manifest.toml` holds the machine facts of each command, and `ncly describe {{ root }} --json` shows them. This file holds only what the manifest cannot say, so it never repeats a flag or a type.
 
 This file is a form, which the template filled for its example command, `inspect`. Give each command a section like that one, then delete each line that starts with "Fill:".
 
@@ -8,7 +8,7 @@ Fill: for each command, what proves its success, why each declared effect exists
 
 Fill: each limit that the readiness review accepted.
 
-## ncly {{ domain }} inspect
+## ncly {{ example_command }}
 
 **Success means** that the answer holds `size_bytes` and `lines`, which `worker/inspect.py` counted in one read of the file.
 

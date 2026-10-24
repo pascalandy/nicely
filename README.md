@@ -41,7 +41,9 @@ Read their skills by slug, such as `ncly skill view video-convert`.
 Configuration, doctor components, and key grants use each extension's slug independently.
 For example, `ncly doctor video-subtitle` checks that extension, and `ncly auth grant deepgram video-subtitle` grants only its key access.
 Existing whole-domain grants keep working without migration.
-The [shared domains plan](docs/milestones/M23-shared-domains.md) next adds named repositories to the test kit and template.
+The template creates named repositories with `--data domain=video --data name=convert`, such as `ncly-video-convert`.
+Omit `name` for a whole-domain repository.
+Both use the SDK test kit and the same update recipe.
 A local view of selected project docs and Canadian French follow.
 Other everyday tasks remain in [M99](docs/milestones/M99-parking-lot/everyday-domains.md).
 

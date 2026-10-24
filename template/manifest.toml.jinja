@@ -1,29 +1,30 @@
 format_version = 1
 contract_version = 1
-domain = "{{ domain }}"
+domain = "{{ domain }}"{% if name %}
+name = "{{ name }}"{% endif %}
 
-[[commands]]
+{% if not name %}[[commands]]
 path = "{{ domain }}"
-summary = "{{ domain }}.summary"
-examples = ["ncly {{ domain }} inspect notes.md", "ncly {{ domain }} inspect notes.md --json"]
+summary = "{{ slug }}.summary"
+examples = ["ncly {{ example_command }} notes.md", "ncly {{ example_command }} notes.md --json"]
 
-[[commands]]
-path = "{{ domain }} inspect"
-summary = "{{ domain }}.inspect.summary"
-examples = ["ncly {{ domain }} inspect notes.md", "ncly {{ domain }} inspect notes.md --json"]
+{% endif %}[[commands]]
+path = "{{ example_command }}"
+summary = "{{ slug }}.inspect.summary"
+examples = ["ncly {{ example_command }} notes.md", "ncly {{ example_command }} notes.md --json"]
 effects = {}
 requires = { bins = ["python3"] }
 
 [[commands.args]]
 name = "file"
-summary = "{{ domain }}.inspect.file"
+summary = "{{ slug }}.inspect.file"
 required = true
 
 [[commands.flags]]
 name = "timeout"
 value = "duration"
 default = "30s"
-summary = "{{ domain }}.inspect.timeout"
+summary = "{{ slug }}.inspect.timeout"
 
 [commands.result.schema]
 type = "object"

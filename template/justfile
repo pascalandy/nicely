@@ -1,7 +1,9 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# The domain of the extension, which manifest.toml declares
+# The identity of the extension, which manifest.toml declares
 domain := `sed -n 's/^domain = "\([a-z][a-z0-9]*\)"$/\1/p' manifest.toml`
+name := `sed -n '/^\[/q; s/^name = "\([a-z][a-z0-9]*\)"$/\1/p' manifest.toml`
+slug := domain + if name == "" { "" } else { "-" + name }
 
 # The Copier of just update, pinned and run through uv. No template task runs, so it needs no --trust
 copier := "uv tool run copier@9.19.1"
@@ -17,7 +19,7 @@ check:
     go vet ./...
     go test -count=1 ./...
 
-# Build ncly-<domain> and install it with its sidecars into Nicely's extensions folder, in place of its previous install
+# Build ncly-<slug> and install it with its sidecars into Nicely's extensions folder, in place of its previous install
 install:
     #!/usr/bin/env bash
     set -Eeuo pipefail
@@ -25,7 +27,7 @@ install:
         echo "install: $*" >&2
         exit 1
     }
-    name="ncly-{{ domain }}"
+    name="ncly-{{ slug }}"
     [[ "$name" != ncly- ]] || die "manifest.toml declares no domain"
     [[ "${HOME:-}" == /* ]] || die "HOME must be an absolute path"
     # An XDG variable counts only when it holds an absolute path, as Configuration in the contract says.

@@ -30,7 +30,7 @@ grep 'grants it to an extension with `ncly auth grant`, or takes a grant back wi
 grep 'Never type or pipe a key yourself, and never grant one' nicely.md
 # The skill gives the command that creates an extension repository from the template, with
 # the Copier that the template pins, and links Extensions
-grep '^uv tool run copier@[0-9.]+ copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data module=github\.com/me/ncly-DOMAIN gh:pascalandy/nicely ncly-DOMAIN$' nicely.md
+grep '^uv tool run copier@[0-9.]+ copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github\.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME$' nicely.md
 grep '\[Extensions\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md\)' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok

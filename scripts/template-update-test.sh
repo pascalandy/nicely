@@ -6,6 +6,10 @@ fct_test_update() {
 	# The author edits two files, and the next template revision changes one of them elsewhere.
 	fct_edit "${repo}/vision.md" "" "Author's note: kept through each update."
 	fct_edit "${repo}/AGENTS.md" "# AGENTS.md" "# AGENTS.md of the author"
+	if [[ -z "$(sed -n '/^\[/q; /^name = /p' "${repo}/manifest.toml")" ]]; then
+		sed '/^name:/d' "${repo}/.copier-answers.yml" >"${repo}/answers.new"
+		mv "${repo}/answers.new" "${repo}/.copier-answers.yml"
+	fi
 	fct_commit "customized"
 	fct_edit "${src}/template/AGENTS.md.jinja" "" "This line comes from template v0.0.2."
 	fct_revision v0.0.2

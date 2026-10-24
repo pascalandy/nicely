@@ -5,7 +5,12 @@ description: Use when wrapping a script or a program as a command of this Nicely
 
 # Nicely extension
 
-This repository is one Nicely extension: one domain, whose commands `ncly` runs. This skill takes a script from intake to a verified command. `AGENTS.md` gives the reading order and the recipes.
+This skill takes a script from intake to a verified command.
+`AGENTS.md` gives the reading order, recipes, and extension root.
+The domain names a family of work, such as `video`.
+An optional name identifies one job, such as `convert`.
+Neither names the wrapped tool.
+Read "Extension identity" in the contract for the slug and command ownership.
 
 The contract holds every rule. `just contract` prints its folder at the Nicely version that `go.mod` pins. Read "What a great extension does" in its `extensions.md` first. Then read only the parts that it links.
 
@@ -25,7 +30,8 @@ Write each fact that nobody can give as an open question in `spec.md`.
 
 ## Choice of operations
 
-- Give each command one bounded operation, `ncly <domain> <verb>`. Never relay arbitrary arguments to the script
+- Give each command one bounded operation beneath the extension root
+- A named root can also run directly, such as `ncly video convert <file>`. Never relay arbitrary arguments to the script
 - Give a script that does several jobs one command per job, and only for the jobs that the user needs
 - Put the script in `worker/` when the extension can embed it. `Call.Worker` gives its path, and `sdk/wrap` runs it
 - Use `sdk/wrap` for one program per call. Use `sdk/runner` for several programs, or for a timeout that can exit 75 safely

@@ -1,6 +1,6 @@
 # Lip Gloss v2.0.6 runs tmux info as it loads, when a terminal and tmux show.
 # go.mod repeats the replace line of Nicely's go.mod, so the ncly of go tool
-# ncly and ncly-{{ domain }} load the fork, which asks tmux nothing as it loads.
+# ncly and ncly-{{ slug }} load the fork, which asks tmux nothing as it loads.
 # Without that line, both programs call the tmux stub, which logs each call.
 # Remove this scenario with that line, once a release of Lip Gloss ships the fix.
 chmod 755 bin/tmux
@@ -10,8 +10,8 @@ env TTY_FORCE=1
 ncly --version
 stdout '^ncly '
 ! exists tmux.log
-ncly-{{ domain }} --version
-stdout '^ncly-{{ domain }} '
+ncly-{{ slug }} --version
+stdout '^ncly-{{ slug }} '
 ! exists tmux.log
 
 -- bin/tmux --

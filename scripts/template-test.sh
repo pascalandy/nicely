@@ -66,34 +66,19 @@ fct_said() {
 	fi
 }
 
-fct_main() {
-	local root pin scratch src repo data extensions copier lipgloss
-	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
-	# shellcheck source=scripts/template-update-test.sh
-	source "${root}/scripts/template-update-test.sh"
-	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
-	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
-	# just update runs the Copier that the template pins, and so does this test.
-	pin="$(sed -n 's/^copier := "\(.*\)"$/\1/p' "${root}/template/justfile")"
-	[[ "${pin}" == "uv tool run copier@"* ]] || fct_fail "template/justfile pins no Copier"
-	grep -qF -- "${pin}" "${root}/extensions/skill/nicely/SKILL.md" || fct_fail "the nicely skill does not give ${pin}, which template/justfile pins"
-	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")"
-	readonly NCLY_TEMPLATE_TEST_ROOT="${scratch}"
-	trap 'rm -rf "${NCLY_TEMPLATE_TEST_ROOT}"' EXIT
-	src="${scratch}/source" repo="${scratch}/ncly-probe" data="${scratch}/data"
+fct_repository() {
+	local scratch="${1}" domain="${2}" name="${3}" slug="${4}" command="${5}" src repo data extensions lipgloss file
+	shift 5
+	src="${scratch}/source" repo="${scratch}/ncly-${slug}" data="${scratch}/data"
 	extensions="${data}/nicely/extensions"
-	# Git, in Copier too, takes its identity from this file, without the signing of the user.
-	printf '[user]\n\tname = template-test\n\temail = template-test@example.com\n[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n[init]\n\tdefaultBranch = main\n' >"${scratch}/gitconfig"
-	export GIT_CONFIG_GLOBAL="${scratch}/gitconfig" GIT_CONFIG_NOSYSTEM=1
-
+	mkdir -p "${scratch}"
 	# The template source holds the working tree of this checkout, changes included, tagged as a version.
 	mkdir "${src}"
 	cp "${root}/copier.yml" "${src}/"
 	cp -R "${root}/template" "${src}/template"
 	git -C "${src}" init -q
 	fct_revision v0.0.1
-	read -r -a copier <<<"${pin}"
-	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=probe --data module=example.com/ncly-probe "${src}" "${repo}"
+	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${slug}" "$@" "${src}" "${repo}"
 
 	# The author's go.mod points at this checkout, so the rendered repository tests the SDK and ncly of this change.
 	go -C "${repo}" mod edit -replace "github.com/pascalandy/nicely=${root}"
@@ -102,6 +87,50 @@ fct_main() {
 	[[ "$(grep '^replace charm.land/lipgloss/v2 ' "${repo}/go.mod" || true)" == "${lipgloss}" ]] ||
 		fct_fail "the go.mod of the template does not repeat \"${lipgloss}\" of Nicely's go.mod"
 	go -C "${repo}" mod tidy
+	fct_has "${repo}/manifest.toml" "domain = \"${domain}\""
+	fct_has "${repo}/extension.go" "package ${domain}"
+	if [[ -n "${name}" ]]; then
+		fct_has "${repo}/manifest.toml" "name = \"${name}\""
+		[[ "$(grep -c '^\[\[commands\]\]$' "${repo}/manifest.toml")" == 1 ]] || fct_fail 'the named example must run at its root'
+	else
+		[[ -z "$(sed -n '/^\[/q; /^name = /p' "${repo}/manifest.toml")" ]] || fct_fail 'the whole-domain manifest declares a name'
+	fi
+	[[ -f "${repo}/cmd/ncly-${slug}/main.go" ]] || fct_fail "the entry directory is not cmd/ncly-${slug}"
+	[[ ! -e "${repo}/README.md" && ! -e "${repo}/LICENSE" ]] || fct_fail 'the template adds a README or LICENSE'
+	git -C "${repo}" init -q
+	fct_commit "rendered from v0.0.1"
+	(cd "${repo}" && just check)
+	export XDG_CONFIG_HOME="${scratch}/config" XDG_STATE_HOME="${scratch}/state" XDG_DATA_HOME="${data}" NCLY_NO_INPUT=1
+	(cd "${repo}" && just install)
+	for file in "ncly-${slug}" "ncly-${slug}.toml" "ncly-${slug}.locales/en.toml" "ncly-${slug}.skill/SKILL.md"; do
+		[[ -f "${extensions}/${file}" ]] || fct_fail "just install wrote no ${extensions}/${file}"
+	done
+	local command_words
+	read -r -a command_words <<<"${command}"
+	# The installed extension runs under ncly. /usr/bin comes first, so the shim of a version manager never answers for python3.
+	# go stays the caller's: the /usr/bin/go of the release runner is older than go.mod allows.
+	PATH="/usr/bin:${PATH}" "$(command -v go)" -C "${repo}" tool ncly "${command_words[@]}" "${repo}/go.mod" --json >"${scratch}/inspect.out"
+	grep -qF '"ok":true' "${scratch}/inspect.out" || fct_fail "the installed command failed: $(cat "${scratch}/inspect.out")"
+	PATH="/usr/bin:${PATH}" "$(command -v go)" -C "${repo}" tool ncly skill view "${slug}" >"${scratch}/skill.out"
+	fct_has "${scratch}/skill.out" "name: ${slug}"
+	grep -qF "ncly ${command}" "${scratch}/skill.out" || fct_fail 'the installed skill teaches the wrong command'
+	[[ "$(cd "${repo}" && just contract)" == "${root}/docs/north-star/contract" ]] || fct_fail "just contract does not print ${root}/docs/north-star/contract"
+	printf 'stale\n' >"${extensions}/ncly-${slug}.locales/stale.toml"
+	printf 'stale\n' >"${extensions}/ncly-${slug}.skill/stale.md"
+	printf 'stale\n' >"${extensions}/ncly-${slug}.toml"
+	printf 'stale\n' >"${extensions}/ncly-${slug}"
+	(cd "${repo}" && just install)
+	[[ ! -e "${extensions}/ncly-${slug}.locales/stale.toml" && ! -e "${extensions}/ncly-${slug}.skill/stale.md" ]] || fct_fail 'install keeps stale sidecars'
+	PATH="/usr/bin:${PATH}" "$(command -v go)" -C "${repo}" tool ncly "${command_words[@]}" "${repo}/go.mod" --json >"${scratch}/reinstalled.out"
+	grep -qF '"ok":true' "${scratch}/reinstalled.out" || fct_fail 'the replacement install does not run'
+	fct_test_update "${src}" "${repo}" "${scratch}" "${root}"
+	if [[ -z "${name}" ]]; then
+		[[ -z "$(sed -n '/^\[/q; /^name = /p' "${repo}/manifest.toml")" ]] || fct_fail 'update changes the whole-domain default'
+	else
+		fct_has "${repo}/manifest.toml" "name = \"${name}\""
+	fi
+	printf 'template %s passes checks, replaces its install, and preserves author edits through updates\n' "${slug}"
+	[[ -z "${name}" ]] || return 0
 	# A domain that names an import of the template, or init, still gives a repository that builds.
 	for domain in extension fmt init; do
 		"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${domain}" "${src}" "${scratch}/ncly-${domain}"
@@ -116,21 +145,34 @@ fct_main() {
 		fi
 		grep -qF "choose another domain" "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${domain} for another reason: $(cat "${scratch}/refusal.out")"
 	done
-	git -C "${repo}" init -q
-	fct_commit "rendered from v0.0.1"
-	(cd "${repo}" && just check)
-	(cd "${repo}" && XDG_DATA_HOME="${data}" just install)
-	for file in ncly-probe ncly-probe.toml ncly-probe.locales/en.toml ncly-probe.skill/SKILL.md; do
-		[[ -f "${extensions}/${file}" ]] || fct_fail "just install wrote no ${extensions}/${file}"
+	for name in Convert 2convert convert-more 'convert more' convert_more; do
+		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=video --data "name=${name}" --data module=example.com/ncly-video-convert "${src}" "${scratch}/invalid" 2>"${scratch}/refusal.out"; then
+			fct_fail "Copier accepts the name ${name}"
+		fi
+		grep -qF 'choose another name' "${scratch}/refusal.out" || fct_fail "Copier refuses ${name} for another reason: $(cat "${scratch}/refusal.out")"
 	done
-	# The installed extension runs under ncly. /usr/bin comes first, so the shim of a version manager never answers for python3.
-	# go stays the caller's: the /usr/bin/go of the release runner is older than go.mod allows.
-	XDG_DATA_HOME="${data}" PATH="/usr/bin:${PATH}" "$(command -v go)" -C "${repo}" tool ncly probe inspect "${repo}/go.mod" --json >"${scratch}/inspect.out"
-	grep -qF '"ok":true' "${scratch}/inspect.out" || fct_fail "the installed ncly probe inspect failed: $(cat "${scratch}/inspect.out")"
-	[[ "$(cd "${repo}" && just contract)" == "${root}/docs/north-star/contract" ]] || fct_fail "just contract does not print ${root}/docs/north-star/contract"
+}
 
-	fct_test_update "${src}" "${repo}" "${scratch}" "${root}"
-	printf 'the template renders a repository that passes its checks, installs, and takes an update\n'
+fct_main() {
+	local root pin scratch copier
+	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
+	# shellcheck source=scripts/template-update-test.sh
+	source "${root}/scripts/template-update-test.sh"
+	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
+	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
+	# just update runs the Copier that the template pins, and so does this test.
+	pin="$(sed -n 's/^copier := "\(.*\)"$/\1/p' "${root}/template/justfile")"
+	[[ "${pin}" == "uv tool run copier@"* ]] || fct_fail "template/justfile pins no Copier"
+	grep -qF -- "${pin}" "${root}/extensions/skill/nicely/SKILL.md" || fct_fail "the nicely skill does not give ${pin}, which template/justfile pins"
+	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")"
+	readonly NCLY_TEMPLATE_TEST_ROOT="${scratch}"
+	trap 'rm -rf "${NCLY_TEMPLATE_TEST_ROOT}"' EXIT
+	# Git, in Copier too, takes its identity from this file, without the signing of the user.
+	printf '[user]\n\tname = template-test\n\temail = template-test@example.com\n[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n[init]\n\tdefaultBranch = main\n' >"${scratch}/gitconfig"
+	export GIT_CONFIG_GLOBAL="${scratch}/gitconfig" GIT_CONFIG_NOSYSTEM=1
+	read -r -a copier <<<"${pin}"
+	fct_repository "${scratch}/named" video convert video-convert 'video convert' --data name=convert
+	fct_repository "${scratch}/whole" probe '' probe 'probe inspect'
 }
 
 fct_main

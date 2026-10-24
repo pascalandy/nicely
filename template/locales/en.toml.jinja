@@ -1,32 +1,32 @@
-# English catalog of the {{ domain }} extension. Each entry needs a description
+# English catalog of the {{ slug }} extension. Each entry needs a description
 # of where the text appears, for the translator. A text between {% raw %}{{ and }}{% endraw %} is
 # a field that the handler fills.
 
-["{{ domain }}.summary"]
+{% if not name %}["{{ slug }}.summary"]
 description = "Help page: summary of the {{ domain }} domain in ncly --help."
 other = "Inspect files"
 
-["{{ domain }}.inspect.summary"]
-description = "Help page: summary of `ncly {{ domain }} inspect`, which gives the size and the line count of a file."
+{% endif %}["{{ slug }}.inspect.summary"]
+description = "Help page: summary of `ncly {{ example_command }}`, which gives the size and the line count of a file."
 other = "Give the size and the line count of a file"
 
-["{{ domain }}.inspect.file"]
-description = "Help page: the file argument of `ncly {{ domain }} inspect`."
+["{{ slug }}.inspect.file"]
+description = "Help page: the file argument of `ncly {{ example_command }}`."
 other = "File to inspect"
 
-["{{ domain }}.inspect.timeout"]
-description = "Help page: the --timeout flag of `ncly {{ domain }} inspect`, which bounds the run of its worker."
+["{{ slug }}.inspect.timeout"]
+description = "Help page: the --timeout flag of `ncly {{ example_command }}`, which bounds the run of its worker."
 other = "Stop the inspection after this duration"
 
-["{{ domain }}.inspect.no_file"]
-description = "Message of USAGE_INVALID when the file of `ncly {{ domain }} inspect` is missing or is no regular file. {% raw %}{{.File}}{% endraw %} is the path that the caller gave."
+["{{ slug }}.inspect.no_file"]
+description = "Message of USAGE_INVALID when the file of `ncly {{ example_command }}` is missing or is no regular file. {% raw %}{{.File}}{% endraw %} is the path that the caller gave."
 other = "{% raw %}{{.File}}{% endraw %} is no file that {{ domain }} can inspect."
 
-["{{ domain }}.inspect.bad_timeout"]
-description = "Message of USAGE_INVALID when the --timeout of `ncly {{ domain }} inspect` is no positive duration. {% raw %}{{.Timeout}}{% endraw %} is the value that the caller gave, and --timeout stays as is."
+["{{ slug }}.inspect.bad_timeout"]
+description = "Message of USAGE_INVALID when the --timeout of `ncly {{ example_command }}` is no positive duration. {% raw %}{{.Timeout}}{% endraw %} is the value that the caller gave, and --timeout stays as is."
 other = "--timeout {% raw %}{{.Timeout}}{% endraw %} is no duration, such as 30s or 5m."
 
-["{{ domain }}.inspect.result"]
-description = "Text of `ncly {{ domain }} inspect`: the line count and the size of the file. {% raw %}{{.File}}{% endraw %} is the path that the caller gave, {% raw %}{{.Count}}{% endraw %} the line count, and {% raw %}{{.Size}}{% endraw %} the size with its unit, such as 12 B."
+["{{ slug }}.inspect.result"]
+description = "Text of `ncly {{ example_command }}`: the line count and the size of the file. {% raw %}{{.File}}{% endraw %} is the path that the caller gave, {% raw %}{{.Count}}{% endraw %} the line count, and {% raw %}{{.Size}}{% endraw %} the size with its unit, such as 12 B."
 one = "{% raw %}{{.File}}{% endraw %}: {% raw %}{{.Count}}{% endraw %} line, {% raw %}{{.Size}}{% endraw %}"
 other = "{% raw %}{{.File}}{% endraw %}: {% raw %}{{.Count}}{% endraw %} lines, {% raw %}{{.Size}}{% endraw %}"

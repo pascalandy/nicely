@@ -27,12 +27,12 @@ func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 		d, ok := command.Duration(value)
 		if !ok {
 			data["Timeout"] = value
-			return usage(p.T("{{ domain }}.inspect.bad_timeout", data), "ncly {{ domain }} inspect "+file+" --timeout 30s")
+			return usage(p.T("{{ slug }}.inspect.bad_timeout", data), "ncly {{ example_command }} "+file+" --timeout 30s")
 		}
 		timeout = d
 	}
 	if info, err := os.Stat(file); err != nil || !info.Mode().IsRegular() {
-		return usage(p.T("{{ domain }}.inspect.no_file", data), "ncly {{ domain }} inspect notes.md")
+		return usage(p.T("{{ slug }}.inspect.no_file", data), "ncly {{ example_command }} notes.md")
 	}
 	worker, problem := call.Worker("inspect.py")
 	if problem != nil {
@@ -51,7 +51,7 @@ func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 			return end.Malformed()
 		}
 		data["Size"] = p.Size(*answer.Size)
-		_, _ = fmt.Fprintln(call.Stdout, p.N("{{ domain }}.inspect.result", *answer.Lines, data))
+		_, _ = fmt.Fprintln(call.Stdout, p.N("{{ slug }}.inspect.result", *answer.Lines, data))
 		return contract.Outcome{Data: map[string]any{"size_bytes": *answer.Size, "lines": *answer.Lines}}
 	})
 }
