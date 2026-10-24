@@ -210,8 +210,8 @@ description = "Report of `ncly doctor`: message of the extensions.<domain> check
 other = "{{.Domain}} is bundled with ncly."
 
 ["doctor.extension_hidden"]
-description = "Report of `ncly doctor`: message of the extensions.<domain> check of an extension that never runs, because discovery finds another one of the same domain first. {{.Path}} is the path of the hidden executable, and {{.Winner}} the path of the one that runs."
-other = "{{.Path}} never runs, because {{.Winner}} comes first."
+description = "Report of `ncly doctor`: message of an extensions.<slug> check for a hidden extension. {{.Path}} is the hidden executable's path. {{.Winner}} is the path of the executable that takes precedence through discovery order or whole-domain ownership."
+other = "{{.Path}} never runs, because {{.Winner}} takes precedence."
 
 ["doctor.extension_hidden_by_core"]
 description = "Report of `ncly doctor`: message of the extensions.<domain> check of an executable that never runs, because core keeps its name for one of its own commands. {{.Path}} is the path of the executable, and {{.Domain}} the name, such as describe, which stays as is."
@@ -538,8 +538,8 @@ description = "Help page: the --force flag of `ncly auth revoke`, which removes 
 other = "Revoke the grant without asking"
 
 ["auth.no_domain"]
-description = "Message of NOT_FOUND in ncly auth grant: no installed extension has the domain that the human named. {{.Domain}} is that domain."
-other = "No installed extension has the domain {{.Domain}}."
+description = "Message of NOT_FOUND in ncly auth grant: no installed extension has the slug that the human named. {{.Domain}} is that slug."
+other = "No installed extension has the slug {{.Domain}}."
 
 ["auth.not_declared"]
 description = "Message of NOT_FOUND in ncly auth grant: no command of the extension of the domain declares the service, so it never needs that key. {{.Domain}} is the domain, and {{.Service}} the service."
