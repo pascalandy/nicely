@@ -61,6 +61,7 @@ Keep oversized files within the growth rules of just limits through focused extr
 Update config ownership checks, doctor components, status dispatch, grants, and auth selectors in `internal/cli` to use the slug.
 Prove that only the selected manifest defines known config keys, under Discovery and Configuration.
 Prove doctor selects each slug and calls that extension's status command beneath its complete root.
+Prove each sibling has an `extensions.<slug>` discovery check, with `hidden_by` for every hidden named executable.
 Add one scenario proving that a grant for one named extension gives its sibling no key.
 Keep existing whole-domain doctor and auth scenarios green.
 

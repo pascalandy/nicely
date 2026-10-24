@@ -52,8 +52,9 @@ func manifestIdentity(domain string, name *string, slug string) (Manifest, error
 	return m, nil
 }
 
-// Runs reports whether a command executes or only groups descendants.
-// A whole-domain root retains its help-only behavior.
+// Runs reports whether a command starts the extension.
+// A whole-domain root prints its help, as Usage in contract.md says.
+// A command with children and no arguments only groups them.
 func (m Manifest) Runs(c Command) bool {
 	if len(c.Path) == 1 {
 		return false
@@ -63,6 +64,7 @@ func (m Manifest) Runs(c Command) bool {
 	})
 }
 
+// codePrefix starts every code that the extension owns, such as HELLO_.
 func (m Manifest) codePrefix() string {
 	return strings.ToUpper(strings.ReplaceAll(m.Slug(), "-", "_")) + "_"
 }

@@ -15,6 +15,8 @@ import (
 type installedSkill struct{ slug, folder string }
 
 // described reads installed skills through the host's selected root entries.
+// skill never searches for extensions itself, so it reads the skill of the
+// extension that core runs, never one that core hides.
 // NCLY_BIN names the host, which starts under its own name.
 func described(ctx context.Context) ([]installedSkill, error) {
 	bin := os.Getenv("NCLY_BIN")

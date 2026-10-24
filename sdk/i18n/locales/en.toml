@@ -18,7 +18,7 @@ description = "Reason inside extension.invalid. {{.File}} is the manifest's name
 other = "{{.File}} has contract_version {{.Value}}, and this ncly speaks only {{.Want}}."
 
 ["extension.domain"]
-description = "Reason inside extension.invalid, when the manifest names a domain other than its executable's. {{.File}} is the manifest's name, {{.Value}} the domain it declares, and {{.Want}} the domain of the executable."
+description = "Reason inside extension.invalid for an invalid domain or mismatched whole-domain identity. {{.File}} is the manifest, {{.Value}} its declared domain, and {{.Want}} the executable slug."
 other = "{{.File}} declares the domain \"{{.Value}}\" instead of {{.Want}}."
 
 ["extension.domain_command"]
@@ -42,7 +42,7 @@ description = "Reason inside extension.invalid. {{.File}} is the manifest's name
 other = "{{.File}} declares the command \"{{.Path}}\", whose words must be lowercase letters, digits, and hyphens."
 
 ["extension.path_domain"]
-description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, and {{.Domain}} the extension's domain, which must be its first word."
+description = "Reason inside extension.invalid. {{.File}} is the manifest, {{.Path}} a command path, and {{.Domain}} the complete extension root, which must start that path."
 other = "{{.File}} declares the command \"{{.Path}}\", which does not start with {{.Domain}}."
 
 ["extension.path_twice"]
@@ -130,7 +130,7 @@ description = "Reason inside extension.invalid. {{.File}} is the manifest's name
 other = "{{.File}} lists \"{{.Name}}\" in requires.keys of the command \"{{.Path}}\", which must name a service once, in lowercase letters and digits that start with a letter, other than keychain and grants."
 
 ["extension.config_key"]
-description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Path}} a command path, {{.Name}} a config key that the command declares, such as hello.greeting, and {{.Domain}} the extension's domain, which starts each key. config is a key and stays as is."
+description = "Reason inside extension.invalid. {{.File}} is the manifest, {{.Path}} a command path, and {{.Name}} a declared config key, such as video-convert.preset. {{.Domain}} is the extension slug, which starts each key. config is a key and stays as is."
 other = "{{.File}} lists \"{{.Name}}\" in config of the command \"{{.Path}}\", which must name a key under {{.Domain}} once, as words of lowercase letters, digits, hyphens, and underscores joined by dots."
 
 ["extension.schema"]
