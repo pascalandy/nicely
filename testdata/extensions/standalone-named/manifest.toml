@@ -1,0 +1,20 @@
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "convert"
+
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+examples = ["ncly video convert clip.mov --json"]
+requires = { keys = ["example"] }
+
+[[commands.args]]
+name = "file"
+summary = "video-convert.file"
+required = true
+
+[commands.result.schema]
+type = "object"
+required = ["file", "sha256"]
+properties = { file = { type = "string" }, sha256 = { type = "string" } }

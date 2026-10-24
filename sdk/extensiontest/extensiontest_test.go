@@ -80,7 +80,7 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			out, err := goTest(t, os.Getenv("PATH"), c.edits...)
+			out, err := goTest(t, "standalone", os.Getenv("PATH"), c.edits...)
 			if err == nil {
 				t.Fatalf("go test passed on the broken copy:\n%s", out)
 			}
@@ -117,21 +117,21 @@ func TestTheScenariosIgnoreTheCallersExtensions(t *testing.T) {
 		}
 	}
 	scenario := edit{file: "testdata/script/outsider.txtar", new: "ncly --help\nstdout 'standalone'\n! stdout 'outsider'\n"}
-	if out, err := goTest(t, outside+string(filepath.ListSeparator)+os.Getenv("PATH"), scenario); err != nil {
+	if out, err := goTest(t, "standalone", outside+string(filepath.ListSeparator)+os.Getenv("PATH"), scenario); err != nil {
 		t.Fatalf("go test failed:\n%s", out)
 	}
 }
 
-// goTest copies the standalone fixture, points its replace at this checkout,
+// goTest copies the fixture, points its replace at this checkout,
 // applies the edits, and runs its go test with path as PATH.
-func goTest(t *testing.T, path string, edits ...edit) (string, error) {
+func goTest(t *testing.T, fixture, path string, edits ...edit) (string, error) {
 	t.Helper()
 	root, err := filepath.Abs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	if err := os.CopyFS(dir, os.DirFS(filepath.Join(root, "testdata", "extensions", "standalone"))); err != nil {
+	if err := os.CopyFS(dir, os.DirFS(filepath.Join(root, "testdata", "extensions", fixture))); err != nil {
 		t.Fatal(err)
 	}
 	if out, err := command(dir, os.Getenv("PATH"), "go", "mod", "edit", "-replace", "github.com/pascalandy/nicely="+root); err != nil {

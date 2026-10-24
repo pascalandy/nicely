@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/pascalandy/nicely/sdk/contract"
 )
 
 // TestEveryCatalogFollowsTheRules walks every catalog folder of the
@@ -32,7 +34,15 @@ func TestEveryCatalogFollowsTheRules(t *testing.T) {
 		rel, _ := filepath.Rel(root, path)
 		domain := ""
 		if parent := filepath.Dir(filepath.Dir(rel)); filepath.Base(parent) == "extensions" {
-			domain = filepath.Base(filepath.Dir(rel))
+			data, err := os.ReadFile(filepath.Join(filepath.Dir(path), "manifest.toml"))
+			if err != nil {
+				return err
+			}
+			manifest, err := contract.ParseManifest(data, "")
+			if err != nil {
+				return err
+			}
+			domain = manifest.Slug()
 		}
 		if err := CheckCatalogs(os.DirFS(path), domain); err != nil {
 			t.Errorf("%s: %v", rel, err)

@@ -22,7 +22,7 @@ import (
 func (k *kit) links() []string {
 	var problems []string
 	if k.ext.Skill == nil {
-		problems = append(problems, fmt.Sprintf("skill/SKILL.md: the extension ships no skill. Fix: add skill/SKILL.md, named %s, and embed it as the Skill of extension.Extension", k.manifest.Domain))
+		problems = append(problems, fmt.Sprintf("skill/SKILL.md: the extension ships no skill. Fix: add skill/SKILL.md, named %s, and embed it as the Skill of extension.Extension", k.manifest.Slug()))
 	}
 	problems = append(problems, k.scenarioLinks()...)
 	problems = append(problems, k.skillLinks()...)
@@ -33,8 +33,8 @@ func (k *kit) links() []string {
 }
 
 // scenarioLinks reports each command that runs and that no scenario calls
-// as ncly <domain> .... It also reports each foreground exec of ncly or of
-// ncly-<domain>, by name or by path, whose answer the kit cannot check.
+// as ncly <root> .... It also reports each foreground exec of ncly or of
+// ncly-<slug>, by name or by path, whose answer the kit cannot check.
 func (k *kit) scenarioLinks() []string {
 	dir := filepath.Join("testdata", "script")
 	files, err := os.ReadDir(filepath.Join(k.root, dir))
@@ -43,7 +43,7 @@ func (k *kit) scenarioLinks() []string {
 	}
 	covered := map[string]bool{}
 	var problems []string
-	direct := "ncly-" + k.manifest.Domain
+	direct := "ncly-" + k.manifest.Slug()
 	for _, file := range files {
 		name := file.Name()
 		if file.IsDir() || filepath.Ext(name) != ".txtar" && filepath.Ext(name) != ".txt" {
@@ -126,9 +126,9 @@ func foregroundExec(args []string) string {
 	return filepath.Base(args[1])
 }
 
-// skillLinks reports each ncly <domain> ... command that a file of the
+// skillLinks reports each ncly <root> ... command that a file of the
 // skill names and that the manifest lacks. Core's commands and other
-// domains stay free to mention.
+// extension roots stay free to mention.
 func (k *kit) skillLinks() []string {
 	if k.ext.Skill == nil {
 		return nil
@@ -155,13 +155,13 @@ func (k *kit) skillLinks() []string {
 	return problems
 }
 
-// mentions returns the command path of each ncly <domain> ... in text, as
+// mentions returns the command path of each ncly <root> ... in text, as
 // literal words, without parsing shell or Markdown. After a path that only
 // groups other commands, the next word is a command, so a mistyped one
 // shows. After a path that runs, the next word is a command only when the
 // manifest declares it, and an argument otherwise.
 func (k *kit) mentions(text string) []string {
-	domain := k.manifest.Domain
+	root := strings.Join(k.manifest.Root(), " ")
 	declared, groups, runs := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for _, c := range k.manifest.Commands {
 		path := strings.Join(c.Path, " ")
@@ -170,10 +170,10 @@ func (k *kit) mentions(text string) []string {
 			groups[strings.Join(c.Path[:len(c.Path)-1], " ")] = true
 		}
 	}
-	pattern := regexp.MustCompile(`\bncly ` + regexp.QuoteMeta(domain) + `\b((?: [a-z][a-z0-9-]*)*)`)
+	pattern := regexp.MustCompile(`\bncly ` + regexp.QuoteMeta(root) + `((?: [a-z][a-z0-9-]*)*)(?:[^a-z0-9-]|$)`)
 	var paths []string
 	for _, m := range pattern.FindAllStringSubmatch(text, -1) {
-		path := domain
+		path := root
 		for _, word := range strings.Fields(m[1]) {
 			next := path + " " + word
 			if !groups[path] || runs[path] && !declared[next] {

@@ -1,14 +1,14 @@
 // Package extensiontest is the test kit of an extension repository, as Test
 // kit in contract.md defines. One test of the repository calls Run. Run
 // checks the links between the manifest, the skill, the scenarios, and the
-// Nicely versions. It then installs the real ncly-<domain> and the ncly of
+// Nicely versions. It then installs the real ncly-<slug> and the ncly of
 // go tool ncly in scratch folders, and runs the scenarios of testdata/script/.
 //
 // A scenario runs the extension through the commands that the kit adds, so
 // that the kit checks each answer against the schema of its command:
 //
 //	ncly <arg>...                 runs ncly, which exits 0, or not 0 after !
-//	ncly-<domain> <arg>...        runs the extension directly, the same way
+//	ncly-<slug> <arg>...          runs the extension directly, the same way
 //	exits <code> <command> <arg>  runs a command, these two included, and checks its exact exit code
 //	grant <service>               grants the key of a declared service to the extension
 //	fake <name>                   puts the fake child in $WORK/bin as name
@@ -16,7 +16,7 @@
 // The rules of its code:
 //   - No case reads the user's keychain, HOME, or XDG folders, or finds the
 //     user's extensions. Each scenario gets a scratch HOME and scratch XDG
-//     folders, and a PATH without the folders that hold an ncly-<domain>
+//     folders, and a PATH without the folders that hold an ncly-<slug>
 //     file. Each service that the manifest declares gets the sentinel key
 //     sentinel-<service> in its variable, so ncly never reads the keychain
 //     for it. On Linux, D-Bus names no bus, so a read that a scenario forces
@@ -85,7 +85,7 @@ type kit struct {
 	bin string
 	// path is the PATH of the caller without its extensions.
 	path string
-	// built is the ncly-<domain> that go build made, and fake the fake
+	// built is the ncly-<slug> that go build made, and fake the fake
 	// child.
 	built, fake string
 }
@@ -114,8 +114,8 @@ func load(e extension.Extension) (*kit, error) {
 }
 
 // build makes the programs that the scenarios run. ncly is the one that go
-// tool ncly builds from the Nicely version of go.mod. ncly-<domain> comes
-// from cmd/ncly-<domain>/, and the fake child from fake/.
+// tool ncly builds from the Nicely version of go.mod. ncly-<slug> comes
+// from cmd/ncly-<slug>/, and the fake child from fake/.
 func (k *kit) build(t *testing.T) {
 	dir := t.TempDir()
 	k.bin = filepath.Join(dir, "bin")
@@ -129,8 +129,8 @@ func (k *kit) build(t *testing.T) {
 	if err != nil {
 		t.Fatalf("go.mod: go tool ncly fails: %v. Fix: run go get -tool github.com/pascalandy/nicely/cmd/ncly", err)
 	}
-	main := "./cmd/ncly-" + k.manifest.Domain
-	k.built = filepath.Join(dir, "ncly-"+k.manifest.Domain)
+	main := "./cmd/ncly-" + k.manifest.Slug()
+	k.built = filepath.Join(dir, "ncly-"+k.manifest.Slug())
 	if _, err := goCommand(k.root, "build", "-o", k.built, main); err != nil {
 		t.Fatalf("%s: go build fails: %v. Fix: give %s a main.go whose main calls extension.Main", main, err, main)
 	}
@@ -175,10 +175,10 @@ func (k *kit) setup(env *testscript.Env) error {
 	return link(k.built, k.installed(env.Getenv))
 }
 
-// installed returns the path of ncly-<domain> in the extensions folder of
+// installed returns the path of ncly-<slug> in the extensions folder of
 // the scenario's data folder, where discovery finds it first.
 func (k *kit) installed(getenv func(string) string) string {
-	return filepath.Join(getenv("XDG_DATA_HOME"), "nicely", "extensions", "ncly-"+k.manifest.Domain)
+	return filepath.Join(getenv("XDG_DATA_HOME"), "nicely", "extensions", "ncly-"+k.manifest.Slug())
 }
 
 // services returns each service whose key a command declares, sorted.
@@ -191,7 +191,7 @@ func (k *kit) services() []string {
 	return slices.Compact(services)
 }
 
-// isolate returns path without each folder that holds an ncly-<domain>
+// isolate returns path without each folder that holds an ncly-<slug>
 // file, as verify-nicely does. Discovery then finds no extension of the
 // caller, only the one that the scenario installs.
 func isolate(path string) string {

@@ -1,0 +1,11 @@
+["video-convert.summary"]
+description = "Summary of the named test kit fixture."
+other = "Check one video file"
+
+["video-convert.file"]
+description = "The video file argument."
+other = "Video file"
+
+["video-convert.checked"]
+description = "Fixture result. File is the input file name."
+other = "Checked {{.File}}"

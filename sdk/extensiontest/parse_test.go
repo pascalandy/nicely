@@ -76,6 +76,25 @@ func TestMentionsTellACommandFromAnArgument(t *testing.T) {
 	}
 }
 
+func TestNamedReferencesStayWithinTheCompleteRoot(t *testing.T) {
+	k := demoKit(t)
+	k.manifest.Name = "pick"
+	k.manifest.Commands = slices.DeleteFunc(k.manifest.Commands, func(c contract.Command) bool { return !k.manifest.Owns(c.Path) })
+	for text, want := range map[string][]string{
+		"`ncly demo pick one`":      {"demo pick one"},
+		"`ncly demo pick two`":      {"demo pick two"},
+		"`ncly demo pick`":          {"demo pick"},
+		"`ncly demo run folder`":    nil,
+		"`ncly demo pickother one`": nil,
+		"`ncly demo pick-other`":    nil,
+		"`ncly demo`":               nil,
+	} {
+		if got := k.mentions(text); !slices.Equal(got, want) {
+			t.Errorf("mentions(%q) = %q, want %q", text, got, want)
+		}
+	}
+}
+
 // TestScenarioLinksReadExecAsTestscript reads each exec line word by word,
 // as testscript runs it. Quotes may wrap the program, and a quoted & still
 // sends the program to the background.

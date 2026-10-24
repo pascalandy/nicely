@@ -24,7 +24,7 @@ import (
 // commands returns the scenario commands that the kit adds, which the
 // package comment lists.
 func (k *kit) commands() map[string]func(*testscript.TestScript, bool, []string) {
-	direct := "ncly-" + k.manifest.Domain
+	direct := "ncly-" + k.manifest.Slug()
 	expect := func(program string) func(*testscript.TestScript, bool, []string) {
 		return func(ts *testscript.TestScript, neg bool, args []string) {
 			switch exit := k.call(ts, program, args); {
@@ -44,12 +44,12 @@ func (k *kit) commands() map[string]func(*testscript.TestScript, bool, []string)
 	}
 }
 
-// call runs ncly, or ncly-<domain> directly, checks the answer, and
+// call runs ncly, or ncly-<slug> directly, checks the answer, and
 // returns the exit code.
 func (k *kit) call(ts *testscript.TestScript, program string, args []string) int {
 	path, words := filepath.Join(k.bin, "ncly"), args
 	if program != "ncly" {
-		path, words = k.installed(ts.Getenv), append([]string{k.manifest.Domain}, args...)
+		path, words = k.installed(ts.Getenv), append(k.manifest.Root(), args...)
 	}
 	exit, err := exitCode(ts.Exec(path, args...))
 	if err != nil {
@@ -62,7 +62,7 @@ func (k *kit) call(ts *testscript.TestScript, program string, args []string) int
 }
 
 // exits runs a command and checks its exact exit code, which ! cannot do:
-// exits <code> <command> [args...]. ncly and ncly-<domain> run as the
+// exits <code> <command> [args...]. ncly and ncly-<slug> run as the
 // commands of the same name do.
 func (k *kit) exits(ts *testscript.TestScript, neg bool, args []string) {
 	if neg || len(args) < 2 {
@@ -73,7 +73,7 @@ func (k *kit) exits(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("exits: invalid code %q", args[0])
 	}
 	var got int
-	if args[1] == "ncly" || args[1] == "ncly-"+k.manifest.Domain {
+	if args[1] == "ncly" || args[1] == "ncly-"+k.manifest.Slug() {
 		got = k.call(ts, args[1], args[2:])
 	} else if got, err = exitCode(ts.Exec(args[1], args[2:]...)); err != nil {
 		ts.Fatalf("exits: %v", err)
@@ -119,8 +119,8 @@ func (k *kit) grant(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Check(json.Unmarshal(data, &file))
 	}
 	file.FormatVersion = 1
-	file.Grants = slices.DeleteFunc(file.Grants, func(g grant) bool { return g.Service == args[0] && g.Domain == k.manifest.Domain })
-	file.Grants = append(file.Grants, grant{args[0], k.manifest.Domain, k.installed(ts.Getenv), time.Now().UTC().Format(time.RFC3339)})
+	file.Grants = slices.DeleteFunc(file.Grants, func(g grant) bool { return g.Service == args[0] && g.Domain == k.manifest.Slug() })
+	file.Grants = append(file.Grants, grant{args[0], k.manifest.Slug(), k.installed(ts.Getenv), time.Now().UTC().Format(time.RFC3339)})
 	data, err := json.Marshal(file)
 	ts.Check(err)
 	ts.Check(os.MkdirAll(filepath.Dir(path), 0o755))

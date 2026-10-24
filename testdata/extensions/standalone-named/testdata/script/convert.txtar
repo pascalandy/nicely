@@ -1,0 +1,42 @@
+exists $XDG_DATA_HOME/nicely/extensions/ncly-video-convert
+exists $XDG_DATA_HOME/nicely/extensions/ncly-video-convert.toml
+exists $XDG_DATA_HOME/nicely/extensions/ncly-video-convert.locales/en.toml
+exists $XDG_DATA_HOME/nicely/extensions/ncly-video-convert.skill/SKILL.md
+
+exits 78 ncly video convert clip.mov --json
+stderr '"code":"KEY_NOT_GRANTED"'
+stderr '"next":\["ncly","auth","grant","example","video-convert"\]'
+
+grant example
+ncly video convert clip.mov --json
+stdout '"file":"clip.mov"'
+stdout '"sha256":"d6d31537518a7b2a474bb480861a0c57d94e64a4b3ca41f2020d3463bd9488f1"'
+ncly --json video convert clip.mov
+stdout '"file":"clip.mov"'
+ncly video convert clip.mov
+stdout 'Checked clip.mov'
+
+ncly-video-convert clip.mov --json
+stdout '"file":"clip.mov"'
+stdout '"sha256":"d6d31537518a7b2a474bb480861a0c57d94e64a4b3ca41f2020d3463bd9488f1"'
+ncly-video-convert clip.mov
+stdout 'Checked clip.mov'
+
+ncly video convert clip.mov --lang en-XA
+stdout '^⟦'
+ncly-video-convert clip.mov --lang en-XA
+stdout '^⟦'
+
+exits 2 ncly video convert --no-input --json
+stderr '"code":"USAGE_INVALID"'
+exits 2 ncly-video-convert --no-input --json
+stderr '"code":"USAGE_INVALID"'
+
+env NCLY_MISSING_KEYS=example=AUTH_MISSING
+exits 78 ncly-video-convert clip.mov --json
+stderr '"code":"AUTH_MISSING"'
+env NCLY_MISSING_KEYS=
+
+ncly skill view video-convert
+stdout 'ncly video convert clip.mov'
+stdout 'ncly video subtitle list'
