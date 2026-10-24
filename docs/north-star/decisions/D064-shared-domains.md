@@ -25,4 +25,3 @@ Deeper identity nesting would complicate discovery without a selected need.
 
 The first consumer is the public repository `pascalandy/ncly-video-convert`, built from the released template after [M23](../../milestones/M23-shared-domains.md).
 It wraps HandBrakeCLI as `ncly video convert <file>` and is not a Nicely card.
-An install-time offer of default extensions remains in [M99](../../milestones/M99-parking-lot/taps.md#install-time-extension-offer).

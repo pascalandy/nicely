@@ -18,7 +18,7 @@ A whole-domain extension keeps the domain and hides every named extension of tha
 An invalid whole-domain winner still hides those named extensions.
 Core commands and bundled extensions retain their reserved domains.
 Doctor reports every hidden executable with its winning source in `hidden_by`, under [ncly doctor](../core-spec.md#ncly-doctor).
-Hidden extensions contribute no commands, skills, prerequisites, or grants to the installed inventory.
+Hidden extensions contribute no commands, skills, prerequisites, grants, or config keys to the installed inventory.
 Core never starts a hidden extension.
 
 ## Reading declarations

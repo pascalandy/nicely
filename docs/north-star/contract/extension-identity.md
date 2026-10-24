@@ -10,12 +10,11 @@ An absent `name` identifies a whole-domain extension.
 A present `name` is nonempty and names one job in that domain.
 The domain names a family of work, such as `video`.
 Neither part names the wrapped tool.
-Pascal's extensions use the same rule as other authors' extensions.
-No extension is the main extension of a domain.
 
 The extension slug is `domain` when `name` is absent, or `<domain>-<name>` when present.
 The executable name after `ncly-` must equal the slug declared by the manifest.
 The extension root is the command path `domain` or `<domain> <name>`, respectively.
+The slug is the extension root's words joined by `-`.
 The two-part limit applies to identity, not to command paths beneath the root.
 Thus `ncly-video-color-grade` is invalid, while an existing path such as `transcript run youtube` remains valid.
 
@@ -51,9 +50,8 @@ Existing whole-domain identities and stored data remain unchanged.
 
 The legacy JSON key `domain` remains an extension identity field in doctor and auth.
 It does not become a family selector.
-A grant still binds the service, extension identity, and discovered source, as [Grants](grants.md) defines.
-A grant for `video-convert` gives `video-subtitle` no key.
-An uninstalled config table may use any valid slug, under [Configuration](configuration.md).
+[Grants](grants.md) defines grant binding.
+[Configuration](configuration.md) defines config ownership and uninstalled tables.
 
 The optional manifest `name` preserves `format_version = 1` and `contract_version = 1`.
 An older host skips a two-part executable name under its existing discovery rule.
@@ -63,7 +61,7 @@ Named extensions require the Nicely release that implements this part.
 
 Core supplies the domain group for selected named extensions, even when only one exists.
 The group lists their valid roots in alphabetical order in help, completion, and describe.
-Core supplies its translated summary with the domain word, using the existing group format.
+Core adds one catalog entry for the group's translated summary that takes the domain word.
 The group has no handler, extension skill, requirements, or supported execution modes.
 Its describe entry has `source: "core"` and no `skill` key.
 An extension root keeps its own summary and source.
@@ -72,7 +70,7 @@ The bundled `skill` extension identifies that skill by the extension slug.
 
 `ncly video` and `ncly video --help` print the domain group's help without starting any extension.
 `ncly describe video` returns the group and the selected extensions' commands.
-`ncly doctor video-convert` selects one extension, not the whole family.
+[ncly doctor](../core-spec.md#ncly-doctor) defines component selection.
 The same slug rule applies to auth and doctor completion.
 
 Different roots never overlap, so core attaches each extension's declared subtree beneath the group.

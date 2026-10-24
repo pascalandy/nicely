@@ -1,7 +1,6 @@
 # SDK
 
 [Extension identity](extension-identity.md) defines slugs, roots, sidecars, and catalog and code prefixes.
-`Main` interprets direct executable arguments relative to the extension root, as [Dispatch](dispatch.md) does for core.
 
 The SDK is the Go implementation of this contract, in the public packages of `sdk/` that the [code map](../architecture.md#code-map) lists, as [D040](../decisions/D040-wire-contract.md) decides. Core uses it too, so each shared layer has one implementation. A Go extension imports `sdk/` only, never core's `internal/`. Go refuses that import from another module, and `just lint` refuses it inside Nicely's.
 

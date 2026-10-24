@@ -12,7 +12,7 @@ ncly skill status [--json]
 
 - Skills come from the folders in `[skill] paths`, then from the `nicely` skill that ships inside `ncly`, then from installed extensions. Each subfolder with a `SKILL.md` is a skill, named by the `name` key of its frontmatter.
 - `skill` finds the skills of installed extensions through `ncly describe --json`, whose extension root entries give their skill folders, as [D054](../../docs/north-star/decisions/D054-extension-skills-through-describe.md) decides. It never searches for extensions itself, so it lists the skill of the extension that core runs, never one that core hides. It runs `"$NCLY_BIN" describe --json` through the program runner, and when that call fails or gives an answer that it cannot read, `list` and `view` fail with `RUNTIME`, whose hint and `next` are `ncly describe --json`.
-- A skill's subfolder in `[skill] paths` takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works, and `ncly skill status` warns. An extension's skill follows [Extension identity](../../docs/north-star/contract/extension-identity.md), so `status` compares its `name` with the slug.
+- A skill's subfolder in `[skill] paths` takes the skill's name, as the [Agent Skills specification](https://agentskills.io/specification) requires. When the names differ, the skill still works, and `ncly skill status` warns. For an extension, `status` derives the slug from its root entry's describe `path`, under [Extension identity](../../docs/north-star/contract/extension-identity.md#identity-and-root). It compares the skill's `name` with that slug.
 - A subfolder may be a symbolic link to a folder elsewhere. Harness skill folders often hold such links. A broken link is not a skill, and `list` skips it.
 - When two sources hold the same skill name, the first source wins and `list` adds a `SKILL_SHADOWED` warning. Two subfolders that resolve to the same folder are one skill, listed with the path of the first, without a warning.
 - Inside one folder of `paths`, when two subfolders declare the same `name`, the subfolder whose name sorts first byte by byte wins, and `list` adds `SKILL_SHADOWED`.
@@ -61,7 +61,7 @@ paths = ["~/code/skills"]
 | Id | Code | When it warns |
 |---|---|---|
 | `skill.sources` | `SKILL_SOURCE_MISSING` | A folder of `[skill] paths` is missing or cannot be read |
-| `skill.names` | `SKILL_NAME_MISMATCH` | A subfolder of `[skill] paths` differs from its skill name, or an installed extension's skill differs from its slug in `ncly describe` |
+| `skill.names` | `SKILL_NAME_MISMATCH` | A configured subfolder differs from its skill name, or an extension's skill differs from the slug derived from its describe `path` |
 | `skill.files` | `SKILL_INVALID` | A `SKILL.md` cannot be read, its frontmatter is invalid, or it lacks `name` or `description` |
 
 A warning leaves the report `ok`, so `status` exits 0. A broken config fails the command with `CONFIG_INVALID`, as `list` does.
