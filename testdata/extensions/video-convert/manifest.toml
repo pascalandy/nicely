@@ -1,0 +1,20 @@
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "convert"
+
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+effects = {}
+examples = ["ncly video convert clip.mov", "ncly video convert clip.mov --json"]
+
+[[commands.args]]
+name = "file"
+summary = "video-convert.file"
+required = true
+values_from = { command = "video subtitle list", key = "files", field = "name" }
+
+[[errors]]
+code = "VIDEO_CONVERT_FAILED"
+exit = 1

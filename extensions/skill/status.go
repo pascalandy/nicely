@@ -106,8 +106,8 @@ func status(ctx context.Context, call extension.Call) contract.Outcome {
 		}
 	}
 	for _, s := range installed {
-		if n, ok := name(s.folder); ok && n != s.domain {
-			data := map[string]any{"Path": s.folder, "Name": n, "Domain": s.domain, "File": filepath.Join(s.folder, "SKILL.md")}
+		if n, ok := name(s.folder); ok && n != s.slug {
+			data := map[string]any{"Path": s.folder, "Name": n, "Domain": s.slug, "File": filepath.Join(s.folder, "SKILL.md")}
 			warn("skill.names", codeNameMismatch, "skill.domain_mismatch", "skill.domain_mismatch_hint", data)
 		}
 	}

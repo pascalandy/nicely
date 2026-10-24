@@ -5,6 +5,10 @@
 description = "One-line description of ncly at the top of its help page."
 other = "Curated CLI toolbox for humans and AI agents."
 
+["extension.group_summary"]
+description = "Summary of a shared domain group in help, completion, and describe. Domain is the domain word."
+other = "Commands for {{.Domain}}"
+
 ["help.summary"]
 description = "Help page: summary of the `help` command, which prints the help of another command."
 other = "Show help for a command"

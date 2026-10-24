@@ -1,0 +1,62 @@
+# A leaf extension root receives its argument through the host and directly.
+onlyncly video-convert-external video-subtitle-external
+install video-convert
+install video-subtitle
+exec ncly video convert clip.mov --json
+answer stdout ok
+stdout '"file":"clip.mov","path":"video convert"'
+exec $DATA/ncly-video-convert clip.mov --json
+answer stdout ok
+stdout '"file":"clip.mov","path":"video convert"'
+exec $DATA/ncly-video-convert --version
+stdout '^ncly-video-convert '
+exec ncly video convert -- --json
+stdout '^Converted --json$'
+exits 2 ncly video convert --json
+answer stderr USAGE_INVALID
+exits 2 ncly video convert clip.mov extra --json
+answer stderr USAGE_INVALID
+
+# Slug prefixes work in catalogs, own errors, and own warnings.
+exits 1 ncly video convert fail.mov --json
+answer stderr VIDEO_CONVERT_FAILED
+exec ncly video convert warn.mov --json
+answer stdout ok
+stdout '"code":"VIDEO_CONVERT_WARNING"'
+exec ncly --lang en-XA video convert clip.mov
+pseudo stdout clip.mov
+
+# Shared help and discovery never start either extension.
+rm external.log
+exec ncly video
+cp stdout video-help.txt
+stdout '^  convert: +Convert one video$'
+stdout '^  subtitle: +Manage video subtitles$'
+exec ncly video --help
+cmp stdout video-help.txt
+exec ncly help video
+cmp stdout video-help.txt
+exec ncly --help
+stdout '^EXTENSIONS$'
+stdout '^  video: '
+exec ncly __complete video ''
+stdout '^convert\tConvert one video$'
+stdout '^subtitle\tManage video subtitles$'
+exec ncly describe video --json
+answer stdout ok
+stdout '"path":"video","summary":"[^"]+","source":"core"\}'
+stdout '"path":"video convert","summary":"Convert one video","source":"extension","skill":"[^"]+/ncly-video-convert.skill"'
+stdout '"path":"video subtitle","summary":"Manage video subtitles","source":"extension","skill":"[^"]+/ncly-video-subtitle.skill"'
+exec ncly describe video convert --json
+stdout '"name":"file","summary":"Video file","type":"string","required":true'
+stdout '"command":"video subtitle list","key":"files","field":"name"'
+! exists external.log
+
+# Completion chooses the sibling's full path and passes only its relative path.
+exec ncly __complete video convert cl
+stdout '^clip.mov$'
+! stdout '^other.mov$'
+grep '^video-subtitle$' external.log
+! grep '^video-convert$' external.log
+exec ncly --lang en-XA video --help
+pseudo stdout video convert subtitle

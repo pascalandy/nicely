@@ -1,6 +1,6 @@
-// Package extension runs a Go extension from one value, as SDK in
-// contract.md defines: started as ncly-<domain>, or compiled into ncly and
-// started by it under that name. Either way it parses the call with its
+// Package extension runs a Go extension from one value, as SDK in contract.md defines.
+// It starts as ncly-<slug>, or as ncly compiled with the extension and started under that name.
+// Either way it parses the call with its
 // manifest, runs the handler of the command, and prints the answer by the
 // kind of the command's result.
 //
@@ -38,7 +38,7 @@ type Extension struct {
 	Locales fs.FS
 	// Skill holds skill/SKILL.md and the files that it names, which teach
 	// an agent the extension's commands. Installing an external extension
-	// writes them as ncly-<domain>.skill/. It is nil for an extension that
+	// writes them as ncly-<slug>.skill/. It is nil for an extension that
 	// ships no skill.
 	Skill fs.FS
 	// Resources holds worker/, the workers that the extension embeds, such
@@ -155,8 +155,8 @@ func ruleError(err error, file string) error {
 	return errors.New(strings.TrimSuffix(catalogs.Printer("en").T(id, data), "."))
 }
 
-// Check reports what Main would refuse, a catalog that breaks the catalog
-// rules of SDK in contract.md, and a skill whose name is not the domain.
+// Check reports what Main would refuse.
+// It also checks the catalog rules of SDK in contract.md and requires a skill's name to equal the slug.
 // Every Go extension has a test that calls it.
 func Check(e Extension) error {
 	l, err := load(e)
@@ -167,16 +167,15 @@ func Check(e Extension) error {
 	if err != nil {
 		return err
 	}
-	if err := i18n.CheckCatalogs(locales, l.manifest.Domain); err != nil {
+	if err := i18n.CheckCatalogs(locales, l.manifest.Slug()); err != nil {
 		return err
 	}
-	return checkSkill(e.Skill, l.manifest.Domain)
+	return checkSkill(e.Skill, l.manifest.Slug())
 }
 
-// checkSkill reports a skill that is no skill, or whose name is not the
-// domain, so that an agent goes from a domain to its skill without a
-// lookup.
-func checkSkill(skill fs.FS, domain string) error {
+// checkSkill validates the skill and requires its name to equal the slug.
+// An agent can then go from the extension root to its skill without a lookup.
+func checkSkill(skill fs.FS, slug string) error {
 	if skill == nil {
 		return nil
 	}
@@ -188,8 +187,8 @@ func checkSkill(skill fs.FS, domain string) error {
 	if err != nil {
 		return fmt.Errorf("skill/SKILL.md: %w", err)
 	}
-	if fm.Name != domain {
-		return fmt.Errorf("skill/SKILL.md: the skill is named %q, not after the domain %q", fm.Name, domain)
+	if fm.Name != slug {
+		return fmt.Errorf("skill/SKILL.md: the skill is named %q, not after the slug %q", fm.Name, slug)
 	}
 	return nil
 }
@@ -201,10 +200,10 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 	if err != nil {
 		return broken(err, args, stdout, stderr)
 	}
-	domain := l.manifest.Domain
-	// The tree has the root ncly above the domain, so that hints and help
+	path := strings.Join(l.manifest.Root(), " ")
+	// The tree has ncly above the extension root, so that hints and help
 	// read as they do through core.
-	args = append([]string{domain}, args...)
+	args = append(l.manifest.Root(), args...)
 	en := l.catalogs.Printer("en")
 	cmd, _, _ := l.tree(en, nil).Find(args)
 	line := command.Scan(cmd, args)
@@ -224,7 +223,7 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 	form := command.NewForm(p, g, os.Stdin, stdout, stderr)
 	switch {
 	case line.Version() && !line.Help():
-		_, err = fmt.Fprintf(out, "ncly-%s %s\n", domain, command.ModuleVersion())
+		_, err = fmt.Fprintf(out, "ncly-%s %s\n", l.manifest.Slug(), command.ModuleVersion())
 	case line.Help():
 		target, _, _ := root.Find(args)
 		err = target.Help()
@@ -235,7 +234,7 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 	if selected != nil && err == nil {
 		code = l.handle(*selected, p, g, codes, out, stdout, stderr)
 	} else {
-		code = command.Finish(p, g, codes, out, err, "ncly "+domain+" --help", stdout, stderr)
+		code = command.Finish(p, g, codes, out, err, "ncly "+path+" --help", stdout, stderr)
 	}
 	if err := form.PrintNext(code); err != nil {
 		return command.Report(p, g, codes, command.WriteFailure(p), stdout, stderr)

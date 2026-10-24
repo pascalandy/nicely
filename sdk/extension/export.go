@@ -9,8 +9,8 @@ import (
 )
 
 // Export writes the sidecars of e into dir, as SDK in contract.md defines.
-// They are the manifest as ncly-<domain>.toml, the catalogs as
-// ncly-<domain>.locales/, and the skill as ncly-<domain>.skill/. An install
+// They are the manifest as ncly-<slug>.toml, the catalogs as
+// ncly-<slug>.locales/, and the skill as ncly-<slug>.skill/. An install
 // that calls it takes them from the build under test, never from the source
 // tree. Each sidecar replaces the one of the same name. A file that e no
 // longer holds goes, and so does the skill folder when e has no skill.
@@ -20,7 +20,7 @@ func Export(e Extension, dir string) error {
 	if err != nil {
 		return err
 	}
-	base := filepath.Join(dir, "ncly-"+m.Domain)
+	base := filepath.Join(dir, "ncly-"+m.Slug())
 	locales, err := fs.Sub(e.Locales, "locales")
 	if err != nil {
 		return err

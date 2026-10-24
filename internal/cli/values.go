@@ -91,7 +91,9 @@ func (e *stoppedError) Error() string { return "stopped by " + e.signal.String()
 // descendants at once.
 func listValues(extensions []*extension, g command.Globals, from contract.ValuesFrom) ([]string, error) {
 	path := strings.Join(from.Command, " ")
-	i := slices.IndexFunc(extensions, func(e *extension) bool { return e.domain == from.Command[0] })
+	i := slices.IndexFunc(extensions, func(e *extension) bool {
+		return within(from.Command, strings.Split(e.slug, "-"))
+	})
 	if i < 0 {
 		return nil, errors.New("no installed extension has this command")
 	}
@@ -112,7 +114,7 @@ func listValues(extensions []*extension, g command.Globals, from contract.Values
 	maps.Copy(vars, missing)
 	program := runner.Program{
 		Path:       e.path,
-		Args:       append(slices.Clone(d.Path[1:]), "--"),
+		Args:       append(slices.Clone(d.Path[len(e.manifest.Root()):]), "--"),
 		Env:        runner.Environ(os.Environ(), vars),
 		Stdout:     &stdout,
 		Stderr:     stderr,
@@ -120,7 +122,7 @@ func listValues(extensions []*extension, g command.Globals, from contract.Values
 		Completion: true,
 	}
 	if e.bundled {
-		program.Name = executablePrefix + e.domain
+		program.Name = executablePrefix + e.slug
 	}
 	result, err := runner.Run(runner.OnSignal(), program)
 	switch {

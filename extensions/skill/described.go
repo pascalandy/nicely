@@ -7,19 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pascalandy/nicely/sdk/runner"
 )
 
-// installedSkill is the skill folder of an installed extension, with its
-// domain.
-type installedSkill struct{ domain, folder string }
+type installedSkill struct{ slug, folder string }
 
-// described returns the skill of each installed extension, in the order of
-// ncly describe, whose entry of each extension's domain gives its folder.
-// skill never searches for extensions itself, so it reads the skill of the
-// extension that core runs, never one that core hides. NCLY_BIN, which
-// core sets, names ncly, which starts under its own name.
+// described reads installed skills through the host's selected root entries.
+// NCLY_BIN names the host, which starts under its own name.
 func described(ctx context.Context) ([]installedSkill, error) {
 	bin := os.Getenv("NCLY_BIN")
 	if bin == "" {
@@ -27,12 +23,8 @@ func described(ctx context.Context) ([]installedSkill, error) {
 	}
 	var stdout, stderr bytes.Buffer
 	result, err := runner.Run(ctx, runner.Program{
-		Path:   bin,
-		Name:   "ncly",
-		Args:   []string{"describe", "--json"},
-		Env:    runner.Environ(os.Environ(), nil),
-		Stdout: &stdout,
-		Stderr: &stderr,
+		Path: bin, Name: "ncly", Args: []string{"describe", "--json"},
+		Env: runner.Environ(os.Environ(), nil), Stdout: &stdout, Stderr: &stderr,
 	})
 	if err != nil {
 		return nil, err
@@ -53,7 +45,7 @@ func described(ctx context.Context) ([]installedSkill, error) {
 	var skills []installedSkill
 	for _, c := range answer.Commands {
 		if c.Skill != nil {
-			skills = append(skills, installedSkill{c.Path, *c.Skill})
+			skills = append(skills, installedSkill{strings.Join(strings.Fields(c.Path), "-"), *c.Skill})
 		}
 	}
 	return skills, nil

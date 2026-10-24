@@ -82,7 +82,7 @@ func (a ExtensionAnswer) Failed(lead Problem) ([]byte, error) {
 func CheckAnswer(m Manifest, kind ResultKind, r Reply) (ExtensionAnswer, error) {
 	exit := ExitCode(r.Exit)
 	fail := func(rule string, data ...map[string]any) (ExtensionAnswer, error) {
-		all := map[string]any{"Domain": m.Domain, "Exit": r.Exit}
+		all := map[string]any{"Domain": m.Slug(), "Exit": r.Exit}
 		for _, more := range data {
 			maps.Copy(all, more)
 		}

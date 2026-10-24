@@ -1,0 +1,7 @@
+["video-subtitle.summary"]
+description = "Summary of the named subtitle fixture."
+other = "Manage video subtitles"
+
+["video-subtitle.list"]
+description = "Summary of the sibling completion provider."
+other = "List video files"

@@ -1,0 +1,188 @@
+# Discovery selects each slug before whole-domain precedence across folders.
+exec sh setup.sh
+env TOOLS=$PATH
+onlyncly
+env PATH=$WORK/first:$WORK/second:$PATH
+exec ncly video convert clip.mov --json
+answer stdout ok
+stdout '"winner":"first"'
+! grep second ran
+
+# A broken first slug still hides a valid later executable of that slug.
+cp invalid.toml first/ncly-video-convert.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+exec ncly video subtitle list --json
+answer stdout ok
+stdout '"winner":"sibling"'
+exec ncly video --help
+stdout '^  subtitle: '
+! stdout '^  convert: '
+exec ncly describe video --json
+stdout '"path":"video subtitle"'
+! stdout '"path":"video convert"'
+exits 78 ncly describe video convert --json
+answer stderr EXTENSION_INVALID
+exec ncly __complete video ''
+stdout '^subtitle\t'
+! stdout '^convert\t'
+
+# With no valid sibling, the domain group itself reports the invalid extension.
+cp invalid.toml second/ncly-video-subtitle.toml
+exits 78 ncly video --help --json
+answer stderr EXTENSION_INVALID
+exits 78 ncly describe video --json
+answer stderr EXTENSION_INVALID
+
+# A later whole-domain extension hides every earlier named extension.
+exec /bin/sh whole.sh second
+exec ncly video run --json
+answer stdout ok
+stdout '"winner":"whole"'
+exits 2 ncly video convert clip.mov --json
+answer stderr USAGE_INVALID
+exec ncly describe video --json
+! stdout '"path":"video convert"'
+! stdout '"path":"video subtitle"'
+
+# Invalid whole-domain winners retain domain-wide failure behavior.
+cp invalid.toml second/ncly-video.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+rm second/ncly-video
+exec /bin/sh setup.sh
+
+# An earlier whole-domain extension also hides later named extensions.
+exec /bin/sh whole.sh first
+exec ncly video run --json
+stdout '"winner":"whole"'
+rm first/ncly-video
+
+# A named manifest cannot claim the domain or a sibling's subtree.
+cp domain.toml first/ncly-video-convert.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+stderr 'video convert'
+cp sibling.toml first/ncly-video-convert.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+cp empty-name.toml first/ncly-video-convert.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+cp wrong-slug.toml first/ncly-video-convert.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+cp bad-code.toml first/ncly-video-convert.toml
+exits 78 ncly video convert clip.mov --json
+answer stderr EXTENSION_INVALID
+stderr 'VIDEO_CONVERT_'
+
+# Reserved families and a third identity part never enter discovery or start.
+exec ncly describe --json
+! stdout '"path":"doctor extra"'
+! stdout '"path":"skill extra"'
+! stdout '"path":"video color grade"'
+! grep forbidden ran
+
+-- setup.sh --
+set -eu
+PATH=${TOOLS:-$PATH}
+make_extension() {
+    folder=$1 slug=$2 domain=$3 name=$4 winner=$5
+    mkdir -p "$folder/ncly-$slug.locales"
+    printf '#!/bin/sh\necho %s >> "$WORK/ran"\nprintf '\''{"ok":true,"contract_version":1,"winner":"%s"}\\n'\''\n' "$winner" "$winner" > "$folder/ncly-$slug"
+    chmod 755 "$folder/ncly-$slug"
+    root=$domain
+    if [ -n "$name" ]; then root="$domain $name"; fi
+    {
+        printf 'format_version = 1\ncontract_version = 1\ndomain = "%s"\n' "$domain"
+        if [ -n "$name" ]; then printf 'name = "%s"\n' "$name"; fi
+        printf '\n[[commands]]\npath = "%s"\nsummary = "%s.summary"\n' "$root" "$slug"
+        if [ "$name" = convert ]; then
+            printf '[[commands.args]]\nname = "file"\nsummary = "%s.summary"\nrequired = true\n' "$slug"
+        else
+            printf '\n[[commands]]\npath = "%s list"\nsummary = "%s.summary"\neffects = {}\n' "$root" "$slug"
+        fi
+    } > "$folder/ncly-$slug.toml"
+    printf '["%s.summary"]\ndescription = "Summary of the conflict fixture."\nother = "Manage videos"\n' "$slug" > "$folder/ncly-$slug.locales/en.toml"
+}
+make_extension first video-convert video convert first
+make_extension second video-convert video convert second
+make_extension second video-subtitle video subtitle sibling
+make_extension first doctor-extra doctor extra forbidden
+make_extension first skill-extra skill extra forbidden
+make_extension first video-color-grade video 'color-grade' forbidden
+-- whole.sh --
+set -eu
+PATH=$TOOLS
+folder=$1
+mkdir -p "$folder/ncly-video.locales"
+printf '#!/bin/sh\necho whole >> "$WORK/ran"\nprintf '\''{"ok":true,"contract_version":1,"winner":"whole"}\\n'\''\n' > "$folder/ncly-video"
+chmod 755 "$folder/ncly-video"
+cp whole.toml "$folder/ncly-video.toml"
+cp whole-en.toml "$folder/ncly-video.locales/en.toml"
+-- whole.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+[[commands]]
+path = "video"
+summary = "video.summary"
+[[commands]]
+path = "video run"
+summary = "video.summary"
+-- whole-en.toml --
+["video.summary"]
+description = "Summary of the whole-domain fixture."
+other = "Manage all videos"
+-- invalid.toml --
+format_version = 99
+-- domain.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "convert"
+[[commands]]
+path = "video"
+summary = "video-convert.summary"
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+-- sibling.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "convert"
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+[[commands]]
+path = "video subtitle"
+summary = "video-convert.summary"
+-- empty-name.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = ""
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+-- wrong-slug.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "subtitle"
+[[commands]]
+path = "video subtitle"
+summary = "video-subtitle.summary"
+-- bad-code.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "convert"
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+[[errors]]
+code = "VIDEO_FAILED"
+exit = 1

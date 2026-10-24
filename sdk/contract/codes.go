@@ -118,8 +118,8 @@ var Core = Registry{errors: errorCodes, warnings: warningCodes}
 // Registry returns the registry of the extension that the manifest
 // declares, ordered as Output in contract.md defines: each own code comes
 // after core's codes of its exit, except for exit 1, where the own codes
-// come before RUNTIME. Every warning that starts with the domain and an
-// underscore belongs to the extension too.
+// come before RUNTIME. Own warnings use the slug's uppercase prefix with
+// hyphens replaced by underscores.
 func (m Manifest) Registry() Registry {
 	own := func(exit ExitCode) []codeExit {
 		var codes []codeExit
@@ -145,7 +145,7 @@ func (m Manifest) Registry() Registry {
 
 // Codes returns the error codes of the registry, in the order in which
 // they compete to lead, then its warning codes. A warning that only the
-// domain's prefix admits has no entry.
+// slug's prefix admits has no entry.
 func (r Registry) Codes() []Code {
 	var codes []Code
 	for _, e := range r.errors {

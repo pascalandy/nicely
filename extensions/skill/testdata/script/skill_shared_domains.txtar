@@ -1,0 +1,50 @@
+# Skill discovery reads extension roots from describe, including named roots.
+onlyncly video-convert-external video-subtitle-external
+install video-convert
+install video-subtitle
+exec ncly skill list --json
+answer stdout ok
+stdout '"name":"video-convert","description":"Convert a video with the named fixture\."'
+stdout '"name":"video-subtitle","description":"List videos with the named subtitle fixture\."'
+exec ncly skill view video-convert --json
+answer stdout ok
+stdout '"name":"video-convert","path":"[^"]+/ncly-video-convert.skill","source":"extension"'
+exec ncly skill view video-subtitle
+stdout 'ncly video subtitle list --json'
+exec ncly skill status --json
+answer stdout ok
+! stdout 'SKILL_NAME_MISMATCH'
+
+# A hidden duplicate's skill contributes nothing.
+mkdir late
+cp $DATA/ncly-video-convert late/ncly-video-convert
+cp $DATA/ncly-video-convert.toml late/ncly-video-convert.toml
+mkdir late/ncly-video-convert.locales late/ncly-video-convert.skill
+cp $DATA/ncly-video-convert.locales/en.toml late/ncly-video-convert.locales/en.toml
+cp hidden.md late/ncly-video-convert.skill/SKILL.md
+env PATH=$WORK/late:$PATH
+exec ncly skill list --json
+! stdout 'SKILL_SHADOWED'
+! stdout '"name":"hidden-convert"'
+exec ncly __complete skill view video-
+stdout '^video-convert$'
+stdout '^video-subtitle$'
+
+# A mismatched skill name is compared with the slug derived from describe.
+cp wrong.md $DATA/ncly-video-convert.skill/SKILL.md
+exec ncly skill status --json
+stdout '"code":"SKILL_NAME_MISMATCH"'
+stdout 'video-convert'
+exec ncly --lang en-XA skill list
+pseudo stderr
+
+-- wrong.md --
+---
+name: wrong
+description: Use a different skill name.
+---
+-- hidden.md --
+---
+name: hidden-convert
+description: This hidden extension must supply no skill.
+---

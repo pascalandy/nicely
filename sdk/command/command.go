@@ -165,12 +165,20 @@ func effectAnnotations(d contract.Command) map[string]string {
 }
 
 // AddManifest adds the commands that a manifest declares under root, each
-// parent before its children, and returns the command of its domain. text
+// parent before its children, and returns the extension root. text
 // renders the manifest's catalog IDs. run returns what each command that
 // runs does with its call, and a command for which it returns nil prints
 // its help.
 func AddManifest(root *cobra.Command, p, text *i18n.Printer, m contract.Manifest, run func(contract.Command) func(*cobra.Command, []string) error) *cobra.Command {
 	commands := map[string]*cobra.Command{}
+	if m.Name != "" {
+		parent, _, _ := root.Find([]string{m.Domain})
+		if parent == root {
+			parent = &cobra.Command{Use: m.Domain}
+			root.AddCommand(parent)
+		}
+		commands[m.Domain] = parent
+	}
 	declarations := slices.Clone(m.Commands)
 	slices.SortStableFunc(declarations, func(a, b contract.Command) int { return len(a.Path) - len(b.Path) })
 	for _, d := range declarations {
@@ -186,7 +194,7 @@ func AddManifest(root *cobra.Command, p, text *i18n.Printer, m contract.Manifest
 			root.AddCommand(c)
 		}
 	}
-	return commands[m.Domain]
+	return commands[strings.Join(m.Root(), " ")]
 }
 
 // AddGlobalFlags gives a root command the global flags of the contract, and

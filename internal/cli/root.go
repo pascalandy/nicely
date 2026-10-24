@@ -166,39 +166,25 @@ func target(words []string) string {
 	return words[0]
 }
 
-// neededExtensions finds the extensions that a command line needs: none
-// for a command of core other than describe, doctor, and auth, the one
-// whose domain it targets, and every one otherwise, for describe, for
-// doctor, for auth, whose services the manifests declare, for the root's
-// help, for completion, and for a word that names no command, whose help
-// is the root's.
+// neededExtensions loads declarations for the command line.
+// Direct extension calls need only their selected root; a domain group's help needs its siblings.
+// Describe, doctor, auth, root help, completion, and unknown commands need the installed inventory.
+// Other core commands need no extension declarations.
 func neededExtensions(h host, core *cobra.Command, words []string) []*extension {
 	name := target(words)
 	if name != "" && name != describeCommand.Path[0] && name != doctorCommand.Path[0] && name != authCommand.Path[0] && !isCompletionRequest(name) {
 		if isCommand(core, name) {
 			return nil
 		}
-		if e := h.find(name); e != nil {
-			return []*extension{e}
-		}
+		return h.forPath(targetPath(words))
 	}
 	return h.all()
 }
 
-// brokenTarget returns the extension that cannot run whose domain the
+// brokenTarget returns the extension that cannot run whose root the
 // command line targets.
 func brokenTarget(extensions []*extension, words []string) *extension {
-	return brokenDomain(extensions, target(words))
-}
-
-// brokenDomain returns the extension of a domain when it cannot run.
-func brokenDomain(extensions []*extension, name string) *extension {
-	for _, e := range extensions {
-		if e.domain == name && e.broken != nil {
-			return e
-		}
-	}
-	return nil
+	return brokenPath(extensions, targetPath(words))
 }
 
 // releaseVersion prefers the linked version, then the version that Go stamps

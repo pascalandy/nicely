@@ -31,15 +31,14 @@ type call struct {
 	readKeys bool
 }
 
-func (c *call) Error() string { return "call to " + c.extension.domain }
+func (c *call) Error() string { return "call to " + c.extension.slug }
 
-// canonicalArgs passes a validated call as Dispatch in contract.md defines:
-// the path after the domain, each flag that the caller set as one word in
-// the order of the manifest, one word per value for a variadic flag, then
-// --dry-run and --run-id when the caller set them, then -- and the
-// positional arguments.
-func canonicalArgs(d contract.Command, c *cobra.Command, args []string) []string {
-	canonical := slices.Clone(d.Path[1:])
+// canonicalArgs passes a validated call as Dispatch in contract.md defines.
+// It removes the extension root, then adds caller-set flags in manifest order.
+// A variadic flag passes one word per value.
+// Caller-set --dry-run and --run-id follow, then -- and the positional arguments.
+func canonicalArgs(m contract.Manifest, d contract.Command, c *cobra.Command, args []string) []string {
+	canonical := slices.Clone(d.Path[len(m.Root()):])
 	for _, f := range append(slices.Clone(d.Flags), d.ModeFlags()...) {
 		if flag := c.Flags().Lookup(f.Name); flag.Changed {
 			for _, value := range command.FlagValues(flag) {
@@ -81,13 +80,13 @@ func (c *call) run(p *i18n.Printer, g command.Globals, b keychain.Backend, stdou
 	if c.extension.bundled {
 		// Started under the extension's name, the binary of ncly runs the
 		// extension instead of core.
-		program.Name = executablePrefix + c.extension.domain
+		program.Name = executablePrefix + c.extension.slug
 	}
 	if g.JSON && c.kind != contract.ResultText {
 		return c.runChecked(ctx, p, g, program, stdout, stderr)
 	}
 	result, err := runner.Run(ctx, program)
-	data := map[string]any{"Domain": c.extension.domain, "Exit": result.Exit}
+	data := map[string]any{"Domain": c.extension.slug, "Exit": result.Exit}
 	switch {
 	case err != nil:
 		return command.Report(p, g, contract.Core, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
@@ -115,7 +114,7 @@ func (c *call) runChecked(ctx context.Context, p *i18n.Printer, g command.Global
 	program.Stdout, program.Stderr = &held, lines
 	result, err := runner.Run(ctx, program)
 	if err != nil {
-		data := map[string]any{"Domain": c.extension.domain}
+		data := map[string]any{"Domain": c.extension.slug}
 		return command.Report(p, g, contract.Core, protocolFailure(p, "extension.start_failed", data), stdout, stderr)
 	}
 	reply := contract.Reply{Exit: result.Exit, Stdout: held.Bytes(), Last: lines.finish()}

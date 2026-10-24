@@ -12,6 +12,7 @@ exec ncly skill view nicely
 ! stdout 'skill-dir'
 stdout '\A---\nname: nicely\n'
 cp stdout nicely.md
+grep 'named after its slug: `ncly skill view SLUG`' nicely.md
 
 # The skill teaches doctor, and that a report of doctor or of a status command lists its
 # findings under checks, while errors stays the path for a failure of the command itself

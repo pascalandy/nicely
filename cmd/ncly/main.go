@@ -29,7 +29,7 @@ func main() { os.Exit(run(bundled)) }
 func run(bundled []extension.Extension) int {
 	name := filepath.Base(os.Args[0])
 	for _, e := range bundled {
-		if m, err := contract.ParseManifest(e.Manifest, ""); err == nil && name == "ncly-"+m.Domain {
+		if m, err := contract.ParseManifest(e.Manifest, ""); err == nil && name == "ncly-"+m.Slug() {
 			extension.Main(e)
 		}
 	}

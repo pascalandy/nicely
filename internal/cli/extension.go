@@ -19,10 +19,11 @@ import (
 )
 
 // extension is a bundled extension, or an installed one that discovery
-// found. It stays its domain's extension when it cannot run, so that a
+// found. It keeps its slug when it cannot run, so that a
 // broken one is reported instead of hidden by a later one.
 type extension struct {
 	domain string
+	slug   string
 	// path is where discovery found the executable, links unresolved. A
 	// bundled extension runs from the binary of ncly itself.
 	path     string
@@ -76,49 +77,46 @@ func searchPath() []string {
 	return dirs
 }
 
-// find returns the extension of one domain, or nil when none has it.
-func (h host) find(domain string) *extension {
-	for _, e := range h.bundled {
-		if e.domain == domain {
-			return e
-		}
-	}
-	if h.reserved(domain) {
-		return nil
-	}
-	for _, dir := range h.dirs {
-		path := filepath.Join(dir, executablePrefix+domain)
-		if isExecutable(path) {
-			return loadExtension(domain, path)
-		}
-	}
-	return nil
-}
-
-// all returns every extension, the bundled ones and the first one found
-// for each other domain, sorted by domain.
-func (h host) all() []*extension {
+// selected resolves duplicate slugs and whole-domain precedence before
+// reading external manifests or catalogs.
+func (h host) selected() []*extension {
 	found := map[string]*extension{}
 	for _, e := range h.bundled {
-		found[e.domain] = e
+		found[e.slug] = e
 	}
 	for _, dir := range h.dirs {
 		entries, _ := os.ReadDir(dir)
 		for _, entry := range entries {
-			domain, ok := strings.CutPrefix(entry.Name(), executablePrefix)
-			if !ok || found[domain] != nil || h.reserved(domain) {
+			slug, ok := strings.CutPrefix(entry.Name(), executablePrefix)
+			domain, _, _ := strings.Cut(slug, "-")
+			if !ok || !contract.IsSlug(slug) || found[slug] != nil || h.reserved(domain) {
 				continue
 			}
 			if path := filepath.Join(dir, entry.Name()); isExecutable(path) {
-				found[domain] = loadExtension(domain, path)
+				found[slug] = &extension{domain: domain, slug: slug, path: path}
 			}
 		}
 	}
 	var all []*extension
-	for _, domain := range slices.Sorted(maps.Keys(found)) {
-		all = append(all, found[domain])
+	for _, slug := range slices.Sorted(maps.Keys(found)) {
+		e := found[slug]
+		if slug == e.domain || found[e.domain] == nil {
+			all = append(all, e)
+		}
 	}
 	return all
+}
+
+// all reads every selected extension for inventory listings.
+func (h host) all() []*extension { return loadSelected(h.selected()) }
+
+func loadSelected(selected []*extension) []*extension {
+	for i, e := range selected {
+		if !e.bundled {
+			selected[i] = loadExtension(e.slug, e.path)
+		}
+	}
+	return selected
 }
 
 // isExecutable reports whether path is a regular file, or a link to one,
@@ -130,8 +128,9 @@ func isExecutable(path string) bool {
 
 // loadExtension reads the manifest and the catalogs beside the executable.
 // It never starts the extension.
-func loadExtension(domain, path string) *extension {
-	e := &extension{domain: domain, path: path, file: path + ".toml"}
+func loadExtension(slug, path string) *extension {
+	domain, _, _ := strings.Cut(slug, "-")
+	e := &extension{domain: domain, slug: slug, path: path, file: path + ".toml"}
 	data, err := os.ReadFile(e.file)
 	if err != nil {
 		e.broken = reason(err)
@@ -154,6 +153,7 @@ func loadBundled(b sdkextension.Extension) *extension {
 	}
 	e.load(b.Manifest, locales, "locales/en.toml")
 	e.domain = e.manifest.Domain
+	e.slug = e.manifest.Slug()
 	return e
 }
 
@@ -161,7 +161,7 @@ func loadBundled(b sdkextension.Extension) *extension {
 // they break, about the file that breaks it.
 func (e *extension) load(manifest []byte, locales fs.FS, catalog string) {
 	var err error
-	if e.manifest, err = contract.ParseManifest(manifest, e.domain); err != nil {
+	if e.manifest, err = contract.ParseManifest(manifest, e.slug); err != nil {
 		e.broken = reason(err)
 		return
 	}
@@ -204,7 +204,7 @@ func (e *extension) invalid(p *i18n.Printer) contract.Problem {
 	maps.Copy(data, e.broken.Data)
 	return contract.Problem{
 		Code:    contract.ExtensionInvalid,
-		Message: p.T("extension.invalid", map[string]any{"Domain": e.domain, "Reason": p.T(e.broken.Rule, data)}),
+		Message: p.T("extension.invalid", map[string]any{"Domain": e.slug, "Reason": p.T(e.broken.Rule, data)}),
 		Hint:    p.T("extension.invalid_hint", map[string]any{"Path": e.path}),
 	}
 }
@@ -217,11 +217,17 @@ const extensionGroup = "extensions"
 func addExtensions(root *cobra.Command, p *i18n.Printer, g command.Globals, extensions []*extension) {
 	lang := g.Lang
 	root.AddGroup(&cobra.Group{ID: extensionGroup, Title: p.T("help.extensions")})
+	for _, group := range sharedGroups(p, extensions) {
+		c := command.Build(p, p, group.declaration, nil)
+		c.Short = group.Summary
+		c.GroupID = extensionGroup
+		root.AddCommand(c)
+	}
 	for _, e := range extensions {
 		if e.broken != nil {
 			continue
 		}
-		domain := command.AddManifest(root, p, e.catalogs.Printer(lang), e.manifest, func(d contract.Command) func(*cobra.Command, []string) error {
+		extensionRoot := command.AddManifest(root, p, e.catalogs.Printer(lang), e.manifest, func(d contract.Command) func(*cobra.Command, []string) error {
 			return func(c *cobra.Command, args []string) error {
 				// A dry run and a status command without --live send no
 				// request, so core reads no key for them, as Grants in
@@ -231,13 +237,15 @@ func addExtensions(root *cobra.Command, p *i18n.Printer, g command.Globals, exte
 				return &call{
 					extension: e,
 					kind:      d.Result.Kind,
-					args:      canonicalArgs(d, c, args),
+					args:      canonicalArgs(e.manifest, d, c, args),
 					services:  d.Requires.Keys,
 					readKeys:  !dryRun && (!d.Doctor || live),
 				}
 			}
 		})
-		domain.GroupID = extensionGroup
+		if e.manifest.Name == "" {
+			extensionRoot.GroupID = extensionGroup
+		}
 		for _, d := range e.manifest.Commands {
 			addValuesCompletion(root, d, func(from contract.ValuesFrom, prefix string) []cobra.Completion {
 				return completeValues(extensions, g, from, prefix)

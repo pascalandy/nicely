@@ -48,7 +48,7 @@ type entry struct {
 	Path    string `json:"path"`
 	Summary string `json:"summary"`
 	Source  string `json:"source"`
-	// Skill is present on the entry of an extension's domain alone, where it
+	// Skill is present on the entry of an extension root, where it
 	// holds the folder of the extension's skill, or null as a nil *string.
 	Skill any `json:"skill,omitempty"`
 	// declaration is the command's declaration, whose catalog IDs text
@@ -293,7 +293,7 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 			return fail(notFound(p, ""))
 		}
 		if len(words) > 0 {
-			if e := brokenDomain(extensions, words[0]); e != nil {
+			if e := brokenPath(extensions, words); e != nil {
 				return fail(e.invalid(p))
 			}
 		}
@@ -324,7 +324,7 @@ func addDescribe(p *i18n.Printer, lang string, root *cobra.Command, extensions [
 // entries returns the concise entry of every command that runs here, in
 // the order of their paths: core's, then each valid extension's.
 func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
-	var all []entry
+	all := extensionEntries(p, lang, extensions)
 	core := coreCommands()
 	for _, d := range core {
 		// As in a manifest, a command with children and no arguments groups them.
@@ -335,25 +335,6 @@ func entries(p *i18n.Printer, lang string, extensions []*extension) []entry {
 			Path: strings.Join(d.Path, " "), Summary: p.T(d.Summary), Source: sourceCore,
 			declaration: d, text: p, group: children && len(d.Args) == 0,
 		})
-	}
-	for _, e := range extensions {
-		if e.broken != nil {
-			continue
-		}
-		text := e.catalogs.Printer(lang)
-		for _, d := range e.manifest.Commands {
-			en := entry{
-				Path: strings.Join(d.Path, " "), Summary: text.T(d.Summary), Source: sourceExtension,
-				declaration: d, text: text, group: !e.manifest.Runs(d), requirements: e.manifest.Requirements, keys: e.manifest.Keys,
-			}
-			if e.bundled {
-				en.Source = sourceBundled
-			}
-			if len(d.Path) == 1 {
-				en.Skill = e.skill()
-			}
-			all = append(all, en)
-		}
 	}
 	slices.SortFunc(all, func(a, b entry) int { return slices.Compare(strings.Fields(a.Path), strings.Fields(b.Path)) })
 	return all

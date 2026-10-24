@@ -18,7 +18,7 @@ Nicely is in early development. [The vision](docs/north-star/vision.md) explains
 The current build brings:
 
 - Help, the version, shell completion, and `ncly describe`, which gives the contract of each installed command
-- The extensions named `ncly-<domain>`, which it finds, checks, and stops, and the bundled `skill` extension
+- Extensions named `ncly-<slug>`, including independent jobs such as `ncly-video-convert`, and the bundled `skill` extension
 - `ncly doctor`, which checks the machine, and `ncly auth`, which keeps the keys and their grants
 - The `agent` extension, which runs one trusted task through Codex and records it
 - The `transcript` extension, which transcribes one YouTube video with Deepgram, records the run, replays it, and stops cleanly on Ctrl-C
@@ -36,7 +36,9 @@ External extensions supply other commands under the [extension contract](docs/no
 
 The first `agent` command runs one trusted task through Codex. The first `transcript` command transcribes one explicitly selected YouTube video. A checkout installs the extensions with `just install`. Each capability starts with its smallest useful path; additional harnesses, transcript summaries, and taps remain in [M99](docs/milestones/M99-parking-lot.md).
 
-The next plan enables [shared domains](docs/milestones/M23-shared-domains.md), so independent extensions can add jobs such as `video convert` and `video subtitle`.
+Named extensions share domain help, completion, and describe, such as `video convert` and `video subtitle`.
+Read their skills by slug, such as `ncly skill view video-convert`.
+The [shared domains plan](docs/milestones/M23-shared-domains.md) next separates configuration, doctor, and grants for these extensions.
 A local view of selected project docs and Canadian French follow.
 Other everyday tasks remain in [M99](docs/milestones/M99-parking-lot/everyday-domains.md).
 
