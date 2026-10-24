@@ -36,6 +36,9 @@ type extension struct {
 	file   string
 }
 
+// root retains the identity words even when the manifest cannot load.
+func (e *extension) root() []string { return strings.Split(e.slug, "-") }
+
 const executablePrefix = "ncly-"
 
 // host finds the extensions of one run: the bundled ones, which win over
@@ -88,12 +91,14 @@ func (h host) selected() []*extension {
 		entries, _ := os.ReadDir(dir)
 		for _, entry := range entries {
 			slug, ok := strings.CutPrefix(entry.Name(), executablePrefix)
-			domain, _, _ := strings.Cut(slug, "-")
-			if !ok || !contract.IsSlug(slug) || found[slug] != nil || h.reserved(domain) {
+			e := &extension{slug: slug}
+			e.domain = e.root()[0]
+			if !ok || !contract.IsSlug(slug) || found[slug] != nil || h.reserved(e.domain) {
 				continue
 			}
 			if path := filepath.Join(dir, entry.Name()); isExecutable(path) {
-				found[slug] = &extension{domain: domain, slug: slug, path: path}
+				e.path = path
+				found[slug] = e
 			}
 		}
 	}
@@ -129,8 +134,8 @@ func isExecutable(path string) bool {
 // loadExtension reads the manifest and the catalogs beside the executable.
 // It never starts the extension.
 func loadExtension(slug, path string) *extension {
-	domain, _, _ := strings.Cut(slug, "-")
-	e := &extension{domain: domain, slug: slug, path: path, file: path + ".toml"}
+	e := &extension{slug: slug, path: path, file: path + ".toml"}
+	e.domain = e.root()[0]
 	data, err := os.ReadFile(e.file)
 	if err != nil {
 		e.broken = reason(err)

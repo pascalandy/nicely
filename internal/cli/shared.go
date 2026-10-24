@@ -33,11 +33,11 @@ func sharedGroups(p *i18n.Printer, extensions []*extension) []entry {
 // forPath loads only the selected root's declarations for a direct call.
 // A domain group or an unknown child needs its siblings for help.
 func (h host) forPath(words []string) []*extension {
-	if e := h.find(words[0]); e != nil {
+	if e := h.find(words[:1]); e != nil {
 		return []*extension{e}
 	}
 	if len(words) > 1 {
-		if e := h.find(strings.Join(words[:2], "-")); e != nil {
+		if e := h.find(words[:2]); e != nil {
 			return []*extension{e}
 		}
 	}
@@ -46,9 +46,6 @@ func (h host) forPath(words []string) []*extension {
 	for _, e := range selected {
 		if e.domain != words[0] {
 			continue
-		}
-		if within(words, strings.Split(e.slug, "-")) {
-			return loadSelected([]*extension{e})
 		}
 		siblings = append(siblings, e)
 	}
@@ -59,14 +56,14 @@ func (h host) forPath(words []string) []*extension {
 }
 
 // find selects an exact executable name without listing its search folders.
-func (h host) find(slug string) *extension {
+func (h host) find(root []string) *extension {
+	slug := strings.Join(root, "-")
 	for _, e := range h.bundled {
 		if e.slug == slug {
 			return e
 		}
 	}
-	domain, _, _ := strings.Cut(slug, "-")
-	if !contract.IsSlug(slug) || h.reserved(domain) {
+	if !contract.IsSlug(slug) || h.reserved(root[0]) {
 		return nil
 	}
 	for _, dir := range h.dirs {
@@ -94,8 +91,7 @@ func brokenPath(extensions []*extension, words []string) *extension {
 	var broken *extension
 	valid := false
 	for _, e := range extensions {
-		root := strings.Split(e.slug, "-")
-		if within(words, root) {
+		if within(words, e.root()) {
 			if e.broken != nil {
 				return e
 			}

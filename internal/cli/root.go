@@ -157,9 +157,7 @@ func isCompletionRequest(word string) bool {
 // target returns the first word of a command line, or the word after help,
 // which names the command that the line runs or asks help about.
 func target(words []string) string {
-	if len(words) > 0 && words[0] == "help" {
-		words = words[1:]
-	}
+	words = targetPath(words)
 	if len(words) == 0 {
 		return ""
 	}

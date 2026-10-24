@@ -92,7 +92,7 @@ func (e *stoppedError) Error() string { return "stopped by " + e.signal.String()
 func listValues(extensions []*extension, g command.Globals, from contract.ValuesFrom) ([]string, error) {
 	path := strings.Join(from.Command, " ")
 	i := slices.IndexFunc(extensions, func(e *extension) bool {
-		return within(from.Command, strings.Split(e.slug, "-"))
+		return within(from.Command, e.root())
 	})
 	if i < 0 {
 		return nil, errors.New("no installed extension has this command")
