@@ -40,9 +40,10 @@ exit = 1
 |---|---|---|
 | `format_version` | integer | The manifest format, `1` |
 | `contract_version` | integer | The contract version that the extension speaks, `1`, as `NCLY_CONTRACT_VERSION` carries it |
-| `domain` | string | The domain, equal to the name of the executable after `ncly-` |
+| `domain` | string | The family of work, as [Extension identity](extension-identity.md) defines |
+| `name` | string | Optional. The job within the domain, as [Extension identity](extension-identity.md) defines |
 | `commands` | array | One declaration per command. Help lists them in alphabetical order, as it lists core's |
-| `commands[].path` | string | The words after `ncly`, separated by one space, such as `hello run`. The first word is the domain, and the command whose path is the domain alone gives the domain's line in `ncly --help` |
+| `commands[].path` | string | The words after `ncly`, separated by one space, such as `hello run`. The extension declares its root and descendants under [Extension identity](extension-identity.md) |
 | `commands[].summary` | string | The catalog ID of its one-line summary |
 | `commands[].examples` | array | Full command lines, as strings that are never translated |
 | `commands[].args` | array | The positional arguments in order, each with `name` and `summary`, a catalog ID |
@@ -58,8 +59,8 @@ exit = 1
 | `commands[].args[].values_from`, `commands[].flags[].values_from` | table | Optional. Where completion finds the values that only an extension knows, such as skill names: `command`, the path of a list command of this extension or of another one, such as `skill list` for a skill name, `key`, the key of its answer that holds an array of objects, and `field`, the string key of each object to suggest, as [Completion values](completion-values.md) defines |
 | `commands[].result` | table | The command's result, the same object as `result` in [ncly describe](../core-spec.md#ncly-describe). Its `kind` is `object`, the default, `batch`, `report`, or `text`, which tells core how to check the answer |
 | `commands[].result.schema`, `commands[].result.dry_run_schema` | table | Optional. The JSON Schema, draft 2020-12, of the data keys of a normal answer and of a dry-run answer: an object schema, whose `required` keys a success holds. For a batch, its `results` may give the schema of an item's keys. A `$ref` points inside the same schema, such as `#/$defs/item`. [ncly describe](../core-spec.md#ncly-describe) returns the schema of the whole answer from it |
-| `commands[].doctor` | boolean | Optional. `true` marks the domain's status command, which doctor runs to collect the extension's own checks, as [Status command](status-command.md) defines |
-| `commands[].config` | array | Optional. The config keys that the command reads, as dotted paths under its domain, such as `agent.model`. A table key covers every key beneath it. [ncly describe](../core-spec.md#ncly-describe) reports their values and sources, and doctor checks the extension's table against them, as [Configuration](configuration.md) defines |
+| `commands[].doctor` | boolean | Optional. `true` marks the extension's status command, which doctor runs to collect the extension's own checks, as [Status command](status-command.md) defines |
+| `commands[].config` | array | Optional. The config keys that the command reads, as dotted paths under its slug, such as `agent.model` or `video-convert.preset`. A table key covers every key beneath it. [ncly describe](../core-spec.md#ncly-describe) reports their values and sources, and doctor checks the extension's table against them, as [Configuration](configuration.md) defines |
 | `commands[].requires.bins` | array | The names of the programs that the command may run, each a key of `programs` |
 | `commands[].requires.keys` | array | The services whose keys the command may need, each a service name, as [Keys](keys.md) defines. `ncly auth status` and `ncly doctor` read them, and core passes their granted keys, as [Grants](grants.md) defines |
 | `errors` | array | The extension's own error codes, each with `code` and `exit`, in the order that decides which one leads an answer, as [Output](output.md) defines |

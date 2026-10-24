@@ -7,7 +7,7 @@ This file says how Nicely is built: its layers, who owns each part, and where ea
 Nicely is a small core, and everything it does for a user is an extension, in the spirit of Pi v1: a minimal host that is easy to extend and to compose.
 
 - **Core** is the host: dispatch, help, completion, `describe`, `doctor`, `auth` with grants, `run`, and `tap`. It knows no domain.
-- **Extensions** add domains, such as `transcript`. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill. An **external** extension is an executable named `ncly-<domain>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository. Personal tools can use the same extension format.
+- **Extensions** add commands under their roots, as [Extension identity](contract/extension-identity.md) defines. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill. An **external** extension is an executable named `ncly-<slug>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository. Personal tools can use the same extension format.
 
 [D004](decisions/D004-minimal-core.md) defines how default extensions ship with Nicely.
 
@@ -23,7 +23,7 @@ flowchart TB
 
   subgraph top["Built on top, by anyone"]
     taps["<b>Taps</b><br/>Repositories of extension releases<br/><i>Distribution unit</i>"]
-    ext["<b>4 · Extensions</b><br/>Domains that compose through the CLI<br/><i>Composition</i>"]
+    ext["<b>4 · Extensions</b><br/>Commands that compose through the CLI<br/><i>Composition</i>"]
   end
 
   subgraph core["Provided by Nicely"]
@@ -56,10 +56,10 @@ Each part has one owner: one package and one spec section.
 
 | Layer | Part | Owns | Package | Spec |
 |---|---|---|---|---|
-| 4 | Each extension | Its domain's preparation, business steps, result verification, catalog, skill, and recovery evidence when supported | `extensions/<name>/` | Its `spec.md` |
+| 4 | Each extension | Preparation, business steps, result verification, catalog, skill, and recovery evidence beneath its extension root | `extensions/<name>/` | Its `spec.md` |
 | 3 | Extension host | Discovery, manifests, dispatch, answer checks, and grants | `internal/cli/` | [Extensions](contract/extensions.md) |
 | 3 | Core commands | Help, completion, describe, doctor, auth, run, and tap, and core's catalog | `internal/cli/` | [core-spec.md](core-spec.md) |
-| 2 | Extension entry | One entry point that serves an extension as `ncly-<domain>` or bundled, the export of its sidecars, and its embedded workers | `sdk/extension/` | [SDK](contract/sdk.md) |
+| 2 | Extension entry | One entry point that serves an extension as `ncly-<slug>` or bundled, the export of its sidecars, and its embedded workers | `sdk/extension/` | [SDK](contract/sdk.md) |
 | 2 | Wrap helper | One program that a handler runs, such as a worker: its check, input, environment, captured output, and failures | `sdk/wrap/` | [Wrapped programs](contract/wrap.md) |
 | 2 | Test kit | The tests of an extension repository: its checks, its scenarios, and an install into scratch folders | `sdk/extensiontest/` | [Test kit](contract/test-kit.md) |
 | 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract/command-descriptions.md), [Output](contract/output.md) |

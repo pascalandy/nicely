@@ -12,5 +12,5 @@ Within a contract version, command names, flags, error codes, exit codes, and th
 An extension has three version facts:
 
 - The contract version that it speaks, which its manifest declares as `contract_version`
-- Its own version, which `ncly-<domain> --version` prints from the module that built it
+- Its own version, which `ncly-<slug> --version` prints from the module that built it
 - The Nicely version in its `go.mod`, which pins the SDK. It also pins the `ncly` that its tests run, and the extension template

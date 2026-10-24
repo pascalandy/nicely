@@ -17,7 +17,18 @@
   - Def.: an extension compiled into `ncly`, with the same manifest and contract as an external one
   - Project note: only `skill` is bundled
 - External extension
-  - Def.: an executable named `ncly-<domain>` with a compatible manifest and its catalogs beside it
+  - Def.: an executable named `ncly-<slug>` with a compatible manifest and its catalogs beside it
+  - Project note: [Extension identity](../contract/extension-identity.md) defines the slug and the sidecars
+- Named extension
+  - Def.: an extension whose manifest declares a job name within a domain that other authors can share
+  - Distinct from: a whole-domain extension, which has no manifest name and owns the domain root
+- Whole-domain extension
+  - Def.: an extension whose manifest has no name and whose command root is its domain
+- Extension slug
+  - Def.: the identity of one extension, formed from its domain and optional name
+  - Project note: [Extension identity](../contract/extension-identity.md) defines its syntax and uses
+- Extension root
+  - Def.: the command path owned by one extension, formed from its domain and optional name as separate words
 - Default extension
   - Def.: an external extension that ships with Nicely as a separate executable, through the same path as any external extension
   - Project note: [D004](../decisions/D004-minimal-core.md) permits everyday domains in the default install

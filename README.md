@@ -30,11 +30,15 @@ The current build brings:
 
 ## Planned commands
 
-Nicely is a small core that every domain extends, in the spirit of Pi. Core brings `describe`, `doctor`, `auth`, and `run`. It bundles `skill`, which agents use to learn Nicely. Other domains use external extensions named `ncly-<domain>`.
+Nicely is a small core that extensions add commands to, in the spirit of Pi.
+Core brings `describe`, `doctor`, `auth`, and `run`. It bundles `skill`, which agents use to learn Nicely.
+External extensions supply other commands under the [extension contract](docs/north-star/contract/extensions.md).
 
 The first `agent` command runs one trusted task through Codex. The first `transcript` command transcribes one explicitly selected YouTube video. A checkout installs the extensions with `just install`. Each capability starts with its smallest useful path; additional harnesses, transcript summaries, and taps remain in [M99](docs/milestones/M99-parking-lot.md).
 
-The plan also keeps an everyday task chosen from real use, a local view of selected project docs, and Canadian French. Markdown is the first everyday candidate. The [domain table](docs/north-star/architecture.md#domains-and-commands) records their scope.
+The next plan enables [shared domains](docs/milestones/M23-shared-domains.md), so independent extensions can add jobs such as `video convert` and `video subtitle`.
+A local view of selected project docs and Canadian French follow.
+Other everyday tasks remain in [M99](docs/milestones/M99-parking-lot/everyday-domains.md).
 
 In a terminal, a form asks a human for each missing value. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 

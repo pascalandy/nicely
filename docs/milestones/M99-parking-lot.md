@@ -31,7 +31,7 @@ Ideas that are kept but belong to no delivery milestone. To start one, select a 
 | Transcript on Omarchy | The paid end-to-end check of `ncly transcript` passes on Omarchy, with YouTube cookies from a Linux browser. [#23](https://github.com/pascalandy/nicely/issues/23) tracks it | Pascal needs transcripts on Omarchy |
 | One duration parser | `ncly doctor` reads its `--timeout` through `sdk/command.Duration`, as `ncly agent run` does, instead of its own `parseTimeout` in `internal/cli/doctor.go`, so both commands share one rule | A change touches `ncly doctor --timeout`, or a third command takes `--timeout` |
 | Nested deadlines and cleanup | The program runner passes `NCLY_DEADLINE`, an absolute UTC time, to every program, and each `ncly` ends its work before that time minus its 15 seconds of cleanup. A nested `ncly` also gets a shorter cleanup than its parent. It then times out, or writes its record after the signal, before the parent's SIGKILL | An approved summary slice actually calls a nested recorded command |
-| More languages | Spanish, Japanese, and others, through the M22 workflow | A user asks, or `fr-CA` proves the workflow |
+| More languages | Spanish, Japanese, and others, through the M25 workflow | A user asks, or `fr-CA` proves the workflow |
 | Catalog folders | One folder per language, such as `locales/en/`, lets a catalog split under the size limit. [Text of an extension](../north-star/contract/text-of-an-extension.md) asks for one file per language, so `just limits` skips catalogs | A catalog grows too large to read whole. The change needs a contract decision |
 | Terminal demos | VHS recordings of key commands for the README and the docs | The everyday domains ship |
 | First-run experience | What a new visitor sees first, and the marketing around it | The everyday domains ship |
@@ -49,7 +49,7 @@ Ideas that are kept but belong to no delivery milestone. To start one, select a 
 Each parked capability has its own file:
 
 - [Agent extras](M99-parking-lot/agent-extras.md)
-- [Taps](M99-parking-lot/taps.md)
+- [Taps and an install-time extension offer](M99-parking-lot/taps.md)
 - [Transcript summary](M99-parking-lot/transcript-summary.md)
 - [Resume](M99-parking-lot/resume.md)
 - [Transcript extras](M99-parking-lot/transcript-extras.md)

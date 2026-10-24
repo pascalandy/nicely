@@ -1,7 +1,7 @@
-# M22 Canadian French
+# M25 Canadian French
 
 Status: planned
-Version: v0.22.0
+Version: v0.25.0
 
 ## Demo
 
@@ -40,11 +40,11 @@ stderr '"code":"NOT_FOUND"'
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M22-T1 | Translate core | agent | — | todo |
-| M22-T2 | Translate shipped first-party extensions | agent | M22-T1 | todo |
-| M22-T3 | Formats and README | agent | M22-T1 | todo |
+| M25-T1 | Translate core | agent | — | todo |
+| M25-T2 | Translate shipped first-party extensions | agent | M25-T1 | todo |
+| M25-T3 | Formats and README | agent | M25-T1 | todo |
 
-### M22-T1 Translate core
+### M25-T1 Translate core
 
 - **Read:** [Configuration](../north-star/contract/configuration.md)
 - **Proves:** `testdata/script/language_fr.txtar`
@@ -56,7 +56,7 @@ Each templated message keeps its fields, flags, paths, and placeholders.
 Assert a `fr-CA.toml` for each owner, since parity passes without one.
 `TestMatch` expects `fr-CA`, and `extension_help.txtar` changes where French help expects English completion text.
 
-### M22-T2 Translate shipped first-party extensions
+### M25-T2 Translate shipped first-party extensions
 
 - **Read:** [Extensions](../north-star/contract/extensions.md)
 - **Proves:** `testdata/script/language_fr_extensions.txtar`
@@ -64,7 +64,7 @@ Assert a `fr-CA.toml` for each owner, since parity passes without one.
 A complete `fr-CA` catalog for each shipped first-party extension.
 Under `en`, `en-XA`, and `fr-CA`, one call gives the same exit, `ok`, codes, `next`, numbers, enums, and run IDs.
 
-### M22-T3 Formats and README
+### M25-T3 Formats and README
 
 - **Read:** [Configuration](../north-star/contract/configuration.md)
 - **Proves:** the plural and number cases in the i18n package's unit test

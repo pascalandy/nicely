@@ -1,7 +1,7 @@
-# M21 Docs hub
+# M24 Docs hub
 
 Status: planned
-Version: v0.21.0
+Version: v0.24.0
 
 ## Demo
 
@@ -35,7 +35,7 @@ This milestone changes no core mechanism.
 
 Settle each one in `extensions/docs/spec.md`, then delete this section.
 
-- Which recurring cross-project reading task Pascal has, with its docs roots. Without one, move M21 to M99, as D061 says
+- Which recurring cross-project reading task Pascal has, with its docs roots. Without one, move M24 to M99, as D061 says
 - How the URL reaches the caller. Core buffers an extension's JSON stdout until exit, so a serving command cannot answer its URL in JSON
 - Which existing renderer supports multiple explicit docs roots with simple setup, useful navigation, and the required local-only behavior. Try one renderer first, and compare a second only if the first fails a requirement
 - Which installed programs and versions it requires, and which doctor checks and install hints describe that setup
@@ -46,10 +46,10 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M21-T1 | Serve selected docs | agent | — | todo |
-| M21-T2 | Paths and lifecycle | agent | M21-T1 | todo |
+| M24-T1 | Serve selected docs | agent | — | todo |
+| M24-T2 | Paths and lifecycle | agent | M24-T1 | todo |
 
-### M21-T1 Serve selected docs
+### M24-T1 Serve selected docs
 
 - **Read:** [Scope](#scope), [D022](../north-star/decisions/D022-private-docs.md)
 - **Proves:** `extensions/docs/testdata/script/docs_serve.txtar`
@@ -58,7 +58,7 @@ Use the chosen renderer to serve two explicitly supplied projects with useful na
 Print the local URL, and report missing docs or dependencies before starting the server.
 Keep sources unchanged and generated files inside disposable cache.
 
-### M21-T2 Paths and lifecycle
+### M24-T2 Paths and lifecycle
 
 - **Read:** [Scope](#scope), [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md)
 - **Proves:** `extensions/docs/testdata/script/docs_serve_boundaries.txtar`

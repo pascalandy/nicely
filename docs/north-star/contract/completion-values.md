@@ -11,6 +11,7 @@ That command qualifies only when every condition below holds:
 - Its `result.kind` is `object`
 - It declares `effects`, as [ncly describe](../core-spec.md#ncly-describe) defines them, with `user_writes` and `paid` both false. A command that omits `effects` never qualifies
 
+Core selects the provider by its full command path, including a sibling extension in a shared domain.
 Core checks these conditions on the command's own declaration each time it completes, and [Manifest](manifest.md) applies the same check to a command of the manifest that names it, so its author finds out before any Tab.
 
 Core calls that command as [Commands that core calls](commands-that-core-calls.md) defines, so the program that starts is the one whose declaration core checked. Core forwards none of its output. Core reads no key for it, as for a dry run, so a Tab never waits on the keychain: `NCLY_MISSING_KEYS` names only the services that no human granted, as [Grants](grants.md) defines.

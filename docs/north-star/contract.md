@@ -31,6 +31,7 @@ Each part is one file, in reading order.
 - [Configuration](contract/configuration.md)
 - [Command descriptions](contract/command-descriptions.md)
 - [Extensions](contract/extensions.md)
+  - [Extension identity](contract/extension-identity.md)
   - [Discovery](contract/discovery.md)
   - [Manifest](contract/manifest.md)
   - [Valid manifest](contract/valid-manifest.md)

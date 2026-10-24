@@ -2,7 +2,7 @@
 
 ## Relations
 
-- A command reads domain → resource → verb
+- A command follows [Usage](../contract/usage.md) and the ownership rules of [Extension identity](../contract/extension-identity.md)
 - A manifest holds one command declaration per command
 - Core starts an extension with canonical arguments, and checks its answer; an answer that breaks the contract is a protocol failure
 - An answer and its exit code always agree; exit 75 alone permits an automatic retry
@@ -24,7 +24,10 @@
   - Def.: the scope of the contract that core and an extension exchange: the manifest, the environment, the answer, the exit code, and the run records, as [D040](../decisions/D040-wire-contract.md) decides
   - Distinct from: an RPC protocol through which core serves extensions, which D040 rejects
 - Domain
-  - Def.: a top-level noun that groups actions, such as `video`
+  - Def.: a top-level noun that names a family of work, such as `video`
+  - Project note: several extensions can add jobs to one domain under [Extension identity](../contract/extension-identity.md)
+- Extension name
+  - Def.: the optional manifest word that names one extension's job within its domain, such as `convert`
 - Resource
   - Def.: an optional second noun inside a domain, such as `prompt` in `ncly transcript prompt list`
 - Verb
@@ -34,12 +37,12 @@
   - Def.: the one description of a command that supplies its help, completion, validation, and discovery
 - Manifest
   - Def.: the file that declares an extension's commands, effects, modes, and requirements, read without starting the extension
-  - Project note: `ncly-<domain>.toml`, whose schema [Manifest](../contract/manifest.md) defines
+  - Project note: `ncly-<slug>.toml`, whose schema [Manifest](../contract/manifest.md) defines
 - Conditional program
   - Def.: a program in a manifest's `programs` that a command needs only for some configs or invocations, such as one harness among several
   - Project note: [Required programs](../core-spec.md#required-programs) defines it. Doctor never checks it, and preparation checks it when an invocation selects it
 - Canonical arguments
-  - Def.: the one form in which core passes a validated call to an extension: the command path after the domain, each flag as `--<name>=<value>`, then `--` and the positional arguments
+  - Def.: the form in which core passes a validated call, relative to the extension root
   - Project note: [Dispatch](../contract/dispatch.md) defines it. `--dry-run` and `--run-id` pass as words after the own flags; a flag that has a variable, such as `--json`, reaches the extension as that variable instead
 - Protocol failure
   - Def.: an answer or an exit code from an extension or an embedded program that breaks the contract
@@ -60,7 +63,7 @@
 - Report command
   - Def.: a command whose result is a report, such as `ncly doctor`
 - Status command
-  - Def.: the report command `ncly <domain> status` that an extension's manifest marks for doctor, which runs it and lists its checks under the extension's component
+  - Def.: an extension's report command that its manifest marks for doctor
   - Project note: [Status command](../contract/status-command.md) defines it. An agent may also call it alone
   - Distinct from: `ncly auth status`, a command of core that reports keys
 - List command
@@ -72,7 +75,7 @@
   - Distinct from: an ordinary dispatch, in which core starts a command for its caller, as when an agent calls a status command alone
 - Grant
   - Def.: the permission, given by a human in a terminal, for one extension to receive one key
-  - Project note: [Grants](../contract/grants.md) binds it to the extension's domain and source, the path where discovery found the extension until taps
+  - Project note: [Grants](../contract/grants.md) binds it to the extension's slug and source, the path where discovery found the extension until taps
 - Optional key
   - Def.: a service that a command declares but runs without, such as a harness key, whose harness then uses its own login
   - Project note: the `keys` table of a [manifest](../contract/manifest.md) marks it, and a missing one never fails `ncly auth status` or `ncly doctor`

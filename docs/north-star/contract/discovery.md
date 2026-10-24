@@ -1,5 +1,38 @@
 # Discovery
 
-A domain is lowercase letters and digits that start with a letter, such as `transcript`, as a service name is. Core looks for a file named `ncly-<domain>` that the user may execute, or a link to one: first in the `extensions` folder of the data folder, such as `~/.local/share/nicely/extensions/`, then in each folder of `PATH`, in order. It skips an empty or relative `PATH` entry, a reserved name of [core-spec.md](../core-spec.md#command-tree), and every name whose domain breaks the rule above, such as `ncly-hello.toml`. The first file found for a domain is its extension and hides any later one. Core never resolves the link: the manifest, the catalogs, and the skill sit beside the path that it found.
+Core finds executables named `ncly-<slug>`, whose identity follows [Extension identity](extension-identity.md).
+It searches the data folder's `extensions/` directory, then each absolute, nonempty `PATH` entry in order.
+Files must be executable, or links to executable files.
+Core never resolves a link when it locates sidecars.
+The manifest, catalogs, and skill sit beside the discovered path.
+Core skips invalid slugs and sidecar names, such as `ncly-hello.toml`.
+A domain reserved by [core-spec.md](../core-spec.md#command-tree) is unavailable to every external extension, including named extensions.
 
-To dispatch `ncly <domain>`, core reads that domain's manifest and catalogs only. `ncly --help` and completion read every one, and `ncly --help` lists the extensions in their own section, apart from core's commands. Core never starts an extension to learn its commands. An extension whose manifest or `en` catalog is missing, unreadable, or invalid stays its domain's extension: `ncly <domain>`, its help included, answers `EXTENSION_INVALID` with exit 78 without starting it, and `ncly --help` and completion leave it out. A broken extension never affects another domain.
+## Selection and conflicts
+
+The first executable found for each slug wins.
+A later executable with the same slug stays hidden, even if the winner has an invalid manifest.
+Different named extensions of one domain are selected independently.
+
+A whole-domain extension keeps the domain and hides every named extension of that domain, regardless of search order.
+An invalid whole-domain winner still hides those named extensions.
+Core commands and bundled extensions retain their reserved domains.
+Doctor reports every hidden executable with its winning source in `hidden_by`, under [ncly doctor](../core-spec.md#ncly-doctor).
+Hidden extensions contribute no commands, skills, prerequisites, or grants to the installed inventory.
+Core never starts a hidden extension.
+
+## Reading declarations
+
+For a call beneath an extension root, core reads only that selected extension's manifest and catalogs.
+Domain help, root help, completion, and describe read the declarations needed for their listings.
+[Usage](usage.md) defines root help sections.
+Core never starts an extension to learn its commands.
+[Extension identity](extension-identity.md#shared-domain-group) defines the group that core supplies for named extensions.
+
+A missing, unreadable, or invalid manifest or `en` catalog leaves the executable selected but unavailable.
+A call or describe lookup at or beneath that extension root answers `EXTENSION_INVALID`, with exit 78, without starting it.
+Help, completion, and describe listings omit its declarations.
+A broken named extension never blocks a valid sibling's commands or help.
+A domain group lists only valid roots.
+With no valid roots, the domain group's help and describe lookup answer `EXTENSION_INVALID`.
+A broken whole-domain extension retains its existing domain-wide failure behavior.

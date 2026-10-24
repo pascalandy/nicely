@@ -11,7 +11,7 @@ Core accepts the answer only when every rule below holds:
 3. An answer on stderr has a non-empty `errors`, and an answer on stdout has none
 4. `errors` and `warnings`, when present, are arrays of objects that each hold the strings `code`, `message`, and `hint`, and, when present, `next`, a non-empty array of strings. Each code is uppercase letters, digits, and underscores
 5. `results`, when present, is an array of objects that each hold the boolean `ok`, which is `false` exactly when the item has a non-empty `errors`. A success has no failed item
-6. An error code that starts with the extension's domain and an underscore is declared in its manifest. A warning code is checked for its form only
+6. An error code with the extension's own prefix, as [Extension identity](extension-identity.md) defines, is declared in its manifest. A warning code is checked for its form only
 7. When core knows the leading error code, as its own or as a declared one, it maps to the exit code. No top-level error code that core knows maps to a more cautious exit code, in the order of [Output](output.md), whatever the codes that core does not know
 8. When an item failed, the exit code is 1 led by `RUNTIME`, 75 led by `TEMPORARY`, 130 led by `INTERRUPTED`, or 143 led by `TERMINATED`, as [Output](output.md) defines for a batch. Exit 75 holds only when every error, at the top and in every item, is `TEMPORARY`
 

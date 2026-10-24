@@ -15,3 +15,10 @@ holds that slice, its open questions, and the `tap list` look that Pascal picked
 Revisit updates after a second real version needs installation, and skill distribution or fleet
 work for a concrete consumer. That work must retain
 [D035](../../north-star/decisions/D035-sync-ownership.md) where it manages persistent copies.
+
+## Install-time extension offer
+
+Nicely may one day ask, "Would you like extensions for video work? [y/N]" during installation.
+A yes would offer default extensions such as `ncly-video-convert`.
+The offer belongs to future installation and tap work, not [M23 Shared domains](../M23-shared-domains.md).
+Revisit when tap installation can deliver extensions and Pascal selects that installation flow.

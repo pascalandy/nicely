@@ -12,7 +12,7 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
 
 ### Relations
 
-- Core hosts extensions; an extension adds a domain and never changes core
+- Core hosts extensions. An extension adds commands under its root and never changes another command
 - An extension reaches core only through the wire contract: its manifest, its environment, its answer, its exit code, and its run records
 - The agent contract and the wire contract are two overlapping scopes of one contract: both hold the answer and the exit code
 - An extension reaches another extension only through the CLI, as an agent does
@@ -27,7 +27,8 @@ This file fixes the vocabulary of Nicely: what each term means here, how the ter
   - Project note: layer 3. It knows no domain
   - Distinct from: Pi's `pi-agent-core`, which is a runtime layer
 - Extension
-  - Def.: a domain added to core through a manifest, bundled or external
+  - Def.: commands added to core through a manifest, bundled or external
+  - Project note: [Extension identity](contract/extension-identity.md) defines shared domains and command ownership
   - Distinct from: a Pi extension, which runs inside Pi's process and hooks its lifecycle
 - Contract
   - Def.: the rules that every command and every extension follows, in [contract.md](contract.md)
@@ -97,7 +98,7 @@ See [Contract](glossary/contract.md).
   - Def.: a named combination of harness, provider, model, and effort, stored in the config
 - Skill
   - Def.: a folder with a `SKILL.md` that teaches an agent a task
-  - Project note: an extension's skill is named after its domain. The bundled `nicely` skill teaches core
+  - Project note: an extension's skill is named after its slug. The bundled `nicely` skill teaches core
 
 ## Configuration and text
 
@@ -114,7 +115,7 @@ See [Contract](glossary/contract.md).
   - Def.: `config.local.toml`, which holds what belongs to one machine and overrides the shared config
 - Catalog
   - Def.: one TOML file of translated text for one language, whose entries each have an ID, a description for the translator, and plural forms
-  - Project note: core, the SDK, and each extension keep their own. An external extension's catalogs sit in `ncly-<domain>.locales/` beside its manifest
+  - Project note: core, the SDK, and each extension keep their own. [Extension identity](contract/extension-identity.md) names external catalog folders
 - Pseudo-locale
   - Def.: a generated test language that marks every catalog string
 
@@ -163,7 +164,7 @@ See [Design vocabulary](glossary/design-vocabulary.md).
 
 - plugin, add-on, module, for an extension
   - Use instead: extension
-  - Reason: one word names a domain added to core, bundled or external
+  - Reason: one word names commands added to core, bundled or external
 - headless mode
   - Use instead: non-interactive mode
   - Reason: [Modes](contract/modes.md) names the two modes
