@@ -16,6 +16,7 @@ answer stdout ok
 stdout 'unknown key video-convert.language'
 stdout 'unknown key video-subtitle.hidden'
 stdout 'unknown key away-extra-third'
+stdout 'unknown key doctor-extra'
 ! stdout 'unknown key video-subtitle.language'
 ! stdout 'unknown key away-extra\.'
 ! exists external.log
@@ -95,6 +96,8 @@ hidden = true
 [away-extra]
 anything = true
 [away-extra-third]
+anything = true
+[doctor-extra]
 anything = true
 -- bin/subtitle-tool --
 #!/bin/sh
