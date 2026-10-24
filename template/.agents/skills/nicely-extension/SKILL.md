@@ -30,8 +30,8 @@ Write each fact that nobody can give as an open question in `spec.md`.
 
 ## Choice of operations
 
-- Give each command one bounded operation beneath the extension root
-- A named root can also run directly, such as `ncly video convert <file>`. Never relay arbitrary arguments to the script
+- Give each command one bounded operation beneath the extension root. Never relay arbitrary arguments to the script
+- A named root can take arguments and run, such as `ncly video convert <file>`
 - Give a script that does several jobs one command per job, and only for the jobs that the user needs
 - Put the script in `worker/` when the extension can embed it. `Call.Worker` gives its path, and `sdk/wrap` runs it
 - Use `sdk/wrap` for one program per call. Use `sdk/runner` for several programs, or for a timeout that can exit 75 safely

@@ -29,6 +29,7 @@ env STUB=
 # An invalid input is a usage error, before python3 starts.
 exits 2 ncly {{ example_command }} missing.md --json
 stderr '"code":"USAGE_INVALID"'
+stderr 'missing.md is no file that {{ root }} can inspect[.]'
 exits 2 ncly {{ example_command }} notes/input.md --timeout soon --json
 stderr '"code":"USAGE_INVALID"'
 

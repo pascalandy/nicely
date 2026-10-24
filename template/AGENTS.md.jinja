@@ -29,7 +29,9 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 
 ## Remove the example
 
-1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
+{% if name %}Keep the named extension's root. After these steps, follow "Change a command" for `ncly {{ root }}`.
+
+{% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
 2. Replace the example declaration at `{{ example_command }}` and its examples in `manifest.toml`. Remove `[programs.python3]` when no command needs it
 3. Replace the `{{ slug }}.inspect` catalog entries for the new command. {% if not name %}Rewrite `{{ slug }}.summary` for the remaining commands. {% endif %}Keep every catalog ID under `{{ slug }}.`
 4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`

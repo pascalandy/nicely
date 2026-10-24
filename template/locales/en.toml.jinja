@@ -20,7 +20,7 @@ other = "Stop the inspection after this duration"
 
 ["{{ slug }}.inspect.no_file"]
 description = "Message of USAGE_INVALID when the file of `ncly {{ example_command }}` is missing or is no regular file. {% raw %}{{.File}}{% endraw %} is the path that the caller gave."
-other = "{% raw %}{{.File}}{% endraw %} is no file that {{ domain }} can inspect."
+other = "{% raw %}{{.File}}{% endraw %} is no file that {{ root }} can inspect."
 
 ["{{ slug }}.inspect.bad_timeout"]
 description = "Message of USAGE_INVALID when the --timeout of `ncly {{ example_command }}` is no positive duration. {% raw %}{{.Timeout}}{% endraw %} is the value that the caller gave, and --timeout stays as is."
