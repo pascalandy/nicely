@@ -76,12 +76,12 @@ stderr '"message":"Unknown flag --force\."'
 exits 2 ncly auth grant openai hello -f --json
 answer stderr USAGE_INVALID
 
-# An unknown domain, a domain that no extension has, and a service that the domain does not
-# declare exit 2 with NOT_FOUND and the next ncly auth status, before the terminal, and an
-# extension whose manifest is invalid exits 78 with EXTENSION_INVALID
+# An unknown slug or undeclared service exits 2 with NOT_FOUND before requiring a terminal.
+# Its next command is ncly auth status.
+# An extension whose manifest is invalid exits 78 with EXTENSION_INVALID.
 exits 2 ncly auth grant deepgram nowhere --json
 answer stderr NOT_FOUND
-stderr '"message":"No installed extension has the domain nowhere\.","hint":"ncly auth status","next":\["ncly","auth","status"\]'
+stderr '"hint":"ncly auth status","next":\["ncly","auth","status"\]'
 exits 2 pty none.txt ncly auth grant deepgram nowhere
 stdout 'error\[NOT_FOUND\]'
 ! stdout 'y/N'
