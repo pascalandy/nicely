@@ -24,7 +24,7 @@ func (l loaded) handle(s selection, p *i18n.Printer, g command.Globals, codes co
 	kind := s.command.Result.Kind
 	call := s.call
 	call.JSON, call.Printer = g.JSON, p
-	call.domain, call.services = l.manifest.Domain, s.command.Requires.Keys
+	call.domain, call.services = l.manifest.Slug(), s.command.Requires.Keys
 	call.programs = map[string]contract.Requirement{}
 	for _, name := range s.command.Requires.Bins {
 		call.programs[name] = l.manifest.Requirements[name]

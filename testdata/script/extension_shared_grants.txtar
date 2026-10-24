@@ -1,0 +1,122 @@
+# Named siblings keep separate grants while existing whole-domain data still works.
+onlyncly video-convert-external video-subtitle-external keyed-external pty
+install video-convert
+install video-subtitle
+install keyed
+env STATE=$WORK/.local/state/nicely
+env DEEPGRAM_API_KEY=dg-env
+env TERM=xterm-256color
+mkdir $STATE
+exec /bin/sh -c '/usr/bin/sed "s|@DATA@|$DATA|g" legacy.tmpl > "$STATE/grants.json"'
+exec ncly keyed fetch --json
+answer stdout ok
+stdout '"source":"key"'
+rm external.log
+cp convert.toml $DATA/ncly-video-convert.toml
+cp convert.sh $DATA/ncly-video-convert
+
+# Grant and doctor completion name the installed slugs rather than the family.
+exec ncly __complete auth grant deepgram video
+stdout '^video-convert$'
+stdout '^video-subtitle$'
+! stdout '^video$'
+exits 2 ncly auth grant deepgram video --json
+answer stderr NOT_FOUND
+exec ncly auth grant deepgram video-convert --dry-run --json
+answer stdout ok
+stdout '"key":"deepgram","action":"grant","domain":"video-convert"'
+! exists external.log
+
+# A terminal grant to convert reaches that executable alone.
+exec pty yes.txt ncly auth grant deepgram video-convert
+stdout 'Granted the key of deepgram to video-convert'
+grep '"service":"deepgram","domain":"video-convert","path":"'${DATA@R}'/ncly-video-convert"' $STATE/grants.json
+exec ncly video convert clip.mov --json
+answer stdout ok
+grep '^key present$' convert-key.txt
+exits 78 ncly video subtitle fetch --json
+answer stderr KEY_NOT_GRANTED
+stderr '"next":\["ncly","auth","grant","deepgram","video-subtitle"\]'
+! stderr 'dg-env'
+exits 78 ncly auth status --json
+answer stdout report
+stdout '"domain":"keyed","granted":true'
+stdout '"domain":"video-convert","granted":true'
+stdout '"domain":"video-subtitle","granted":false'
+exits 78 ncly doctor auth --json
+answer stdout report
+stdout '"next":\["ncly","auth","grant","deepgram","video-subtitle"\]'
+! stdout GRANT_UNUSED
+
+# Granting the sibling preserves both bindings and the legacy grant.
+exec pty yes.txt ncly auth grant deepgram video-subtitle
+exec ncly auth status --json
+answer stdout ok
+stdout '"domain":"video-convert","granted":true'
+stdout '"domain":"video-subtitle","granted":true'
+exec ncly video subtitle fetch --json
+answer stdout ok
+stdout '"received_key":true'
+exec ncly auth grant deepgram video-subtitle --json
+stdout '"action":"unchanged","domain":"video-subtitle"'
+exec ncly __complete auth revoke deepgram video
+stdout '^video-convert$'
+stdout '^video-subtitle$'
+exec ncly auth revoke deepgram video-subtitle --dry-run --force --json
+stdout '"action":"revoke","domain":"video-subtitle"'
+
+# Revoking one slug leaves its sibling and the old whole-domain grant intact.
+exec ncly auth revoke deepgram video-convert --force --json
+stdout '"action":"revoke","domain":"video-convert"'
+exec ncly video convert clip.mov --json
+grep '^key absent$' convert-key.txt
+exec ncly video subtitle fetch --json
+stdout '"received_key":true'
+exec ncly keyed fetch --json
+stdout '"source":"key"'
+grep '"domain":"keyed","path":"'${DATA@R}'/ncly-keyed","granted_at":"2026-10-17T04:00:00Z"' $STATE/grants.json
+! grep '"domain":"video-convert"' $STATE/grants.json
+
+# A hidden sibling contributes no auth inventory, and its grant becomes unused.
+cp invalid.toml $DATA/ncly-video.toml
+cp convert.sh $DATA/ncly-video
+chmod 755 $DATA/ncly-video
+exec ncly auth status --json
+answer stdout ok
+! stdout '"domain":"video-'
+exec ncly doctor auth --json
+stdout '"code":"GRANT_UNUSED"'
+stdout '"next":\["ncly","auth","revoke","deepgram","video-subtitle"\]'
+exec ncly auth revoke deepgram video-subtitle --force --json
+stdout '"action":"revoke","domain":"video-subtitle"'
+exec ncly --lang en-XA auth status
+pseudo stdout keychain deepgram keyed
+
+-- yes.txt --
+[y/N]	y
+-- legacy.tmpl --
+{"format_version":1,"grants":[{"service":"deepgram","domain":"keyed","path":"@DATA@/ncly-keyed","granted_at":"2026-10-17T04:00:00Z"}]}
+-- convert.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "convert"
+[[commands]]
+path = "video convert"
+summary = "video-convert.summary"
+effects = {}
+requires = { keys = ["deepgram"] }
+[[commands.args]]
+name = "file"
+summary = "video-convert.file"
+required = true
+-- convert.sh --
+#!/bin/sh
+if [ -n "${DEEPGRAM_API_KEY:-}" ]; then
+    echo 'key present' > "$WORK/convert-key.txt"
+else
+    echo 'key absent' > "$WORK/convert-key.txt"
+fi
+exec video-convert-external "$@"
+-- invalid.toml --
+format_version = 99

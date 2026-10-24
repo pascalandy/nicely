@@ -56,10 +56,9 @@ func keyVars(ctx context.Context, k *keychain.Keychain, e *extension, services [
 	var missing []string
 	for _, s := range services {
 		var code contract.Code
-		switch g := findGrant(grants, s, e.domain); {
+		switch g := findGrant(grants, s, e.slug); {
 		case g == nil || !sameSource(g.Path, sourceOf(e)):
-			// A grant binds the key to the source of the extension, so
-			// another extension of the same domain inherits nothing.
+			// Both the slug and the unresolved source path bind the grant.
 			code = contract.KeyNotGranted
 		case read:
 			key, _, absent, err := lookupKey(ctx, k, s)

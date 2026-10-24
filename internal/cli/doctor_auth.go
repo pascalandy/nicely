@@ -100,11 +100,9 @@ func (pr *prober) auth(extensions []*extension, k *keychain.Keychain) []check {
 	return checks
 }
 
-// grantChecks checks that every grant of the grants file is in use, as
-// Required keys in core-spec.md defines: one GRANT_UNUSED warning for each
-// grant whose service the extension of its domain no longer declares, or
-// whose source no longer holds that extension, and one pass when it finds
-// none. A grant of an extension that cannot run counts as in use, because
+// grantChecks reports GRANT_UNUSED when an extension slug no longer declares the service or no longer exists at its source.
+// It reports one pass when every grant is in use, as Required keys in core-spec.md defines.
+// A grant of an extension that cannot run counts as in use, because
 // doctor cannot read what it declares. A grants file that core cannot read
 // fails the check with CONFIG_INVALID, and readable is then false. It also
 // returns the grants, which the checks of the services read.
@@ -120,7 +118,7 @@ func grantChecks(p *i18n.Printer, extensions []*extension) (checks []check, gran
 		if g.Path != nil {
 			data["Path"] = *g.Path
 		}
-		i := slices.IndexFunc(extensions, func(e *extension) bool { return e.domain == g.Domain })
+		i := slices.IndexFunc(extensions, func(e *extension) bool { return e.slug == g.Domain })
 		var message string
 		switch {
 		case i >= 0 && extensions[i].broken != nil:

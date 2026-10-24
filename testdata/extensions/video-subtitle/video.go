@@ -27,5 +27,17 @@ var Extension = extension.Extension{
 		"video subtitle list": func(_ context.Context, _ extension.Call) contract.Outcome {
 			return contract.Outcome{Data: map[string]any{"files": []map[string]string{{"name": "clip.mov"}, {"name": "other.mov"}}}}
 		},
+		"video subtitle fetch": func(_ context.Context, call extension.Call) contract.Outcome {
+			if _, problem := call.Key("deepgram"); problem != nil {
+				return contract.Outcome{Errors: []contract.Problem{*problem}}
+			}
+			return contract.Outcome{Data: map[string]bool{"received_key": true}}
+		},
+		"video subtitle status": func(_ context.Context, call extension.Call) contract.Outcome {
+			return contract.Outcome{Data: map[string]any{"checks": []map[string]string{{
+				"id": "video-subtitle.ready", "component": "video-subtitle", "status": "pass",
+				"message": call.Printer.T("video-subtitle.ready"),
+			}}}}
+		},
 	},
 }

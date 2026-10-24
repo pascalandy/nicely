@@ -26,8 +26,7 @@ const grantsFormat = 1
 // in Record format of contract.md.
 const grantsLockWait = 250 * time.Millisecond
 
-// grant lets the extension of a domain, at its source, receive the key of
-// a service.
+// grant binds a service's key to an extension slug and source.
 type grant struct {
 	Service string `json:"service"`
 	Domain  string `json:"domain"`
@@ -127,7 +126,7 @@ func readGrants(file string) ([]grant, error) {
 		switch {
 		case entry == nil,
 			strict(entry["service"], &g.Service) != nil || !contract.IsService(g.Service),
-			strict(entry["domain"], &g.Domain) != nil || !contract.IsDomain(g.Domain),
+			strict(entry["domain"], &g.Domain) != nil || !contract.IsSlug(g.Domain),
 			strict(entry["granted_at"], &g.GrantedAt) != nil,
 			slices.ContainsFunc(grants, func(o grant) bool { return o.Service == g.Service && o.Domain == g.Domain }):
 			return nil, invalid
@@ -164,7 +163,7 @@ func sameSource(path, source *string) bool {
 	return *path == *source
 }
 
-// findGrant returns the grant of a service to a domain, whatever its
+// findGrant returns the grant of a service to a slug, whatever its
 // source, or nil.
 func findGrant(grants []grant, service, domain string) *grant {
 	i := slices.IndexFunc(grants, func(g grant) bool { return g.Service == service && g.Domain == domain })

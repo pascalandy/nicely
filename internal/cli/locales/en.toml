@@ -529,9 +529,9 @@ other = "Let an extension receive the key of a service"
 description = "Help page and ncly describe: summary of `ncly auth revoke`, which takes back the grant of a service's key to the extension of a domain."
 other = "Stop giving the key of a service to an extension"
 
-["auth.domain"]
-description = "Help page: the domain argument of `ncly auth grant` and `ncly auth revoke`, the domain of the extension that receives the key, such as transcript, which stays as is."
-other = "Domain of the extension, such as transcript"
+["auth.slug"]
+description = "Help for the extension slug argument of auth grant and revoke, such as transcript or video-convert."
+other = "Extension slug, such as transcript or video-convert"
 
 ["auth.revoke.force"]
 description = "Help page: the --force flag of `ncly auth revoke`, which removes the grant without asking for a confirmation."

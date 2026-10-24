@@ -38,7 +38,10 @@ The first `agent` command runs one trusted task through Codex. The first `transc
 
 Named extensions share domain help, completion, and describe, such as `video convert` and `video subtitle`.
 Read their skills by slug, such as `ncly skill view video-convert`.
-The [shared domains plan](docs/milestones/M23-shared-domains.md) next separates configuration, doctor, and grants for these extensions.
+Configuration, doctor components, and key grants use each extension's slug independently.
+For example, `ncly doctor video-subtitle` checks that extension, and `ncly auth grant deepgram video-subtitle` grants only its key access.
+Existing whole-domain grants keep working without migration.
+The [shared domains plan](docs/milestones/M23-shared-domains.md) next adds named repositories to the test kit and template.
 A local view of selected project docs and Canadian French follow.
 Other everyday tasks remain in [M99](docs/milestones/M99-parking-lot/everyday-domains.md).
 

@@ -74,8 +74,8 @@ type Call struct {
 	// it discards what a command other than a text command writes.
 	Stdout io.Writer
 	Stderr io.Writer
-	// domain is the extension's domain, and services the services that the
-	// command declares in requires.keys, which Key reads.
+	// domain holds the extension slug for Key's grant hint.
+	// services holds the command's requires.keys.
 	domain   string
 	services []string
 	// programs holds the entry of each program that the command declares

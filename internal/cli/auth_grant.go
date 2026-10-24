@@ -27,10 +27,10 @@ var authRevokeSchema []byte
 var authGrantDryRunSchema []byte
 
 // grantArgs are the arguments of grant and revoke: the service, then the
-// domain.
+// slug.
 var grantArgs = []contract.Arg{
 	{Name: "service", Summary: "auth.service", Required: true},
-	{Name: "domain", Summary: "auth.domain", Required: true},
+	{Name: "slug", Summary: "auth.slug", Required: true},
 }
 
 var authGrantCommand = contract.Command{
@@ -85,9 +85,9 @@ type grantDryRun struct {
 	PendingChecks []pendingItem  `json:"pending_checks"`
 }
 
-// addAuthGrant adds ncly auth grant, which lets the installed extension of
-// a domain receive the key of a service once a human confirms it in a
-// terminal, as Grants in contract.md defines. It reads no key.
+// addAuthGrant adds ncly auth grant for an installed extension's slug.
+// Grants in contract.md requires human confirmation in a terminal.
+// It reads no key.
 func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, extensions []*extension) {
 	c := command.Build(p, p, authGrantCommand, func(c *cobra.Command, args []string) error {
 		service, domain := args[0], args[1]
@@ -164,7 +164,7 @@ func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 		var domains []string
 		for _, e := range extensions {
 			if e.broken == nil && slices.Contains(declaredServices([]*extension{e}), service) {
-				domains = append(domains, e.domain)
+				domains = append(domains, e.slug)
 			}
 		}
 		return domains
@@ -173,8 +173,7 @@ func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 }
 
 // addAuthRevoke adds ncly auth revoke, which removes the grant of a
-// service to a domain, whatever its source, even when no installed
-// extension has the domain anymore.
+// service to a slug, whatever its source, even after the extension is uninstalled.
 func addAuthRevoke(p *i18n.Printer, g command.Globals, group *cobra.Command, extensions []*extension) {
 	c := command.Build(p, p, authRevokeCommand, func(c *cobra.Command, args []string) error {
 		service, domain := args[0], args[1]
@@ -243,14 +242,13 @@ func addAuthRevoke(p *i18n.Printer, g command.Globals, group *cobra.Command, ext
 	group.AddCommand(c)
 }
 
-// grantTarget returns the installed extension of a domain that declares a
-// service, or the problem that keeps grant from naming it: NOT_FOUND for a
-// domain that no installed extension has or a service that its commands
-// do not declare, and EXTENSION_INVALID for an extension that cannot run.
+// grantTarget selects an installed slug that declares the service.
+// An unknown slug or undeclared service gets NOT_FOUND.
+// An extension that cannot run gets EXTENSION_INVALID.
 func grantTarget(p *i18n.Printer, extensions []*extension, service, domain string) (*extension, *contract.Problem) {
 	data := map[string]any{"Service": service, "Domain": domain}
 	status := []string{"ncly", "auth", "status"}
-	i := slices.IndexFunc(extensions, func(e *extension) bool { return e.domain == domain })
+	i := slices.IndexFunc(extensions, func(e *extension) bool { return e.slug == domain })
 	switch {
 	case i < 0:
 		return nil, &contract.Problem{Code: contract.NotFound, Message: p.T("auth.no_domain", data), Hint: strings.Join(status, " "), Next: status}
@@ -355,10 +353,8 @@ func plannedGrantChange(p *i18n.Printer, plan []plannedGrant, pending []pendingI
 	}
 }
 
-// grantCompletion completes the service of grant and revoke with the
-// services that the manifests declare, as login does, then the domain with
-// the domains that domains gives for that service, without asking the
-// keychain or starting an extension.
+// grantCompletion suggests declared services, then the slugs that domains gives for each service.
+// It never asks the keychain or starts an extension.
 func grantCompletion(extensions []*extension, domains func(service string) []string) cobra.CompletionFunc {
 	services := serviceCompletion(extensions)
 	return func(c *cobra.Command, args []string, toComplete string) ([]cobra.Completion, cobra.ShellCompDirective) {

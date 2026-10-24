@@ -5,3 +5,15 @@ other = "Manage video subtitles"
 ["video-subtitle.list"]
 description = "Summary of the sibling completion provider."
 other = "List video files"
+
+["video-subtitle.fetch"]
+description = "Summary of the keyed subtitle fixture command."
+other = "Fetch subtitles with a granted key"
+
+["video-subtitle.status"]
+description = "Summary of the subtitle fixture status command."
+other = "Check subtitle readiness"
+
+["video-subtitle.ready"]
+description = "Passing check from the subtitle fixture status command."
+other = "Subtitles are ready"

@@ -74,12 +74,12 @@ type serviceEntry struct {
 	// found is the message of an entry whose key was found, for the check of
 	// its service in ncly doctor.
 	found string
-	// ungranted lists, in name order, the domains whose extension needs the
+	// ungranted lists, in name order, the slugs whose extension needs the
 	// key and lacks a grant, for the checks of ncly doctor.
 	ungranted []string
 }
 
-// grantEntry says whether the extension of a domain that declares a
+// grantEntry says whether the extension of a slug that declares a
 // service holds a grant of its key, as ncly auth in core-spec.md defines.
 type grantEntry struct {
 	Domain   string `json:"domain"`
@@ -210,9 +210,8 @@ func serviceVerdict(ctx context.Context, p *i18n.Printer, k *keychain.Keychain, 
 	return entry, nil
 }
 
-// notGranted is the KEY_NOT_GRANTED problem of a key that the extension of
-// a domain needs and that no human granted to it, whose hint and next
-// grant it.
+// notGranted reports KEY_NOT_GRANTED for an extension slug.
+// Its hint and next name the grant command.
 func notGranted(p *i18n.Printer, service, domain string) contract.Problem {
 	grant := []string{"ncly", "auth", "grant", service, domain}
 	data := map[string]any{"Service": service, "Domain": domain}
@@ -228,8 +227,8 @@ func serviceGrants(service string, extensions []*extension, grants []grant) []gr
 		if e.broken != nil || !slices.Contains(declaredServices([]*extension{e}), service) {
 			continue
 		}
-		g := findGrant(grants, service, e.domain)
-		entries = append(entries, grantEntry{Domain: e.domain, Granted: g != nil && sameSource(g.Path, sourceOf(e)), Optional: e.manifest.Optional(service)})
+		g := findGrant(grants, service, e.slug)
+		entries = append(entries, grantEntry{Domain: e.slug, Granted: g != nil && sameSource(g.Path, sourceOf(e)), Optional: e.manifest.Optional(service)})
 	}
 	slices.SortFunc(entries, func(a, b grantEntry) int { return strings.Compare(a.Domain, b.Domain) })
 	return entries
@@ -284,9 +283,8 @@ func writeServices(w io.Writer, p *i18n.Printer, r statusReport) error {
 	return err
 }
 
-// grantsText writes the grants of a service as auth status shows them:
-// each one as <domain>: granted or <domain>: not granted, with , optional
-// for an optional key, separated by commas.
+// grantsText formats comma-separated grants as <slug>: granted or <slug>: not granted.
+// An optional key adds , optional.
 func grantsText(p *i18n.Printer, grants []grantEntry) string {
 	texts := make([]string, 0, len(grants))
 	for _, g := range grants {

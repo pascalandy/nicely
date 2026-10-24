@@ -10,6 +10,23 @@ effects = {}
 examples = ["ncly video subtitle list", "ncly video subtitle list --json"]
 
 [[commands]]
+path = "video subtitle fetch"
+summary = "video-subtitle.fetch"
+effects = {}
+requires = { keys = ["deepgram"] }
+
+[[commands]]
+path = "video subtitle status"
+summary = "video-subtitle.status"
+doctor = true
+effects = {}
+config = ["video-subtitle.language"]
+requires = { bins = ["subtitle-tool"] }
+result = { kind = "report" }
+
+[programs.subtitle-tool]
+
+[[commands]]
 path = "video subtitle list"
 summary = "video-subtitle.list"
 effects = {}

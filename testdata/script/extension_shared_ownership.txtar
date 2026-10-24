@@ -1,0 +1,124 @@
+# Each selected slug owns its config, discovery checks, and doctor component.
+onlyncly video-convert-external video-subtitle-external
+install video-convert
+install video-subtitle
+chmod 755 bin/subtitle-tool
+chmod 755 bin/ncly-video-subtitle
+chmod 755 bin/ncly-doctor-extra
+chmod 755 bin/ncly-skill-extra
+env CFG=$WORK/.config/nicely
+mkdir $CFG
+cp config.toml $CFG/config.toml
+
+# A sibling's declaration and a hidden duplicate cannot make a key known.
+exec ncly doctor core --json
+answer stdout ok
+stdout 'unknown key video-convert.language'
+stdout 'unknown key video-subtitle.hidden'
+stdout 'unknown key away-extra-third'
+! stdout 'unknown key video-subtitle.language'
+! stdout 'unknown key away-extra\.'
+! exists external.log
+! exists hidden-ran
+
+# Every named executable has its own discovery check, including hidden names.
+exec ncly doctor extensions --json
+answer stdout ok
+stdout '"id":"extensions.video-convert",[^}]*"domain":"video-convert","source":"extension","path":"'${DATA@R}'/ncly-video-convert"\}'
+stdout '"id":"extensions.video-subtitle",[^}]*"path":"'${DATA@R}'/ncly-video-subtitle"\}'
+stdout '"id":"extensions.video-subtitle",[^}]*"path":"'${WORK@R}'/bin/ncly-video-subtitle","hidden_by":\{"source":"extension","path":"'${DATA@R}'/ncly-video-subtitle"\}'
+stdout '"domain":"doctor-extra",[^}]*"hidden_by":\{"source":"core","path":null\}'
+stdout '"domain":"skill-extra",[^}]*"hidden_by":\{"source":"bundled","path":null\}'
+! stdout '"id":"extensions.video"'
+! exists external.log
+! exists hidden-ran
+
+# Component selection uses a slug, and status runs relative to its complete root.
+exec ncly doctor video-convert --json
+answer stdout ok
+stdout '"checks":\[\]'
+! exists external.log
+exec ncly doctor video-subtitle --json
+answer stdout ok
+stdout '"id":"video-subtitle.subtitle-tool","component":"video-subtitle","status":"pass"'
+stdout '"id":"video-subtitle.ready","component":"video-subtitle","status":"pass"'
+grep -count=1 '^video-subtitle$' external.log
+! grep video-convert external.log
+exits 2 ncly doctor video --json
+answer stderr NOT_FOUND
+exec ncly __complete doctor video
+stdout '^video-convert$'
+stdout '^video-subtitle$'
+! stdout '^video$'
+exec ncly --lang en-XA doctor video-subtitle
+pseudo stdout video-subtitle.subtitle-tool video-subtitle.ready
+
+# A status report cannot claim its sibling's component.
+cp $DATA/ncly-video-subtitle subtitle-original
+cp wrong-status.sh $DATA/ncly-video-subtitle
+exits 78 ncly doctor video-subtitle --json
+answer stdout report
+stdout '"id":"video-subtitle.status","component":"video-subtitle","status":"fail","code":"EXTENSION_INVALID"'
+! stdout '"id":"video-convert.ready"'
+cp subtitle-original $DATA/ncly-video-subtitle
+
+# A broken winner still hides a duplicate and keeps its config keys private.
+cp $DATA/ncly-video-subtitle.toml subtitle.toml
+cp invalid.toml $DATA/ncly-video-subtitle.toml
+exits 78 ncly doctor video-subtitle --json
+answer stderr EXTENSION_INVALID
+exits 78 ncly doctor extensions --json
+answer stdout report
+stdout '"id":"extensions.video-subtitle","component":"extensions","status":"fail","code":"EXTENSION_INVALID"'
+stdout '"path":"'${WORK@R}'/bin/ncly-video-subtitle","hidden_by":\{"source":"extension","path":"'${DATA@R}'/ncly-video-subtitle"\}'
+exec ncly doctor core --json
+! stdout 'unknown key video-subtitle\.'
+cp subtitle.toml $DATA/ncly-video-subtitle.toml
+
+# A whole-domain winner hides all named copies, even with an invalid manifest.
+cp invalid.toml bin/ncly-video.toml
+cp bin/ncly-video-subtitle bin/ncly-video
+exits 78 ncly doctor extensions --json
+answer stdout report
+stdout '"id":"extensions.video","component":"extensions","status":"fail","code":"EXTENSION_INVALID"'
+stdout '"domain":"video-convert",[^}]*"hidden_by":\{"source":"extension","path":"'${WORK@R}'/bin/ncly-video"\}'
+stdout '"domain":"video-subtitle",[^}]*"path":"'${DATA@R}'/ncly-video-subtitle","hidden_by":\{"source":"extension","path":"'${WORK@R}'/bin/ncly-video"\}'
+stdout '"domain":"video-subtitle",[^}]*"path":"'${WORK@R}'/bin/ncly-video-subtitle","hidden_by":\{"source":"extension","path":"'${WORK@R}'/bin/ncly-video"\}'
+! exists hidden-ran
+
+-- config.toml --
+[video-convert]
+language = "en"
+[video-subtitle]
+language = "fr"
+hidden = true
+[away-extra]
+anything = true
+[away-extra-third]
+anything = true
+-- bin/subtitle-tool --
+#!/bin/sh
+exit 0
+-- bin/ncly-video-subtitle --
+#!/bin/sh
+echo hidden >> "$WORK/hidden-ran"
+-- bin/ncly-video-subtitle.toml --
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "subtitle"
+[[commands]]
+path = "video subtitle"
+summary = "video-subtitle.summary"
+config = ["video-subtitle.hidden"]
+-- bin/ncly-doctor-extra --
+#!/bin/sh
+echo core-hidden >> "$WORK/hidden-ran"
+-- bin/ncly-skill-extra --
+#!/bin/sh
+echo bundled-hidden >> "$WORK/hidden-ran"
+-- wrong-status.sh --
+#!/bin/sh
+echo '{"ok":true,"contract_version":1,"checks":[{"id":"video-convert.ready","component":"video-convert","status":"pass","message":"Ready"}]}'
+-- invalid.toml --
+format_version = 99
