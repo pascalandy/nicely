@@ -1,0 +1,11 @@
+{
+  "isolates": {
+    "worktree": {
+      "setup": [
+        "go mod download",
+        "go -C tools mod download",
+        "go -C testdata/extensions/standalone mod download"
+      ]
+    }
+  }
+}
