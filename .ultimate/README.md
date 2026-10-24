@@ -12,6 +12,7 @@ Go shares its module cache between worktrees. The commands are safe to repeat an
 Install the Go version required by each module before starting work.
 
 Nicely needs no development database, copied `.env`, or development server port.
+Use the [Python check environment](../docs/north-star/dev-preferences.md#use-uv-for-python) for checks that spawn Python.
 The Python checks use the pinned tools and packages in `just python`.
 No setup command copies credentials, installs system tools, or runs paid services.
 

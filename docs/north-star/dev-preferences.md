@@ -36,6 +36,16 @@ Use ASD-STE100 Issue 9 writing practices for English prose. Procedures use imper
 
 Where the specs are silent on CLI design, follow what serious CLIs agree on, such as `gh`, `kubectl`, Terraform, Docker, and cargo, and the guidelines of clig.dev. The `coding-standard` skill condenses clig.dev. When the choice becomes a rule, record the comparison in a new decision in [decisions/](decisions/README.md).
 
+## Use uv for Python
+
+Always use `uv` for Python execution, environments, and dependencies.
+Keep the tool and package pins in `just python` and the script's dependency metadata.
+Select the Python version from `extensions/transcript/python/transcript.py`.
+Run checks that spawn Python inside that uv-selected environment.
+For the current minimum, run `uv run --no-project --python 3.12 just check`.
+Use the same prefix for `just test`, `just scenario`, and `just signoff`.
+Do not install system Python or change shell profiles for these checks.
+
 ## Run macOS checks on the mini
 
 Use the `fleet` skill to run macOS checks on the mini. Use the mbp only if the mini is offline or lacks Nicely or a required tool. Report the machine and the reason for any mbp fallback.
