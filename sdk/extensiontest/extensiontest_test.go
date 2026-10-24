@@ -1,6 +1,7 @@
 package extensiontest_test
 
 import (
+	"cmp"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,7 +12,7 @@ import (
 // without old removes its file, and one with new alone writes it.
 type edit struct{ file, old, new string }
 
-// TestEachCheckFailsAndNamesItsFix breaks a copy of the standalone fixture
+// TestEachCheckFailsAndNamesItsFix breaks a copy of a fixture repository
 // in one way per case, then runs its go test. That test must fail with the
 // fix of the check that the break trips. The fixture's own go test, which
 // just test runs, proves that the unbroken repository passes. The cases run
@@ -20,9 +21,11 @@ type edit struct{ file, old, new string }
 func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 	breakSchema := edit{"manifest.toml", `count = { type = "integer" }`, `count = { type = "string" }`}
 	cases := []struct {
-		name  string
-		edits []edit
-		want  []string
+		name string
+		// fixture defaults to standalone.
+		fixture string
+		edits   []edit
+		want    []string
 		// absent holds what the output must not hold.
 		absent []string
 	}{
@@ -76,10 +79,54 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 			edits: []edit{{"extension.go", "\tSkill:    skill,\n", ""}},
 			want:  []string{"skill/SKILL.md: the extension ships no skill. Fix: add skill/SKILL.md, named standalone"},
 		},
+		{
+			name:    "a sibling cannot cover the root",
+			fixture: "standalone-named",
+			edits:   []edit{{file: "testdata/script/convert.txtar", new: "ncly video convert-hdr clip.mov --json\n"}},
+			want:    []string{"testdata/script: no scenario runs `ncly video convert`. Fix: add a scenario that runs it"},
+		},
+		{
+			name:    "a direct answer must match the root schema",
+			fixture: "standalone-named",
+			edits: []edit{
+				{"manifest.toml", `file = { type = "string" }`, `file = { type = "integer" }`},
+				{file: "testdata/script/convert.txtar", new: "ncly-video-convert clip.mov --json\n"},
+			},
+			want: []string{"`ncly-video-convert clip.mov --json`: the answer on stdout breaks the schema that manifest.toml declares for `ncly video convert`"},
+		},
+		{
+			name:    "a host answer must match the root schema",
+			fixture: "standalone-named",
+			edits:   []edit{{"manifest.toml", `file = { type = "string" }`, `file = { type = "integer" }`}},
+			want:    []string{"`ncly video convert clip.mov --json`: the answer on stdout breaks the schema that manifest.toml declares for `ncly video convert`"},
+		},
+		{
+			name:    "a direct foreground exec cannot skip the answer check",
+			fixture: "standalone-named",
+			edits:   []edit{{file: "testdata/script/convert.txtar", new: "exec $XDG_DATA_HOME/nicely/extensions/ncly-video-convert clip.mov --json\n"}},
+			want:    []string{"convert.txtar:1: exec runs ncly-video-convert, so the kit cannot check its answer. Fix: drop exec"},
+		},
+		{
+			name:    "a missing skill names the slug",
+			fixture: "standalone-named",
+			edits:   []edit{{"extension.go", "\tSkill:    skill,\n", ""}},
+			want:    []string{"skill/SKILL.md: the extension ships no skill. Fix: add skill/SKILL.md, named video-convert"},
+		},
+		{
+			name:    "a named skill that names an undeclared command",
+			fixture: "standalone-named",
+			edits: []edit{
+				{"manifest.toml", "path = \"video convert\"", "path = \"video convert\"\nsummary = \"video-convert.summary\"\n\n[[commands]]\npath = \"video convert run\""},
+				{"extension.go", `"video convert": convert`, `"video convert run": convert`},
+				{file: "testdata/script/convert.txtar", new: "grant example\nncly video convert run clip.mov --json\nstdout '\"file\":\"clip.mov\"'\n"},
+				{"skill/SKILL.md", "ncly video convert clip.mov", "ncly video convert typo clip.mov"},
+			},
+			want: []string{"skill/SKILL.md: names `ncly video convert typo`, which the manifest lacks. Fix: declare that command in manifest.toml"},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			out, err := goTest(t, "standalone", os.Getenv("PATH"), c.edits...)
+			out, err := goTest(t, cmp.Or(c.fixture, "standalone"), os.Getenv("PATH"), c.edits...)
 			if err == nil {
 				t.Fatalf("go test passed on the broken copy:\n%s", out)
 			}
