@@ -18,7 +18,7 @@ The conversion fixture runs at its root, while the subtitle fixture supplies com
 - `ncly-video-convert clip.mov --json`
 - `ncly video --help`
 - `ncly describe video --json`
-- `ncly __complete video convert cl`
+- `ncly __complete video convert ''`
 - `ncly skill view video-convert --json`
 - `ncly skill status --json`
 
@@ -43,7 +43,7 @@ Run each command below through `just verify step "$run" shared-domains`:
 3. Add `describe video --json`. Expect a `video` entry with `source: "core"` and no `skill` key.
 4. Check both extension roots in that answer. Each has `source: "extension"` and its slug-named skill folder.
 5. Add `describe video convert --json`. Expect the required `file` argument and `values_from.command: "video subtitle list"`.
-6. Add `__complete video convert cl`. Expect `clip.mov` and no `other.mov` suggestion.
+6. Add `__complete video convert ''`. Expect both `clip.mov` and `other.mov` from the sibling's list.
 7. Add `skill view video-convert --json`. Expect the installed skill's content and its slug-named folder.
 8. Add `skill view video-subtitle --json`. Expect the sibling's installed skill.
 9. Add `skill status --json`. Expect exit 0 without `SKILL_NAME_MISMATCH`.
