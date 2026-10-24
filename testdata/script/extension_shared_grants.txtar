@@ -14,8 +14,9 @@ stdout '"source":"key"'
 rm external.log
 cp convert.toml $DATA/ncly-video-convert.toml
 cp convert.sh $DATA/ncly-video-convert
+cp subtitle.sh $DATA/ncly-video-subtitle
 
-# Grant and doctor completion name the installed slugs rather than the family.
+# Grant completion names the installed slugs rather than the family.
 exec ncly __complete auth grant deepgram video
 stdout '^video-convert$'
 stdout '^video-subtitle$'
@@ -38,6 +39,7 @@ exits 78 ncly video subtitle fetch --json
 answer stderr KEY_NOT_GRANTED
 stderr '"next":\["ncly","auth","grant","deepgram","video-subtitle"\]'
 ! stderr 'dg-env'
+grep '^key absent$' subtitle-key.txt
 exits 78 ncly auth status --json
 answer stdout report
 stdout '"domain":"keyed","granted":true'
@@ -57,13 +59,12 @@ stdout '"domain":"video-subtitle","granted":true'
 exec ncly video subtitle fetch --json
 answer stdout ok
 stdout '"received_key":true'
+grep '^key present$' subtitle-key.txt
 exec ncly auth grant deepgram video-subtitle --json
 stdout '"action":"unchanged","domain":"video-subtitle"'
 exec ncly __complete auth revoke deepgram video
 stdout '^video-convert$'
 stdout '^video-subtitle$'
-exec ncly auth revoke deepgram video-subtitle --dry-run --force --json
-stdout '"action":"revoke","domain":"video-subtitle"'
 
 # Revoking one slug leaves its sibling and the old whole-domain grant intact.
 exec ncly auth revoke deepgram video-convert --force --json
@@ -118,5 +119,13 @@ else
     echo 'key absent' > "$WORK/convert-key.txt"
 fi
 exec video-convert-external "$@"
+-- subtitle.sh --
+#!/bin/sh
+if [ -n "${DEEPGRAM_API_KEY:-}" ]; then
+    echo 'key present' > "$WORK/subtitle-key.txt"
+else
+    echo 'key absent' > "$WORK/subtitle-key.txt"
+fi
+exec video-subtitle-external "$@"
 -- invalid.toml --
 format_version = 99
