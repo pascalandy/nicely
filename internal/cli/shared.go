@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -32,6 +33,14 @@ func sharedGroups(p *i18n.Printer, extensions []*extension) []entry {
 // forPath loads only the selected root's declarations for a direct call.
 // A domain group or an unknown child needs its siblings for help.
 func (h host) forPath(words []string) []*extension {
+	if e := h.find(words[0]); e != nil {
+		return []*extension{e}
+	}
+	if len(words) > 1 {
+		if e := h.find(strings.Join(words[:2], "-")); e != nil {
+			return []*extension{e}
+		}
+	}
 	selected := h.selected()
 	var siblings []*extension
 	for _, e := range selected {
@@ -47,6 +56,26 @@ func (h host) forPath(words []string) []*extension {
 		return loadSelected(selected)
 	}
 	return loadSelected(siblings)
+}
+
+// find selects an exact executable name without listing its search folders.
+func (h host) find(slug string) *extension {
+	for _, e := range h.bundled {
+		if e.slug == slug {
+			return e
+		}
+	}
+	domain, _, _ := strings.Cut(slug, "-")
+	if !contract.IsSlug(slug) || h.reserved(domain) {
+		return nil
+	}
+	for _, dir := range h.dirs {
+		path := filepath.Join(dir, executablePrefix+slug)
+		if isExecutable(path) {
+			return loadExtension(slug, path)
+		}
+	}
+	return nil
 }
 
 func targetPath(words []string) []string {
