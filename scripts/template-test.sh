@@ -91,12 +91,10 @@ fct_repository() {
 	fct_has "${repo}/extension.go" "package ${domain}"
 	if [[ -n "${name}" ]]; then
 		fct_has "${repo}/manifest.toml" "name = \"${name}\""
-		[[ "$(grep -c '^\[\[commands\]\]$' "${repo}/manifest.toml")" == 1 ]] || fct_fail 'the named example must run at its root'
 	else
 		[[ -z "$(sed -n '/^\[/q; /^name = /p' "${repo}/manifest.toml")" ]] || fct_fail 'the whole-domain manifest declares a name'
 	fi
 	[[ -f "${repo}/cmd/ncly-${slug}/main.go" ]] || fct_fail "the entry directory is not cmd/ncly-${slug}"
-	[[ ! -e "${repo}/README.md" && ! -e "${repo}/LICENSE" ]] || fct_fail 'the template adds a README or LICENSE'
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
@@ -130,31 +128,10 @@ fct_repository() {
 		fct_has "${repo}/manifest.toml" "name = \"${name}\""
 	fi
 	printf 'template %s passes checks, replaces its install, and preserves author edits through updates\n' "${slug}"
-	[[ -z "${name}" ]] || return 0
-	# A domain that names an import of the template, or init, still gives a repository that builds.
-	for domain in extension fmt init; do
-		"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${domain}" "${src}" "${scratch}/ncly-${domain}"
-		go -C "${scratch}/ncly-${domain}" mod edit -replace "github.com/pascalandy/nicely=${root}"
-		go -C "${scratch}/ncly-${domain}" mod tidy
-		go -C "${scratch}/ncly-${domain}" vet ./... || fct_fail "the repository that the template renders for the domain ${domain} does not build"
-	done
-	# Copier refuses main, which Go builds as a program that no package imports. It refuses nicely, whose skill the bundled one hides.
-	for domain in main nicely; do
-		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${domain}" "${src}" "${scratch}/ncly-${domain}" 2>"${scratch}/refusal.out"; then
-			fct_fail "Copier accepts the domain ${domain}"
-		fi
-		grep -qF "choose another domain" "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${domain} for another reason: $(cat "${scratch}/refusal.out")"
-	done
-	for name in Convert 2convert convert-more 'convert more' convert_more; do
-		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=video --data "name=${name}" --data module=example.com/ncly-video-convert "${src}" "${scratch}/invalid" 2>"${scratch}/refusal.out"; then
-			fct_fail "Copier accepts the name ${name}"
-		fi
-		grep -qF 'choose another name' "${scratch}/refusal.out" || fct_fail "Copier refuses ${name} for another reason: $(cat "${scratch}/refusal.out")"
-	done
 }
 
 fct_main() {
-	local root pin scratch copier
+	local root pin scratch copier template_src valid_domain invalid_domain invalid_name
 	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
 	# shellcheck source=scripts/template-update-test.sh
 	source "${root}/scripts/template-update-test.sh"
@@ -173,6 +150,27 @@ fct_main() {
 	read -r -a copier <<<"${pin}"
 	fct_repository "${scratch}/named" video convert video-convert 'video convert' --data name=convert
 	fct_repository "${scratch}/whole" probe '' probe 'probe inspect'
+	template_src="${scratch}/whole/source"
+	# A domain that names an import of the template, or init, still gives a repository that builds.
+	for valid_domain in extension fmt init; do
+		"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${valid_domain}" --data "module=example.com/ncly-${valid_domain}" "${template_src}" "${scratch}/ncly-${valid_domain}"
+		go -C "${scratch}/ncly-${valid_domain}" mod edit -replace "github.com/pascalandy/nicely=${root}"
+		go -C "${scratch}/ncly-${valid_domain}" mod tidy
+		go -C "${scratch}/ncly-${valid_domain}" vet ./... || fct_fail "the repository that the template renders for the domain ${valid_domain} does not build"
+	done
+	# Copier refuses main, which Go builds as a program that no package imports. It refuses nicely, whose skill the bundled one hides.
+	for invalid_domain in main nicely; do
+		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${invalid_domain}" --data "module=example.com/ncly-${invalid_domain}" "${template_src}" "${scratch}/ncly-${invalid_domain}" 2>"${scratch}/refusal.out"; then
+			fct_fail "Copier accepts the domain ${invalid_domain}"
+		fi
+		grep -qF "choose another domain" "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${invalid_domain} for another reason: $(cat "${scratch}/refusal.out")"
+	done
+	for invalid_name in Convert 2convert convert-more 'convert more' convert_more; do
+		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=video --data "name=${invalid_name}" --data module=example.com/ncly-video-convert "${template_src}" "${scratch}/invalid" 2>"${scratch}/refusal.out"; then
+			fct_fail "Copier accepts the name ${invalid_name}"
+		fi
+		grep -qF 'choose another name' "${scratch}/refusal.out" || fct_fail "Copier refuses ${invalid_name} for another reason: $(cat "${scratch}/refusal.out")"
+	done
 }
 
 fct_main

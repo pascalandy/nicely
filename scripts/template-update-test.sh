@@ -7,6 +7,7 @@ fct_test_update() {
 	fct_edit "${repo}/vision.md" "" "Author's note: kept through each update."
 	fct_edit "${repo}/AGENTS.md" "# AGENTS.md" "# AGENTS.md of the author"
 	if [[ -z "$(sed -n '/^\[/q; /^name = /p' "${repo}/manifest.toml")" ]]; then
+		# Simulate a repository rendered before name existed.
 		sed '/^name:/d' "${repo}/.copier-answers.yml" >"${repo}/answers.new"
 		mv "${repo}/answers.new" "${repo}/.copier-answers.yml"
 	fi
