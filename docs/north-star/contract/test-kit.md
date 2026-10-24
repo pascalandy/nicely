@@ -44,5 +44,6 @@ The fake child runs the actions of `$WORK/bin/<name>.fake`, one per line: `stdou
 - When the repository holds `.copier-answers.yml`, its `_commit`, the Nicely version of the template, equals the one in `go.mod`. The failure says to run `just update <version>`
 
 The two checks of commands match literal `ncly <root> ...` text, and parse no shell or Markdown. Each failure names the file, the missing link, and its fix. The fixture extension repository in `testdata/extensions/standalone/` proves each check.
+`testdata/extensions/standalone-named/` proves the named-extension checks, and Nicely's `just test`, `just lint`, `just fmt-check`, and `just tidy-check` cover both modules.
 
 The kit proves the declared cases. Whether each promise of `spec.md` has a scenario, and whether a command has a hidden effect, stay judgments for the author and the reviewer.

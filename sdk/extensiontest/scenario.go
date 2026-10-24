@@ -143,7 +143,7 @@ func (k *kit) fakeChild(ts *testscript.TestScript, neg bool, args []string) {
 // checkAnswer checks the answer of a call of the extension against the
 // schema of its command, as ncly describe gives it. words holds the words
 // after ncly. It returns the problem, or "" for a call that prints no
-// answer, such as a help page, human text, or a call of another domain.
+// answer, such as a help page, human text, or a call outside the root.
 func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable string) string {
 	call, found := k.find(words)
 	if !found {
@@ -199,7 +199,7 @@ type parsed struct {
 
 // find returns what the parser of ncly finds in a call, given as the words
 // after ncly. A global flag may come before the domain. It returns false
-// for a call of core or of another domain.
+// for a call of core or outside the root.
 func (k *kit) find(words []string) (parsed, bool) {
 	root := &cobra.Command{Use: "ncly"}
 	command.AddGlobalFlags(root, k.printer)

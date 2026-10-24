@@ -16,7 +16,7 @@
 // The rules of its code:
 //   - No case reads the user's keychain, HOME, or XDG folders, or finds the
 //     user's extensions. Each scenario gets a scratch HOME and scratch XDG
-//     folders, and a PATH without the folders that hold an ncly-<slug>
+//     folders, and a PATH without the folders that hold an ncly-*
 //     file. Each service that the manifest declares gets the sentinel key
 //     sentinel-<service> in its variable, so ncly never reads the keychain
 //     for it. On Linux, D-Bus names no bus, so a read that a scenario forces
@@ -191,7 +191,7 @@ func (k *kit) services() []string {
 	return slices.Compact(services)
 }
 
-// isolate returns path without each folder that holds an ncly-<slug>
+// isolate returns path without each folder that holds an ncly-*
 // file, as verify-nicely does. Discovery then finds no extension of the
 // caller, only the one that the scenario installs.
 func isolate(path string) string {
