@@ -18,7 +18,7 @@ domain:
   type: str
   help: The domain of the extension, lowercase letters and digits that start with a letter, such as notes
   validator: >-
-    {% if not (domain or "") | regex_search("^[a-z][a-z0-9]*$") %}
+    {% if not (domain or "") | regex_search("^[a-z][a-z0-9]*\\Z") %}
     Give a domain of lowercase letters and digits that starts with a letter: --data domain=notes
     {% elif domain in ["auth", "completion", "config", "core", "describe", "doctor", "extensions", "help", "run", "skill", "tap", "version"] %}
     ncly reserves the name {{ domain }}: choose another domain
@@ -31,7 +31,7 @@ name:
   default: ""
   help: One job in the domain, such as convert; leave empty for a whole-domain extension
   validator: >-
-    {% if name and not name | regex_search("^[a-z][a-z0-9]*$") %}
+    {% if name and not name | regex_search("^[a-z][a-z0-9]*\\Z") %}
     Give one name of lowercase letters and digits that starts with a letter: choose another name
     {% elif domain == "nicely" and not name %}
     The skill nicely that ncly bundles would hide the skill of the extension: choose another domain
@@ -41,14 +41,26 @@ slug:
   type: str
   default: "{{ domain }}{% if name %}-{{ name }}{% endif %}"
   when: false
+  validator: >-
+    {% if slug != (domain ~ ("-" ~ name if name else "")) %}
+    Pass only domain, name, and module; slug is derived from those inputs.
+    {% endif %}
 root:
   type: str
   default: "{{ domain }}{% if name %} {{ name }}{% endif %}"
   when: false
+  validator: >-
+    {% if root != (domain ~ (" " ~ name if name else "")) %}
+    Pass only domain, name, and module; root is derived from those inputs.
+    {% endif %}
 example_command:
   type: str
   default: "{{ root }}{% if not name %} inspect{% endif %}"
   when: false
+  validator: >-
+    {% if example_command != (root ~ (" inspect" if not name else "")) %}
+    Pass only domain, name, and module; example_command is derived from those inputs.
+    {% endif %}
 
 module:
   type: str

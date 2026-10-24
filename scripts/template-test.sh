@@ -131,7 +131,7 @@ fct_repository() {
 }
 
 fct_main() {
-	local root pin scratch copier template_src invalid_domain invalid_name
+	local root pin scratch copier template_src invalid_domain invalid_name derived_key
 	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
 	# shellcheck source=scripts/template-update-test.sh
 	source "${root}/scripts/template-update-test.sh"
@@ -155,17 +155,23 @@ fct_main() {
 	template_src="${scratch}/whole/source"
 	fct_test_import_domains "${template_src}" "${scratch}" "${root}" "${copier[@]}"
 	# Copier refuses main, which Go builds as a program that no package imports. It refuses nicely, whose skill the bundled one hides.
-	for invalid_domain in main nicely; do
-		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${invalid_domain}" --data "module=example.com/ncly-${invalid_domain}" "${template_src}" "${scratch}/ncly-${invalid_domain}" 2>"${scratch}/refusal.out"; then
+	for invalid_domain in main nicely $'probe\n'; do
+		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${invalid_domain}" --data module=example.com/ncly-probe "${template_src}" "${scratch}/invalid-domain" 2>"${scratch}/refusal.out"; then
 			fct_fail "Copier accepts the domain ${invalid_domain}"
 		fi
-		grep -qF "choose another domain" "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${invalid_domain} for another reason: $(cat "${scratch}/refusal.out")"
+		grep -qE 'choose another domain|Give a domain' "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${invalid_domain} for another reason: $(cat "${scratch}/refusal.out")"
 	done
-	for invalid_name in Convert 2convert convert-more 'convert more' convert_more; do
+	for invalid_name in Convert 2convert convert-more 'convert more' convert_more $'convert\n'; do
 		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=video --data "name=${invalid_name}" --data module=example.com/ncly-video-convert "${template_src}" "${scratch}/invalid" 2>"${scratch}/refusal.out"; then
 			fct_fail "Copier accepts the name ${invalid_name}"
 		fi
 		grep -qF 'choose another name' "${scratch}/refusal.out" || fct_fail "Copier refuses ${invalid_name} for another reason: $(cat "${scratch}/refusal.out")"
+	done
+	for derived_key in slug root example_command; do
+		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=video --data name=convert --data "${derived_key}=wrong" --data module=example.com/ncly-video-convert "${template_src}" "${scratch}/invalid-derived" 2>"${scratch}/refusal.out"; then
+			fct_fail "Copier accepts an override of ${derived_key}"
+		fi
+		grep -qF 'Pass only domain, name, and module' "${scratch}/refusal.out" || fct_fail "Copier refuses ${derived_key} for another reason: $(cat "${scratch}/refusal.out")"
 	done
 }
 
