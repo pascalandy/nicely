@@ -1,6 +1,6 @@
 # M23 Shared domains
 
-Status: ready
+Status: active
 Version: v0.23.0
 
 ## Demo
@@ -25,7 +25,7 @@ Neither milestone has a done card.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M23-T1 | Run a named extension | agent | — | todo |
+| M23-T1 | Run a named extension | agent | — | done |
 | M23-T2 | Keep sibling extensions apart | agent | M23-T1 | todo |
 | M23-T3 | Test a named extension repository | agent | M23-T2 | todo |
 | M23-T4 | Create named extensions from the template | agent | M23-T3 | todo |

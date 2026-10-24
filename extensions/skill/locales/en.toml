@@ -127,11 +127,11 @@ description = "Hint under skill.name_mismatch: what the user does next. {{.Path}
 other = "Rename the folder {{.Path}} to {{.Name}}, or the name in {{.File}} to {{.Folder}}."
 
 ["skill.domain_mismatch"]
-description = "Warning SKILL_NAME_MISMATCH of `ncly skill status`, when an installed extension's skill is not named after its domain. {{.Domain}} is the domain, {{.Path}} the skill's folder, and {{.Name}} the skill's name."
+description = "Warning SKILL_NAME_MISMATCH for an installed extension. Domain is its slug, Path is the skill folder, and Name is the skill name."
 other = "The skill of the extension {{.Domain}} in {{.Path}} is named {{.Name}}, not {{.Domain}}."
 
 ["skill.domain_mismatch_hint"]
-description = "Hint under skill.domain_mismatch: what the user does next. {{.File}} is the path of the SKILL.md, and {{.Domain}} the extension's domain."
+description = "Hint under skill.domain_mismatch. File is the SKILL.md path, and Domain is the extension slug."
 other = "Rename the skill in {{.File}} to {{.Domain}}."
 
 ["skill.folder"]

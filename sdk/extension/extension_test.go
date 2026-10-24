@@ -111,7 +111,7 @@ func TestCheckRejectsWhatMainWouldRefuse(t *testing.T) {
 		}, "fr-CA.toml lacks demo.run.summary"},
 		{"a skill named after another domain", func(e *Extension) {
 			e.Skill = fstest.MapFS{"skill/SKILL.md": {Data: []byte(strings.Replace(validSkill, "name: demo", "name: other", 1))}}
-		}, `named "other", not after the domain "demo"`},
+		}, `named "other", not after the slug "demo"`},
 		{"a skill without description", func(e *Extension) {
 			e.Skill = fstest.MapFS{"skill/SKILL.md": {Data: []byte("---\nname: demo\n---\n")}}
 		}, "lacks description"},

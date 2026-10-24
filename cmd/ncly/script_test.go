@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,6 +18,8 @@ import (
 	"github.com/pascalandy/nicely/sdk/runner"
 	hello "github.com/pascalandy/nicely/testdata/extensions/hello"
 	"github.com/pascalandy/nicely/testdata/extensions/keyed"
+	convert "github.com/pascalandy/nicely/testdata/extensions/video-convert"
+	subtitle "github.com/pascalandy/nicely/testdata/extensions/video-subtitle"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -35,10 +36,12 @@ func TestMain(m *testing.M) {
 		"ttyin":      ttyinRun,
 		// codes lists the registry of sdk/contract, one code per line,
 		// because no command of ncly lists its codes.
-		"codes":          printCodes,
-		"holdlock":       holdLock,
-		"hello-external": func() { shortCleanup(); extension.Main(hello.Extension) },
-		"keyed-external": func() { shortCleanup(); extension.Main(keyed.Extension) },
+		"codes":                   printCodes,
+		"holdlock":                holdLock,
+		"hello-external":          func() { shortCleanup(); extension.Main(hello.Extension) },
+		"keyed-external":          func() { shortCleanup(); extension.Main(keyed.Extension) },
+		"video-convert-external":  func() { extension.Main(convert.Extension) },
+		"video-subtitle-external": func() { extension.Main(subtitle.Extension) },
 		"agent-external": func() {
 			shortCleanup()
 			record.Boundary = boundaryHook(os.Getenv("NCLY_TEST_BOUNDARY"))
@@ -66,7 +69,10 @@ func testBundled() {
 // by domain. They are the fixtures of testdata/extensions/, and agent and
 // transcript of extensions/, which just install installs the same way. The
 // setup of their own scenarios installs each one in the data folder.
-var fixtures = map[string]extension.Extension{"hello": hello.Extension, "keyed": keyed.Extension, "agent": agent.Extension, "transcript": transcript.Extension}
+var fixtures = map[string]extension.Extension{
+	"hello": hello.Extension, "keyed": keyed.Extension, "agent": agent.Extension, "transcript": transcript.Extension,
+	"video-convert": convert.Extension, "video-subtitle": subtitle.Extension,
+}
 
 // boundaryHook returns the boundary hook of record support that
 // NCLY_TEST_BOUNDARY asks for, which only the test binary reads: none when
@@ -225,18 +231,9 @@ func cmdOnlyncly(ts *testscript.TestScript, neg bool, args []string) {
 func install(work string, setenv func(name, value string), domain string, e extension.Extension) error {
 	dir := filepath.Join(work, ".local", "share", "nicely", "extensions")
 	executable := filepath.Join(dir, "ncly-"+domain)
-	locales, err := fs.Sub(e.Locales, "locales")
+	err := os.MkdirAll(dir, 0o755)
 	if err == nil {
-		err = os.CopyFS(executable+".locales", locales)
-	}
-	if err == nil && e.Skill != nil {
-		var skill fs.FS
-		if skill, err = fs.Sub(e.Skill, "skill"); err == nil {
-			err = os.CopyFS(executable+".skill", skill)
-		}
-	}
-	if err == nil {
-		err = os.WriteFile(executable+".toml", e.Manifest, 0o644)
+		err = extension.Export(e, dir)
 	}
 	if err == nil {
 		script := "#!/bin/sh\necho " + domain + " >> \"$WORK/external.log\"\nexec " + domain + "-external \"$@\"\n"

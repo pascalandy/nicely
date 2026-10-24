@@ -22,8 +22,16 @@ description = "Reason inside extension.invalid, when the manifest names a domain
 other = "{{.File}} declares the domain \"{{.Value}}\" instead of {{.Want}}."
 
 ["extension.domain_command"]
-description = "Reason inside extension.invalid. {{.File}} is the manifest's name, and {{.Path}} the domain, such as hello, which needs a command of its own."
-other = "{{.File}} declares no command for the domain {{.Path}}."
+description = "Reason inside extension.invalid. File is the manifest, and Path is the complete extension root."
+other = "{{.File}} declares no command for the extension root {{.Path}}."
+
+["extension.identity_name"]
+description = "Invalid optional manifest name. File is the manifest, and Value is its name."
+other = "{{.File}} declares the invalid name \"{{.Value}}\". Use lowercase letters and digits, starting with a letter."
+
+["extension.identity_slug"]
+description = "Manifest identity mismatch. File is the manifest, Value is its declared slug, and Want is the executable slug."
+other = "{{.File}} declares the slug \"{{.Value}}\" instead of {{.Want}}."
 
 ["extension.domain_name"]
 description = "SDK Check error for an invalid embedded manifest domain. {{.File}} is manifest.toml, and {{.Value}} is its domain. Domains start with a lowercase letter and contain only lowercase letters and digits."

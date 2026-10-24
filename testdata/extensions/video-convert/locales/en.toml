@@ -1,0 +1,19 @@
+["video-convert.summary"]
+description = "Summary of the named conversion fixture."
+other = "Convert one video"
+
+["video-convert.file"]
+description = "The video file argument."
+other = "Video file"
+
+["video-convert.converted"]
+description = "Conversion result. File is the input video."
+other = "Converted {{.File}}"
+
+["video-convert.failed"]
+description = "Failure or warning of the conversion fixture."
+other = "The fixture found a conversion problem."
+
+["video-convert.hint"]
+description = "Recovery hint for the conversion fixture."
+other = "Choose another video file."

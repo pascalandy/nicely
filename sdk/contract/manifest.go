@@ -19,6 +19,7 @@ const ManifestFormat = 1
 // Manifest section of contract.md defines.
 type Manifest struct {
 	Domain   string
+	Name     string
 	Commands []Command
 	// Errors holds the own codes in the order that decides which one leads.
 	Errors []OwnCode
@@ -83,21 +84,6 @@ func (m Manifest) Command(path string) (Command, bool) {
 	return m.Commands[i], true
 }
 
-// Runs reports whether a command starts the extension. The domain alone
-// prints its help, as Usage in contract.md says, and so does a command with
-// children and no arguments, which only groups them.
-func (m Manifest) Runs(c Command) bool {
-	if len(c.Path) == 1 {
-		return false
-	}
-	if len(c.Args) > 0 {
-		return true
-	}
-	return !slices.ContainsFunc(m.Commands, func(other Command) bool {
-		return len(other.Path) == len(c.Path)+1 && slices.Equal(other.Path[:len(c.Path)], c.Path)
-	})
-}
-
 // ids returns every catalog ID that the manifest names, in order.
 func (m Manifest) ids() []string {
 	var ids []string
@@ -135,10 +121,6 @@ var (
 	configWord = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
 )
 
-// IsDomain reports whether name can be a domain: lowercase letters and
-// digits that start with a letter.
-func IsDomain(name string) bool { return domainName.MatchString(name) }
-
 // valuesFromFile is the TOML layout of a values_from table.
 type valuesFromFile struct {
 	Command string `toml:"command"`
@@ -158,7 +140,8 @@ func (v *valuesFromFile) declared() *ValuesFrom {
 // manifestFile is the TOML layout of a manifest. Keys that it lacks are
 // ignored, as Compatibility asks of a reader.
 type manifestFile struct {
-	Domain   string `toml:"domain"`
+	Domain   string  `toml:"domain"`
+	Name     *string `toml:"name"`
 	Commands []struct {
 		Path     string   `toml:"path"`
 		Summary  string   `toml:"summary"`
@@ -223,13 +206,13 @@ type manifestFile struct {
 	} `toml:"keys"`
 }
 
-// ParseManifest reads the manifest of the extension of a domain and checks
+// ParseManifest reads an extension manifest and checks
 // every rule of the Manifest section of contract.md, except the catalog IDs,
-// which need the catalog. An empty domain takes the one that the manifest
+// which need the catalog. An empty slug takes the identity that the manifest
 // declares, as for an extension whose manifest is embedded. The versions
 // come first, so a manifest of another format is rejected before its other
 // keys are read.
-func ParseManifest(data []byte, domain string) (Manifest, error) {
+func ParseManifest(data []byte, slug string) (Manifest, error) {
 	var versions struct {
 		FormatVersion   int `toml:"format_version"`
 		ContractVersion int `toml:"contract_version"`
@@ -247,13 +230,10 @@ func ParseManifest(data []byte, domain string) (Manifest, error) {
 	if _, err := toml.Decode(string(data), &file); err != nil {
 		return Manifest{}, syntaxError(err)
 	}
-	if domain == "" {
-		domain = file.Domain
+	m, err := manifestIdentity(file.Domain, file.Name, slug)
+	if err != nil {
+		return Manifest{}, err
 	}
-	if file.Domain != domain || !IsDomain(domain) {
-		return Manifest{}, broken("extension.domain", map[string]any{"Value": file.Domain, "Want": domain})
-	}
-	m := Manifest{Domain: domain}
 	for _, raw := range file.Commands {
 		c := Command{
 			Path:     strings.Split(raw.Path, " "),
@@ -326,8 +306,8 @@ func syntaxError(err error) *RuleError {
 }
 
 func (m Manifest) check() error {
-	if _, found := m.Command(m.Domain); !found {
-		return broken("extension.domain_command", map[string]any{"Path": m.Domain})
+	if _, found := m.Command(strings.Join(m.Root(), " ")); !found {
+		return broken("extension.domain_command", map[string]any{"Path": strings.Join(m.Root(), " ")})
 	}
 	seen := map[string]bool{}
 	for i, c := range m.Commands {
@@ -338,13 +318,13 @@ func (m Manifest) check() error {
 			}
 		}
 		switch {
-		case c.Path[0] != m.Domain:
-			return broken("extension.path_domain", map[string]any{"Path": path, "Domain": m.Domain})
+		case !m.Owns(c.Path):
+			return broken("extension.path_domain", map[string]any{"Path": path, "Domain": strings.Join(m.Root(), " ")})
 		case seen[path]:
 			return broken("extension.path_twice", map[string]any{"Path": path})
 		}
 		seen[path] = true
-		if parent := strings.Join(c.Path[:len(c.Path)-1], " "); parent != "" {
+		if parent := strings.Join(c.Path[:len(c.Path)-1], " "); len(c.Path) > len(m.Root()) {
 			if _, found := m.Command(parent); !found {
 				return broken("extension.parent", map[string]any{"Path": path, "Parent": parent})
 			}
@@ -422,10 +402,8 @@ func checkNames(path string, c Command) error {
 	return nil
 }
 
-// checkValuesFrom applies the rules of values_from to one command: it sits
-// on an argument or on a flag that takes a value, names a command, a key,
-// and a field, and, when the command starts with this domain, names a
-// command of this manifest that qualifies.
+// checkValuesFrom checks each argument or value-taking flag's provider command, key, and field.
+// A provider beneath this extension root must name a qualifying command of this manifest.
 func (m Manifest) checkValuesFrom(path string, c Command) error {
 	type named struct {
 		name string
@@ -447,7 +425,7 @@ func (m Manifest) checkValuesFrom(path string, c Command) error {
 		case from == nil:
 		case len(from.Command) == 0 || from.Key == "" || from.Field == "":
 			return broken("extension.values_from_empty", data)
-		case from.Command[0] == m.Domain:
+		case m.Owns(from.Command):
 			if list, found := m.Command(strings.Join(from.Command, " ")); !found || !m.Qualifies(list) {
 				data["Command"] = strings.Join(from.Command, " ")
 				return broken("extension.values_from_command", data)
@@ -467,14 +445,12 @@ func (m Manifest) Qualifies(c Command) bool {
 		c.Result.Kind == ResultObject && c.Effects != nil && !c.Effects.UserWrites && !c.Effects.Paid
 }
 
-// IsStatus reports whether a command qualifies as the status command of
-// its domain, as Status command in contract.md defines it: the domain
-// followed by status, which runs, answers a report, takes no argument and
-// no flag group, has live and timeout as its only own flags, neither
-// required nor limited to values, with live a switch that defaults to
-// false and timeout a string, so each call that doctor builds passes
-// validation, declares effects that neither write nor bill, and live when
-// they use the network, and sets no mode.
+// IsStatus checks the status command under the extension root, as Status command in contract.md defines it.
+// It runs, answers a report, and takes no argument or flag group.
+// Its only own flags are live and timeout, neither required nor limited to values.
+// Live is a switch that defaults to false, and timeout is a string, so each doctor call passes validation.
+// Declared effects neither write nor bill, and network use requires live.
+// It sets no mode.
 func (m Manifest) IsStatus(c Command) bool {
 	live := false
 	for _, f := range c.Flags {
@@ -488,7 +464,7 @@ func (m Manifest) IsStatus(c Command) bool {
 			return false
 		}
 	}
-	return slices.Equal(c.Path, []string{m.Domain, "status"}) && m.Runs(c) &&
+	return slices.Equal(c.Path, append(m.Root(), "status")) && m.Runs(c) &&
 		c.Result.Kind == ResultReport && len(c.Args) == 0 && len(c.FlagGroups) == 0 &&
 		c.Effects != nil && !c.Effects.UserWrites && !c.Effects.Paid && (!c.Effects.Network || live) &&
 		!c.Modes.DryRun && !c.Modes.Recorded && !c.Modes.Resume
@@ -635,17 +611,17 @@ func (m Manifest) checkKeys() error {
 // joined by dots.
 var versionNumber = regexp.MustCompile(`^[0-9]+(\.[0-9]+)*$`)
 
-// checkConfig checks the config keys that one command reads: each is a
-// dotted path of at least two key words under the domain, and appears once.
+// checkConfig checks each command's declared config keys.
+// Each key appears once and has at least two words joined by dots, starting with the slug.
 func (m Manifest) checkConfig(path string, c Command) error {
 	for i, key := range c.Config {
 		words := strings.Split(key, ".")
-		bad := len(words) < 2 || words[0] != m.Domain || slices.Index(c.Config, key) != i
+		bad := len(words) < 2 || words[0] != m.Slug() || slices.Index(c.Config, key) != i
 		for _, word := range words {
 			bad = bad || !configWord.MatchString(word)
 		}
 		if bad {
-			return broken("extension.config_key", map[string]any{"Path": path, "Name": key, "Domain": m.Domain})
+			return broken("extension.config_key", map[string]any{"Path": path, "Name": key, "Domain": m.Slug()})
 		}
 	}
 	return nil
@@ -683,9 +659,6 @@ func checkResult(path string, c *Command) error {
 func IsService(name string) bool {
 	return domainName.MatchString(name) && name != "keychain" && name != "grants"
 }
-
-// codePrefix starts every code that the extension owns, such as HELLO_.
-func (m Manifest) codePrefix() string { return strings.ToUpper(m.Domain) + "_" }
 
 func (m Manifest) checkCodes() error {
 	prefix := m.codePrefix()

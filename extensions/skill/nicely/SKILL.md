@@ -21,7 +21,7 @@ description: Use before running any ncly command.
 - Without an ID, list the runs of the command with `ncly run list --path 'PATH' --key KEY --json`, newest first. Check `more`, confirm a candidate with `ncly run view ID --json`, its inputs and every item, and report several matches to the human instead of picking the newest one. A run under `unreadable` may still have billed
 - `ncly run view` exits 0 for a run that failed: read `run.status`. While `run.active` is true, a process still holds the run: never start the same work beside it
 - Give the shell a timeout longer than the command's `--timeout` plus 15 seconds of cleanup
-- Each extension ships a skill named after its domain: `ncly skill view DOMAIN`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill, and `ncly skill status --json` checks their folders, names, and files
+- Each extension ships a skill named after its slug: `ncly skill view SLUG`. Join its root's words from describe with `-`, such as `video-convert`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill, and `ncly skill status --json` checks their folders, names, and files
 
 ## Build an extension
 

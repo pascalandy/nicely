@@ -1,0 +1,15 @@
+format_version = 1
+contract_version = 1
+domain = "video"
+name = "subtitle"
+
+[[commands]]
+path = "video subtitle"
+summary = "video-subtitle.summary"
+effects = {}
+examples = ["ncly video subtitle list", "ncly video subtitle list --json"]
+
+[[commands]]
+path = "video subtitle list"
+summary = "video-subtitle.list"
+effects = {}
