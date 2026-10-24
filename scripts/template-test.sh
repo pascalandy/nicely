@@ -131,10 +131,12 @@ fct_repository() {
 }
 
 fct_main() {
-	local root pin scratch copier template_src valid_domain invalid_domain invalid_name
+	local root pin scratch copier template_src invalid_domain invalid_name
 	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
 	# shellcheck source=scripts/template-update-test.sh
 	source "${root}/scripts/template-update-test.sh"
+	# shellcheck source=scripts/template-input-test.sh
+	source "${root}/scripts/template-input-test.sh"
 	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
 	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
 	# just update runs the Copier that the template pins, and so does this test.
@@ -151,13 +153,7 @@ fct_main() {
 	fct_repository "${scratch}/named" video convert video-convert 'video convert' --data name=convert
 	fct_repository "${scratch}/whole" probe '' probe 'probe inspect'
 	template_src="${scratch}/whole/source"
-	# A domain that names an import of the template, or init, still gives a repository that builds.
-	for valid_domain in extension fmt init; do
-		"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${valid_domain}" --data "module=example.com/ncly-${valid_domain}" "${template_src}" "${scratch}/ncly-${valid_domain}"
-		go -C "${scratch}/ncly-${valid_domain}" mod edit -replace "github.com/pascalandy/nicely=${root}"
-		go -C "${scratch}/ncly-${valid_domain}" mod tidy
-		go -C "${scratch}/ncly-${valid_domain}" vet ./... || fct_fail "the repository that the template renders for the domain ${valid_domain} does not build"
-	done
+	fct_test_import_domains "${template_src}" "${scratch}" "${root}" "${copier[@]}"
 	# Copier refuses main, which Go builds as a program that no package imports. It refuses nicely, whose skill the bundled one hides.
 	for invalid_domain in main nicely; do
 		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${invalid_domain}" --data "module=example.com/ncly-${invalid_domain}" "${template_src}" "${scratch}/ncly-${invalid_domain}" 2>"${scratch}/refusal.out"; then
