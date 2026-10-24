@@ -370,19 +370,6 @@ func coreCommands() []contract.Command {
 	return commands
 }
 
-// skill returns the folder ncly-<domain>.skill/ beside the manifest of an
-// external extension, or a nil *string when it ships none or is bundled.
-func (e *extension) skill() *string {
-	if e.bundled {
-		return nil
-	}
-	folder := e.path + ".skill"
-	if info, err := os.Stat(folder); err != nil || !info.IsDir() {
-		return nil
-	}
-	return &folder
-}
-
 // within reports whether path is the path of words or lies under it.
 func within(path, words []string) bool {
 	return len(path) >= len(words) && slices.Equal(path[:len(words)], words)
