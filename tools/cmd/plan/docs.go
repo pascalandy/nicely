@@ -37,7 +37,7 @@ type docLink struct {
 // the scriptReadme of each testdata folder. It reports each broken link, each
 // card that is not in known, and what checkProse finds with codes.
 // Frozen milestone files receive only link checks, as D065 requires.
-func checkDocs(root string, known, codes map[string]bool, planDir string) ([]string, error) {
+func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 	var problems []string
 	checkFile := func(rel string) {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
@@ -82,7 +82,7 @@ func checkDocs(root string, known, codes map[string]bool, planDir string) ([]str
 			return nil
 		}
 		// The plan path already checks its item files; its README remains a general doc.
-		owned := path.Dir(rel) == planDir && path.Base(rel) != "README.md"
+		owned := path.Dir(rel) == backlogDir && path.Base(rel) != "README.md"
 		if strings.HasSuffix(rel, ".md") && !owned {
 			checkFile(rel)
 		}

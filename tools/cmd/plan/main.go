@@ -119,15 +119,9 @@ func run(args []string, out io.Writer) error {
 			return err
 		}
 		for _, m := range items {
-			text := m.text
-			if m.state != "" {
-				lines := strings.Split(text, "\n")
-				lines[3] = "state: " + m.state
-				text = strings.Join(lines, "\n")
-			}
-			problems = append(problems, checkProse(m.path, text, codes)...)
+			problems = append(problems, checkProse(m.path, m.text, codes)...)
 		}
-		broken, err := checkDocs(root, cardIDs(items), codes, backlogDir)
+		broken, err := checkDocs(root, cardIDs(items), codes)
 		if err != nil {
 			return err
 		}

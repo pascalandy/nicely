@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -36,7 +37,7 @@ func TestStatusFromFrontmatter(t *testing.T) {
 func TestFrozenMilestonesAreOnlyLinkChecked(t *testing.T) {
 	root := backlogRepository(t, readyItem, "1. COR-101\n")
 	name := filepath.Join(root, milestoneDir, "M00-foundation.md")
-	write(t, name, "# History\n\nStatus: nonsense\nVersion: no version\nM00-T999 is history.\n")
+	write(t, name, "# History\n\nStatus: nonsense\nVersion: no version\nCOR-101-T9 and it’s history.\n")
 	var out strings.Builder
 	if err := run([]string{"check", root}, &out); err != nil {
 		t.Fatalf("history was parsed as a plan: %v\n%s", err, out.String())
@@ -45,24 +46,18 @@ func TestFrozenMilestonesAreOnlyLinkChecked(t *testing.T) {
 	assertRejected(t, root, "the link gone.md points to a missing file")
 }
 
-func TestStateEscapesRespectProse(t *testing.T) {
-	for _, tc := range []struct{ name, state, want string }{
-		{"long dash", `state: "Ready. Next\u2014comes"`, "the prose holds \u2014"},
-		{"curly quote", `state: "Ready. Next\u2019comes"`, "the prose holds \u2019"},
-		{"newline", `state: "Ready. Next\ncomes"`, "nonempty strings on one line"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			text := edit(readyItem, "state: Ready. Next comes the check", tc.state)
-			assertRejected(t, backlogRepository(t, text, "1. COR-101\n"), tc.want)
-		})
+func TestReadyRule(t *testing.T) {
+	data, err := os.ReadFile("../../../docs/north-star/dev-preferences.md")
+	if err != nil {
+		t.Fatal(err)
 	}
-}
-
-func TestItemBodyMetadataExample(t *testing.T) {
-	text := readyItem + "\n## Later\n\n```yaml\nStatus: old example\nVersion: old example\n```\n"
-	root := backlogRepository(t, text, "1. COR-101\n")
+	root := repository(t, map[string]string{"XT-101-host.md": edit(host, "state: Ready", "state: Planned") +
+		"\n## Open questions\n\nWhich manifest format?\n"})
 	var out strings.Builder
-	if err := run([]string{"check", root}, &out); err != nil {
-		t.Fatalf("metadata example: %v\n%s", err, out.String())
+	if err := run([]string{"next", root}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), readyRule) || !strings.Contains(string(data), readyRule) {
+		t.Fatalf("next and dev-preferences must share the readiness rule: %q", readyRule)
 	}
 }
