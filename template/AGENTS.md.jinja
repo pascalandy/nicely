@@ -27,6 +27,8 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 
 A wrapped script goes in `worker/`. To take in a script, or to review the extension when the user asks, use the skill in `.agents/skills/nicely-extension/`.
 
+`sdk/wrap` keeps 1 MB of stdout, and answers `RUNTIME` once a program writes more. A program that prints its progress on stdout, such as an encoder, can pass that limit in a long run. When the decoder reads no stdout, set `DiscardStdout: true` in `wrap.Program`. When it reads stdout, set an `OutputLimit` that the longest run cannot pass. Prove it with a scenario whose stub prints more than 1 MB on stdout, then exits 0.
+
 ## Remove the example
 
 {% if name %}Keep the named extension's root. After these steps, follow "Change a command" for `ncly {{ root }}`.
