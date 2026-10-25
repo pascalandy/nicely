@@ -16,17 +16,18 @@ Each extension keeps its spec in `spec.md`: in `extensions/<name>/` for a first-
 
 ## Extension repository
 
-An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `vision.md`, `worker/`, and `AGENTS.md`:
+An author outside Nicely keeps an extension in a Git repository of its own, which the extension template creates, as [D062](../decisions/D062-copier-template.md) decides. The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `README.md`, `vision.md`, `worker/`, and `AGENTS.md`:
 
 | File | Holds |
 |---|---|
+| `README.md` | What the extension adds, and the commands that install a release |
 | `vision.md` | The job of the extension in one sentence, the source and revision of each program that it wraps, and what it refuses |
 | `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
 | Go files | One handler per command, `extension_test.go`, which calls the test kit, `cmd/ncly-<slug>/main.go`, which calls `extension.Main`, and `internal/export/`, which calls `extension.Export` for `just install` |
 | `testdata/script/` | The scenarios, which the [test kit](test-kit.md) runs |
-| `AGENTS.md` | The reading order, the change steps, and the recipes, for an agent that changes the extension |
+| `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `.agents/skills/nicely-extension/` | The skill that takes a script from intake to a verified command, and reviews readiness when the user asks |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 
@@ -44,7 +45,16 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 - `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree. Copier can leave a conflict as markers, a `.rej` file, or an unmerged index entry, and still exit 0. On a conflict, the recipe stops before `go get` and prints the commands that finish the update. It never resets, stashes, or commits
 - `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
 
-`just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines. A user installs a fixed version with `git clone --branch <tag>`, then `just install`, which need Go and `just`. Taps, which would install without Go, wait in [M99](../../milestones/M99-parking-lot/taps.md).
+`just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.
+
+### Release and install
+
+An author releases a version as one Git tag `vX.Y.Z` of Semantic Versioning, such as `v0.1.0`, on a pushed commit where `just check` passes.
+A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`.
+For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
+`ncly describe <root> --json` then confirms the install.
+The generated `README.md` gives these commands for its repository, and `AGENTS.md` gives the release steps.
+Taps, which would install without Go, wait in [M99](../../milestones/M99-parking-lot/taps.md).
 
 ## What a great extension does
 

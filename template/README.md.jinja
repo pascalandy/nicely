@@ -1,0 +1,26 @@
+# ncly-{{ slug }}
+
+`ncly-{{ slug }}` is an extension of [Nicely](https://github.com/pascalandy/nicely), which adds `ncly {{ root }}`{% if not name %} and the commands beneath it{% endif %}.
+`vision.md` states its job, and `spec.md` states what each command proves.
+
+## Install
+
+A release installs with `ncly`, Go, and `just`.
+To install `ncly`, follow Install in [Nicely's README](https://github.com/pascalandy/nicely#install).
+Replace TAG with a release tag, such as `v0.1.0`. `git ls-remote --tags https://{{ module }}` lists the tags.
+
+```sh
+git clone --branch TAG https://{{ module }} ncly-{{ slug }}
+cd ncly-{{ slug }}
+just install
+ncly describe {{ root }} --json
+```
+
+For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
+`ncly describe` confirms the install, with `{{ root }}` and the source `extension`.
+`just install` replaces a previous install, and grants no key.
+An agent reads `ncly skill view {{ slug }}` to learn when to use the extension.
+
+## Change the extension
+
+`AGENTS.md` gives the reading order, the change steps, the recipes, and the release steps.

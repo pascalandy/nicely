@@ -6,6 +6,7 @@
 
 - `template-command` gives the command that creates an extension repository, in the `nicely` skill
 - `template-install` renders the template, and installs the rendered repository with `just install` in the scratch data folder
+- `template-release` gives the release steps in the `AGENTS.md` of the rendered repository, and the commands that install a release tag in its `README.md`
 - `template-discovery` lists `probe` under the extensions of `ncly --help`
 - `template-inspect` gives the size and the line count of a file, as JSON and as text, through the worker `inspect.py`, which `python3` runs through `sdk/wrap`
 - `template-usage` refuses a missing file with `USAGE_INVALID`, before the worker starts
@@ -32,6 +33,7 @@ Preconditions:
 
 - **Template command.** Run `just verify step "$run" template skill view nicely`. Exit 0. The skill holds the section `## Build an extension`, and in its code block the line `uv tool run copier@<version> copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME`. `<version>` is the one of the line `copier :=` in `template/justfile`.
 - **Render and install.** Run `just verify prepare "$run" template`. It exits 0. Its log names `just install` of `probe`, the line `installed <run>/scratch/home/.local/share/nicely/extensions/ncly-probe`, and the `python3` that it puts first in the PATH of the wrapper. Then run `ls "$run/scratch/home/.local/share/nicely/extensions"`: it lists `ncly-probe`, `ncly-probe.locales`, `ncly-probe.skill`, and `ncly-probe.toml`, beside the four files of `hello`. Report the output of `prepare` and of `ls` beside the quote.
+- **Release and install text.** Run `grep -n -A12 '^## Release$' "$run/scratch/ncly-probe/AGENTS.md"` and `grep -n -A3 '^git clone' "$run/scratch/ncly-probe/README.md"`. Both exit 0. `AGENTS.md` names the tag form `vX.Y.Z` and the command `git tag v0.1.0`. `README.md` holds the lines `git clone --branch TAG https://example.com/ncly-probe ncly-probe`, `cd ncly-probe`, `just install`, and `ncly describe probe --json`. Report both outputs beside the quote.
 - **Discovery.** Run `just verify step "$run" template --help`. Exit 0, and the `EXTENSIONS` section lists `probe:  Inspect files` beside `hello` and `skill`.
 - **Help.** Run `just verify step "$run" template probe --help`. Exit 0, and `COMMANDS` lists `inspect:  Give the size and the line count of a file`.
 - **Inspect as JSON.** Run `just verify step "$run" template probe inspect README.md --json`. Exit 0, stderr is empty, and stdout is `{"ok":true,"contract_version":1,"lines":<n>,"size_bytes":<bytes>}`. `<n>` is the number that `wc -l < README.md` prints, plus 1 when the last line of `README.md` has no newline. `<bytes>` is the number that `wc -c < README.md` prints. Report the output of both `wc` calls beside the quote.
