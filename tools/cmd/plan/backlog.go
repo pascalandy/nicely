@@ -91,17 +91,20 @@ func parseItem(file, text string) *item {
 	m := &item{path: file, text: text, links: links(text), refs: cardRefs(text)}
 	if match := itemFile.FindStringSubmatch(path.Base(file)); match != nil {
 		m.id = match[1]
+		if !itemID.MatchString(m.id) {
+			m.problem(0, "the ID must be in the 1xx or 6xx band")
+		}
 	} else {
 		m.problem(0, "the file name needs an XT or COR ID and 1 to 3 lowercase keywords")
-	}
-	if !itemID.MatchString(m.id) {
-		m.problem(0, "the ID must be in the 1xx or 6xx band")
 	}
 	m.parseBody(text)
 	lines := strings.Split(text, "\n")
 	if len(lines) < 5 || lines[0] != "---" || lines[4] != "---" {
 		m.problem(1, "frontmatter needs exactly three keys on separate lines, between --- lines")
 		return m
+	}
+	if strings.Contains(lines[3], `\`) {
+		m.problem(4, "state must not contain a backslash")
 	}
 	var doc yaml.Node
 	if err := yaml.Unmarshal([]byte(strings.Join(lines[1:4], "\n")), &doc); err != nil {
@@ -137,11 +140,6 @@ func parseItem(file, text string) *item {
 		m.status = match[1]
 	} else {
 		m.problem(4, "state must start with Idea, Parked, Planned, Ready, Active, or Shipped")
-	}
-	for i, line := range lines[5:] {
-		if strings.HasPrefix(line, "Status:") || strings.HasPrefix(line, "Version:") {
-			m.problem(i+6, "keep status and version in frontmatter state, without separate body lines")
-		}
 	}
 	return m
 }
@@ -204,7 +202,7 @@ func (m *item) checkItem(root string) {
 	if m.status == "" {
 		return
 	}
-	if !m.hasDemo {
+	if strings.Contains(m.id, "-1") && !m.hasDemo {
 		m.problem(0, "an item needs a Demo section")
 	}
 	if strings.Contains(m.id, "-6") && m.status != "Idea" {

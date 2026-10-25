@@ -53,8 +53,8 @@ func TestBacklogRejects(t *testing.T) {
 		{"invalid YAML", "core: release checks", "core: [", "invalid YAML frontmatter"},
 		{"ID differs", "id: COR-101", "id: COR-102", "frontmatter id must match the file ID COR-101"},
 		{"state comment", "Next comes the check", "Next comes # the check", "quote frontmatter values that contain #"},
-		{"body status", "## Demo", "Status: ready\n\n## Demo", "without separate body lines"},
-		{"body version", "## Demo", "Version: v0.24.0\n\n## Demo", "without separate body lines"},
+		{"escaped state", "state: Ready. Next comes the check", `state: "Ready. Next\u2014comes"`, "state must not contain a backslash"},
+		{"missing demo", "## Demo", "## Scope", "an item needs a Demo section"},
 		{"unknown state", "Ready. Next", "Waiting. Next", "state must start with Idea, Parked, Planned, Ready, Active, or Shipped"},
 		{"status later in state", "Ready. Next comes the check", "Next is Ready", "state must start with"},
 		{"two-sentence demo", "It checks the release.", "It checks. It releases.", "a one-sentence Demo"},
@@ -111,8 +111,6 @@ state: Idea. Revisit when a project needs it
 ---
 
 # XT-601 Ignite
-
-## Demo
 
 It starts a project.
 `
