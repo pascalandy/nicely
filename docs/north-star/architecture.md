@@ -95,7 +95,7 @@ The other folders:
 | `doctor` | Checks tools, keys, extensions, and components | core |
 | `auth` | Stores keys and grants them to extensions | core |
 | `run` | Lists and inspects recorded operations | core |
-| `tap` | Would install extensions from a tap, parked in [COR-622](../backlog/COR-622-taps-offer.md#later) | core |
+| `tap` | Would install extensions from a tap. See [COR-622](../backlog/COR-622-taps-offer.md#later) | core |
 | `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled |
 | `agent` | Runs one trusted Codex task with model and effort settings | external |
 | `transcript` | Transcribes one selected YouTube video | external |
@@ -104,5 +104,4 @@ The other folders:
 [Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key.
 M17 selected neither everyday candidate.
 [M18](../milestones/M18-extension-template.md) shipped the extension template before any particular extension.
-[Markdown view](../backlog/XT-103-markdown-view.md) is Parked.
-[Additional video and image jobs](../backlog/XT-602-video-image-jobs.md) remain an Idea.
+The backlog tracks [Markdown view](../backlog/XT-103-markdown-view.md) and [additional video and image jobs](../backlog/XT-602-video-image-jobs.md).

@@ -1,7 +1,7 @@
 ---
 id: COR-615
 core: "Hooks"
-state: "Idea. Revisit when A need appears that neither core, the SDK, nor the extension that owns the step can meet"
+state: "Idea. Revisit when a need appears that neither core, the SDK, nor the extension that owns the step can meet"
 ---
 
 # COR-615 Hooks

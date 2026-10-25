@@ -31,7 +31,7 @@ Pascal settled the requirements in [#273](https://github.com/pascalandy/nicely/i
 
 ### M18-T2 Make the extension template ready: the external author contract, the bar, and cards T3 to T5
 
-- **Read:** [Scope](../backlog/README.md), [#273](https://github.com/pascalandy/nicely/issues/273), [Make a item ready](../backlog/README.md#make-an-item-ready), [Architecture](../north-star/architecture.md)
+- **Read:** [Scope](#scope), [#273](https://github.com/pascalandy/nicely/issues/273), [Make an item ready](../backlog/README.md#make-an-item-ready), [Architecture](../north-star/architecture.md)
 - **Proves:** `docs/north-star/contract/extensions.md` holds the bar and the external author rules. `docs/north-star/contract/programs-that-ncly-runs.md` defines a worker and the new session. `docs/north-star/contract/sdk.md` lists the rules that its types cannot express. Principle 8 and D013 are scoped, and D047 is revised. `docs/north-star/decisions/D062-copier-template.md` and `docs/north-star/decisions/D063-sdk-test-kit.md` exist
 
 Write the specs that the cards below read, and move the milestone and contributor instructions out of the contract parts.

@@ -85,7 +85,7 @@ Status then declares `live` and `timeout`, and a server of the test binary sees 
 Only a 401 claims that Deepgram rejected the key.
 A timeout or a 5xx says that the check reached no verdict, and never blames the key.
 
-##### Recovery of a lost final message
+### Recovery of a lost final message
 
 Parked from M13 on 2026-10-18, when Pascal cut it: the local recovery of a lost final protocol message.
 Complete recorded artifacts would let Go record completion without another upload.

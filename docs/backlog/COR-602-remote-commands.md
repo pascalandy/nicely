@@ -1,7 +1,7 @@
 ---
 id: COR-602
 core: "Remote commands"
-state: "Idea. Revisit when A remote task needs Nicely, or a remote command needs a key"
+state: "Idea. Revisit when a remote task needs Nicely, or a remote command needs a key"
 ---
 
 # COR-602 Remote commands

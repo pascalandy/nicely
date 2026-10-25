@@ -1,7 +1,7 @@
 ---
 id: COR-613
 core: "Record check in core"
-state: "Idea. Revisit when A tap carries an extension that does not use the Go SDK"
+state: "Idea. Revisit when a tap carries an extension that does not use the Go SDK"
 ---
 
 # COR-613 Record check in core

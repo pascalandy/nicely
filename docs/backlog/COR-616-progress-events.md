@@ -1,7 +1,7 @@
 ---
 id: COR-616
 core: "Progress events"
-state: "Idea. Revisit when Live progress adds value beyond the saved run record"
+state: "Idea. Revisit when live progress adds value beyond the saved run record"
 ---
 
 # COR-616 Progress events

@@ -1,7 +1,7 @@
 ---
 id: COR-623
 core: "Man pages"
-state: "Idea. Revisit when A user asks, or Nicely applies to homebrew-core"
+state: "Idea. Revisit when a user asks, or Nicely applies to homebrew-core"
 ---
 
 # COR-623 Man pages

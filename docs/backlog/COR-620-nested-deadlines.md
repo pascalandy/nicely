@@ -1,7 +1,7 @@
 ---
 id: COR-620
 core: "Nested deadlines and cleanup"
-state: "Idea. Revisit when An approved summary slice actually calls a nested recorded command"
+state: "Idea. Revisit condition: An approved summary slice actually calls a nested recorded command"
 ---
 
 # COR-620 Nested deadlines and cleanup

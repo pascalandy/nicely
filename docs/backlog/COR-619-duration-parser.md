@@ -1,7 +1,7 @@
 ---
 id: COR-619
 core: "One duration parser"
-state: "Idea. Revisit when A change touches `ncly doctor --timeout`, or a third command takes `--timeout`"
+state: "Idea. Revisit when a change touches `ncly doctor --timeout`, or a third command takes `--timeout`"
 ---
 
 # COR-619 One duration parser

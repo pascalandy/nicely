@@ -44,3 +44,25 @@ func TestFrozenMilestonesAreOnlyLinkChecked(t *testing.T) {
 	write(t, name, "# History\n\n[Missing](gone.md)\n")
 	assertRejected(t, root, "the link gone.md points to a missing file")
 }
+
+func TestStateEscapesRespectProse(t *testing.T) {
+	for _, tc := range []struct{ name, state, want string }{
+		{"long dash", `state: "Ready. Next\u2014comes"`, "the prose holds \u2014"},
+		{"curly quote", `state: "Ready. Next\u2019comes"`, "the prose holds \u2019"},
+		{"newline", `state: "Ready. Next\ncomes"`, "nonempty strings on one line"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			text := edit(readyItem, "state: Ready. Next comes the check", tc.state)
+			assertRejected(t, backlogRepository(t, text, "1. COR-101\n"), tc.want)
+		})
+	}
+}
+
+func TestItemBodyMetadataExample(t *testing.T) {
+	text := readyItem + "\n## Later\n\n```yaml\nStatus: old example\nVersion: old example\n```\n"
+	root := backlogRepository(t, text, "1. COR-101\n")
+	var out strings.Builder
+	if err := run([]string{"check", root}, &out); err != nil {
+		t.Fatalf("metadata example: %v\n%s", err, out.String())
+	}
+}

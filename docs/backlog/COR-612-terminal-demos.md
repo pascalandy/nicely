@@ -1,7 +1,7 @@
 ---
 id: COR-612
 core: "Terminal demos"
-state: "Idea. Revisit when The everyday domains ship"
+state: "Idea. Revisit when the everyday domains ship"
 ---
 
 # COR-612 Terminal demos

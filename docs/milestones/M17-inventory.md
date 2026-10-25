@@ -44,9 +44,9 @@ Pascal picked neither candidate on 2026-10-19, so this card selects no everyday 
 
 ### M17-T2 Plan one command
 
-- **Read:** [Scope](../backlog/README.md), [Make a item ready](../backlog/README.md#make-an-item-ready), [D061](../north-star/decisions/D061-smallest-useful-capability.md)
+- **Read:** [Scope](#scope), [Make an item ready](../backlog/README.md#make-an-item-ready), [D061](../north-star/decisions/D061-smallest-useful-capability.md)
 - **Proves:** this file's recorded pick, and the milestone that follows from it
 
-The pick is recorded in [Scope](../backlog/README.md).
+The pick is recorded in [Scope](#scope).
 Both candidates moved to [backlog](../backlog/README.md#everyday-domains), each with its revisit condition.
 The Markdown milestone was deleted, and no other everyday task was planned.

@@ -123,7 +123,7 @@ func parseItem(file, text string) *item {
 	fields := doc.Content[0].Content
 	for i, key := range want {
 		k, v := fields[2*i], fields[2*i+1]
-		if k.Value != key || k.Line != i+1 || v.Line != i+1 || v.Kind != yaml.ScalarNode || v.Tag != "!!str" || strings.TrimSpace(v.Value) == "" {
+		if k.Value != key || k.Line != i+1 || v.Line != i+1 || v.Kind != yaml.ScalarNode || v.Tag != "!!str" || strings.TrimSpace(v.Value) == "" || strings.ContainsAny(v.Value, "\r\n") {
 			m.problem(i+2, "frontmatter keys must be id, %s, state, in that order, with nonempty strings on one line", kind)
 			return m
 		}

@@ -1,7 +1,7 @@
 ---
 id: COR-603
 core: "Launcher"
-state: "Idea. Revisit when Several everyday commands ship and finding one becomes a recurring problem"
+state: "Idea. Revisit when several everyday commands ship and finding one becomes a recurring problem"
 ---
 
 # COR-603 Launcher

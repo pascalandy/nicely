@@ -69,9 +69,9 @@ func sortedKeys(flags []contract.Flag, key func(contract.Flag) string) []string 
 	return keys
 }
 
-// shipped lists the milestones whose commands core declares, and active
-// the milestone whose cards still add commands, which core may declare in
-// part, such as run list before run view: none now.
+// shipped lists the frozen milestones and items whose commands core declares.
+// active names the queued item whose commands core may declare in part, such
+// as run list before run view: none now.
 var (
 	shipped = []string{"M00", "M03", "M05", "M06", "M08", "M10"}
 	active  = ""
@@ -82,8 +82,8 @@ var (
 // "completion zsh|bash|fish". A word in brackets, such as [command...], is
 // an argument, not a command. A bundled extension, the bundled rows of the
 // domain table in architecture.md, declares its own commands. A command of
-// the active milestone may still be missing, and is compared once its
-// milestone ships.
+// the queued item may still be missing, and is compared once its
+// item ships.
 func TestCommandsAgreeWithTheSpec(t *testing.T) {
 	spec, err := specdoc.Block("../../docs/north-star/core-spec.md", "Command tree")
 	if err != nil {

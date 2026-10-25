@@ -28,14 +28,8 @@ Frontmatter carries no comments.
 The first word of `state` is its status.
 The remaining text carries versions, repository, Epic, history, next work, and later work.
 
-| Status | Meaning |
-|---|---|
-| Idea | A 6xx item with no cards. Its state gives the revisit condition |
-| Parked | A 1xx item outside the queue. It may keep open questions and todo cards, with none started |
-| Planned | In the queue, with open questions or todo cards, and no done card |
-| Ready | In the queue, with at least one todo card, no done card, and no open questions |
-| Active | In the queue, with at least one done card and one todo card, and no open questions |
-| Shipped | Outside the queue, with no todo card or open questions |
+The statuses are Idea, Parked, Planned, Ready, Active, and Shipped.
+[States](../../backlog/README.md#states) defines their conditions.
 
 The queue lists exactly the Planned, Ready, and Active items, in delivery order.
 `just next` serves its first item.

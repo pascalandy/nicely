@@ -42,7 +42,7 @@ Only an item without done cards can be renumbered.
 The body uses Demo, optional Scope, Open questions, Cards, optional After, and Later.
 An idea says what it would do, and its state gives its revisit condition.
 Later keeps deferred source text and its conditions.
-The 16 files in [backlog](README.md) are frozen history and are only link-checked.
+The 16 files in [milestones](../milestones/README.md) are frozen history and are only link-checked.
 Create no new M file.
 
 ## States
@@ -53,7 +53,7 @@ Create no new M file.
 | Parked | Chosen 1xx work outside the queue, with no card started; questions and todo cards may remain |
 | Planned | In the queue, with no done card; holds open questions or todo cards |
 | Ready | In the queue, without open questions; has at least one todo card and none done |
-| Active | In the queue, with at least one done card and one todo card |
+| Active | In the queue, with done and todo cards and no open questions |
 | Shipped | Has no todo card or open questions |
 
 An external extension's work follows its Epic in its own repository.
@@ -104,16 +104,15 @@ With no todo card, it becomes Shipped and leaves the queue.
 
 Pascal explicitly accepts an item with `accept <ID>`, such as `accept COR-102`, or equivalent wording.
 A Shipped item alone is not accepted.
-Each accepted item released from Nicely takes the next minor version, starting at v0.24.0.
-External extensions keep their own versions.
+[D065](../north-star/decisions/D065-backlog-items.md) owns release versions.
 [D043](../north-star/decisions/D043-milestone-versions.md) and
 [release-nicely](../../.agents/skills/release-nicely/SKILL.md) own the release procedure.
 
 ## Everyday domains
 
-[Markdown view](XT-103-markdown-view.md) is Parked.
-[Video convert](XT-101-video-convert.md) shipped in its own repository.
-[Video and image jobs](XT-602-video-image-jobs.md) remain an Idea.
+- [Markdown view](XT-103-markdown-view.md)
+- [Video convert](XT-101-video-convert.md)
+- [Video and image jobs](XT-602-video-image-jobs.md)
 
 ## Other deferred scope
 
@@ -129,9 +128,9 @@ These are options, not MVP acceptance criteria.
 Select one small useful slice before planning an idea.
 [D061](../north-star/decisions/D061-smallest-useful-capability.md) records the scope audit of PR #156.
 
-## Parked capabilities
+## Deferred work
 
-Each parked capability has its own file:
+These links reach deferred work within backlog items.
 
 - [Agent extras](XT-106-agent.md#later)
 - [Taps and an install-time extension offer](COR-622-taps-offer.md#later)

@@ -44,10 +44,8 @@ Existing whole-domain grants keep working without migration.
 The template creates named repositories with `--data domain=video --data name=convert`, such as `ncly-video-convert`.
 Omit `name` for a whole-domain repository.
 Both use the SDK test kit and the same update recipe.
-[Docs hub](docs/backlog/XT-104-docs-hub.md) is Parked.
-[Canadian French](docs/backlog/COR-102-canadian-french.md) is Ready.
-[Markdown view](docs/backlog/XT-103-markdown-view.md) is Parked.
-[Video and image jobs](docs/backlog/XT-602-video-image-jobs.md) remain an Idea.
+Further work lives in [docs hub](docs/backlog/XT-104-docs-hub.md), [Canadian French](docs/backlog/COR-102-canadian-french.md),
+[Markdown view](docs/backlog/XT-103-markdown-view.md), and [video and image jobs](docs/backlog/XT-602-video-image-jobs.md).
 
 In a terminal, a form asks a human for each missing value. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 

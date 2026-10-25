@@ -1,7 +1,7 @@
 ---
 id: COR-614
 core: "Answer limits"
-state: "Idea. Revisit when A tap carries an extension that does not use the Go SDK"
+state: "Idea. Revisit when a tap carries an extension that does not use the Go SDK"
 ---
 
 # COR-614 Answer limits

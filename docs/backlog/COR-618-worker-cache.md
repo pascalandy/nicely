@@ -1,7 +1,7 @@
 ---
 id: COR-618
 core: "Worker cache"
-state: "Idea. Revisit when A measured extraction cost slows a command"
+state: "Idea. Revisit when a measured extraction cost slows a command"
 ---
 
 # COR-618 Worker cache

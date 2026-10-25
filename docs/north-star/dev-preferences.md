@@ -54,7 +54,7 @@ Use the `fleet` skill to run macOS checks on the mini. Use the mbp only if the m
 
 Open review-ready pull requests. In `brigade-mode`, the brigade decides when to merge. Otherwise, have an agent that did not write the change review each pull request, and quote its verdict in the pull request. Merge it yourself when `just signoff` passes, no review finding stays open, and you are very confident. Without that confidence, wait until Pascal says "merge" for that pull request. Report each merge to Pascal. Once authorized, ask for no further confirmation. Stop and report only a real blocker.
 
-Stack work on an open pull request when it depends on that pull request. [Make a item ready](../backlog/README.md#make-an-item-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
+Stack work on an open pull request when it depends on that pull request. [Make an item ready](../backlog/README.md#make-an-item-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
 
 Fix review findings on their pull request's branch. A finding about behavior gets a scenario that fails first. Reply with the fixing commit.
 

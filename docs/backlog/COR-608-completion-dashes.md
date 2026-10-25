@@ -1,7 +1,7 @@
 ---
 id: COR-608
 core: "Completion after --"
-state: "Idea. Revisit when A user hits it, or a command group starts taking arguments"
+state: "Idea. Revisit when a user hits it, or a command group starts taking arguments"
 ---
 
 # COR-608 Completion after --

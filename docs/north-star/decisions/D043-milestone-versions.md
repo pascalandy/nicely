@@ -2,9 +2,6 @@
 
 Decided 2026-10-09. Revised 2026-10-19 in [#272](https://github.com/pascalandy/nicely/issues/272).
 Revised 2026-10-25 by [D065](D065-backlog-items.md), which owns version numbering.
-Each accepted item released from Nicely takes the next minor version, starting at v0.24.0.
-Patch versions cover intervening fixes.
-External extensions keep their own versions.
 Release after each completed item that Pascal accepts, without a separate release request.
 Acceptance requires Pascal's explicit `accept <ID>`, such as `accept COR-102`, or equivalent wording for that item.
 He accepts it in conversation or on its Epic; a Shipped item alone is not accepted.

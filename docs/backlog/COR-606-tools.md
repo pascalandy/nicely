@@ -1,7 +1,7 @@
 ---
 id: COR-606
 core: "ncly tools"
-state: "Idea. Revisit when The everyday domains ship"
+state: "Idea. Revisit when the everyday domains ship"
 ---
 
 # COR-606 ncly tools

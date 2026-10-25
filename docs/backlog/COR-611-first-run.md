@@ -1,7 +1,7 @@
 ---
 id: COR-611
 core: "First-run experience"
-state: "Idea. Revisit when The everyday domains ship"
+state: "Idea. Revisit when the everyday domains ship"
 ---
 
 # COR-611 First-run experience

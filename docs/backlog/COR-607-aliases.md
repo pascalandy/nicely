@@ -1,7 +1,7 @@
 ---
 id: COR-607
 core: "Aliases"
-state: "Idea. Revisit when A command feels too long in daily use"
+state: "Idea. Revisit when a command feels too long in daily use"
 ---
 
 # COR-607 Aliases

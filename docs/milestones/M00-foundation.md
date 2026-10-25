@@ -9,7 +9,7 @@ An installable `ncly` answers `--help`, `--version`, and `completion`. It fixes 
 
 ## Prerequisites
 
-All three were in place before M00-T6. The AUR account moved to [COR-625](../backlog/COR-625-aur-package.md) with the AUR publication, so `AUR_SSH_KEY` stays unused until then.
+All three were in place before M00-T6. The AUR account moved to [AUR](../backlog/COR-625-aur-package.md) with the AUR publication, so `AUR_SSH_KEY` stays unused until then.
 
 - The empty repository `pascalandy/homebrew-tap` exists
 - The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
@@ -40,7 +40,7 @@ The first release is v0.2.1, because v0.0.1 and v0.1.0 never shipped, and the re
 - **Read:** [Output](../north-star/contract/output.md), [Exit codes](../north-star/contract/exit-codes.md), [Commands](../north-star/contract/command-descriptions.md)
 - **Proves:** `testdata/script/usage_errors.txtar`, `testdata/script/output_errors.txtar`, `testdata/script/closed_pipe.txtar`, `testdata/script/dry_run_conformance.txtar`, `sdk/contract/spec_test.go`
 
-`internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, and Modes from [contract.md](../north-star/contract.md), and `internal/cli` declares the global flags. One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. The M00 boundaries in [Contract coverage](../backlog/README.md) are complete, including independent expected results. Tests check agreement with the spec on errors, exit codes, flags, and command declarations. The Operations responsibilities are fixed, while run records and resume wait for their first consumer.
+`internal/contract` implements Output, Compatibility, Retry safety, Exit codes, Error codes, and Modes from [contract.md](../north-star/contract.md), and `internal/cli` declares the global flags. One command declaration supplies help, completion, validation, and the later discovery command. The root dispatches unknown names through an empty extension registry and skips reserved names. The M00 boundaries in [Contract coverage](#contract-coverage) are complete, including independent expected results. Tests check agreement with the spec on errors, exit codes, flags, and command declarations. The Operations responsibilities are fixed, while run records and resume wait for their first consumer.
 
 ### M00-T3 Config
 
@@ -65,7 +65,7 @@ The English catalog, with a description per entry, and the parity test against `
 
 ### M00-T6 Release pipeline
 
-- **Read:** [Release preparation](../backlog/README.md)
+- **Read:** [Local release preparation](#local-release-preparation)
 - **Proves:** `scripts/release-check.sh`, `scripts/release-check-test.sh`, `tools/cmd/release-artifacts/main_test.go`
 
 GoReleaser builds macOS and Linux binaries for arm64 and amd64. Each archive ships the third-party notices that `go-licenses` generates. GoReleaser builds the AUR package `ncly-bin`, which installs the binary and its completions, and skips its upload. The Homebrew formula builds `ncly` from the release's source archive and generates its completions. `release.yml` starts only through `workflow_dispatch`, runs GoReleaser, and updates the formula. `just release-check` runs `govulncheck` and `goreleaser check` on top of `just check`. The AUR publication moved to M99.
@@ -89,7 +89,7 @@ The generated `ncly-bin` PKGBUILD and `.SRCINFO` select the matching Linux archi
 | Go [archive](../../tools/cmd/release-artifacts/archive.go) and [source](../../tools/cmd/release-artifacts/verify.go) | Exactly four binary targets, archive contents, notices, completions, checksums, and byte-identical source rebuilds | AUR package proof belongs to Bash staging |
 | Bash [AUR staging](../../scripts/verify-aur.sh) | Evaluated package metadata, local checksums, and staged installation contents and modes for both Linux architectures | AUR publication and installation moved to M99 |
 | Formula syntax check in [release-check.sh](../../scripts/release-check.sh) | Ruby accepts the generated Homebrew formula | The Homebrew build and installation belong to the first release |
-| Complete [release-check recipe](../../scripts/release-check.sh) | All local checks pass for the captured current tracked source, including final source stability and blocked-command checks | Publishing [prerequisites](../backlog/README.md) and the first release's manual check remain separate gates |
+| Complete [release-check recipe](../../scripts/release-check.sh) | All local checks pass for the captured current tracked source, including final source stability and blocked-command checks | Publishing [prerequisites](#prerequisites) and the first release's manual check remain separate gates |
 
 A zero exit from the full recipe proves the local rehearsal for that captured source. On success, review the retained artifacts. On failure, use any retained files to diagnose the failed check. Fix the cause, then rerun the full recipe. A component check on retained artifacts proves only that component's result. A source change requires a fresh full recipe run.
 

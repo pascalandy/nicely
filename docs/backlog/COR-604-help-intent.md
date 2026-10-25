@@ -1,7 +1,7 @@
 ---
 id: COR-604
 core: "Help by intent"
-state: "Idea. Revisit when The root help lists more than ten commands, after a mockup that Pascal picks"
+state: "Idea. Revisit when the root help lists more than ten commands, after a mockup that Pascal picks"
 ---
 
 # COR-604 Help by intent

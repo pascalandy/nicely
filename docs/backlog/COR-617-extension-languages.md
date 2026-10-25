@@ -1,7 +1,7 @@
 ---
 id: COR-617
 core: "Other extension languages"
-state: "Idea. Revisit when A user needs an extension that a Go handler and a worker cannot serve"
+state: "Idea. Revisit when a user needs an extension that a Go handler and a worker cannot serve"
 ---
 
 # COR-617 Other extension languages

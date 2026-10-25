@@ -1,7 +1,7 @@
 ---
 id: COR-609
 core: "Project config"
-state: "Idea. Revisit when A project needs its own command settings or paths"
+state: "Idea. Revisit when a project needs its own command settings or paths"
 ---
 
 # COR-609 Project config
