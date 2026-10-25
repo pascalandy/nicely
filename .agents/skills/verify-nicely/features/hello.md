@@ -10,6 +10,7 @@
 - `hello-error` refuses with the extension's own code `HELLO_GRUMPY` and exit 1
 - `hello-report` answers a failed report on stdout with exit 78
 - `hello-count` counts the lines of a file with its embedded worker, which `bash` runs without the terminal through `sdk/wrap`
+- `hello-scan` scans a file with its embedded worker, whose progress on stdout `sdk/wrap` discards
 - `hello-describe` describes `hello run` with the source `extension`
 - `hello-skill` serves the skill installed beside the extension
 - `hello-form` asks for a missing skill name in the form for missing values on a real terminal, then prints `Next time:` and the full command, and fails with that command as its hint outside a terminal
@@ -18,7 +19,7 @@
 ## How to get to it (user POV)
 
 - `ncly --help` and `ncly hello --help`
-- `ncly hello run <name>`, `ncly hello check`, `ncly hello count <file>`
+- `ncly hello run <name>`, `ncly hello check`, `ncly hello count <file>`, `ncly hello scan <file>`
 - `ncly describe hello run`
 - `ncly skill view hello`, in a pipe and in a terminal
 - `ncly skill view` without a name, in a terminal and in a pipe
@@ -31,7 +32,7 @@ Preconditions:
 - A new run from `just verify`, whose Doctor step passed
 
 - **Discovery.** Run `just verify step "$run" hello --help`. Exit 0, and the `EXTENSIONS` section lists `hello:  Greet people` beside `skill`.
-- **Help.** Run `just verify step "$run" hello hello --help`. Exit 0, and `COMMANDS` lists `check`, `count`, `pick`, `run`, `say`, and `wait`.
+- **Help.** Run `just verify step "$run" hello hello --help`. Exit 0, and `COMMANDS` lists `check`, `count`, `pick`, `run`, `say`, `scan`, and `wait`.
 - **Greet as text.** Run `just verify step "$run" hello hello run Ada`. Exit 0, stdout is `Hello, Ada!`, and stderr is empty.
 - **Greet as JSON.** Run `just verify step "$run" hello hello run Ada --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"greeting":"Hello, Ada!"}`.
 - **Warning.** Run `just verify step "$run" hello hello run --json`. Exit 0, `ok` is `true`, and `warnings` holds the warning `HELLO_UNNAMED`.
@@ -40,6 +41,8 @@ Preconditions:
 - **Count.** Before this step, run `ls -d "${TMPDIR:-/tmp}"/ncly-hello-*`, which finds no folder. Run `just verify step "$run" hello hello count README.md --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"lines":<n>}`. `<n>` is the number that `wc -l < README.md` prints, plus 1 when the last line of `README.md` has no newline. Then run the same `ls` again: it finds no folder, because the SDK removes the folder of the worker once the handler returns. Report the output of `wc` and both `ls` calls beside the quote.
 - **Count on a terminal.** The pane clears the environment, so the worker goes to `/tmp`, whatever the caller's `TMPDIR`. Before this step, run `ls -d /tmp/ncly-hello-*`, which finds no folder. Run `just verify tmux "$run" hello hello count README.md`. Exit 0, the terminal shows `Lines in README.md: <n>`, and the transcript ends with `--- exit 0, before the limit of 5s`. Then run `ls -d /tmp/ncly-hello-*` again: it finds no folder. Report both `ls` calls beside the quote.
 - **Count a missing file.** Run `just verify step "$run" hello hello count nothere.md`. Exit 2, stdout is empty, and stderr starts with `error[USAGE_INVALID]: nothere.md is no file that hello can count.`
+- **Scan.** Run `just verify step "$run" hello hello scan README.md --json`. Exit 0, stdout is `{"ok":true,"contract_version":1,"file":"README.md"}`, and stderr is empty.
+- **Scan past the output limit.** Run `seq 1 60000 > "$run/scratch/home/lines.txt"`. Then run `just verify step "$run" hello hello scan "$run/scratch/home/lines.txt" --json`. Exit 0, and stdout is `{"ok":true,"contract_version":1,"file":"<run>/scratch/home/lines.txt"}`. Its worker printed 1,248,894 bytes of progress, more than the 1 MB that `sdk/wrap` keeps.
 - **Describe.** Run `just verify step "$run" hello describe hello run --json`. Exit 0, and the one entry of `commands` has the path `hello run` and the source `extension`.
 - **Skill.** Run `just verify step "$run" hello skill view hello`. Exit 0, and its first line names the skill folder `<run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, followed by the file of the skill `hello` as it is, frontmatter and Markdown included, because only a terminal renders it.
 - **Skill in a terminal.** Run `just verify tmux "$run" hello skill view hello`. Exit 0. The terminal shows `folder  <run>/scratch/home/.local/share/nicely/extensions/ncly-hello.skill`, an empty line, `HELLO`, then the sentence of the skill, indented by two spaces, without its backticks. It shows no `---` and no `name: hello`, because the view removes the frontmatter. tmux drops the styles, which `styles.txtar` proves.

@@ -139,3 +139,19 @@ other = "--timeout {{.Timeout}} is no positive duration, such as 30s."
 ["hello.count.lines"]
 description = "Text of hello count: the number of lines of the file. {{.File}} is the path that the caller gave, and {{.Lines}} the number."
 other = "Lines in {{.File}}: {{.Lines}}"
+
+["hello.scan.summary"]
+description = "Help page: summary of hello scan, which reads a file through a worker that prints its progress on stdout, as an encoder does."
+other = "Scan a file line by line"
+
+["hello.scan.file"]
+description = "Help page: the file argument of hello scan."
+other = "File to scan"
+
+["hello.scan.no_file"]
+description = "Message of USAGE_INVALID when the file of hello scan is missing or is no regular file. {{.File}} is the path that the caller gave."
+other = "{{.File}} is no file that hello can scan."
+
+["hello.scan.done"]
+description = "Text of hello scan once its worker read the whole file. {{.File}} is the path that the caller gave."
+other = "Scanned {{.File}}"

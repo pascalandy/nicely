@@ -1,5 +1,6 @@
 # The Go fixture's hello count runs its worker count.sh with bash, its declared program,
-# through sdk/wrap, as Wrapped programs defines. keyed relay passes a key to the program
+# through sdk/wrap, as Wrapped programs defines. hello scan runs scan.sh the same way, but
+# discards its stdout, which holds only progress. keyed relay passes a key to the program
 # keytool the same way. stub/bash stands in for bash: it answers the version probe, writes the
 # path of the worker and the mode of its folder, then does what STUB says, by default running
 # the real bash. stub/keytool writes the name of each key variable that it receives, with the
@@ -23,6 +24,15 @@ cd notes
 exec ncly hello count ./input.md
 stdout '\ALines in \./input\.md: 3\n\z'
 exec ncly --lang en-XA hello count ./input.md
+pseudo stdout ./input.md
+
+# The progress of scan.sh never reaches the answer of hello scan
+exec ncly hello scan ./input.md --json
+stdout '\A\{"ok":true,"contract_version":1,"file":"\./input\.md"\}\n\z'
+! stderr .
+exec ncly hello scan ./input.md
+stdout '\AScanned \./input\.md\n\z'
+exec ncly --lang en-XA hello scan ./input.md
 pseudo stdout ./input.md
 cd $WORK
 
@@ -62,6 +72,22 @@ env STUB=noisy
 exits 1 ncly hello count input.md --json
 answer stderr RUNTIME
 stderr '"message":"bash wrote more than 1 MB of output\.'
+
+# A program that prints more than 1 MB of progress on stdout, as an encoder does in a long
+# run, then exits 0, succeeds for hello scan, which sets DiscardStdout. hello count keeps its
+# stdout, so the same progress still fails it. Discarded stdout keeps each exit mapped
+env STUB=progress
+exec ncly hello scan input.md --json
+stdout '\A\{"ok":true,"contract_version":1,"file":"input\.md"\}\n\z'
+! stderr .
+exits 1 ncly hello count input.md --json
+answer stderr RUNTIME
+stderr '"message":"bash wrote more than 1 MB of output\.'
+env STUB=fail
+exits 1 ncly hello scan input.md --json
+! stdout .
+answer stderr RUNTIME
+stderr '"message":"bash failed with exit 3\.'
 
 # At the timeout, the whole process tree stops, a child in its own process group included,
 # with exit 1, and the folder of the worker goes
@@ -193,6 +219,9 @@ garbled)
   ;;
 noisy)
   /usr/bin/yes | /usr/bin/head -c 2000000
+  ;;
+progress)
+  /usr/bin/yes 'Encoding: task 1 of 1, 50.00 %' | /usr/bin/head -c 1100000
   ;;
 hang)
   pgroup /bin/sh -c 'echo $$ > "$WORK/child.tmp"; mv "$WORK/child.tmp" "$WORK/child.pid"; exec /bin/sleep 30' >/dev/null 2>&1 &

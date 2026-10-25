@@ -159,6 +159,23 @@ type = "object"
 required = ["lines"]
 properties = { lines = { type = "integer", minimum = 0 } }
 
+[[commands]]
+path = "hello scan"
+summary = "hello.scan.summary"
+examples = ["ncly hello scan notes.md", "ncly hello scan notes.md --json"]
+effects = {}
+requires = { bins = ["bash"] }
+
+[[commands.args]]
+name = "file"
+summary = "hello.scan.file"
+required = true
+
+[commands.result.schema]
+type = "object"
+required = ["file"]
+properties = { file = { type = "string" } }
+
 [programs.bash]
 version = "3.2"
 

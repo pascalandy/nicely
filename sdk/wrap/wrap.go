@@ -1,10 +1,11 @@
 // Package wrap runs one program for a handler, such as a worker, as Wrapped
 // programs in contract.md defines. It checks the program as doctor does,
 // and starts it without the terminal, with an empty stdin. The program gets
-// only the keys that it names, and wrap keeps its output up to a limit. Run
-// turns each failure into the result that the contract defines for it, and
-// the handler's decoder maps the rest. A handler that runs more than one
-// program uses sdk/runner directly.
+// only the keys that it names. Run keeps its output up to a limit, or drops
+// the stdout that the handler does not read. Run turns each failure into
+// the result that the contract defines for it, and the handler's decoder
+// maps the rest. A handler that runs more than one program uses sdk/runner
+// directly.
 //
 // Pass Run the ctx of the handler, which only a signal ends, so that a
 // deadline of the caller never reads as a signal. Program.Timeout bounds
@@ -14,6 +15,7 @@ package wrap
 import (
 	"cmp"
 	"context"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -50,13 +52,19 @@ type Program struct {
 	// OutputLimit bounds what Run keeps of stdout, and of stderr, in bytes.
 	// Zero means the OutputLimit of the package.
 	OutputLimit int
+	// DiscardStdout drops all that the program writes on stdout, so stdout
+	// never passes OutputLimit and Ended.Stdout stays empty. Set it when the
+	// decoder reads no stdout, such as for an encoder that prints its
+	// progress there. The program still writes to a pipe, as without it.
+	DiscardStdout bool
 }
 
 // Ended is how a program ended on its own, which the decoder of Run maps.
 type Ended struct {
 	// Exit is the exit code of the program.
 	Exit int
-	// Stdout holds all that the program wrote on stdout.
+	// Stdout holds all that the program wrote on stdout, and nothing when
+	// Program.DiscardStdout is set.
 	Stdout []byte
 	// Stderr holds what the program wrote on stderr, up to the limit.
 	Stderr  []byte
@@ -83,8 +91,8 @@ func (e Ended) Malformed() contract.Outcome {
 // returns what decode makes of its end. A failure that the contract defines
 // never reaches decode. Run answers PREREQ_MISSING for a program that is
 // missing, too old, or whose probe fails or times out. It answers RUNTIME
-// for a timeout, a start that fails, and stdout over the limit. A signal
-// gives the outcome of that signal.
+// for a timeout or a start that fails. Without DiscardStdout, stdout over
+// the limit gives RUNTIME too. A signal gives the outcome of that signal.
 func Run(ctx context.Context, call extension.Call, p Program, decode func(Ended) contract.Outcome) contract.Outcome {
 	printer := call.Printer
 	data := map[string]any{"Name": p.Name, "Path": call.Path}
@@ -119,7 +127,11 @@ func Run(ctx context.Context, call extension.Call, p Program, decode func(Ended)
 	}
 	limit := cmp.Or(p.OutputLimit, OutputLimit)
 	stdout, stderr := runner.Capture{Limit: limit}, runner.Capture{Limit: limit}
-	result, err := runner.Run(work, runner.Program{Path: path, Args: p.Args, Env: env, Stdout: &stdout, Stderr: &stderr})
+	var out io.Writer = &stdout
+	if p.DiscardStdout {
+		out = io.Discard
+	}
+	result, err := runner.Run(work, runner.Program{Path: path, Args: p.Args, Env: env, Stdout: out, Stderr: &stderr})
 	switch {
 	case ctx.Err() != nil:
 		return contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx))}

@@ -1,8 +1,8 @@
 // Package hello is the Go fixture extension that proves the SDK. It mirrors
 // the shell fixtures of M01: an own code, an own warning, a report, a text
 // result, and a command that runs a program until a signal arrives. It
-// embeds its skill, as every extension ships one, and the worker that hello
-// count runs through sdk/wrap.
+// embeds its skill, as every extension ships one, and the workers that hello
+// count and hello scan run through sdk/wrap.
 package hello
 
 import (
@@ -41,6 +41,7 @@ var Extension = extension.Extension{
 		"hello say":   say,
 		"hello wait":  wait,
 		"hello pick":  pick,
+		"hello scan":  scan,
 	},
 }
 
