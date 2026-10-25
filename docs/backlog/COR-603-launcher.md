@@ -6,8 +6,4 @@ state: "Idea. Revisit when several everyday commands ship and finding one become
 
 # COR-603 Launcher
 
-## Demo
-
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| Launcher | A bare `ncly` in interactive mode opens a fuzzy command palette, and prints help everywhere else | Several everyday commands ship and finding one becomes a recurring problem |
+A bare `ncly` in interactive mode opens a fuzzy command palette, and prints help everywhere else.

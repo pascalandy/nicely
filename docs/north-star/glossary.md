@@ -146,17 +146,15 @@ See [Contract](glossary/contract.md).
 
 - Item
   - Def.: one extension or core capability in `docs/backlog/`, identified by an XT or COR ID
-  - Project note: [D065](decisions/D065-backlog-items.md) defines IDs and states
+  - Project note: [D065](decisions/D065-backlog-items.md) defines IDs, and [the backlog README](../backlog/README.md#statuses) defines statuses
 - State
   - Def.: the item's frontmatter sentence group, starting with its status and carrying its context
 - Queue
   - Def.: the ordered Planned, Ready, and Active items in [the backlog README](../backlog/README.md#queue)
 - Status
-  - Def.: the first word of state, one of [the six backlog states](../backlog/README.md#states)
+  - Def.: the first word of state, one of [the six backlog statuses](../backlog/README.md#statuses)
 - Milestone
   - Def.: one of the 16 frozen historical files in `docs/milestones/`
-- Parking lot
-  - Use instead: 6xx Idea items and their state conditions
 - Card
   - Def.: one pull request of a backlog item, with its owner, its dependencies, what to read, and what proves it
 - Stack
@@ -172,6 +170,8 @@ See [Design vocabulary](glossary/design-vocabulary.md).
 
 ## Terms to avoid as canonical forms
 
+- Parking lot
+  - Use instead: 6xx Idea items or an item's Later
 - plugin, add-on, module, for an extension
   - Use instead: extension
   - Reason: one word names commands added to core, bundled or external

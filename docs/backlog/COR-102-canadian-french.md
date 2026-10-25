@@ -79,10 +79,14 @@ Pascal reviews the tone of every new `fr-CA` entry. An agent applies any changes
 
 ## Later
 
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| More languages | Spanish, Japanese, and others, through the COR-102 workflow | A user asks, or `fr-CA` proves the workflow |
+### More languages
 
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| Catalog folders | One folder per language, such as `locales/en/`, lets a catalog split under the size limit. [Text of an extension](../north-star/contract/text-of-an-extension.md) asks for one file per language, so `just limits` skips catalogs | A catalog grows too large to read whole. The change needs a contract decision |
+Spanish, Japanese, and others, through the COR-102 workflow.
+
+Revisit condition: A user asks, or `fr-CA` proves the workflow.
+
+### Catalog folders
+
+One folder per language, such as `locales/en/`, lets a catalog split under the size limit. [Text of an extension](../north-star/contract/text-of-an-extension.md) asks for one file per language, so `just limits` skips catalogs.
+
+Revisit condition: A catalog grows too large to read whole. The change needs a contract decision.

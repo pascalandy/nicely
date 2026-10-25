@@ -6,8 +6,6 @@ state: "Idea. Video encode, cut, and extract audio. Image encode, resize, and co
 
 # XT-602 video and image jobs
 
-## Demo
-
 Video and image commands encode, cut, extract audio, resize, or compress one selected input.
 
 ## Later

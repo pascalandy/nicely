@@ -6,8 +6,4 @@ state: "Idea. Revisit when a command feels too long in daily use"
 
 # COR-607 Aliases
 
-## Demo
-
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| Aliases | Git-style aliases in the config, such as `md = "markdown view"` | A command feels too long in daily use |
+Git-style aliases in the config, such as `md = "markdown view"`.

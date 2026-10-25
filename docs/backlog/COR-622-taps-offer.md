@@ -6,8 +6,6 @@ state: "Idea. Revisit when a machine or a user without a source checkout needs a
 
 # COR-622 Taps and the install-time offer
 
-## Demo
-
 A machine without a source checkout installs an extension from the official tap.
 
 ## Later

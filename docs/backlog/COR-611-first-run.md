@@ -6,8 +6,4 @@ state: "Idea. Revisit when the everyday domains ship"
 
 # COR-611 First-run experience
 
-## Demo
-
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| First-run experience | What a new visitor sees first, and the marketing around it | The everyday domains ship |
+What a new visitor sees first, and the marketing around it.

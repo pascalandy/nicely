@@ -7,13 +7,13 @@ description: "Use after Pascal accepts a completed Nicely item, or when he reque
 
 Run this cycle after each completed item that Pascal accepts, without a separate release request.
 For an explicitly requested patch, use the same cycle.
-[D065](../../../docs/north-star/decisions/D065-backlog-items.md) owns acceptance and version numbering.
+[D043](../../../docs/north-star/decisions/D043-milestone-versions.md) owns acceptance, and [D065](../../../docs/north-star/decisions/D065-backlog-items.md) owns version numbering.
 A release is never a card and never blocks the next item.
 
 Copy this checklist and tick each step:
 
 ```
-- [ ] 1. Ready: the item's cards are merged on origin/main, and Pascal accepted it as D065 says
+- [ ] 1. Ready: the item's cards are merged on origin/main, and Pascal accepted it as D043 says
 - [ ] 2. Changelog: `just changelog vX.Y.Z` writes this version's notes, reviewed against its commits
 - [ ] 3. Check: `just release-check vX.Y.Z` passes in a clean checkout of origin/main, and so does `runner-rehearsal.sh vX.Y.Z`
 - [ ] 4. Tag: vX.Y.Z on origin names the SHA of step 3

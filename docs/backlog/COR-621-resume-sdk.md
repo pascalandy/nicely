@@ -6,8 +6,6 @@ state: "Idea. Revisit when a selected command has useful partial work that the u
 
 # COR-621 Resume (SDK part)
 
-## Demo
-
 A selected command continues useful partial work without repeating an uncertain effect.
 
 ## Later

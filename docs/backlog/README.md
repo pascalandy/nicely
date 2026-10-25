@@ -1,7 +1,7 @@
 # Backlog
 
 This folder holds one file per extension or core item and the ordered delivery queue.
-[D065](../north-star/decisions/D065-backlog-items.md) owns IDs, states, frozen history, and release versions.
+[D065](../north-star/decisions/D065-backlog-items.md) owns IDs, number bands, and release versions.
 [D042](../north-star/decisions/D042-milestones-and-cards.md) keeps each item small and each card one pull request.
 
 ## Queue
@@ -24,6 +24,7 @@ Each file is named `<ID>-<1 to 3 lowercase keywords>.md`.
 Its frontmatter holds exactly three keys, in this order: `id`, `extension` or `core`, then `state`.
 The first word of `state` is its status.
 The rest carries versions, repositories, Epics, frozen history, Next, Later, or a revisit condition.
+Quote values that contain `#`, and keep frontmatter free of comments and backslashes.
 
 ```yaml
 ---
@@ -33,19 +34,19 @@ state: "Ready. Next card is the dry-run lock fix. Shipped by M13 and M16"
 ---
 ```
 
-XT IDs track extensions, and COR IDs track core.
-The 1xx band holds chosen work at any status.
-The 6xx band holds Idea items without cards.
-Planning an idea gives it the next free 1xx ID in that pull request.
+Planning an idea gives it the next free 1xx ID in that plan-only pull request.
 Only an item without done cards can be renumbered.
 
-The body uses Demo, optional Scope, Open questions, Cards, optional After, and Later.
+A 1xx item's body uses Demo, optional Scope, Open questions, Cards, optional After, and Later.
 An idea says what it would do, and its state gives its revisit condition.
 Later keeps deferred source text and its conditions.
+Deferred options are not MVP acceptance criteria.
+Select one small useful slice before planning an idea.
+[D061](../north-star/decisions/D061-smallest-useful-capability.md) records the scope audit of PR #156.
 The 16 files in [milestones](../milestones/README.md) are frozen history and are only link-checked.
 Create no new M file.
 
-## States
+## Statuses
 
 | Status | Meaning |
 |---|---|
@@ -56,8 +57,7 @@ Create no new M file.
 | Active | In the queue, with done and todo cards and no open questions |
 | Shipped | Has no todo card or open questions |
 
-An external extension's work follows its Epic in its own repository.
-Its Nicely item holds no cards.
+An extension maintained in its own repository, such as XT-101, keeps its cards in that repository's Epic.
 
 ## Make an item ready
 
@@ -78,8 +78,6 @@ When `just next` names a Planned item with open questions, make it ready.
 4. Set the first word of state to Ready when the sections that the cards read are written.
    `just next` then prints the first card when this item reaches the front of the queue.
 
-Use one pull request by default, and a small stack when each layer brings a distinct review.
-A simple fix never needs several pull requests.
 After a plan pull request merges, fix stale item and card references in each open issue labeled `4-epic`.
 List the updated issues in that pull request.
 
@@ -102,11 +100,9 @@ With no todo card, it becomes Shipped and leaves the queue.
 
 ## Release an accepted item
 
-Pascal explicitly accepts an item with `accept <ID>`, such as `accept COR-102`, or equivalent wording.
-A Shipped item alone is not accepted.
 [D065](../north-star/decisions/D065-backlog-items.md) owns release versions.
-[D043](../north-star/decisions/D043-milestone-versions.md) and
-[release-nicely](../../.agents/skills/release-nicely/SKILL.md) own the release procedure.
+[D043](../north-star/decisions/D043-milestone-versions.md) owns acceptance, and
+[release-nicely](../../.agents/skills/release-nicely/SKILL.md) owns the release procedure.
 
 ## Everyday domains
 
@@ -121,21 +117,3 @@ that every writing command supports files, folders, globs, batches, progress, re
 resume. A safe one-file transformation does not inherit all of those capabilities.
 
 Writing commands still need dry run, destination validation, overwrite consent, and truthful retry behavior for their actual effects.
-
-## Kept options
-
-These are options, not MVP acceptance criteria.
-Select one small useful slice before planning an idea.
-[D061](../north-star/decisions/D061-smallest-useful-capability.md) records the scope audit of PR #156.
-
-## Deferred work
-
-These links reach deferred work within backlog items.
-
-- [Agent extras](XT-106-agent.md#later)
-- [Taps and an install-time extension offer](COR-622-taps-offer.md#later)
-- [Transcript summary](XT-102-transcript.md#later)
-- [Resume](COR-621-resume-sdk.md#later)
-- [Transcript extras](XT-102-transcript.md#later)
-- [Everyday domains](#everyday-domains)
-- [Docs hub](XT-104-docs-hub.md#later)

@@ -2,7 +2,7 @@
 
 Decided 2026-10-17. Start with one concrete job and its necessary inputs, outputs, and steps. Each variant needs its own observed use. Each backlog item delivers a useful increment without later items as acceptance criteria.
 
-Keep deferred capabilities in [6xx Idea items](../../backlog/README.md), with revisit conditions in state.
+Keep deferred capabilities in [the backlog](../../backlog/README.md), as 6xx Idea items or under an item's Later, each with its revisit condition.
 They remain options rather than obligations. Keep Idea items outside the queue. The repository plan remains authoritative over old issues.
 
 **Why.** [PR #156](https://github.com/pascalandy/nicely/pull/156) found brainstormed variants had become first-release requirements. Scope cuts retain applicable safety guarantees:

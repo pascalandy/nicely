@@ -67,7 +67,7 @@ aurs:
     license: MIT
     git_url: ssh://aur@aur.archlinux.org/ncly-bin.git
     private_key: '{{ .Env.AUR_SSH_KEY }}'
-    # The AUR upload waits for the AUR row of docs/milestones/M99-parking-lot.md.
+    # The AUR upload waits for docs/backlog/COR-625-aur-package.md.
     skip_upload: true
     commit_author:
       name: Nicely release

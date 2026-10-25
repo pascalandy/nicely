@@ -32,17 +32,24 @@ Update the transcript spec's dry-run lock sentence with the fix.
 
 ## Later
 
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| Transcript in Go | Ports the Python program of the transcript extension to Go | Python blocks a release or a translation |
+### Transcript in Go
 
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| Structured summaries | A bundled prompt writes, beside its Markdown, a versioned JSON file of decisions, actions, and open questions, each citing a segment of the transcript that a local check verifies | Pascal wants to search decisions or actions across summaries |
+Ports the Python program of the transcript extension to Go.
 
-| Idea | What it would do | Revisit when |
-|---|---|---|
-| Transcript on Omarchy | The paid end-to-end check of `ncly transcript` passes on Omarchy, with YouTube cookies from a Linux browser. [#23](https://github.com/pascalandy/nicely/issues/23) tracks it | Pascal needs transcripts on Omarchy |
+Revisit condition: Python blocks a release or a translation.
+
+### Structured summaries
+
+A bundled prompt writes a versioned JSON file beside its Markdown.
+The file holds decisions, actions, and open questions, each citing a transcript segment that a local check verifies.
+
+Revisit condition: Pascal wants to search decisions or actions across summaries.
+
+### Transcript on Omarchy
+
+The paid end-to-end check of `ncly transcript` passes on Omarchy, with YouTube cookies from a Linux browser. [#23](https://github.com/pascalandy/nicely/issues/23) tracks it.
+
+Revisit condition: Pascal needs transcripts on Omarchy.
 
 ### Transcript summary
 
@@ -54,7 +61,7 @@ The first candidate is one explicit summary of one verified saved transcript, wi
 It requires a proven tools-off path for outside text under D028. The selected Codex path does
 not supply that capability. Do not add a second harness merely to keep the old roadmap moving.
 M14 is removed from the delivery queue; a concrete need and that capability must precede a
-replacement slice. Structured summaries remain a separate option in the idea table of [XT-102](#later).
+replacement slice. [Structured summaries](#structured-summaries) remain a separate option.
 
 ### Transcript extras
 

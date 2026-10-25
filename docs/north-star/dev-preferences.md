@@ -83,5 +83,6 @@ Create a separate GitHub issue for each UAT. Keep its task and procedure there, 
 ## Release each accepted item
 
 After each completed item that Pascal accepts, run the release cycle without a separate request.
-Use [D065](decisions/D065-backlog-items.md) for acceptance and numbering, and [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
+Use [D043](decisions/D043-milestone-versions.md) for acceptance and [D065](decisions/D065-backlog-items.md) for version numbering.
+Use [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
 Item acceptance does not replace the merge authorization above.
