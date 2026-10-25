@@ -72,23 +72,25 @@ var (
 	fileName     = regexp.MustCompile(`^(M\d\d)-[a-z0-9-]+\.md$`)
 	decisionName = regexp.MustCompile(`^(D\d{3})-[a-z0-9-]+\.md$`)
 	titleLine    = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
-	cardID       = regexp.MustCompile(`^M\d\d-T\d+$`)
-	cardRef      = regexp.MustCompile(`\bM\d\d-T\d+\b`)
+	cardID       = regexp.MustCompile(`^(?:M\d\d|(?:XT|COR)-\d{3})-T[1-9]\d*$`)
+	cardRef      = regexp.MustCompile(`\b(?:M\d\d|(?:XT|COR)-\d{3})-T\d+\b`)
 	codeShape    = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 	codeAfter    = regexp.MustCompile("\\b[Cc]ode `([^`]+)`")
 	envelope     = regexp.MustCompile(`"(?:errors|warnings)"\s*:\s*\\?\[`)
 	jsonCode     = regexp.MustCompile(`"code"\s*:\s*"([^"]*)"`)
-	cardHeading  = regexp.MustCompile(`^### (M\d\d-T\d+) (\S.*)$`)
+	cardHeading  = regexp.MustCompile(`^### ((?:M\d\d|(?:XT|COR)-\d{3})-T[1-9]\d*) (\S.*)$`)
 	checkbox     = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
 	codeSpan     = regexp.MustCompile("`([^`]+)`")
 	mdLink       = regexp.MustCompile(`\]\(([^)\s]+)\)`)
 )
 
-type milestone struct {
+type item struct {
 	path, id, title, status, version string
+	kind, state                      string
 	text                             string
 	number                           int
 	hasDemo, hasCards, hasHeader     bool
+	demo                             []string
 	open                             []string // nil when the file has no Open questions section
 	cards                            []*card
 	links                            []docLink
@@ -119,12 +121,23 @@ func run(args []string, out io.Writer) error {
 		return errors.New("usage: plan next|status|check <repository root>")
 	}
 	root := args[1]
-	milestones, err := load(root)
+	b, err := loadBacklog(root)
 	if err != nil {
 		return err
 	}
-	var b strings.Builder
-	problems := check(root, milestones)
+	var milestones []*item
+	var problems []string
+	if b != nil {
+		milestones = b.items
+		problems = b.check(root)
+	} else {
+		milestones, err = load(root)
+		if err != nil {
+			return err
+		}
+		problems = check(root, milestones)
+	}
+	var output strings.Builder
 	if args[0] == "check" {
 		codes, err := knownCodes(root)
 		if err != nil {
@@ -142,15 +155,19 @@ func run(args []string, out io.Writer) error {
 	}
 	switch {
 	case len(problems) > 0:
-		b.WriteString(strings.Join(problems, "\n") + "\n")
+		output.WriteString(strings.Join(problems, "\n") + "\n")
 	case args[0] == "next":
-		next(&b, milestones)
+		next(&output, milestones)
 	case args[0] == "status":
-		status(&b, milestones)
+		status(&output, milestones)
 	default:
-		fmt.Fprintf(&b, "%s keeps the format, and the docs pass every check\n", milestoneDir)
+		dir := milestoneDir
+		if b != nil {
+			dir = backlogDir
+		}
+		fmt.Fprintf(&output, "%s keeps the format, and the docs pass every check\n", dir)
 	}
-	if _, err := io.WriteString(out, b.String()); err != nil {
+	if _, err := io.WriteString(out, output.String()); err != nil {
 		return err
 	}
 	if len(problems) > 0 {
@@ -159,12 +176,12 @@ func run(args []string, out io.Writer) error {
 	return nil
 }
 
-func load(root string) ([]*milestone, error) {
+func load(root string) ([]*item, error) {
 	entries, err := os.ReadDir(filepath.Join(root, milestoneDir))
 	if err != nil {
 		return nil, err
 	}
-	var milestones []*milestone
+	var milestones []*item
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
 			continue
@@ -175,163 +192,38 @@ func load(root string) ([]*milestone, error) {
 		}
 		milestones = append(milestones, parse(path.Join(milestoneDir, e.Name()), string(data)))
 	}
-	slices.SortFunc(milestones, func(a, b *milestone) int { return cmp.Compare(a.number, b.number) })
+	slices.SortFunc(milestones, func(a, b *item) int { return cmp.Compare(a.number, b.number) })
 	return milestones, nil
 }
 
-func parse(file, text string) *milestone {
-	m := &milestone{path: file, text: text, number: -1, links: links(text), refs: cardRefs(text)}
+func parse(file, text string) *item {
+	m := &item{path: file, text: text, number: -1, links: links(text), refs: cardRefs(text)}
 	if match := fileName.FindStringSubmatch(path.Base(file)); match != nil {
 		m.id = match[1]
 		m.number, _ = strconv.Atoi(m.id[1:])
 	} else {
 		m.problem(0, "the file name must look like M01-short-title.md")
 	}
-	section := ""
-	var current *card
-	fenced := false
-	for i, line := range strings.Split(text, "\n") {
-		n := i + 1
-		if checkbox.MatchString(line) {
-			m.problem(n, "a checkbox belongs in no milestone file: make the work a card")
+	first, _, _ := strings.Cut(text, "\n")
+	match := titleLine.FindStringSubmatch(first)
+	if match == nil || match[1] != m.id {
+		m.problem(1, "the first line must be \"# %s <title>\"", m.id)
+	} else {
+		m.title = match[2]
+	}
+	for line := range strings.Lines(text) {
+		if v, ok := strings.CutPrefix(line, "Status: "); ok {
+			m.status = strings.TrimSpace(v)
 		}
-		if strings.HasPrefix(line, "```") {
-			fenced = !fenced
-		}
-		switch {
-		case fenced || strings.HasPrefix(line, "```"):
-		case i == 0:
-			match := titleLine.FindStringSubmatch(line)
-			if match == nil || match[1] != m.id {
-				m.problem(n, "the first line must be \"# %s <title>\"", m.id)
-			} else {
-				m.title = match[2]
-			}
-			continue
-		case strings.HasPrefix(line, "## "):
-			section, current = strings.TrimPrefix(line, "## "), nil
-			switch section {
-			case "Demo":
-				m.hasDemo = true
-			case "Cards":
-				m.hasCards = true
-			case "Open questions":
-				m.open = []string{}
-			}
-			continue
-		case strings.HasPrefix(line, "#"):
-			current = nil
-			if section == "Cards" {
-				current = m.section(n, line)
-			}
-			continue
-		case section == "":
-			if v, ok := strings.CutPrefix(line, "Status: "); ok {
-				m.status = v
-			}
-			if v, ok := strings.CutPrefix(line, "Version: "); ok {
-				m.version = v
-			}
-			continue
-		case section == "Cards" && current == nil && strings.HasPrefix(line, "|"):
-			m.row(n, line)
-			continue
-		}
-		switch {
-		case current != nil:
-			current.body = append(current.body, line)
-		case section == "Open questions" && strings.TrimSpace(line) != "":
-			m.open = append(m.open, line)
+		if v, ok := strings.CutPrefix(line, "Version: "); ok {
+			m.version = strings.TrimSpace(v)
 		}
 	}
+	m.parseBody(text)
 	return m
 }
 
-// row reads one line of the cards table.
-func (m *milestone) row(n int, line string) {
-	cells := tableCells(line)
-	switch {
-	case strings.HasPrefix(strings.TrimSpace(line), "|---"):
-		return
-	case slices.Equal(cells, cardHeader):
-		m.hasHeader = true
-		return
-	case !m.hasHeader:
-		m.problem(n, "the cards table must start with the columns %s", strings.Join(cardHeader, ", "))
-		return
-	case len(cells) != len(cardHeader):
-		m.problem(n, "a card row has %d cells, not %d", len(cells), len(cardHeader))
-		return
-	}
-	c := &card{id: cells[0], title: cells[1], owner: cells[2], status: cells[4], line: n}
-	if deps := cells[3]; deps != "—" && deps != "-" && deps != "" {
-		for d := range strings.SplitSeq(deps, ",") {
-			c.depends = append(c.depends, strings.TrimSpace(d))
-		}
-	}
-	m.cards = append(m.cards, c)
-}
-
-// section starts the section of the card that a "### " heading names.
-func (m *milestone) section(n int, line string) *card {
-	match := cardHeading.FindStringSubmatch(line)
-	if match == nil {
-		m.problem(n, "a heading in Cards must look like \"### %s-T1 <title>\"", m.id)
-		return nil
-	}
-	c := m.card(match[1])
-	switch {
-	case c == nil:
-		m.problem(n, "%s has a section but no row in the cards table", match[1])
-		return nil
-	case c.hasSection:
-		m.problem(n, "%s has two sections", c.id)
-		return nil
-	case match[2] != c.title:
-		m.problem(n, "the section of %s is titled %q, and its row %q", c.id, match[2], c.title)
-	}
-	c.hasSection = true
-	return c
-}
-
-func (m *milestone) card(id string) *card {
-	for _, c := range m.cards {
-		if c.id == id {
-			return c
-		}
-	}
-	return nil
-}
-
-func (m *milestone) problem(line int, format string, args ...any) {
-	where := m.path
-	if line > 0 {
-		where += ":" + strconv.Itoa(line)
-	}
-	m.problems = append(m.problems, where+": "+fmt.Sprintf(format, args...))
-}
-
-func (m *milestone) done() int {
-	n := 0
-	for _, c := range m.cards {
-		if c.status == "done" {
-			n++
-		}
-	}
-	return n
-}
-
-// field returns the text after a "- **Name:**" line of the card's section.
-func (c *card) field(name string) (string, bool) {
-	for _, line := range c.body {
-		if v, ok := strings.CutPrefix(line, "- **"+name+":**"); ok {
-			return strings.TrimSpace(v), true
-		}
-	}
-	return "", false
-}
-
-func check(root string, milestones []*milestone) []string {
+func check(root string, milestones []*item) []string {
 	var problems []string
 	numbers := map[int]string{}
 	known := cardIDs(milestones)
@@ -365,7 +257,7 @@ func check(root string, milestones []*milestone) []string {
 	return problems
 }
 
-func (m *milestone) checkMilestone(root string) {
+func (m *item) checkMilestone(root string) {
 	if !slices.Contains(milestoneStatuses, m.status) {
 		m.problem(0, "Status must be one of %s", strings.Join(milestoneStatuses, ", "))
 	}
@@ -408,90 +300,6 @@ func (m *milestone) checkMilestone(root string) {
 		m.problem(0, "an active milestone has a done card; until then it is ready")
 	case m.status == "done" && done < total:
 		m.problem(0, "a done milestone has only done cards")
-	}
-}
-
-func (m *milestone) checkCard(root string, c *card, ids map[string]bool) {
-	if !strings.HasPrefix(c.id, m.id+"-T") || !cardID.MatchString(c.id) {
-		m.problem(c.line, "the card %q must be named %s-T<number>", c.id, m.id)
-	}
-	if ids[c.id] {
-		m.problem(c.line, "%s appears twice in the cards table", c.id)
-	}
-	ids[c.id] = true
-	if !slices.Contains(owners, c.owner) {
-		m.problem(c.line, "the owner of %s must be one of %s", c.id, strings.Join(owners, ", "))
-	}
-	if !slices.Contains(cardStatuses, c.status) {
-		m.problem(c.line, "the status of %s must be one of %s", c.id, strings.Join(cardStatuses, ", "))
-	}
-	if !c.hasSection {
-		m.problem(c.line, "%s needs a section \"### %s %s\"", c.id, c.id, c.title)
-	}
-	for _, d := range c.depends {
-		dep := m.card(d)
-		switch {
-		case dep == nil || d == c.id:
-			m.problem(c.line, "%s depends on %q, which is no other card of %s", c.id, d, m.id)
-		case c.status == "done" && dep.status != "done":
-			m.problem(c.line, "%s is done before %s, which it depends on", c.id, d)
-		}
-	}
-	if c.owner != "agent" {
-		return
-	}
-	if read, _ := c.field("Read"); !mdLink.MatchString(read) {
-		m.problem(c.line, "the agent card %s needs a \"- **Read:**\" line that links what to read", c.id)
-	}
-	proves, _ := c.field("Proves")
-	if proves == "" {
-		m.problem(c.line, "the agent card %s needs a \"- **Proves:**\" line that names its proof", c.id)
-	}
-	if c.status != "done" {
-		return
-	}
-	// A done card's proof exists: every code span of its Proves line is a
-	// path from the repository root.
-	for _, span := range codeSpan.FindAllStringSubmatch(proves, -1) {
-		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(span[1]))); err != nil {
-			m.problem(c.line, "%s is done, but its proof %s does not exist", c.id, span[1])
-		}
-	}
-}
-
-func (m *milestone) checkCycles() {
-	state := map[string]int{} // 1 while visiting, 2 once finished
-	var visit func(c *card) bool
-	visit = func(c *card) bool {
-		switch state[c.id] {
-		case 1:
-			return false
-		case 2:
-			return true
-		}
-		state[c.id] = 1
-		for _, d := range c.depends {
-			if dep := m.card(d); dep != nil && !visit(dep) {
-				return false
-			}
-		}
-		state[c.id] = 2
-		return true
-	}
-	for _, c := range m.cards {
-		if !visit(c) {
-			m.problem(c.line, "the dependencies of %s form a cycle", c.id)
-			return
-		}
-	}
-}
-
-// checkLinks reports a relative link whose file or heading is missing.
-func (m *milestone) checkLinks(root string) {
-	for _, l := range m.links {
-		if why := brokenLink(root, m.path, l.target); why != "" {
-			m.problem(l.line, "%s", why)
-		}
 	}
 }
 
@@ -766,7 +574,7 @@ func (f *fence) in(line string) bool {
 }
 
 // cardIDs returns the cards that the tables of the milestones define.
-func cardIDs(milestones []*milestone) map[string]bool {
+func cardIDs(milestones []*item) map[string]bool {
 	known := map[string]bool{}
 	for _, m := range milestones {
 		for _, c := range m.cards {
@@ -777,7 +585,7 @@ func cardIDs(milestones []*milestone) map[string]bool {
 }
 
 // currentMilestone returns the first milestone that is not done, or nil.
-func currentMilestone(milestones []*milestone) *milestone {
+func currentMilestone(milestones []*item) *item {
 	for _, m := range milestones {
 		if m.status != "done" && m.status != "open" {
 			return m
@@ -786,7 +594,7 @@ func currentMilestone(milestones []*milestone) *milestone {
 	return nil
 }
 
-func next(out *strings.Builder, milestones []*milestone) {
+func next(out *strings.Builder, milestones []*item) {
 	m := currentMilestone(milestones)
 	if m == nil {
 		fmt.Fprintln(out, "Every milestone is done. Plan the next one, as \"Make a milestone ready\" in docs/milestones/README.md says.")
@@ -826,7 +634,7 @@ func next(out *strings.Builder, milestones []*milestone) {
 // startable returns the todo cards of m whose dependencies are done, by owner
 // and in the order of the table. next serves the first agent card. A card in
 // assumed counts as done, so status can plan ahead without changing a card.
-func startable(m *milestone, assumed map[string]bool) (agent, pascal []*card) {
+func startable(m *item, assumed map[string]bool) (agent, pascal []*card) {
 	done := func(c *card) bool { return c.status == "done" || assumed[c.id] }
 	for _, c := range m.cards {
 		waiting := slices.ContainsFunc(c.depends, func(d string) bool { return !done(m.card(d)) })
@@ -845,7 +653,7 @@ func startable(m *milestone, assumed map[string]bool) (agent, pascal []*card) {
 // order returns the agent cards of m in the order that next serves them, if
 // each one succeeds. Pascal's cards keep their real status, so the order
 // stops when every agent card left waits on one of them.
-func order(m *milestone) []*card {
+func order(m *item) []*card {
 	assumed := map[string]bool{}
 	var cards []*card
 	for {
@@ -862,7 +670,7 @@ func body(c *card) string {
 	return strings.TrimSpace(strings.Join(c.body, "\n"))
 }
 
-func status(out *strings.Builder, milestones []*milestone) {
+func status(out *strings.Builder, milestones []*item) {
 	current := currentMilestone(milestones)
 	var rows [][]string
 	for _, m := range milestones {

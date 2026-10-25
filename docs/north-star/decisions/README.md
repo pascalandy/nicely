@@ -70,3 +70,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D062](D062-copier-template.md) | Ship the extension template in the Nicely repository, tied to the SDK by one version |
 | [D063](D063-sdk-test-kit.md) | Let the SDK own the test kit of an extension repository |
 | [D064](D064-shared-domains.md) | Let several extensions share a domain |
+| [D065](D065-backlog-items.md) | Plan work by extension and core backlog items |

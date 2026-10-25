@@ -49,6 +49,9 @@ func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 				problems = append(problems, fmt.Sprintf("%s:%d: %s", rel, l.line, why))
 			}
 		}
+		if path.Dir(rel) == milestoneDir {
+			return
+		}
 		for _, r := range cardRefs(string(data)) {
 			if !known[r.target] {
 				problems = append(problems, fmt.Sprintf("%s:%d: no milestone defines the card %s", rel, r.line, r.target))
@@ -77,8 +80,7 @@ func checkDocs(root string, known, codes map[string]bool) ([]string, error) {
 			}
 			return nil
 		}
-		// check reads the milestones, and their links, itself.
-		if strings.HasSuffix(rel, ".md") && (path.Dir(rel) != milestoneDir || path.Base(rel) == "README.md") {
+		if strings.HasSuffix(rel, ".md") {
 			checkFile(rel)
 		}
 		return nil
