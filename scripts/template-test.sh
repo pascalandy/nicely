@@ -158,6 +158,7 @@ fct_main() {
 	fct_repository "${scratch}/whole" probe '' probe 'probe inspect'
 	template_src="${scratch}/whole/source"
 	fct_test_import_domains "${template_src}" "${scratch}" "${root}" "${copier[@]}"
+	fct_test_release_url "${template_src}" "${scratch}" "${copier[@]}"
 	fct_test_refused_inputs "${template_src}" "${scratch}" "${copier[@]}"
 }
 

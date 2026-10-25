@@ -1,3 +1,4 @@
+{% set repository = "https://" ~ (module | regex_replace("/v[0-9]+$", "")) -%}
 # ncly-{{ slug }}
 
 `ncly-{{ slug }}` is an extension of [Nicely](https://github.com/pascalandy/nicely), which adds `ncly {{ root }}`{% if not name %} and the commands beneath it{% endif %}.
@@ -7,10 +8,10 @@
 
 A release installs with `ncly`, Go, and `just`.
 To install `ncly`, follow Install in [Nicely's README](https://github.com/pascalandy/nicely#install).
-Replace TAG with a release tag, such as `v0.1.0`. `git ls-remote --tags https://{{ module }}` lists the tags.
+Replace TAG with a release tag, such as `v0.1.0`. `git ls-remote --tags {{ repository }}` lists the tags.
 
 ```sh
-git clone --branch TAG https://{{ module }} ncly-{{ slug }}
+git clone --branch TAG {{ repository }} ncly-{{ slug }}
 cd ncly-{{ slug }}
 just install
 ncly describe {{ root }} --json

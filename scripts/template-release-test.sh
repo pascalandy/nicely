@@ -23,3 +23,16 @@ fct_test_release() {
 		fct_fail "ncly describe does not find ${extension_root} after the install of the tag: $(cat "${scratch}/describe.out")"
 }
 
+# fct_test_release_url renders the template source $1 for a module path with a
+# major version suffix, such as /v2. Go adds that suffix to the module path, not
+# to the repository URL, so the clone commands of README.md omit it.
+fct_test_release_url() {
+	local template_src="${1}" scratch="${2}" copier
+	shift 2
+	copier=("$@")
+	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=probe --data module=example.com/ncly-probe/v2 "${template_src}" "${scratch}/ncly-probe-v2"
+	fct_has "${scratch}/ncly-probe-v2/README.md" "git clone --branch TAG https://example.com/ncly-probe ncly-probe"
+	if grep -qF 'example.com/ncly-probe/v2' "${scratch}/ncly-probe-v2/README.md"; then
+		fct_fail "README.md gives the module path example.com/ncly-probe/v2 as a repository URL"
+	fi
+}
