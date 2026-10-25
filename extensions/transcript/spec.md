@@ -7,12 +7,12 @@ It follows the [contract](../../docs/north-star/contract.md).
 [M16](../../docs/milestones/M16-transcript-finish.md) added its doctor checks and fresh-session proof.
 
 The program comes from `authoring/andy/transcript/` in `pascalandy/skills` at `0c9c4a2`, as [The engine](spec/protocol.md#the-engine) says.
-Copy only its YouTube transcription path; do not rewrite that shipped path in Go.
+Copy only its YouTube transcription path; do not rewrite it in Go; [XT-102](../../docs/backlog/XT-102-transcript.md#transcript-in-go) keeps the Go port as a later idea.
 Other source features remain unexposed.
 Summary awaits a verified tools-off path under [D028](../../docs/north-star/decisions/D028-outside-text.md).
-It is parked in [XT-102](../../docs/backlog/XT-102-transcript.md#later), alongside
-[resume](../../docs/backlog/XT-102-transcript.md#later) and
-[transcript extras](../../docs/backlog/XT-102-transcript.md#later).
+It is parked in [XT-102](../../docs/backlog/XT-102-transcript.md#transcript-summary), alongside
+[resume](../../docs/backlog/COR-621-resume-sdk.md#resume) and
+[transcript extras](../../docs/backlog/XT-102-transcript.md#transcript-extras).
 
 This specification describes planned behavior.
 The readiness of M13 and of M16 settled their open questions in these files.
@@ -116,7 +116,7 @@ It reads no key, starts no program, and asks nothing of the keychain.
 - A broken `[transcript]` or `[transcript.youtube]` table fails the command with `CONFIG_INVALID`, as preparation does, so doctor lists it as `transcript.status`.
   So the command declares both `transcript.browser` and `transcript.youtube.output` as the config it reads.
 - It declares no `--live`, because no Deepgram document says that a key check bills nothing.
-  [Transcript extras](../../docs/backlog/XT-102-transcript.md#later) parks that check.
+  [Transcript extras](../../docs/backlog/XT-102-transcript.md#live-deepgram-check) parks that check.
 
 A warning leaves the report `ok`, so `status` exits 0.
 
