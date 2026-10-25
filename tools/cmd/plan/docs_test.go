@@ -11,6 +11,7 @@ func TestCheckDocs(t *testing.T) {
 	cases := []struct {
 		name, file, text, want string
 	}{
+		{"prose in milestone README", "docs/milestones/README.md", "It\u2019s current.\n", "the prose holds \u2019"},
 		{"missing file", "docs/north-star/vision.md", "See [the spec](spec.md).\n", "docs/north-star/vision.md:1: the link spec.md points to a missing file"},
 		{"missing file in the plan's readme", "docs/milestones/README.md", "See [the spec](spec.md).\n", "docs/milestones/README.md:1: the link spec.md points to a missing file"},
 		{"missing heading", "AGENTS.md", "# AGENTS.md\n\n## Code\n\nSee [Rules](#rules).\n", "AGENTS.md:5: the link #rules points to a missing heading"},

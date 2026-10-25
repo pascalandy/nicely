@@ -44,7 +44,7 @@ func loadBacklog(root string) (*backlog, error) {
 	}
 	b := &backlog{}
 	for _, e := range entries {
-		if e.IsDir() || e.Name() == "README.md" {
+		if e.IsDir() || e.Name() == "README.md" || !strings.HasSuffix(e.Name(), ".md") {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(root, backlogDir, e.Name()))
@@ -97,6 +97,7 @@ func parseItem(file, text string) *item {
 	if !itemID.MatchString(m.id) {
 		m.problem(0, "the ID must be in the 1xx or 6xx band")
 	}
+	m.parseBody(text)
 	lines := strings.Split(text, "\n")
 	if len(lines) < 5 || lines[0] != "---" || lines[4] != "---" {
 		m.problem(1, "frontmatter needs exactly three keys on separate lines, between --- lines")
@@ -123,6 +124,10 @@ func parseItem(file, text string) *item {
 			m.problem(i+2, "frontmatter keys must be id, %s, state, in that order, with nonempty strings on one line", kind)
 			return m
 		}
+		if k.HeadComment+k.LineComment+k.FootComment+v.HeadComment+v.LineComment+v.FootComment != "" {
+			m.problem(i+2, "quote frontmatter values that contain #; comments can hide state text")
+			return m
+		}
 	}
 	if fields[1].Value != m.id {
 		m.problem(2, "frontmatter id must match the file ID %s", m.id)
@@ -133,7 +138,11 @@ func parseItem(file, text string) *item {
 	} else {
 		m.problem(4, "state must start with Idea, Parked, Planned, Ready, Active, or Shipped")
 	}
-	m.parseBody(text)
+	for i, line := range lines[5:] {
+		if strings.HasPrefix(line, "Status:") || strings.HasPrefix(line, "Version:") {
+			m.problem(i+6, "keep status and version in frontmatter state, without separate body lines")
+		}
+	}
 	return m
 }
 
@@ -162,7 +171,7 @@ func (b *backlog) check(root string) []string {
 			problems = append(problems, backlogDir+"/README.md: duplicate queue entry "+id)
 		case m == nil:
 			problems = append(problems, backlogDir+"/README.md: queue names no item "+id)
-		case !queued(m.status):
+		case m.status != "" && !queued(m.status):
 			problems = append(problems, backlogDir+"/README.md: queue item "+id+" must be Planned, Ready, or Active")
 		}
 		seen[id] = true
@@ -177,6 +186,9 @@ func (b *backlog) check(root string) []string {
 		problems = append(problems, err.Error())
 	}
 	for _, e := range entries {
+		if !e.IsDir() && !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
 		if e.Name() != "README.md" && !slices.Contains(frozenMilestones, e.Name()) {
 			problems = append(problems, milestoneDir+"/"+e.Name()+": only the 16 frozen milestone files may remain")
 		}
@@ -189,6 +201,9 @@ func queued(status string) bool {
 }
 
 func (m *item) checkItem(root string) {
+	if m.status == "" {
+		return
+	}
 	if !m.hasDemo {
 		m.problem(0, "an item needs a Demo section")
 	}
