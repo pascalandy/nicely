@@ -32,6 +32,14 @@ grep 'Never type or pipe a key yourself, and never grant one' nicely.md
 # the Copier that the template pins, and links Extensions
 grep '^uv tool run copier@[0-9.]+ copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github\.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME$' nicely.md
 grep '\[Extensions\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md\)' nicely.md
+# The skill tells how to install an extension at a release tag. It quotes the install
+# rule of Release and install, gives its commands, and confirms the install with describe
+grep '^## Install an extension$' nicely.md
+grep '\[Release and install\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md#release-and-install\)' nicely.md
+grep '^> A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`\.$' nicely.md
+grep '^git clone --branch TAG https://github\.com/OWNER/REPO$' nicely.md
+grep '^cd REPO && just install$' nicely.md
+grep 'Then run `ncly describe ROOT --json`' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'

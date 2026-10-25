@@ -81,6 +81,8 @@ These commands target the default folders: bash also needs the bash-completion p
 
 From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `~/.local/bin/` and the first-party extensions, such as `agent` and `transcript`, into `~/.local/share/nicely/extensions/`, or into `$XDG_DATA_HOME/nicely/extensions/` when `XDG_DATA_HOME` holds an absolute path. The `agent` extension uses the login of an installed Codex, which `ncly doctor agent` checks. The `transcript` extension needs `uv` and Python 3.12 or later, which `ncly doctor transcript` checks, with the cookies of Arc when the config selects it.
 
+An external extension, such as `ncly-video-convert`, installs from its repository at a release tag, with Go and `just`. [Release and install](docs/north-star/contract/extensions.md#release-and-install) gives the commands, and `ncly skill view nicely` gives them to an agent.
+
 ## Privacy
 
 Nicely sends no telemetry. It contacts a service only when a command you run needs it, such as Deepgram for `ncly transcript`.

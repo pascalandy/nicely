@@ -24,6 +24,23 @@ description: Use before running any ncly command.
 - Give the shell a timeout longer than the command's `--timeout` plus 15 seconds of cleanup
 - Each extension ships a skill named after its slug: `ncly skill view SLUG`. Join its root's words from describe with `-`, such as `video-convert`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill, and `ncly skill status --json` checks their folders, names, and files
 
+## Install an extension
+
+[Release and install](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md#release-and-install) holds the install rule:
+
+> A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`.
+> For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
+> `ncly describe <root> --json` then confirms the install.
+
+For the repository `github.com/OWNER/REPO` at the tag TAG, such as `v0.1.0`:
+
+```sh
+git clone --branch TAG https://github.com/OWNER/REPO
+cd REPO && just install
+```
+
+`git ls-remote --tags https://github.com/OWNER/REPO` lists the tags. Then run `ncly describe ROOT --json`, such as `ncly describe video convert --json`, and `ncly skill view SLUG`. The install grants no key.
+
 ## Build an extension
 
 Create the repository of a new extension from the extension template at VERSION. Replace VERSION with the release tag that `ncly --version` prints. Then follow the `AGENTS.md` of the new repository. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
