@@ -27,7 +27,7 @@ Go records completion only after it verifies and syncs the required artifacts, a
   Missing, changed, or unsupported evidence returns `RESUME_UNSAFE`.
 - A lost final protocol message leaves the step unknown, so a repeat refuses with `RESUME_UNSAFE`.
   Pascal cut its local recovery on 2026-10-18, as [D038](../../../docs/north-star/decisions/D038-python-protocol.md) records.
-  [M99](../../../docs/milestones/M99-parking-lot/resume.md) parks it.
+  [XT-102](../../../docs/backlog/XT-102-transcript.md#later) parks it.
 - Before any intent, the shared run-ID rules may safely retry preparation.
   After a paid intent, incomplete or uncertain work is refused with `RESUME_UNSAFE`.
   A missing response never proves the request was free.

@@ -19,7 +19,7 @@ default:
 next:
     @go -C tools run ./cmd/plan next "{{ justfile_directory() }}"
 
-# Show every milestone and the cards of the current one
+# Show the XT and COR tables from frontmatter
 [group('plan')]
 status:
     @go -C tools run ./cmd/plan status "{{ justfile_directory() }}"

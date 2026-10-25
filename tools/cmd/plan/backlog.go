@@ -135,7 +135,7 @@ func parseItem(file, text string) *item {
 	if fields[1].Value != m.id {
 		m.problem(2, "frontmatter id must match the file ID %s", m.id)
 	}
-	m.kind, m.title, m.state = kind, fields[3].Value, fields[5].Value
+	m.title, m.state = fields[3].Value, fields[5].Value
 	if match := itemState.FindStringSubmatch(m.state); match != nil {
 		m.status = match[1]
 	} else {

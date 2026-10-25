@@ -55,7 +55,7 @@ func checkDocs(root string, known, codes map[string]bool, planDir string) ([]str
 		}
 		for _, r := range cardRefs(string(data)) {
 			if !known[r.target] {
-				problems = append(problems, fmt.Sprintf("%s:%d: no milestone defines the card %s", rel, r.line, r.target))
+				problems = append(problems, fmt.Sprintf("%s:%d: no item defines the card %s", rel, r.line, r.target))
 			}
 		}
 		problems = append(problems, checkProse(rel, string(data), codes)...)

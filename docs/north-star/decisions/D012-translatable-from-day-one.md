@@ -1,6 +1,6 @@
 # D012 Make every word of core translatable from day one
 
-Decided 2026-10-05. Core uses go-i18n catalogs with descriptions. Extensions own their catalogs. English ships first; Canadian French follows in M25. The package comment of [sdk/i18n](../../../sdk/i18n/i18n.go) owns catalog use, and [the scenario rules](../../../testdata/script/README.md) own pseudo-locale scenarios from M00.
+Decided 2026-10-05. Core uses go-i18n catalogs with descriptions. Extensions own their catalogs. English ships first; Canadian French follows in [COR-102](../../backlog/COR-102-canadian-french.md). The package comment of [sdk/i18n](../../../sdk/i18n/i18n.go) owns catalog use, and [the scenario rules](../../../testdata/script/README.md) own pseudo-locale scenarios from M00.
 
 A catalog test compares entries with `en`. It requires `one` beside `other` when `other` reads `Count` or `N`.
 

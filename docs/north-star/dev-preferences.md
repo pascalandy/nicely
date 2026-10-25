@@ -1,6 +1,6 @@
 # Developer preferences
 
-Pascal's preferences apply to every agent and milestone where principles and specs are silent.
+Pascal's preferences apply to every agent and backlog item where principles and specs are silent.
 
 ## Decide the look with a published mockup
 
@@ -54,7 +54,7 @@ Use the `fleet` skill to run macOS checks on the mini. Use the mbp only if the m
 
 Open review-ready pull requests. In `brigade-mode`, the brigade decides when to merge. Otherwise, have an agent that did not write the change review each pull request, and quote its verdict in the pull request. Merge it yourself when `just signoff` passes, no review finding stays open, and you are very confident. Without that confidence, wait until Pascal says "merge" for that pull request. Report each merge to Pascal. Once authorized, ask for no further confirmation. Stop and report only a real blocker.
 
-Stack work on an open pull request when it depends on that pull request. [Make a milestone ready](../milestones/README.md#make-a-milestone-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
+Stack work on an open pull request when it depends on that pull request. [Make a item ready](../backlog/README.md#make-an-item-ready) owns readiness. Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
 
 Fix review findings on their pull request's branch. A finding about behavior gets a scenario that fails first. Reply with the fixing commit.
 
@@ -80,8 +80,8 @@ Report any failed step as an incomplete merge. Never manually close an open pull
 
 Create a separate GitHub issue for each UAT. Keep its task and procedure there, with only a link in the Epic.
 
-## Release each accepted milestone
+## Release each accepted item
 
-After each completed milestone that Pascal accepts, run the release cycle without a separate request.
-Use [D043](decisions/D043-milestone-versions.md) for acceptance and numbering, and [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
-Milestone acceptance does not replace the merge authorization above.
+After each completed item that Pascal accepts, run the release cycle without a separate request.
+Use [D065](decisions/D065-backlog-items.md) for acceptance and numbering, and [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
+Item acceptance does not replace the merge authorization above.

@@ -6,4 +6,4 @@ Decided 2026-10-05, revised 2026-10-17. Read keys from the environment first, th
 
 The limits are 60 seconds interactively and 10 otherwise, with one unavailable-keychain wait per command. A human can answer an unlock prompt; an unattended agent cannot. A timed-out write can still complete, so its effect stays unknown. [Programs that ncly runs](../contract/programs-that-ncly-runs.md) explains the macOS `security` exception.
 
-**Rejected.** Fallback files and shared ownership of another tool's entries. Remote commands that need keys remain in [M99](../../milestones/M99-parking-lot.md). Moving `security` through the higher-layer runner would not make an unknown write safe.
+**Rejected.** Fallback files and shared ownership of another tool's entries. Remote commands that need keys remain in [COR-602](../../backlog/COR-602-remote-commands.md). Moving `security` through the higher-layer runner would not make an unknown write safe.

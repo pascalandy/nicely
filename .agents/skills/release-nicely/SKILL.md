@@ -1,19 +1,19 @@
 ---
 name: release-nicely
-description: "Use after Pascal accepts a completed Nicely milestone, or when he requests a release: generate notes, check, tag, publish, and verify."
+description: "Use after Pascal accepts a completed Nicely item, or when he requests a release: generate notes, check, tag, publish, and verify."
 ---
 
 # Release nicely
 
-Run this cycle after each completed milestone that Pascal accepts, without a separate release request.
+Run this cycle after each completed item that Pascal accepts, without a separate release request.
 For an explicitly requested patch, use the same cycle.
-[D043](../../../docs/north-star/decisions/D043-milestone-versions.md) owns acceptance and version numbering.
-A release is never a card and never blocks the next milestone.
+[D065](../../../docs/north-star/decisions/D065-backlog-items.md) owns acceptance and version numbering.
+A release is never a card and never blocks the next item.
 
 Copy this checklist and tick each step:
 
 ```
-- [ ] 1. Ready: the milestone's cards are merged on origin/main, and Pascal accepted it as D043 says
+- [ ] 1. Ready: the item's cards are merged on origin/main, and Pascal accepted it as D065 says
 - [ ] 2. Changelog: `just changelog vX.Y.Z` writes this version's notes, reviewed against its commits
 - [ ] 3. Check: `just release-check vX.Y.Z` passes in a clean checkout of origin/main, and so does `runner-rehearsal.sh vX.Y.Z`
 - [ ] 4. Tag: vX.Y.Z on origin names the SHA of step 3
@@ -28,7 +28,7 @@ Copy this checklist and tick each step:
 1. Fetch origin and its tags with `git fetch origin --tags`.
 2. Use a clean checkout of `origin/main`, such as `git worktree add --detach <folder> origin/main`.
 3. Require empty output from `git status --porcelain`.
-4. Keep the SHA from `git rev-parse HEAD` and choose the version under D043.
+4. Keep the SHA from `git rev-parse HEAD` and choose the version under D065.
 5. Require that the chosen tag and GitHub release do not already exist.
    If either exists, inspect the existing publication and report its state instead of starting another cycle.
 6. Run `just changelog vX.Y.Z` in that checkout.

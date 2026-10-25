@@ -1,6 +1,6 @@
 # core spec
 
-This file specifies the commands of core. They follow [contract.md](contract.md), as every extension's commands do. The command tree names the milestone that brings each command.
+This file specifies the commands of core. They follow [contract.md](contract.md), as every extension's commands do. The tree names frozen milestones and future items.
 
 ## Command tree
 
@@ -15,14 +15,15 @@ ncly
 ├── auth login|logout|status        M06
 ├── auth grant|revoke               M08
 ├── run list|view                   M10
-└── tap add|list                   M99
+└── tap add|list                   COR-622
 ```
 
 `<domain>` groups extension commands under [Extension identity](contract/extension-identity.md). `skill` is the bundled extension, as [Extensions](contract/extensions.md) defines, and [extensions/skill/spec.md](../../extensions/skill/spec.md) specifies it. External extensions, such as `agent` and `transcript`, list their commands in their own specs.
 
 Core reserves its command and bundled-extension domains from the [domain table](architecture.md#domains-and-commands), plus `help`, `version`, and `config`.
 Core reserves `core` and `extensions` because they name [doctor components](#ncly-doctor).
-External extensions never use a reserved name. A name that is neither a command of this version nor an installed extension fails with `USAGE_INVALID`, including a reserved name whose command arrives in a later milestone.
+External extensions never use a reserved name. A name outside this version's commands and installed extensions fails with `USAGE_INVALID`.
+This includes reserved names whose commands arrive in later items.
 
 ## ncly describe
 
@@ -66,7 +67,7 @@ ncly run view <run-id> [--json]
 - A run ID outside the rule of [Run IDs](contract/run-ids.md) uses `USAGE_INVALID`. An unknown run uses `NOT_FOUND`, whose hint and `next` are `ncly run list`. An unreadable or unsupported record, such as one that breaks [Record format](contract/record-format.md), uses `RESUME_UNSAFE`, and so does a run whose lock cannot be read, because its `active` would be a guess; inspection starts no work
 - `active` is true while a process holds the run lock. Inspecting a busy run does not permit a retry loop
 
-Explicit `run resume` remains in [M99](../milestones/M99-parking-lot/resume.md). A recorded domain command can return its verified completed result under the same run ID, as [Run IDs](contract/run-ids.md) defines, without a separate core resume dispatcher.
+Explicit `run resume` remains in [COR-621](../backlog/COR-621-resume-sdk.md#later). A recorded domain command can return its verified completed result under the same run ID, as [Run IDs](contract/run-ids.md) defines, without a separate core resume dispatcher.
 
 Without `--json`, `list` prints a header row in bold, `RUN`, `STATUS`, `STARTED`, `COMMAND`, and `ITEMS`, then one row per run, with the date of `started_at`, and its previewed keys on the lines under it, indented, followed by `and <count> more` when the run has more items. The status of a row takes its color: `completed` green, `running` cyan, `failed` red, and `unknown` and `interrupted` yellow. The previewed keys and `and <count> more` are bright black. A green `●` starts the row of an active run, and a legend under the list explains it when the list shows one. The text of the legend is bright black. When `more` is true, a last line in bright black says to raise `--limit` or narrow the filters. Without a matching run, `list` prints one line that says so instead of the header. When `unreadable` holds a run ID, a line after the list names each one, and says that `ncly run view` gives its problem.
 

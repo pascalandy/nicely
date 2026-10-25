@@ -2,7 +2,7 @@
 
 Decided 2026-10-12, revised 2026-10-16. Let callers select `--run-id` before execution. [Run IDs](../contract/run-ids.md) owns replay, input comparison, and refusal of unsafe repeats. Successful answers come from committed records and verified artifacts.
 
-**Scope update, 2026-10-17.** M10 and M13 prove one item and one paid step. [M99](../../milestones/M99-parking-lot/resume.md) defers explicit resume, child-run recovery, and policy-migration fixtures.
+**Scope update, 2026-10-17.** M10 and M13 prove one item and one paid step. [COR-621](../../backlog/COR-621-resume-sdk.md#later) defers explicit resume, child-run recovery, and policy-migration fixtures.
 
 A future parent step must persist its child's ID before dispatch. It may repeat that call only while the child's record exists. A deleted record could belong to a child that already billed.
 

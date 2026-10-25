@@ -2,7 +2,7 @@
 
 Decided 2026-10-05, revised 2026-10-09. A first-party external extension owns `ncly agent run`.
 
-**Scope update, 2026-10-17.** [M09](../../milestones/M09-agent-profiles.md) and [M10](../../milestones/M10-agent-run.md) deliver one trusted Codex task. [The spec](../../../extensions/agent/spec.md) owns invocation, tools permission, cancellation, and depth. [M99](../../milestones/M99-parking-lot/agent-extras.md) defers other harnesses, profiles, and `headless` migration. [Transcript summary](../../milestones/M99-parking-lot/transcript-summary.md) requires a verified tools-off path under [D028](D028-outside-text.md).
+**Scope update, 2026-10-17.** [M09](../../milestones/M09-agent-profiles.md) and [M10](../../milestones/M10-agent-run.md) deliver one trusted Codex task. [The spec](../../../extensions/agent/spec.md) owns invocation, tools permission, cancellation, and depth. [XT-106](../../backlog/XT-106-agent.md#later) defers other harnesses, profiles, and `headless` migration. [Transcript summary](../../backlog/XT-102-transcript.md#later) requires a verified tools-off path under [D028](D028-outside-text.md).
 
 **Why.** One owner keeps harness behavior consistent. Model IDs belong in configuration because they change. CLI composition preserves the interface agents use. One task first proves run records.
 

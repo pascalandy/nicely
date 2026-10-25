@@ -1,9 +1,14 @@
-# D042 Plan work as milestones of small cards
+# D042 Plan work as backlog items of small cards
 
-Decided 2026-10-09. A milestone demonstrates one capability, with at most five agent cards. A card is one pull request. [The milestones' README](../../milestones/README.md) owns readiness, ownership, dependencies, and format. `just next` selects the work; `just status` reports progress.
+Decided 2026-10-09. Revised 2026-10-25 by [D065](D065-backlog-items.md).
+A backlog item demonstrates one capability, with at most five agent cards.
+A card is one pull request.
+[The backlog README](../../backlog/README.md) owns readiness, ownership, dependencies, and format.
+D065 owns IDs and renumbering.
+`just next` selects the work; `just status` reports progress.
 
-Milestones follow their dependencies, keep one extension's work together, and put Pascal's tools before everyday domains.
-Only milestones without done cards may be renumbered, in a plan-only pull request.
+Keep one extension's work together, and use the backlog queue for delivery order.
+Only an item without done cards may be renumbered, in a plan-only pull request.
 
 Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests.
 

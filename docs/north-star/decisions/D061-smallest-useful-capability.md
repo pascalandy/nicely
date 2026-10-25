@@ -1,8 +1,9 @@
 # D061 Ship the smallest useful capability before its variants
 
-Decided 2026-10-17. Start with one concrete job and its necessary inputs, outputs, and steps. Each variant needs its own observed use. Each milestone delivers a useful increment without later milestones as acceptance criteria.
+Decided 2026-10-17. Start with one concrete job and its necessary inputs, outputs, and steps. Each variant needs its own observed use. Each backlog item delivers a useful increment without later items as acceptance criteria.
 
-Keep deferred capabilities and revisit conditions in [M99](../../milestones/M99-parking-lot.md), as options rather than obligations. Remove deferred milestones from the queue. The repository plan remains authoritative over old issues.
+Keep deferred capabilities in [6xx Idea items](../../backlog/README.md), with revisit conditions in state.
+They remain options rather than obligations. Keep Idea items outside the queue. The repository plan remains authoritative over old issues.
 
 **Why.** [PR #156](https://github.com/pascalandy/nicely/pull/156) found brainstormed variants had become first-release requirements. Scope cuts retain applicable safety guarantees:
 

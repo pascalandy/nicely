@@ -1,13 +1,18 @@
-# D043 Release each accepted milestone with its milestone version
+# D043 Release each accepted backlog item
 
 Decided 2026-10-09. Revised 2026-10-19 in [#272](https://github.com/pascalandy/nicely/issues/272).
-Use `v0.<n>.0` for `M<n>`, v0.0.1 for M00, and patch versions for intervening fixes.
-Release after each completed milestone that Pascal accepts, without a separate release request.
-Acceptance requires Pascal's explicit `accept M18` or equivalent for that milestone in conversation or on its Epic; a done milestone alone is not accepted.
+Revised 2026-10-25 by [D065](D065-backlog-items.md), which owns version numbering.
+Each accepted item released from Nicely takes the next minor version, starting at v0.24.0.
+Patch versions cover intervening fixes.
+External extensions keep their own versions.
+Release after each completed item that Pascal accepts, without a separate release request.
+Acceptance requires Pascal's explicit `accept <ID>`, such as `accept COR-102`, or equivalent wording for that item.
+He accepts it in conversation or on its Epic; a Shipped item alone is not accepted.
 Follow [release-nicely](../../../.agents/skills/release-nicely/SKILL.md) for changelog, checks, tag, publication, and verification.
-Releases remain outside the card queue and never block the next milestone.
+Releases remain outside the queue and never block the next item.
 
 **Why.** Waiting for M00's release blocked the next milestone. Separate releases remove that dependency.
-Releasing each accepted milestone keeps the published version current.
+Releasing each accepted item keeps the published version current.
 
-**Rejected.** Release gates, a separate release request, and `0.1.<n>` numbering, which leaves no patch number between milestones.
+**Rejected.** Release gates, a separate release request, and versions derived from plan IDs.
+`0.1.<n>` numbering leaves no patch number between releases.

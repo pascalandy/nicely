@@ -16,7 +16,7 @@ func (m *item) parseBody(text string) {
 	for i, line := range strings.Split(text, "\n") {
 		n := i + 1
 		if checkbox.MatchString(line) {
-			m.problem(n, "a checkbox belongs in no milestone file: make the work a card")
+			m.problem(n, "a checkbox belongs in no item file: make the work a card")
 		}
 		if strings.HasPrefix(line, "```") {
 			fenced = !fenced

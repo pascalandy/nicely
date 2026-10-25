@@ -48,7 +48,7 @@ flowchart TB
 - An extension reaches core through its environment and the CLI, and another extension only through the CLI, the same interface that agents use.
 - Adding a domain never edits core.
 
-Core says where a feature lives, not when it ships. The milestones decide timing.
+Core says where a feature lives, not when it ships. The backlog queue decides timing.
 
 ## Code map
 
@@ -72,7 +72,7 @@ Each part has one owner: one package and one spec section.
 | 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/` | [Record format](contract/record-format.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
 | 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/` | [Keys](contract/keys.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
 
-A later shared service starts in `sdk/`. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. [The milestones](../milestones/) record when each implementation arrives.
+A later shared service starts in `sdk/`. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. [The backlog](../backlog/README.md) records when each implementation arrives.
 
 The other folders:
 
@@ -95,7 +95,7 @@ The other folders:
 | `doctor` | Checks tools, keys, extensions, and components | core |
 | `auth` | Stores keys and grants them to extensions | core |
 | `run` | Lists and inspects recorded operations | core |
-| `tap` | Would install extensions from a tap, parked in [M99](../milestones/M99-parking-lot/taps.md) | core |
+| `tap` | Would install extensions from a tap, parked in [COR-622](../backlog/COR-622-taps-offer.md#later) | core |
 | `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled |
 | `agent` | Runs one trusted Codex task with model and effort settings | external |
 | `transcript` | Transcribes one selected YouTube video | external |
@@ -103,5 +103,6 @@ The other folders:
 
 [Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key.
 M17 selected neither everyday candidate.
-[M18](../milestones/M18-extension-template.md) plans the extension template before any particular extension.
-Markdown view and additional media domains remain in [M99](../milestones/M99-parking-lot/everyday-domains.md), alongside other deferred variants.
+[M18](../milestones/M18-extension-template.md) shipped the extension template before any particular extension.
+[Markdown view](../backlog/XT-103-markdown-view.md) is Parked.
+[Additional video and image jobs](../backlog/XT-602-video-image-jobs.md) remain an Idea.

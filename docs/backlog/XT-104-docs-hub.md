@@ -1,7 +1,10 @@
-# M24 Docs hub
+---
+id: XT-104
+extension: "docs hub"
+state: "Parked. Pascal has no recurring cross-project reading task. M24's plan and open questions wait here"
+---
 
-Status: planned
-Version: v0.24.0
+# XT-104 docs hub
 
 ## Demo
 
@@ -28,14 +31,14 @@ Bind to loopback, and disable renderer behavior that executes project code or fe
 
 There is no persistent hub mirror or project registry.
 Scanning, synchronization, visibility management, publishing, and search remain in
-[M99](M99-parking-lot/docs-hub.md).
-This milestone changes no core mechanism.
+[Later](#later).
+This item changes no core mechanism.
 
 ## Open questions
 
 Settle each one in `extensions/docs/spec.md`, then delete this section.
 
-- Which recurring cross-project reading task Pascal has, with its docs roots. Without one, move M24 to M99, as D061 says
+- Which recurring cross-project reading task Pascal has, with its docs roots. Without one, keep XT-104 Parked, as D061 says
 - How the URL reaches the caller. Core buffers an extension's JSON stdout until exit, so a serving command cannot answer its URL in JSON
 - Which existing renderer supports multiple explicit docs roots with simple setup, useful navigation, and the required local-only behavior. Try one renderer first, and compare a second only if the first fails a requirement
 - Which installed programs and versions it requires, and which doctor checks and install hints describe that setup
@@ -46,10 +49,10 @@ Settle each one in `extensions/docs/spec.md`, then delete this section.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M24-T1 | Serve selected docs | agent | — | todo |
-| M24-T2 | Paths and lifecycle | agent | M24-T1 | todo |
+| XT-104-T1 | Serve selected docs | agent | — | todo |
+| XT-104-T2 | Paths and lifecycle | agent | XT-104-T1 | todo |
 
-### M24-T1 Serve selected docs
+### XT-104-T1 Serve selected docs
 
 - **Read:** [Scope](#scope), [D022](../north-star/decisions/D022-private-docs.md)
 - **Proves:** `extensions/docs/testdata/script/docs_serve.txtar`
@@ -58,7 +61,7 @@ Use the chosen renderer to serve two explicitly supplied projects with useful na
 Print the local URL, and report missing docs or dependencies before starting the server.
 Keep sources unchanged and generated files inside disposable cache.
 
-### M24-T2 Paths and lifecycle
+### XT-104-T2 Paths and lifecycle
 
 - **Read:** [Scope](#scope), [Programs that ncly runs](../north-star/contract/programs-that-ncly-runs.md)
 - **Proves:** `extensions/docs/testdata/script/docs_serve_boundaries.txtar`
@@ -68,6 +71,21 @@ Stop the renderer and server on cancellation.
 It does not reuse the stop policy of doctor, which [#215](https://github.com/pascalandy/nicely/issues/215) questions.
 A failed build leaves sources unchanged and needs no publication recovery.
 
-## After this milestone
+## After
 
 Pascal reads a small selection of his project docs in the local site and judges whether the aggregation saves time.
+
+## Later
+
+### Docs hub
+
+Parked from M24: project scanning, a visibility registry, `docs list`, `sync`, and `check`,
+editable generated mirrors, synchronization recovery, public builds, publishing, and custom
+search. Local documentation aggregation does not require a publishing platform.
+
+M24 keeps explicit project roots, one existing renderer, a local `docs serve` view, read-only
+sources, and a disposable cache. Resolve the actual renderer and multi-project input layout
+before the item becomes Ready. Revisit a parked feature only when the basic local view
+fails a demonstrated need; public publication needs its own explicit selection of sources.
+
+See the related vault idea in [#12](https://github.com/pascalandy/nicely/issues/12).

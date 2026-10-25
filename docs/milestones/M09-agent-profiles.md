@@ -11,11 +11,11 @@ Version: v0.9.0
 
 `agent` is an external extension in `extensions/agent/`, built as `ncly-agent` on the existing SDK. It prepares one trusted task for Codex. [Its spec](../../extensions/agent/spec.md) defines the command, settings, and tools policy. Execution and records arrive in [M10](M10-agent-run.md).
 
-Use Codex's existing login. The extension declares no API key and forwards none. [M08](M08-grants.md) still serves extensions that need a key, such as transcript. A Codex API key and additional harnesses stay in [M99](M99-parking-lot/agent-extras.md).
+Use Codex's existing login. The extension declares no API key and forwards none. [M08](M08-grants.md) still serves extensions that need a key, such as transcript. A Codex API key and additional harnesses stay in [XT-106](../backlog/XT-106-agent.md#later).
 
 One model and effort can come from flags or `[agent]` defaults. Named profiles, providers, a model catalog, and a generic adapter registry stay in M99. There is one Codex invocation to implement.
 
-`just install` puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. Taps wait in [M99](M99-parking-lot/taps.md).
+`just install` puts `ncly` in `~/.local/bin/` and the extension files in Nicely's data folder. Taps wait in [COR-622](../backlog/COR-622-taps-offer.md#later).
 
 ## Cards
 

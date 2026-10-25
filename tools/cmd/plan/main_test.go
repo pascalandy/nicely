@@ -1,13 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
 
-// TestRepositoryPlan checks the real milestone files, so `just test` fails as
+// TestRepositoryPlan checks the real backlog files, so `just test` fails as
 // soon as one drifts from the format.
 func TestRepositoryPlan(t *testing.T) {
 	var out strings.Builder
@@ -16,24 +18,13 @@ func TestRepositoryPlan(t *testing.T) {
 	}
 }
 
-// TestReadyRule keeps the docs that state how a milestone becomes ready in
-// the words of next's message, so the rule cannot drift apart.
-func TestReadyRule(t *testing.T) {
-	for _, name := range []string{"docs/north-star/dev-preferences.md", "docs/north-star/decisions/D042-milestones-and-cards.md"} {
-		data, err := os.ReadFile(filepath.Join("../../..", name))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !strings.Contains(string(data), readyRule) {
-			t.Errorf("%s lacks the rule of next, in its words: %q", name, readyRule)
-		}
-	}
-}
+const foundation = `---
+id: COR-100
+core: foundation
+state: Shipped. It builds
+---
 
-const foundation = `# M00 Foundation
-
-Status: done
-Version: v0.0.1
+# COR-100 Foundation
 
 ## Demo
 
@@ -43,18 +34,21 @@ It builds.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M00-T1 | Skeleton | agent | — | done |
+| COR-100-T1 | Skeleton | agent | — | done |
 
-### M00-T1 Skeleton
+### COR-100-T1 Skeleton
 
-- **Read:** [Foundation](#m00-foundation)
+- **Read:** [Foundation](#cor-100-foundation)
 - **Proves:** ` + "`proof.txt`" + `
 `
 
-const host = `# M01 Host
+const host = `---
+id: XT-101
+extension: Host
+state: Ready. It dispatches
+---
 
-Status: ready
-Version: v0.1.0
+# XT-101 Host
 
 ## Demo
 
@@ -64,15 +58,15 @@ It dispatches.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| M01-T1 | Pick the look | Pascal | — | todo |
-| M01-T2 | Manifest | agent | — | todo |
-| M01-T3 | Help | agent | M01-T1, M01-T2 | todo |
+| XT-101-T1 | Pick the look | Pascal | — | todo |
+| XT-101-T2 | Manifest | agent | — | todo |
+| XT-101-T3 | Help | agent | XT-101-T1, XT-101-T2 | todo |
 
-### M01-T1 Pick the look
+### XT-101-T1 Pick the look
 
 Publish the mockups.
 
-### M01-T2 Manifest
+### XT-101-T2 Manifest
 
 - **Read:** [Demo](#demo)
 - **Proves:** ` + "`testdata/manifest.txtar`" + `
@@ -83,17 +77,10 @@ Read the manifest.
 # a comment in a block is no heading
 ` + "```" + `
 
-### M01-T3 Help
+### XT-101-T3 Help
 
 - **Read:** [Demo](#demo)
 - **Proves:** ` + "`testdata/help.txtar`" + `
-`
-
-const parkingLot = `# M99 Parking lot
-
-Status: open
-
-Ideas.
 `
 
 func TestNext(t *testing.T) {
@@ -105,30 +92,30 @@ func TestNext(t *testing.T) {
 	}{
 		{
 			name:  "first ready agent card, with the cards waiting on Pascal",
-			files: map[string]string{"M01-host.md": host},
-			want:  []string{"Waiting on Pascal: M01-T1 Pick the look", "Next card: M01-T2 Manifest", "which ships in v0.1.0", "Read the manifest.", "# a comment in a block is no heading"},
+			files: map[string]string{"XT-101-host.md": host},
+			want:  []string{"Waiting on Pascal: XT-101-T1 Pick the look", "Next card: XT-101-T2 Manifest", "Read the manifest.", "# a comment in a block is no heading"},
 		},
 		{
 			name:  "agent cards blocked by Pascal",
-			files: map[string]string{"M01-host.md": edit(host, "| M01-T2 | Manifest | agent | — | todo |", "| M01-T2 | Manifest | agent | M01-T1 | todo |")},
-			want:  []string{"No agent card of M01 can start", "Publish the mockups."},
+			files: map[string]string{"XT-101-host.md": edit(host, "| XT-101-T2 | Manifest | agent | — | todo |", "| XT-101-T2 | Manifest | agent | XT-101-T1 | todo |")},
+			want:  []string{"No agent card of XT-101 can start", "Publish the mockups."},
 		},
 		{
-			name: "a planned milestone asks for readiness",
-			files: map[string]string{"M01-host.md": edit(host, "Status: ready", "Status: planned") +
+			name: "a Planned item asks for readiness",
+			files: map[string]string{"XT-101-host.md": edit(host, "state: Ready", "state: Planned") +
 				"\n## Open questions\n\n- Which manifest format?\n"},
-			want: []string{"Next: make M01 Host ready", "- Which manifest format?", "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."},
+			want: []string{"Next: make XT-101 Host ready", "- Which manifest format?", "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."},
 		},
 		{
-			name:  "a planned milestone without open questions starts with its first card",
-			files: map[string]string{"M01-host.md": edit(host, "Status: ready", "Status: planned")},
-			want:  []string{"Next card: M01-T2 Manifest", "M01 has no open questions, so this pull request also sets it to active."},
+			name:  "a Planned item without open questions starts with its first card",
+			files: map[string]string{"XT-101-host.md": edit(host, "state: Ready", "state: Planned")},
+			want:  []string{"Next card: XT-101-T2 Manifest", "The pull request sets this card to done."},
 			lacks: []string{"small stack"},
 		},
 		{
-			name:  "every milestone done",
+			name:  "empty queue",
 			files: map[string]string{},
-			want:  []string{"Every milestone is done"},
+			want:  []string{"The queue is empty"},
 		},
 	}
 	for _, tc := range cases {
@@ -152,114 +139,34 @@ func TestNext(t *testing.T) {
 	}
 }
 
-func TestStatus(t *testing.T) {
-	root := repository(t, map[string]string{"M01-host.md": host})
-	var out strings.Builder
-	if err := run([]string{"status", root}, &out); err != nil {
-		t.Fatalf("%v\n%s", err, out.String())
-	}
-	// M01-T3 waits on Pascal's M01-T1, so the order stops after M01-T2.
-	for _, w := range []string{
-		"M00  done   1/1  Foundation\n", "M01  ready  0/3  Host  <- current\n", "todo  agent   M01-T3  Help  after M01-T1, M01-T2\n",
-		"If each agent card succeeds, just next serves them in this order: M01-T2\n", "These agent cards wait on a card of Pascal: M01-T3\n",
-	} {
-		if !strings.Contains(out.String(), w) {
-			t.Errorf("status lacks %q:\n%s", w, out.String())
-		}
-	}
-	if strings.Contains(out.String(), "M99") {
-		t.Errorf("status lists the parking lot:\n%s", out.String())
-	}
-}
-
-// describe has the dependencies of M03, whose cards just next served in the
-// order T1, T2, T4, T5, T3 (#64).
-var describe = `# M01 Describe
-
-Status: ready
-Version: v0.1.0
-
-## Demo
-
-It describes.
-
-## Cards
-
-| Card | Title | Owner | Depends on | Status |
-|---|---|---|---|---|
-| M01-T1 | Listing | agent | — | todo |
-| M01-T2 | Detail | agent | M01-T1 | todo |
-| M01-T3 | Schemas | agent | M01-T2, M01-T5 | todo |
-| M01-T4 | Config | agent | M01-T2 | todo |
-| M01-T5 | Help | agent | M01-T2 | todo |
-` + describeSections
-
-var describeSections = func() string {
-	var b strings.Builder
-	for _, c := range []string{"M01-T1 Listing", "M01-T2 Detail", "M01-T3 Schemas", "M01-T4 Config", "M01-T5 Help"} {
-		b.WriteString("\n### " + c + "\n\n- **Read:** [Demo](#demo)\n- **Proves:** `proof.txt`\n")
-	}
-	return b.String()
-}()
-
-func TestStatusOrder(t *testing.T) {
-	root := repository(t, map[string]string{"M01-describe.md": describe})
-	file := filepath.Join(root, "docs", "milestones", "M01-describe.md")
-	var next, out, again strings.Builder
-	if err := run([]string{"next", root}, &next); err != nil {
-		t.Fatalf("%v\n%s", err, next.String())
-	}
-	if err := run([]string{"status", root}, &out); err != nil {
-		t.Fatalf("%v\n%s", err, out.String())
-	}
-	if w := "If each agent card succeeds, just next serves them in this order: M01-T1, M01-T2, M01-T4, M01-T5, M01-T3\n"; !strings.Contains(out.String(), w) {
-		t.Errorf("status lacks %q:\n%s", w, out.String())
-	}
-	if strings.Contains(out.String(), "wait on a card of Pascal") {
-		t.Errorf("status finds a card of Pascal:\n%s", out.String())
-	}
-	// The order lives in memory: the plan and the choice of next stay as they were.
-	if data, err := os.ReadFile(file); err != nil || string(data) != describe {
-		t.Errorf("status changed the milestone file: %v\n%s", err, data)
-	}
-	if err := run([]string{"next", root}, &again); err != nil || again.String() != next.String() {
-		t.Errorf("next changed after status: %v\n%s", err, again.String())
-	}
-	if !strings.Contains(next.String(), "Next card: M01-T1 Listing") {
-		t.Errorf("next lacks M01-T1:\n%s", next.String())
-	}
-}
-
 func TestCheck(t *testing.T) {
 	cases := []struct {
 		name, file, text, want string
 	}{
-		{"checkbox", "M01-host.md", host + "\n- [ ] Done when it works\n", "a checkbox belongs in no milestone file"},
-		{"missing section", "M01-host.md", strings.Split(host, "### M01-T3")[0], "M01-T3 needs a section"},
-		{"section without row", "M01-host.md", host + "\n### M01-T4 Extra\n", "M01-T4 has a section but no row"},
-		{"title mismatch", "M01-host.md", edit(host, "### M01-T2 Manifest", "### M01-T2 Manifests"), "is titled \"Manifests\", and its row \"Manifest\""},
-		{"unknown owner", "M01-host.md", edit(host, "| Pascal |", "| Pat |"), "the owner of M01-T1 must be one of"},
-		{"unknown dependency", "M01-host.md", edit(host, "M01-T1, M01-T2 |", "M01-T9 |"), "depends on \"M01-T9\""},
-		{"cycle", "M01-host.md", edit(host, "| M01-T2 | Manifest | agent | — |", "| M01-T2 | Manifest | agent | M01-T3 |"), "form a cycle"},
-		{"agent card without proof", "M01-host.md", edit(host, "- **Proves:** `testdata/help.txtar`", ""), "needs a \"- **Proves:**\" line"},
-		{"done card without its proof", "M01-host.md", edit(edit(host, "| M01-T2 | Manifest | agent | — | todo |", "| M01-T2 | Manifest | agent | — | done |"), "Status: ready", "Status: active"), "its proof testdata/manifest.txtar does not exist"},
-		{"ready with a done card", "M01-host.md", edit(host, "| M01-T1 | Pick the look | Pascal | — | todo |", "| M01-T1 | Pick the look | Pascal | — | done |"), "a milestone with a done card is active"},
-		{"ready with open questions", "M01-host.md", host + "\n## Open questions\n\n- Which?\n", "a ready milestone has no open questions"},
-		{"too many agent cards", "M01-host.md", manyCards(6), "6 agent cards is more than 5"},
-		{"out of order", "M02-next.md", edit(edit(foundation, "# M00 Foundation", "# M02 Next"), "M00-T1", "M02-T1"), "milestones go in order, so M02 cannot start before M01 is done"},
-		{"broken anchor", "M01-host.md", edit(host, "[Demo](#demo)", "[Demo](#nowhere)"), "the link #nowhere points to a missing heading"},
-		{"broken file", "M01-host.md", edit(host, "[Demo](#demo)", "[Spec](../spec.md)"), "the link ../spec.md points to a missing file"},
-		{"bad version", "M01-host.md", edit(host, "Version: v0.1.0", "Version: v0.2.0"), "Version must be v0.1.0, the release that ships M01"},
-		{"empty reading", "M01-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:**\n- **Proves:** `testdata/manifest.txtar`"), "M01-T2 needs a \"- **Read:**\" line that links"},
-		{"reading without a link", "M01-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:** the spec\n- **Proves:** `testdata/manifest.txtar`"), "M01-T2 needs a \"- **Read:**\" line that links"},
-		{"empty proof", "M01-host.md", edit(host, "- **Proves:** `testdata/help.txtar`", "- **Proves:**"), "M01-T3 needs a \"- **Proves:**\" line"},
-		{"done card with a missing proof outside a folder", "M00-foundation.md", edit(foundation, "`proof.txt`", "`missing.txt`"), "its proof missing.txt does not exist"},
-		{"unknown card in a milestone", "M01-host.md", edit(host, "It dispatches.", "It dispatches, as M01-T9 says."), "docs/milestones/M01-host.md:8: no milestone defines the card M01-T9"},
-		{"unknown card in a code block of a milestone", "M01-host.md", edit(host, "# a comment in a block is no heading", "# M00-T2 is gone"), "docs/milestones/M01-host.md:30: no milestone defines the card M00-T2"},
+		{"checkbox", "XT-101-host.md", host + "\n- [ ] Done when it works\n", "a checkbox belongs in no item file"},
+		{"missing section", "XT-101-host.md", strings.Split(host, "### XT-101-T3")[0], "XT-101-T3 needs a section"},
+		{"section without row", "XT-101-host.md", host + "\n### XT-101-T4 Extra\n", "XT-101-T4 has a section but no row"},
+		{"title mismatch", "XT-101-host.md", edit(host, "### XT-101-T2 Manifest", "### XT-101-T2 Manifests"), "is titled \"Manifests\", and its row \"Manifest\""},
+		{"unknown owner", "XT-101-host.md", edit(host, "| Pascal |", "| Pat |"), "the owner of XT-101-T1 must be one of"},
+		{"unknown dependency", "XT-101-host.md", edit(host, "XT-101-T1, XT-101-T2 |", "XT-101-T9 |"), "depends on \"XT-101-T9\""},
+		{"cycle", "XT-101-host.md", edit(host, "| XT-101-T2 | Manifest | agent | — |", "| XT-101-T2 | Manifest | agent | XT-101-T3 |"), "form a cycle"},
+		{"agent card without proof", "XT-101-host.md", edit(host, "- **Proves:** `testdata/help.txtar`", ""), "needs a \"- **Proves:**\" line"},
+		{"done card without its proof", "XT-101-host.md", edit(edit(host, "| XT-101-T2 | Manifest | agent | — | todo |", "| XT-101-T2 | Manifest | agent | — | done |"), "state: Ready", "state: Active"), "its proof testdata/manifest.txtar does not exist"},
+		{"ready with a done card", "XT-101-host.md", edit(host, "| XT-101-T1 | Pick the look | Pascal | — | todo |", "| XT-101-T1 | Pick the look | Pascal | — | done |"), "a Ready item needs todo cards, no done card, and no open questions"},
+		{"ready with open questions", "XT-101-host.md", host + "\n## Open questions\n\n- Which?\n", "a Ready item needs todo cards, no done card, and no open questions"},
+		{"too many agent cards", "XT-101-host.md", manyCards(6), "6 agent cards is more than 5"},
+		{"broken anchor", "XT-101-host.md", edit(host, "[Demo](#demo)", "[Demo](#nowhere)"), "the link #nowhere points to a missing heading"},
+		{"broken file", "XT-101-host.md", edit(host, "[Demo](#demo)", "[Spec](../spec.md)"), "the link ../spec.md points to a missing file"},
+		{"empty reading", "XT-101-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:**\n- **Proves:** `testdata/manifest.txtar`"), "XT-101-T2 needs a \"- **Read:**\" line that links"},
+		{"reading without a link", "XT-101-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:** the spec\n- **Proves:** `testdata/manifest.txtar`"), "XT-101-T2 needs a \"- **Read:**\" line that links"},
+		{"empty proof", "XT-101-host.md", edit(host, "- **Proves:** `testdata/help.txtar`", "- **Proves:**"), "XT-101-T3 needs a \"- **Proves:**\" line"},
+		{"done card with a missing proof outside a folder", "COR-100-foundation.md", edit(foundation, "`proof.txt`", "`missing.txt`"), "its proof missing.txt does not exist"},
+		{"unknown card in an item", "XT-101-host.md", edit(host, "It dispatches.", "It dispatches, as XT-101-T9 says."), "docs/backlog/XT-101-host.md:11: no item defines the card XT-101-T9"},
+		{"unknown card in a code block of an item", "XT-101-host.md", edit(host, "# a comment in a block is no heading", "# COR-100-T2 is gone"), "docs/backlog/XT-101-host.md:33: no item defines the card COR-100-T2"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			files := map[string]string{"M01-host.md": host}
+			files := map[string]string{"XT-101-host.md": host}
 			files[tc.file] = tc.text
 			root := repository(t, files)
 			var out strings.Builder
@@ -301,28 +208,41 @@ func TestCheckDecisions(t *testing.T) {
 	}
 }
 
-// repository writes a repository with the foundation, the parking lot, and
-// files, whose names are relative to docs/milestones.
+// repository writes shipped history and the supplied backlog fixtures.
 func repository(t *testing.T, files map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
-	dir := filepath.Join(root, "docs", "milestones")
-	all := map[string]string{"M00-foundation.md": foundation, "M99-parking-lot.md": parkingLot}
+	dir := filepath.Join(root, backlogDir)
+	all := map[string]string{"COR-100-foundation.md": foundation}
 	for name, text := range files {
 		all[name] = text
 	}
-	for name, text := range all {
-		write(t, filepath.Join(dir, name), text)
+	var names []string
+	for name := range all {
+		names = append(names, name)
 	}
+	slices.Sort(names)
+	queue := "# Backlog\n\n## Queue\n\n"
+	n := 0
+	for _, name := range names {
+		text := all[name]
+		write(t, filepath.Join(dir, name), text)
+		if strings.Contains(text, "state: Ready") || strings.Contains(text, "state: Planned") || strings.Contains(text, "state: Active") {
+			n++
+			id := strings.Split(strings.TrimPrefix(strings.Split(text, "\n")[1], "id: "), " ")[0]
+			queue += fmt.Sprintf("%d. %s\n", n, id)
+		}
+	}
+	write(t, filepath.Join(dir, "README.md"), queue)
 	write(t, filepath.Join(root, "proof.txt"), "proof\n")
 	return root
 }
 
 func manyCards(n int) string {
-	text := "# M01 Host\n\nStatus: ready\nVersion: v0.1.0\n\n## Demo\n\nIt grows.\n\n## Cards\n\n| Card | Title | Owner | Depends on | Status |\n|---|---|---|---|---|\n"
+	text := "---\nid: XT-101\nextension: Host\nstate: Ready\n---\n\n# XT-101 Host\n\n## Demo\n\nIt grows.\n\n## Cards\n\n| Card | Title | Owner | Depends on | Status |\n|---|---|---|---|---|\n"
 	var sections string
 	for i := 1; i <= n; i++ {
-		id := "M01-T" + string(rune('0'+i))
+		id := "XT-101-T" + string(rune('0'+i))
 		text += "| " + id + " | Card | agent | — | todo |\n"
 		sections += "\n### " + id + " Card\n\n- **Read:** [Demo](#demo)\n- **Proves:** `x.txtar`\n"
 	}
@@ -362,7 +282,7 @@ func TestCheckCodesAndTypography(t *testing.T) {
 	cases := []struct {
 		name, file, text, want string
 	}{
-		{"unknown code after code", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches, or fails with the code `HELLO_UNKNOWN`."), "docs/milestones/M01-host.md:8: no code table or fixture manifest defines the code HELLO_UNKNOWN"},
+		{"unknown code after code", "docs/backlog/XT-101-host.md", edit(host, "It dispatches.", "It dispatches, or fails with the code `HELLO_UNKNOWN`."), "docs/backlog/XT-101-host.md:11: no code table or fixture manifest defines the code HELLO_UNKNOWN"},
 		{"unknown code after error code", "README.md", "# Read me\n\nIt answers the error code `DEMO_GONE`.\n", "README.md:3: no code table or fixture manifest defines the code DEMO_GONE"},
 		{"unknown code after warning code", "extensions/demo/SKILL.md", "Relay the warning code `DEMO_QUIET`.\n", "extensions/demo/SKILL.md:1: no code table or fixture manifest defines the code DEMO_QUIET"},
 		{"unknown code in a Code column", "extensions/demo/notes.md", "| Id | Code | When |\n|---|---|---|\n| `demo.check` | `DEMO_LOST` | It warns |\n", "extensions/demo/notes.md:3: no code table or fixture manifest defines the code DEMO_LOST"},
@@ -372,8 +292,8 @@ func TestCheckCodesAndTypography(t *testing.T) {
 		{"unknown code in a block that the file never closes", "README.md", "# Read me\n\n```json\n{\"errors\":[{\"code\":\"DEMO_OPEN\"}]}\n", "README.md:4: no code table or fixture manifest defines the code DEMO_OPEN"},
 		{"code of a table in an example", "extensions/demo/spec.md", "# Demo\n\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `DEMO_BROKEN` | 1 | It broke |\n\nAn extension writes its table so:\n\n```markdown\n## Error codes\n\n| Code | Exit | When |\n|---|---|---|\n| `DEMO_PHANTOM` | 1 | Example |\n```\n\nIt never answers the code `DEMO_PHANTOM`.\n", "extensions/demo/spec.md:19: no code table or fixture manifest defines the code DEMO_PHANTOM"},
 		{"unknown code in a warnings example over lines", "docs/north-star/vision.md", "```json\n{\n  \"ok\": true,\n  \"warnings\": [\n    {\"code\": \"DEMO_SLOW\"},\n    {\"code\": \"DEMO_FAST\"}\n  ]\n}\n```\n", "docs/north-star/vision.md:6: no code table or fixture manifest defines the code DEMO_FAST"},
-		{"declared code without its manifest", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`."), "docs/milestones/M01-host.md:8: no code table or fixture manifest defines the code HELLO_GRUMPY"},
-		{"em dash in prose", "docs/milestones/M01-host.md", edit(host, "It dispatches.", "It dispatches \u2014 fast."), "docs/milestones/M01-host.md:8: the prose holds \u2014 (U+2014)"},
+		{"declared code without its manifest", "docs/backlog/XT-101-host.md", edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`."), "docs/backlog/XT-101-host.md:11: no code table or fixture manifest defines the code HELLO_GRUMPY"},
+		{"em dash in prose", "docs/backlog/XT-101-host.md", edit(host, "It dispatches.", "It dispatches \u2014 fast."), "docs/backlog/XT-101-host.md:11: the prose holds \u2014 (U+2014)"},
 		{"curly apostrophe in prose", "AGENTS.md", "# AGENTS.md\n\n## Code\n\nIt\u2019s fine.\n", "AGENTS.md:5: the prose holds \u2019 (U+2019)"},
 		{"curly quotes in a table cell", "README.md", "| A | B |\n|---|---|\n| x | \u201cy\u201d |\n", "README.md:3: the prose holds \u201c (U+201C)"},
 		{"left single quote in prose", "README.md", "A \u2018word\u2019.\n", "README.md:1: the prose holds \u2018 (U+2018)"},
@@ -381,7 +301,7 @@ func TestCheckCodesAndTypography(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := repository(t, map[string]string{"M01-host.md": host})
+			root := repository(t, map[string]string{"XT-101-host.md": host})
 			sources(t, root)
 			if tc.name == "declared code without its manifest" {
 				if err := os.Remove(filepath.Join(root, "testdata", "extensions", "hello", "manifest.toml")); err != nil {
@@ -413,7 +333,7 @@ func TestCheckCodesAndTypographyPass(t *testing.T) {
 	typography := "Write `a \u2014 b` and `\u2018x\u2019`.\n\n```\nIt\u2019s \u201cquoted\u201d \u2014 here.\n```\n\n- A list\n\n  ~~~\n  \u2014 in an indented block\n  ~~~\n"
 	nested := "````markdown\n```\nIt\u2019s \u2014 code.\n```\n````\n\n" +
 		"```json\n{\"errors\":[{\"message\":\"[\",\"code\":\"USAGE_INVALID\"}],\"checks\":[{\"code\":\"OUT_OF_SCOPE\"}]}\n```\n"
-	root := repository(t, map[string]string{"M01-host.md": edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`.")})
+	root := repository(t, map[string]string{"XT-101-host.md": edit(host, "It dispatches.", "It dispatches, with the own code `HELLO_GRUMPY`.")})
 	sources(t, root)
 	// The manifest is TOML: a comment and a literal string change nothing.
 	write(t, filepath.Join(root, "testdata", "extensions", "hello", "manifest.toml"), "domain = \"hello\"\n\n[[errors]] # the own codes\ncode = 'HELLO_GRUMPY'\nexit = 1\n")

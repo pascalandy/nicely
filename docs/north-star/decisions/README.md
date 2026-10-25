@@ -30,7 +30,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D022](D022-private-docs.md) | Keep docs private by default |
 | [D023](D023-shared-and-local-config.md) | Configure with a shared TOML file and a local one |
 | [D024](D024-dynamic-completions.md) | Ship completions with dynamic values |
-| [D025](D025-docs-layout.md) | Split the docs by question, and work in milestones |
+| [D025](D025-docs-layout.md) | Split the docs by question, and plan by backlog item |
 | [D026](D026-english.md) | Write the repository in English |
 | [D027](D027-json-answer.md) | Answer in one JSON line with `ok` and `errors` |
 | [D028](D028-outside-text.md) | Keep outside text away from agent tools |
@@ -47,8 +47,8 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D039](D039-yt-dlp-updates.md) | Let yt-dlp update without a release |
 | [D040](D040-wire-contract.md) | Serve extensions through a wire contract and a public Go SDK |
 | [D041](D041-first-party-extensions.md) | Keep first-party extensions in the Nicely repository |
-| [D042](D042-milestones-and-cards.md) | Plan work as milestones of small cards |
-| [D043](D043-milestone-versions.md) | Release each accepted milestone with its milestone version |
+| [D042](D042-milestones-and-cards.md) | Plan work as backlog items of small cards |
+| [D043](D043-milestone-versions.md) | Release each accepted backlog item |
 | [D044](D044-additive-extensions.md) | Let extensions add commands, never change core |
 | [D045](D045-step-effects.md) | Derive retry safety from declared step effects |
 | [D046](D046-machine-output-never-asks.md) | Never ask a human for machine output |
@@ -70,3 +70,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D062](D062-copier-template.md) | Ship the extension template in the Nicely repository, tied to the SDK by one version |
 | [D063](D063-sdk-test-kit.md) | Let the SDK own the test kit of an extension repository |
 | [D064](D064-shared-domains.md) | Let several extensions share a domain |
+| [D065](D065-backlog-items.md) | Plan work by extension and core backlog items |

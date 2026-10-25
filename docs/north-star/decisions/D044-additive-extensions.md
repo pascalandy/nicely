@@ -4,4 +4,4 @@ Decided 2026-10-09. Extensions add commands without hooks that change core or ot
 
 **Why.** Each command stays understandable from its spec. A cross-process toolbox needs no lifecycle hooks like Pi's in-process agent loop.
 
-**Rejected.** Hooks create permanent protocol obligations before a domain needs them. [M99](../../milestones/M99-parking-lot.md) defers them. Use by several commands alone does not transfer behavior to core.
+**Rejected.** Hooks create permanent protocol obligations before a domain needs them. [COR-615](../../backlog/COR-615-hooks.md) defers them. Use by several commands alone does not transfer behavior to core.

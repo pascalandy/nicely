@@ -4,13 +4,13 @@ Core is a small host, as [D004](../decisions/D004-minimal-core.md) decides.
 [Extension identity](extension-identity.md) defines how extensions share a domain, their slugs, and their command roots. An extension comes in one of two transports, with one manifest format and one contract:
 
 - A **bundled** extension is a Go package compiled into `ncly`, with its manifest and catalogs embedded. Only what an agent needs to operate Nicely is bundled: `skill`
-- An **external** extension is an executable with adjacent sidecars, named by [Extension identity](extension-identity.md). Core finds it as [Discovery](discovery.md) defines. Taps, which would bring more, wait in [M99](../../milestones/M99-parking-lot/taps.md). The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
+- An **external** extension is an executable with adjacent sidecars, named by [Extension identity](extension-identity.md). Core finds it as [Discovery](discovery.md) defines. Taps, which would bring more, wait in [COR-622](../../backlog/COR-622-taps-offer.md#later). The first-party ones, such as `agent` and `transcript`, live in `extensions/<name>/` in the Nicely repository, which is their official tap
 
 Core commands and bundled extensions always win over an external extension with the same name. [ncly describe](../core-spec.md#ncly-describe) reports the source of each command that runs. [ncly doctor](../core-spec.md#ncly-doctor) adds where each extension comes from, and every extension that another one hides.
 
 An extension receives the environment that [Programs that ncly runs](programs-that-ncly-runs.md) defines, which carries the global flags as variables. It answers with the envelope of [Output](output.md) and the exit codes of [Exit codes](exit-codes.md). It may use core's [error codes](error-codes.md), and its manifest declares its own. It translates its own text into the language of `NCLY_LANG`. It is written in Go with the SDK, the one supported way for now, as [D013](../decisions/D013-go-everywhere.md) decides. The wire contract stays open to any language, as [D040](../decisions/D040-wire-contract.md) decides. A program that the extension runs keeps its own language, as a worker of [Programs that ncly runs](programs-that-ncly-runs.md) does.
 
-When a selected workflow composes extensions, it uses the CLI as an agent would. The shipped `skill` extension reads installed extension skill paths through `"$NCLY_BIN" describe --json`. Transcript summary remains in [M99](../../milestones/M99-parking-lot/transcript-summary.md). It writes its run records in the shared format of [Record format](record-format.md), through the SDK for a Go extension, so `ncly run` inspects every recorded operation alike. A Go extension imports only the public `sdk/` packages, so a bundled extension could leave the binary without a rewrite.
+When a selected workflow composes extensions, it uses the CLI as an agent would. The shipped `skill` extension reads installed extension skill paths through `"$NCLY_BIN" describe --json`. Transcript summary remains in [XT-102](../../backlog/XT-102-transcript.md#later). It writes its run records in the shared format of [Record format](record-format.md), through the SDK for a Go extension, so `ncly run` inspects every recorded operation alike. A Go extension imports only the public `sdk/` packages, so a bundled extension could leave the binary without a rewrite.
 
 Each extension keeps its spec in `spec.md`: in `extensions/<name>/` for a first-party one, and at the root of its repository otherwise. It ships a skill named after its slug, which teaches an agent to use it. [ncly describe](../core-spec.md#ncly-describe) gives the folder of each external extension's skill, and the bundled `skill` extension ships none of its own, because the `nicely` skill that it serves teaches core and the skill domain.
 
@@ -54,7 +54,7 @@ A user installs a fixed version with `git clone --branch <tag> <repository>`, th
 For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
 `ncly describe <root> --json` then confirms the install.
 The generated `README.md` gives these commands for its repository, and `AGENTS.md` gives the release steps.
-Taps, which would install without Go, wait in [M99](../../milestones/M99-parking-lot/taps.md).
+Taps, which would install without Go, wait in [COR-622](../../backlog/COR-622-taps-offer.md#later).
 
 ## What a great extension does
 

@@ -1,6 +1,6 @@
 # Contract
 
-This file and its parts are the contract that every command follows, core's and each extension's. The contract covers what humans and agents type, what core and an extension exchange, and what scripts parse. Core's commands live in [core-spec.md](core-spec.md), and each extension's in its own spec, such as [transcript's](../../extensions/transcript/spec.md). The code tables name the milestone that brings each entry.
+This file and its parts are the contract that every command follows, core's and each extension's. The contract covers what humans and agents type, what core and an extension exchange, and what scripts parse. Core's commands live in [core-spec.md](core-spec.md), and each extension's in its own spec, such as [transcript's](../../extensions/transcript/spec.md). The code tables retain frozen history and name backlog items for future entries.
 
 ## Primitives
 

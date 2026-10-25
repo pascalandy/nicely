@@ -12,7 +12,7 @@ Pascal records whether either candidate should become Nicely's first everyday co
 The grooming of 2026-10-18 found two candidates in Pascal's own recipes.
 On 2026-10-19, Pascal picked neither Markdown view nor screen-recording conversion.
 No input or result was selected.
-Both candidates, other everyday domains, and extra formats stay in [M99](M99-parking-lot/everyday-domains.md).
+Both candidates, other everyday domains, and extra formats stay in [backlog](../backlog/README.md#everyday-domains).
 The next milestone is [M18 Extension template](M18-extension-template.md).
 
 ### Conventions for the everyday domains
@@ -44,9 +44,9 @@ Pascal picked neither candidate on 2026-10-19, so this card selects no everyday 
 
 ### M17-T2 Plan one command
 
-- **Read:** [Scope](#scope), [Make a milestone ready](README.md#make-a-milestone-ready), [D061](../north-star/decisions/D061-smallest-useful-capability.md)
+- **Read:** [Scope](../backlog/README.md), [Make a item ready](../backlog/README.md#make-an-item-ready), [D061](../north-star/decisions/D061-smallest-useful-capability.md)
 - **Proves:** this file's recorded pick, and the milestone that follows from it
 
-The pick is recorded in [Scope](#scope).
-Both candidates moved to [M99](M99-parking-lot/everyday-domains.md), each with its revisit condition.
+The pick is recorded in [Scope](../backlog/README.md).
+Both candidates moved to [backlog](../backlog/README.md#everyday-domains), each with its revisit condition.
 The Markdown milestone was deleted, and no other everyday task was planned.

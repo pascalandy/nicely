@@ -22,8 +22,8 @@ Embed the engine with `go:embed`, extract it into Nicely's cache, and run it thr
 The command records intent before paid dispatch, verifies artifacts, locks runs, handles cancellation, and replays verified results.
 An incomplete run never causes a second upload under the same run ID.
 Summary, resume, and extra transcript features stay in
-[M99](M99-parking-lot/transcript-summary.md), [M99](M99-parking-lot/resume.md), and
-[M99](M99-parking-lot/transcript-extras.md).
+[XT-102](../backlog/XT-102-transcript.md#later), [XT-102](../backlog/XT-102-transcript.md#later), and
+[XT-102](../backlog/XT-102-transcript.md#later).
 
 Scenarios use the test keychain, stubs, and counted calls.
 One path runs real Go, real `uv`, and the engine with a test transport that only the test binary installs.

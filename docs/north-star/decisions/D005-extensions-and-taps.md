@@ -2,7 +2,7 @@
 
 Decided 2026-10-05, revised 2026-10-09. Discover executables by slug through a static manifest, under [Extension identity](../contract/extension-identity.md). Bundled Go extensions share their contract, as [Extensions](../contract/extensions.md) defines.
 
-**Scope update, 2026-10-17.** [M99](../../milestones/M99-parking-lot/taps.md) defers tap distribution. `just install` installs first-party extensions from a checkout, with their existing skill folders.
+**Scope update, 2026-10-17.** [COR-622](../../backlog/COR-622-taps-offer.md#later) defers tap distribution. `just install` installs first-party extensions from a checkout, with their existing skill folders.
 
 **Why.** Executable discovery follows Git, `kubectl`, and cargo. The manifest adds inspectable capabilities and a verifiable output contract without restricting the implementation language.
 

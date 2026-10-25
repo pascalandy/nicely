@@ -13,7 +13,7 @@ Finish the YouTube path of [M13](M13-transcript.md) with doctor checks and fresh
 The transcript skill ships with M13, and this milestone adds the doctor step to it.
 [ncly transcript status](../../extensions/transcript/spec.md#ncly-transcript-status) and [Fresh session](../../extensions/transcript/spec/test-transport.md#fresh-session) own its behavior.
 Zoom, prompt discovery, `--open`, progress displays, additional browser support, and the `--live` Deepgram check remain in
-[M99](M99-parking-lot/transcript-extras.md).
+[XT-102](../backlog/XT-102-transcript.md#later).
 
 ## Cards
 

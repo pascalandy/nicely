@@ -2,7 +2,7 @@
 
 Decided 2026-10-05. [Operations](../contract/operations.md) separates domain steps and recovery from process lifecycles. Records keep evidence and output references.
 
-**Scope update, 2026-10-17.** M10 and M13 first prove one item and one paid step, inspection, verified completion replay, and refusal of uncertain work. [M99](../../milestones/M99-parking-lot/resume.md) defers explicit resume and multi-step consumers until partial work needs reuse.
+**Scope update, 2026-10-17.** M10 and M13 first prove one item and one paid step, inspection, verified completion replay, and refusal of uncertain work. [COR-621](../../backlog/COR-621-resume-sdk.md#later) defers explicit resume and multi-step consumers until partial work needs reuse.
 
 **Why.** A later session must distinguish verified output from an uncertain paid request. Intent precedes effects, and reuse requires verified evidence and the original resolved settings.
 

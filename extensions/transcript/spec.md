@@ -3,16 +3,16 @@
 `transcript` is a first-party external extension, built as `ncly-transcript` from this folder.
 It transcribes one YouTube video with Deepgram through the existing Python program.
 It follows the [contract](../../docs/north-star/contract.md).
-[M13](../../docs/milestones/M13-transcript.md) builds this command.
-[M16](../../docs/milestones/M16-transcript-finish.md) adds its doctor checks and fresh-session proof.
+[M13](../../docs/milestones/M13-transcript.md) shipped this command.
+[M16](../../docs/milestones/M16-transcript-finish.md) added its doctor checks and fresh-session proof.
 
 The program comes from `authoring/andy/transcript/` in `pascalandy/skills` at `0c9c4a2`, as [The engine](spec/protocol.md#the-engine) says.
-Copy only its YouTube transcription path; do not rewrite it in Go for this milestone.
+Copy only its YouTube transcription path; do not rewrite that shipped path in Go.
 Other source features remain unexposed.
 Summary awaits a verified tools-off path under [D028](../../docs/north-star/decisions/D028-outside-text.md).
-It is parked in [M99](../../docs/milestones/M99-parking-lot/transcript-summary.md), alongside
-[resume](../../docs/milestones/M99-parking-lot/resume.md) and
-[transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md).
+It is parked in [XT-102](../../docs/backlog/XT-102-transcript.md#later), alongside
+[resume](../../docs/backlog/XT-102-transcript.md#later) and
+[transcript extras](../../docs/backlog/XT-102-transcript.md#later).
 
 This specification describes planned behavior.
 The readiness of M13 and of M16 settled their open questions in these files.
@@ -116,7 +116,7 @@ It reads no key, starts no program, and asks nothing of the keychain.
 - A broken `[transcript]` or `[transcript.youtube]` table fails the command with `CONFIG_INVALID`, as preparation does, so doctor lists it as `transcript.status`.
   So the command declares both `transcript.browser` and `transcript.youtube.output` as the config it reads.
 - It declares no `--live`, because no Deepgram document says that a key check bills nothing.
-  [Transcript extras](../../docs/milestones/M99-parking-lot/transcript-extras.md) parks that check.
+  [Transcript extras](../../docs/backlog/XT-102-transcript.md#later) parks that check.
 
 A warning leaves the report `ok`, so `status` exits 0.
 

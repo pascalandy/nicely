@@ -1,6 +1,6 @@
 # Current build
 
-This page answers what the current build of `ncly` does, command by command. [README.md](../README.md#status) gives one line for each part, and [the milestones](milestones/) list the work in order. A card that changes what a user sees adds its line to README.md and its detail here. The build also establishes the JSON error contract, configuration, and English message catalog.
+This page answers what the current build of `ncly` does, command by command. [README.md](../README.md#status) gives one line for each part, and [the backlog queue](backlog/README.md#queue) lists the work in order. A card that changes what a user sees adds its line to README.md and its detail here. The build also establishes the JSON error contract, configuration, and English message catalog.
 
 ## Commands and extensions
 

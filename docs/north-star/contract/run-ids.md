@@ -13,4 +13,4 @@ A call takes the run lock of its ID before it reads the record, as [Record forma
 
 A repeated call with the same ID therefore never repeats an effect that the record does not prove safe, and a dry run with it describes what the call would do without changing the record. After lost output, a caller that chose the ID reads the run with `ncly run view <id>`, or makes the same call again, and needs no search with `ncly run list`.
 
-Deleting a record forgets its run: a later direct call with its ID starts a new run and may bill again. Removing records is not a recovery mechanism. Nested recorded calls and their missing-record recovery rules are deferred with the first actual consumer in M99.
+Deleting a record forgets its run: a later direct call with its ID starts a new run and may bill again. Removing records is not a recovery mechanism. Nested recorded calls and their missing-record recovery rules are deferred with the first actual consumer in [COR-621](../../backlog/COR-621-resume-sdk.md).

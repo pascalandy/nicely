@@ -138,17 +138,39 @@ See [Contract](glossary/contract.md).
 
 ### Relations
 
-- A milestone holds cards, at most five of them for agents; a card is one pull request
+- An item holds cards, at most five of them for agents; a card is one pull request
 - A stack holds layers, bottom to top; a layer is one branch and its pull request, based on the layer below
 - A principle links its decisions; a decision records what was decided, why, and what was rejected
 
 ### Definitions
 
+- Item
+  - Def.: one extension or core capability in `docs/backlog/`, identified by an XT or COR ID
+  - Project note: [D065](decisions/D065-backlog-items.md) defines IDs and states
+- State
+  - Def.: the item's frontmatter sentence group, starting with its status and carrying its context
+- Queue
+  - Def.: the ordered Planned, Ready, and Active items in [the backlog README](../backlog/README.md#queue)
+- Status
+  - Def.: the first word of state, one of [the six backlog states](../backlog/README.md#states)
+- Idea
+  - Def.: unchosen 6xx work with no cards, whose state carries its revisit condition
+- Parked
+  - Def.: chosen 1xx work outside the queue, with no card started
+- Planned
+  - Def.: queued work with questions or todo cards and no done card
+- Ready
+  - Def.: queued work with todo cards, no done card, and no open question
+- Active
+  - Def.: queued work with done and todo cards and no open question
+- Shipped
+  - Def.: work without a todo card, outside the queue
 - Milestone
-  - Def.: a numbered stage of work in `docs/milestones/`, one capability that a sentence can demonstrate
-  - Project note: its status is `planned`, `ready`, `active`, or `done`. M99 is the parking lot, and its status stays `open`
+  - Def.: one of the 16 frozen historical files in `docs/milestones/`
+- Parking lot
+  - Use instead: 6xx Idea items and their state conditions
 - Card
-  - Def.: one pull request of a milestone, with its owner, its dependencies, what to read, and what proves it
+  - Def.: one pull request of a backlog item, with its owner, its dependencies, what to read, and what proves it
 - Stack
   - Def.: a chain of pull requests that build on each other, as `gh stack` manages them
 - Principle
@@ -178,7 +200,7 @@ See [Design vocabulary](glossary/design-vocabulary.md).
   - Reason: three kinds of spec exist
 - tap, for the Homebrew tap
   - Use instead: Homebrew tap
-- task, for one pull request of a milestone
+- task, for one pull request of a backlog item
   - Use instead: card
 
 ## Terminology decisions kept
@@ -186,5 +208,5 @@ See [Design vocabulary](glossary/design-vocabulary.md).
 - Harness stays the internal term for the program an agent runs in, as [D018](decisions/D018-agent-extension.md) decides
 - Core means the host at layer 3, never everything that Nicely provides
 - A tap is a repository of skills and extensions; the Homebrew tap keeps its full name
-- Card, not task, names one pull request of a milestone, as [D042](decisions/D042-milestones-and-cards.md) decides
+- Card, not task, names one pull request of a backlog item, as [D042](decisions/D042-milestones-and-cards.md) decides
 - Contract names all of contract.md. Agent contract and wire contract name its two overlapping scopes, never separate protocols

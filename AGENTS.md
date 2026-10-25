@@ -23,10 +23,10 @@ Run `lefthook install` once per clone.
 | What do core's commands do? | [core-spec.md](docs/north-star/core-spec.md) | Your card links a section | A card adds or changes a command of core |
 | What do an extension's commands do? | `extensions/<name>/spec.md` | Your card links a section | A card adds or changes a command of that extension |
 | Why does a rule exist? | [decisions/](docs/north-star/decisions/README.md) | A rule blocks your card | A rule is chosen, changed, or replaced |
-| How is the plan made? | [docs/milestones/](docs/milestones/README.md) | `just next` names a milestone | Planning work. Any other idea goes to [M99](docs/milestones/M99-parking-lot.md) |
+| How is the plan made? | [docs/backlog/](docs/backlog/README.md) | `just next` names an item | Planning work. Any other idea becomes a 6xx item |
 | How is a scenario written? | [testdata/script/](testdata/script/README.md) | Step 2 of a card | A card changes how a scenario is written |
 | How is a card proven on the real `ncly`? | [verify-nicely](.agents/skills/verify-nicely/SKILL.md) | Step 6 of a card | A card changes or adds a feature |
-| How is a release made? | [release-nicely](.agents/skills/release-nicely/SKILL.md) | Pascal accepts a completed milestone or asks for a release | The release steps change |
+| How is a release made? | [release-nicely](.agents/skills/release-nicely/SKILL.md) | Pascal accepts a completed item or asks for a release | The release steps change |
 | Where does a new rule go? | The file whose question it answers | Before you write a rule | Never in this file |
 
 ## Work on a card
@@ -42,7 +42,7 @@ Copy this checklist into the pull request. Tick each step when its condition hol
 - [ ] 4. Text: each new user-facing string is a catalog entry with a description
 - [ ] 5. Checks: `just check` passes
 - [ ] 6. Verify: an agent that did not write the change runs verify-nicely on each feature that the card affects, and the pull request quotes its evidence
-- [ ] 7. Docs: the card is done in its milestone, README.md shows any change a user sees, and a skill teaches any command you add: the extension's, or `nicely` for core
+- [ ] 7. Docs: the card is done in its backlog item, README.md shows any change a user sees, and a skill teaches any command you add: the extension's, or `nicely` for core
 - [ ] 8. Sign off: `just signoff` passes, or `just signoff-layers` for a stack
 ```
 

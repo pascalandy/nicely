@@ -1,29 +1,18 @@
-// Command plan reads the milestone files and prints the next card, shows the
-// progress of every milestone and the order of the current one's cards, or
-// checks that the files keep the format that docs/milestones/README.md
-// describes, that every
-// link in the docs resolves, that every card and code the docs name exists,
-// and that the prose holds no em dash or curly quote. It takes the
-// repository root:
+// Command plan validates the backlog, prints the next queued card, and shows item states.
+// It also checks documentation links, card references, codes, and typography.
 //
-//	plan next|status|check <root>
-//	plan limits <root> [--base <ref>]
-//
-// next and status check the format first, so a broken plan never yields a
-// pointer that an agent would follow.
+// plan next|status|check <repository root>
+// plan limits <repository root> [--base <ref>]
 package main
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -55,47 +44,43 @@ var plainForms = map[rune]string{
 	'\u201D': "a straight quote",
 }
 
-// maxAgentCards keeps a milestone small enough for one agent to finish and
+// maxAgentCards keeps an item small enough for one agent to finish and
 // for Pascal to follow.
 const maxAgentCards = 5
 
-// readyRule says how many pull requests make a planned milestone ready.
+// readyRule says how many pull requests make a Planned item Ready.
 // dev-preferences.md and D042 state it in these words.
 const readyRule = "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."
 
 var (
-	milestoneStatuses = []string{"planned", "ready", "active", "done"}
-	cardStatuses      = []string{"todo", "done"}
-	owners            = []string{"agent", "Pascal"}
-	cardHeader        = []string{"Card", "Title", "Owner", "Depends on", "Status"}
+	cardStatuses = []string{"todo", "done"}
+	owners       = []string{"agent", "Pascal"}
+	cardHeader   = []string{"Card", "Title", "Owner", "Depends on", "Status"}
 
-	fileName     = regexp.MustCompile(`^(M\d\d)-[a-z0-9-]+\.md$`)
 	decisionName = regexp.MustCompile(`^(D\d{3})-[a-z0-9-]+\.md$`)
-	titleLine    = regexp.MustCompile(`^# (M\d\d) (\S.*)$`)
-	cardID       = regexp.MustCompile(`^(?:M\d\d|(?:XT|COR)-\d{3})-T[1-9]\d*$`)
-	cardRef      = regexp.MustCompile(`\b(?:M\d\d|(?:XT|COR)-\d{3})-T\d+\b`)
+	cardID       = regexp.MustCompile(`^(?:XT|COR)-\d{3}-T[1-9]\d*$`)
+	cardRef      = regexp.MustCompile(`\b(?:XT|COR)-\d{3}-T\d+\b`)
 	codeShape    = regexp.MustCompile(`^[A-Z][A-Z0-9_]*$`)
 	codeAfter    = regexp.MustCompile("\\b[Cc]ode `([^`]+)`")
 	envelope     = regexp.MustCompile(`"(?:errors|warnings)"\s*:\s*\\?\[`)
 	jsonCode     = regexp.MustCompile(`"code"\s*:\s*"([^"]*)"`)
-	cardHeading  = regexp.MustCompile(`^### ((?:M\d\d|(?:XT|COR)-\d{3})-T[1-9]\d*) (\S.*)$`)
+	cardHeading  = regexp.MustCompile(`^### ((?:XT|COR)-\d{3}-T[1-9]\d*) (\S.*)$`)
 	checkbox     = regexp.MustCompile(`^\s*[-*+] \[[ xX]\]`)
 	codeSpan     = regexp.MustCompile("`([^`]+)`")
 	mdLink       = regexp.MustCompile(`\]\(([^)\s]+)\)`)
 )
 
 type item struct {
-	path, id, title, status, version string
-	kind, state                      string
-	text                             string
-	number                           int
-	hasDemo, hasCards, hasHeader     bool
-	demo                             []string
-	open                             []string // nil when the file has no Open questions section
-	cards                            []*card
-	links                            []docLink
-	refs                             []docLink // the card IDs that the file names
-	problems                         []string
+	path, id, title, status      string
+	state                        string
+	text                         string
+	hasDemo, hasCards, hasHeader bool
+	demo                         []string
+	open                         []string // nil when the file has no Open questions section
+	cards                        []*card
+	links                        []docLink
+	refs                         []docLink // the card IDs that the file names
+	problems                     []string
 }
 
 type card struct {
@@ -125,32 +110,21 @@ func run(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	var milestones []*item
-	var problems []string
-	if b != nil {
-		milestones = b.items
-		problems = b.check(root)
-	} else {
-		milestones, err = load(root)
-		if err != nil {
-			return err
-		}
-		problems = check(root, milestones)
+	if b == nil {
+		return errors.New("docs/backlog/README.md is required")
 	}
+	items := b.items
+	problems := b.check(root)
 	var output strings.Builder
 	if args[0] == "check" {
 		codes, err := knownCodes(root)
 		if err != nil {
 			return err
 		}
-		for _, m := range milestones {
+		for _, m := range items {
 			problems = append(problems, checkProse(m.path, m.text, codes)...)
 		}
-		planDir := milestoneDir
-		if b != nil {
-			planDir = backlogDir
-		}
-		broken, err := checkDocs(root, cardIDs(milestones), codes, planDir)
+		broken, err := checkDocs(root, cardIDs(items), codes, backlogDir)
 		if err != nil {
 			return err
 		}
@@ -161,15 +135,11 @@ func run(args []string, out io.Writer) error {
 	case len(problems) > 0:
 		output.WriteString(strings.Join(problems, "\n") + "\n")
 	case args[0] == "next":
-		next(&output, milestones)
+		nextItem(&output, b)
 	case args[0] == "status":
-		status(&output, milestones)
+		itemStatus(&output, b.items)
 	default:
-		dir := milestoneDir
-		if b != nil {
-			dir = backlogDir
-		}
-		fmt.Fprintf(&output, "%s keeps the format, and the docs pass every check\n", dir)
+		fmt.Fprintf(&output, "%s keeps the format, and the docs pass every check\n", backlogDir)
 	}
 	if _, err := io.WriteString(out, output.String()); err != nil {
 		return err
@@ -178,133 +148,6 @@ func run(args []string, out io.Writer) error {
 		return fmt.Errorf("%d problems in the docs; fix them as each line says", len(problems))
 	}
 	return nil
-}
-
-func load(root string) ([]*item, error) {
-	entries, err := os.ReadDir(filepath.Join(root, milestoneDir))
-	if err != nil {
-		return nil, err
-	}
-	var milestones []*item
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") || e.Name() == "README.md" {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(root, milestoneDir, e.Name()))
-		if err != nil {
-			return nil, err
-		}
-		milestones = append(milestones, parse(path.Join(milestoneDir, e.Name()), string(data)))
-	}
-	slices.SortFunc(milestones, func(a, b *item) int { return cmp.Compare(a.number, b.number) })
-	return milestones, nil
-}
-
-func parse(file, text string) *item {
-	m := &item{path: file, text: text, number: -1, links: links(text), refs: cardRefs(text)}
-	if match := fileName.FindStringSubmatch(path.Base(file)); match != nil {
-		m.id = match[1]
-		m.number, _ = strconv.Atoi(m.id[1:])
-	} else {
-		m.problem(0, "the file name must look like M01-short-title.md")
-	}
-	first, _, _ := strings.Cut(text, "\n")
-	match := titleLine.FindStringSubmatch(first)
-	if match == nil || match[1] != m.id {
-		m.problem(1, "the first line must be \"# %s <title>\"", m.id)
-	} else {
-		m.title = match[2]
-	}
-	for line := range strings.Lines(text) {
-		if v, ok := strings.CutPrefix(line, "Status: "); ok {
-			m.status = strings.TrimSpace(v)
-		}
-		if v, ok := strings.CutPrefix(line, "Version: "); ok {
-			m.version = strings.TrimSpace(v)
-		}
-	}
-	m.parseBody(text)
-	return m
-}
-
-func check(root string, milestones []*item) []string {
-	var problems []string
-	numbers := map[int]string{}
-	known := cardIDs(milestones)
-	current := -1
-	for i, m := range milestones {
-		if other, taken := numbers[m.number]; taken && m.number >= 0 {
-			m.problem(0, "%s uses the same number", other)
-		}
-		numbers[m.number] = m.path
-		m.checkLinks(root)
-		for _, r := range m.refs {
-			if !known[r.target] {
-				m.problem(r.line, "no milestone defines the card %s", r.target)
-			}
-		}
-		if m.status == "open" {
-			if m.id != "M99" || len(m.cards) > 0 {
-				m.problem(0, "only M99, the parking lot, is open, and it holds no cards")
-			}
-		} else {
-			m.checkMilestone(root)
-			if current < 0 && m.status != "done" {
-				current = i
-			}
-			if current >= 0 && i > current && (m.status == "active" || m.status == "done" || m.done() > 0) {
-				m.problem(0, "milestones go in order, so %s cannot start before %s is done", m.id, milestones[current].id)
-			}
-		}
-		problems = append(problems, m.problems...)
-	}
-	return problems
-}
-
-func (m *item) checkMilestone(root string) {
-	if !slices.Contains(milestoneStatuses, m.status) {
-		m.problem(0, "Status must be one of %s", strings.Join(milestoneStatuses, ", "))
-	}
-	// M<n> ships in v0.<n>.0, and M00 in v0.0.1, as decision D043 says.
-	want := fmt.Sprintf("v0.%d.0", m.number)
-	if m.number == 0 {
-		want = "v0.0.1"
-	}
-	if m.version != want {
-		m.problem(0, "Version must be %s, the release that ships %s", want, m.id)
-	}
-	if !m.hasDemo {
-		m.problem(0, "a milestone needs a \"## Demo\" section")
-	}
-	if !m.hasCards {
-		m.problem(0, "a milestone needs a \"## Cards\" section")
-	}
-	agents, ids := 0, map[string]bool{}
-	for _, c := range m.cards {
-		m.checkCard(root, c, ids)
-		if c.owner == "agent" {
-			agents++
-		}
-	}
-	m.checkCycles()
-	if agents > maxAgentCards && m.status != "done" {
-		m.problem(0, "%d agent cards is more than %d: split the milestone", agents, maxAgentCards)
-	}
-	done, total := m.done(), len(m.cards)
-	switch {
-	case m.status != "planned" && m.open != nil:
-		m.problem(0, "a %s milestone has no open questions: settle them in the spec, then delete the section", m.status)
-	case m.status != "planned" && total == 0:
-		m.problem(0, "a %s milestone needs cards", m.status)
-	case (m.status == "planned" || m.status == "ready") && done > 0:
-		m.problem(0, "a milestone with a done card is active, or done when every card is")
-	case m.status == "active" && done == total:
-		m.problem(0, "every card is done, so the milestone is done")
-	case m.status == "active" && done == 0:
-		m.problem(0, "an active milestone has a done card; until then it is ready")
-	case m.status == "done" && done < total:
-		m.problem(0, "a done milestone has only done cards")
-	}
 }
 
 // knownCodes returns the codes that a doc may name. They come from the tables
@@ -537,10 +380,10 @@ func (f *fence) in(line string) bool {
 	return true
 }
 
-// cardIDs returns the cards that the tables of the milestones define.
-func cardIDs(milestones []*item) map[string]bool {
+// cardIDs returns the cards that the item tables define.
+func cardIDs(items []*item) map[string]bool {
 	known := map[string]bool{}
-	for _, m := range milestones {
+	for _, m := range items {
 		for _, c := range m.cards {
 			known[c.id] = true
 		}
@@ -548,58 +391,10 @@ func cardIDs(milestones []*item) map[string]bool {
 	return known
 }
 
-// currentMilestone returns the first milestone that is not done, or nil.
-func currentMilestone(milestones []*item) *item {
-	for _, m := range milestones {
-		if m.status != "done" && m.status != "open" {
-			return m
-		}
-	}
-	return nil
-}
-
-func next(out *strings.Builder, milestones []*item) {
-	m := currentMilestone(milestones)
-	if m == nil {
-		fmt.Fprintln(out, "Every milestone is done. Plan the next one, as \"Make a milestone ready\" in docs/milestones/README.md says.")
-		return
-	}
-	if m.status == "planned" && (m.open != nil || len(m.cards) == 0) {
-		fmt.Fprintf(out, "Next: make %s %s ready\nFile: %s\n\n", m.id, m.title, m.path)
-		fmt.Fprintf(out, "The milestone is planned. Settle its open questions in the spec, finish its cards, and set its status to ready, as \"Make a milestone ready\" in docs/milestones/README.md says. %s\n", readyRule)
-		if len(m.open) > 0 {
-			fmt.Fprintf(out, "\nOpen questions:\n%s\n", strings.Join(m.open, "\n"))
-		}
-		return
-	}
-	agent, pascal := startable(m, nil)
-	for _, c := range pascal {
-		fmt.Fprintf(out, "Waiting on Pascal: %s %s\n", c.id, c.title)
-	}
-	if len(pascal) > 0 {
-		fmt.Fprintln(out, "Prepare what each card for Pascal asks, if nobody has yet, then tell Pascal.")
-		fmt.Fprintln(out)
-	}
-	if len(agent) == 0 {
-		fmt.Fprintf(out, "No agent card of %s can start until Pascal finishes the cards above.\n", m.id)
-		for _, c := range pascal {
-			fmt.Fprintf(out, "\n### %s %s\n%s\n", c.id, c.title, body(c))
-		}
-		return
-	}
-	c := agent[0]
-	fmt.Fprintf(out, "Next card: %s %s\nMilestone: %s %s, which ships in %s\nFile: %s\n\n%s\n\n", c.id, c.title, m.id, m.title, m.version, m.path, body(c))
-	fmt.Fprintln(out, "Follow \"Work on a card\" in AGENTS.md. The pull request sets this card to done.")
-	if m.status == "planned" {
-		fmt.Fprintf(out, "%s has no open questions, so this pull request also sets it to active.\n", m.id)
-	}
-}
-
 // startable returns the todo cards of m whose dependencies are done, by owner
-// and in the order of the table. next serves the first agent card. A card in
-// assumed counts as done, so status can plan ahead without changing a card.
-func startable(m *item, assumed map[string]bool) (agent, pascal []*card) {
-	done := func(c *card) bool { return c.status == "done" || assumed[c.id] }
+// and in table order.
+func startable(m *item) (agent, pascal []*card) {
+	done := func(c *card) bool { return c.status == "done" }
 	for _, c := range m.cards {
 		waiting := slices.ContainsFunc(c.depends, func(d string) bool { return !done(m.card(d)) })
 		if done(c) || waiting {
@@ -614,72 +409,8 @@ func startable(m *item, assumed map[string]bool) (agent, pascal []*card) {
 	return agent, pascal
 }
 
-// order returns the agent cards of m in the order that next serves them, if
-// each one succeeds. Pascal's cards keep their real status, so the order
-// stops when every agent card left waits on one of them.
-func order(m *item) []*card {
-	assumed := map[string]bool{}
-	var cards []*card
-	for {
-		agent, _ := startable(m, assumed)
-		if len(agent) == 0 {
-			return cards
-		}
-		assumed[agent[0].id] = true
-		cards = append(cards, agent[0])
-	}
-}
-
 func body(c *card) string {
 	return strings.TrimSpace(strings.Join(c.body, "\n"))
-}
-
-func status(out *strings.Builder, milestones []*item) {
-	current := currentMilestone(milestones)
-	var rows [][]string
-	for _, m := range milestones {
-		if m.status == "open" {
-			continue
-		}
-		title := m.title
-		if m == current {
-			title += "  <- current"
-		}
-		rows = append(rows, []string{m.id, m.status, fmt.Sprintf("%d/%d", m.done(), len(m.cards)), title})
-	}
-	out.WriteString(table("", rows))
-	if current == nil {
-		return
-	}
-	fmt.Fprintf(out, "\n%s %s (%s), ships in %s\n", current.id, current.title, current.status, current.version)
-	rows = nil
-	for _, c := range current.cards {
-		title := c.title
-		if len(c.depends) > 0 {
-			title += "  after " + strings.Join(c.depends, ", ")
-		}
-		rows = append(rows, []string{c.status, c.owner, c.id, title})
-	}
-	out.WriteString(table("  ", rows))
-	served := order(current)
-	var ids, blocked, notes []string
-	for _, c := range served {
-		ids = append(ids, c.id)
-	}
-	for _, c := range current.cards {
-		if c.owner == "agent" && c.status == "todo" && !slices.Contains(served, c) {
-			blocked = append(blocked, c.id)
-		}
-	}
-	if len(ids) > 0 {
-		notes = append(notes, "If each agent card succeeds, just next serves them in this order: "+strings.Join(ids, ", "))
-	}
-	if len(blocked) > 0 {
-		notes = append(notes, "These agent cards wait on a card of Pascal: "+strings.Join(blocked, ", "))
-	}
-	if len(notes) > 0 {
-		fmt.Fprintf(out, "\n%s\n", strings.Join(notes, "\n"))
-	}
 }
 
 // table aligns rows in columns two spaces apart, after indent.
