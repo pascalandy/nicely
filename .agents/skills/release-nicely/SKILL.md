@@ -48,6 +48,8 @@ Copy this checklist and tick each step:
 
 1. Tag the checked SHA with `git tag vX.Y.Z <sha>`.
 2. Push it with `git push origin vX.Y.Z`.
+   Require `[new tag]` in its output.
+   Otherwise another agent owns this version, so stop and report.
    Keep existing tags unchanged.
 3. Start publication once with `gh workflow run release.yml --repo pascalandy/nicely --ref vX.Y.Z -f tag=vX.Y.Z`.
    The workflow regenerates the same notes from the tag, publishes the versioned archives, and updates the Homebrew formula.
