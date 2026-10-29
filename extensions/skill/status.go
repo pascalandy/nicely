@@ -16,7 +16,10 @@ import (
 	"github.com/pascalandy/nicely/sdk/tui"
 )
 
-const codeNameMismatch contract.Code = "SKILL_NAME_MISMATCH"
+const (
+	codeNoSource     contract.Code = "SKILL_NO_SOURCE"
+	codeNameMismatch contract.Code = "SKILL_NAME_MISMATCH"
+)
 
 // check is one finding of ncly skill status, the check object of ncly
 // doctor in core-spec.md.
@@ -48,7 +51,8 @@ var kinds = []struct{ id, pass string }{
 func status(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	home, _ := os.UserHomeDir()
-	folders, file, problem := configured(p, home, config.Locate(home, os.LookupEnv))
+	paths := config.Locate(home, os.LookupEnv)
+	folders, file, problem := configured(p, home, paths)
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
@@ -83,6 +87,9 @@ func status(ctx context.Context, call extension.Call) contract.Outcome {
 			return fm.Name, true
 		}
 		return "", false
+	}
+	if len(folders) == 0 {
+		warn("skill.sources", codeNoSource, "skill.no_source", "skill.no_source_hint", map[string]any{"File": paths.Shared})
 	}
 	for i, folder := range folders {
 		// A folder that [skill] paths lists twice holds the same problems.

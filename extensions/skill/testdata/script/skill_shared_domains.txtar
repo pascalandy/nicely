@@ -35,8 +35,8 @@ cp wrong.md $DATA/ncly-video-convert.skill/SKILL.md
 exec ncly skill status --json
 stdout '"code":"SKILL_NAME_MISMATCH"'
 stdout 'video-convert'
-exec ncly --lang en-XA skill list
-pseudo stderr
+exec ncly --lang en-XA skill status
+pseudo stdout skill.sources skill.names skill.files
 
 -- wrong.md --
 ---

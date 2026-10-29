@@ -39,7 +39,7 @@ description = "Hint under a CONFIG_INVALID error of `ncly skill list`: what the 
 other = "Fix {{.File}}."
 
 ["skill.no_source"]
-description = "Warning SKILL_NO_SOURCE of `ncly skill list`, when the config names no folder of skills."
+description = "Warning SKILL_NO_SOURCE of `ncly skill status`, in its skill.sources check, when the config names no folder of skills."
 other = "No skill folder is configured."
 
 ["skill.no_source_hint"]
@@ -107,7 +107,7 @@ description = "Report of `ncly skill status`: the label of a check that found a 
 other = "warn"
 
 ["skill.sources_pass"]
-description = "Report of `ncly skill status`: message of the skill.sources check when every folder of [skill] paths can be read, or none is set. [skill] paths names the key and stays as is."
+description = "Report of `ncly skill status`: message of the skill.sources check when [skill] paths names folders and each one can be read. [skill] paths names the key and stays as is."
 other = "Every folder of [skill] paths can be read."
 
 ["skill.names_pass"]
