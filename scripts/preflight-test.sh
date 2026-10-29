@@ -9,6 +9,9 @@
 set -Eeuo pipefail
 trap 'printf "%s: line %s failed: %s\n" "${BASH_SOURCE[0]##*/}" "${LINENO}" "${BASH_COMMAND}" >&2' ERR
 
+# shellcheck source=scripts/preflight-test-volumes.sh
+source "${BASH_SOURCE[0]%/*}/preflight-test-volumes.sh"
+
 PREFLIGHT_TEST_ROOT=""
 test_case="setup"
 head_commit="abcdef012345"
@@ -73,6 +76,14 @@ fct_said() {
 	grep -F -q -- "${1}" "${root}/output" || {
 		cat "${root}/output" >&2
 		fct_fail "the output lacks: ${1}"
+	}
+}
+
+# fct_unsaid <text> requires the output to lack the given text.
+fct_unsaid() {
+	! grep -F -q -- "${1}" "${root}/output" || {
+		cat "${root}/output" >&2
+		fct_fail "the output holds: ${1}"
 	}
 }
 
@@ -149,6 +160,8 @@ fct_main() {
 	fct_said "warn  ${root}/stubs/ncly hides ${root}/second/ncly, ncly v0.23.2"
 	fct_hint "hides"
 	fct_said "preflight: 0 missing, 2 warnings"
+
+	fct_volume_cases
 
 	test_case="fixture folders"
 	fct_present
