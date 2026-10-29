@@ -59,7 +59,7 @@
   - Distinct from: a daemon, which Nicely does not have, and a Python program, which talks a versioned protocol
 - Extension repository
   - Def.: the Git repository of one extension outside Nicely, which is one Go module that pins one Nicely version
-  - Project note: [Extensions](../contract/extensions.md#extension-repository) lays it out
+  - Project note: [Extension repository](../contract/extension-repository.md) lays it out
   - Distinct from: a first-party extension, which lives in `extensions/` of the Nicely repository
 - Extension template
   - Def.: the Copier template in the Nicely repository that creates an extension repository, as [D062](../decisions/D062-copier-template.md) decides

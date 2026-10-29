@@ -1,6 +1,6 @@
 # The extension template, as D062 in docs/north-star/decisions/ decides. Each
-# Nicely tag is a template version, and Extension repository in
-# docs/north-star/contract/extensions.md holds the layout that it renders.
+# Nicely tag is a template version, and
+# docs/north-star/contract/extension-repository.md holds the layout that it renders.
 # An agent creates a repository without prompts, with the Copier that the
 # line copier := of template/justfile pins, as the nicely skill shows:
 #

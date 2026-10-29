@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This folder is the fixture extension repository of the test kit: one Go module, `example.com/standalone`, laid out as [Extension repository](../../../docs/north-star/contract/extensions.md#extension-repository) says.
+This folder is the fixture extension repository of the test kit: one Go module, `example.com/standalone`, laid out as [Extension repository](../../../docs/north-star/contract/extension-repository.md) says.
 
 1. Read [vision.md](vision.md), then [spec.md](spec.md), then [Test kit](../../../docs/north-star/contract/test-kit.md).
 2. Change the spec first, then the manifest, the catalog, the handler, and its scenario in `testdata/script/`.
