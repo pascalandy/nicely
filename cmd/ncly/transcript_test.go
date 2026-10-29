@@ -62,11 +62,16 @@ var uvTools = sync.OnceValues(func() (hostTools, error) {
 		return t, err
 	}
 	defer func() { _ = os.RemoveAll(scratch) }()
-	if t.uv, err = hostProgram("uv", scratch, "--version"); err != nil {
+	if t.uv, _, err = hostProgram("uv", scratch, "--version"); err != nil {
 		return t, err
 	}
-	check := "import sys; sys.exit(sys.version_info < (3, 12))"
-	if t.python, err = hostProgram("python3", scratch, "-c", check); err != nil {
+	check := "import sys; print('%d.%d.%d' % sys.version_info[:3]); sys.exit(sys.version_info < (3, 12))"
+	var found string
+	t.python, found, err = hostProgram("python3", scratch, "-c", check)
+	if found != "" {
+		return t, fmt.Errorf("the transcript scenarios: Python 3.12 or later required, found %s", found)
+	}
+	if err != nil {
 		return t, err
 	}
 	cacheRoot, err := os.UserCacheDir()
@@ -82,20 +87,26 @@ var uvTools = sync.OnceValues(func() (hostTools, error) {
 
 // hostProgram returns the first program of PATH named name that answers
 // args with exit 0 under a scratch HOME, as in a scenario. A shim that needs
-// the real HOME, such as one of mise, never counts.
-func hostProgram(name, home string, args ...string) (string, error) {
+// the real HOME, such as one of mise, never counts. When none answers, found
+// holds the first line that a refused program printed, and its path. That
+// line can be the version of a Python that is too old.
+func hostProgram(name, home string, args ...string) (path, found string, err error) {
 	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
-		path := filepath.Join(dir, name)
-		if info, err := os.Stat(path); err != nil || info.IsDir() {
+		candidate := filepath.Join(dir, name)
+		if info, err := os.Stat(candidate); err != nil || info.IsDir() {
 			continue
 		}
-		cmd := exec.Command(path, args...)
-		cmd.Env = []string{"HOME=" + home, "PATH=" + filepath.Dir(path)}
-		if cmd.Run() == nil {
-			return path, nil
+		cmd := exec.Command(candidate, args...)
+		cmd.Env = []string{"HOME=" + home, "PATH=" + filepath.Dir(candidate)}
+		out, err := cmd.Output()
+		if err == nil {
+			return candidate, "", nil
+		}
+		if line, _, _ := strings.Cut(string(out), "\n"); found == "" && line != "" {
+			found = line + " at " + candidate
 		}
 	}
-	return "", fmt.Errorf("the transcript scenarios need %s in PATH", name)
+	return "", found, fmt.Errorf("the transcript scenarios need %s in PATH", name)
 }
 
 // engineDir is the engine's folder, from the folder of this package.

@@ -71,9 +71,11 @@ install:
     *) echo "install: add $bin to PATH to run ncly" >&2 ;;
     esac
 
-# Run every check that signoff requires
+# Run every check that signoff requires, up to the first failure, or each one with --keep-going
 [group('checks')]
-check: fmt-check lint tidy-check test race template python release-lint gitleaks-rules gitleaks (limits "--base" "origin/main")
+[positional-arguments]
+check *flags:
+    @exec bash scripts/check.sh "$@"
 
 # Run just check on each layer of a stack, bottom to top, as origin holds it
 [group('checks')]
@@ -111,6 +113,7 @@ test *args:
     bash scripts/test-hook-env.sh
     bash scripts/check-layers-test.sh
     bash scripts/signoff-test.sh
+    bash scripts/check-test.sh
     bash scripts/scenario-test.sh
 
 # Render the extension template and check the rendered repository
