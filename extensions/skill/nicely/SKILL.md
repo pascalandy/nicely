@@ -11,7 +11,7 @@ description: Use before running any ncly command.
 - List commands with `ncly describe --json`, then read one with `ncly describe PATH --json`: its flags, effects, modes, and result keys
 - Run a command that writes or bills with `--dry-run` first. The dry run checks what that call needs
 - Check the whole machine with `ncly doctor --json` during setup, or when a dry run reports a problem you cannot explain
-- Select one extension with its slug, such as `ncly doctor video-subtitle --json`. Auth grant and revoke use the same slug
+- Select one extension with its slug, such as `ncly doctor video-convert --json`. Auth grant and revoke use the same slug
 - List the keys that installed extensions need, and where each one comes from, with `ncly auth status --json`. Its findings are under `services`, and it never prints a key
 - On `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human, who stores the key with `ncly auth login` and grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`. Never type or pipe a key yourself, and never grant one
 - Branch on the exit code and `errors[].code`, never on `message` or `hint`. `next` holds the command to run as words
