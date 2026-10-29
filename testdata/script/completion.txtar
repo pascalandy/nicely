@@ -39,7 +39,7 @@ stdout 'fish'
 ! stderr .
 
 # An unknown shell or an extra word is a usage error that points to the right help
-exits 2 ncly completion tcsh --json
+exits 2 ncly completion rc --json
 answer stderr USAGE_INVALID
 stderr '"hint":"ncly completion --help","next":\["ncly","completion","--help"\]'
 exits 2 ncly completion zsh extra --json

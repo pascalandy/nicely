@@ -210,9 +210,16 @@ func AddGlobalFlags(root *cobra.Command, p *i18n.Printer) {
 	})
 }
 
-// UnknownCommand reports a word that names no command under c.
+// UnknownCommand reports a word that names no command under c. When a
+// command of c is close to the word, it suggests that command, whose help is
+// the hint, as Usage in contract.md defines.
 func UnknownCommand(p *i18n.Printer, c *cobra.Command, word string) contract.Problem {
-	return HelpUsage(c, p.T("usage.unknown_command", map[string]any{"Name": i18n.Clip(word)}))
+	data := map[string]any{"Name": i18n.Clip(word)}
+	if name := suggestion(c, word); name != "" {
+		data["Suggestion"] = name
+		return Usage(p.T("usage.unknown_command_suggestion", data), c.CommandPath()+" "+name+" --help")
+	}
+	return HelpUsage(c, p.T("usage.unknown_command", data))
 }
 
 // HelpUsage reports USAGE_INVALID with the help of c as its hint.

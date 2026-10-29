@@ -209,6 +209,10 @@ other = "Name the run, so a repeated call continues it"
 description = "Error when a word is not a command. {{.Name}} is the word the user typed."
 other = "Unknown command \"{{.Name}}\"."
 
+["usage.unknown_command_suggestion"]
+description = "Error when a word is not a command, but a command of the same group is close to it. {{.Name}} is the word the user typed, and {{.Suggestion}} the close command, such as describe, which stays as is."
+other = "Unknown command \"{{.Name}}\". Did you mean \"{{.Suggestion}}\"?"
+
 ["usage.unexpected_argument"]
 description = "Error when a command gets more arguments than it takes. {{.Arg}} is the first extra argument."
 other = "Unexpected argument \"{{.Arg}}\"."

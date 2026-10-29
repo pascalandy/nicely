@@ -5,6 +5,36 @@ answer stderr USAGE_INVALID
 stderr '"message":"Unknown command \\"nope\\"."'
 stderr '"hint":"ncly --help","next":\["ncly","--help"\]'
 
+# A command close to an unknown word is suggested, and next opens its help
+exits 2 ncly descrbe --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"Unknown command \\"descrbe\\". Did you mean \\"describe\\"\?","hint":"ncly describe --help","next":\["ncly","describe","--help"\]'
+exits 2 ncly docter
+stderr '^error\[USAGE_INVALID\]: Unknown command "docter"\. Did you mean "doctor"\?$'
+stderr '^  hint: ncly doctor --help$'
+exits 2 ncly --lang en-XA docter
+pseudo stderr docter doctor
+
+# Under a group, the suggestion is a command of that group
+exits 2 ncly run veiw --json
+answer stderr USAGE_INVALID
+stderr '"message":"Unknown command \\"veiw\\". Did you mean \\"view\\"\?","hint":"ncly run view --help","next":\["ncly","run","view","--help"\]'
+
+# A bundled extension is a candidate, and a word that starts a name or lies two edits from it gets it, so tcsh gets bash
+exits 2 ncly skil --json
+stderr 'Did you mean \\"skill\\"\?","hint":"ncly skill --help"'
+exits 2 ncly comp --json
+stderr 'Did you mean \\"completion\\"\?'
+exits 2 ncly completion tcsh --json
+stderr 'Did you mean \\"bash\\"\?","hint":"ncly completion bash --help"'
+
+# Without a close command, or for an operand that names a command, the hint opens the parent's help
+exits 2 ncly zzzz --json
+stderr '"message":"Unknown command \\"zzzz\\".","hint":"ncly --help","next":\["ncly","--help"\]'
+exits 2 ncly --json -- doctor
+stderr '"message":"Unknown command \\"doctor\\".","hint":"ncly --help"'
+
 # --json works before the bad argument too
 exits 2 ncly --json nope
 ! stdout .
@@ -108,3 +138,10 @@ env NCLY_JSON=
 exec ncly --help -- help nope
 stdout 'Curated CLI toolbox'
 ! stderr .
+
+# An installed extension's root and its commands are candidates too
+install hello
+exits 2 ncly helo --json
+stderr 'Did you mean \\"hello\\"\?","hint":"ncly hello --help"'
+exits 2 ncly hello chek --json
+stderr 'Did you mean \\"check\\"\?","hint":"ncly hello check --help"'
