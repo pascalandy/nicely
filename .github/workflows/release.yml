@@ -62,7 +62,8 @@ jobs:
         run: |
           set -Eeuo pipefail
           sudo apt-get update
-          sudo apt-get install --yes ruby
+          # preflight-test.sh runs the real sqlite3 on a fake TCC.db (#371)
+          sudo apt-get install --yes ruby sqlite3
           curl --fail --silent --show-error --location \
             https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
             --output "${RUNNER_TEMP}/gitleaks.tar.gz"
