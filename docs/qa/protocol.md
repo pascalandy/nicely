@@ -85,6 +85,8 @@ This probe proves that a replay starts no harness, such as Codex.
 - **Verdict of a UAT:** accepted, accepted with reservations, or refused.
 - A blocking or major defect gives `refused` and a linked `2-type:bug` issue.
 - A reservation is an unmeasured criterion or a minor defect that Pascal accepts. Each one gets an issue or a next test.
+- An output over its [budget](north-star.md#budgets) is a minor defect.
+- Each [Automation](north-star.md#automation) finding is a reservation. Examples are a criterion that no test as code covers, and a manual step that a test could replace.
 
 ## Report
 
