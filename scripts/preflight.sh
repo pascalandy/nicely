@@ -162,11 +162,43 @@ check_fixture() {
 	pass "fixture folder $folder: checksums OK, originals locked"
 }
 
+# check_volumes names, on macOS, the checkout, the Go caches, and the fixture folders that sit on a
+# volume that diskutil does not call internal. A process that cua do shell starts can read such a
+# volume only after a human allows it in a macOS prompt. See #366.
+check_volumes() {
+	local i folder mount internal="" external=""
+	local -a names=(checkout) paths=("$root")
+	[[ "$os" == Darwin ]] || return 0
+	if command -v go >/dev/null; then
+		names+=(GOCACHE GOMODCACHE)
+		paths+=("$(go env GOCACHE 2>/dev/null)" "$(go env GOMODCACHE 2>/dev/null)")
+	fi
+	for folder in "$@"; do
+		names+=("fixture $folder")
+		paths+=("$folder")
+	done
+	for i in "${!paths[@]}"; do
+		mount="$(df -P "${paths[$i]}" 2>/dev/null | sed -n '2s/^.*[0-9]% *\(\/.*\)$/\1/p')"
+		[[ -n "$mount" ]] || continue
+		if [[ "$(diskutil info -plist "$mount" 2>/dev/null | sed -n '/<key>Internal<\/key>/{n;p;}')" == *'<true/>'* ]]; then
+			internal="$internal, ${names[$i]}"
+		else
+			external="$external, ${names[$i]} at $mount"
+		fi
+	done
+	if [[ -n "$external" ]]; then
+		warn "on an external volume: ${external#, }: through cua do shell, macOS asks a human to allow access first" "ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session, as docs/qa/protocol.md says"
+	elif [[ -n "$internal" ]]; then
+		pass "on internal volumes: ${internal#, }"
+	fi
+}
+
 check_tmux
 check_python
 check_modules
 check_codex
 check_ncly
 for folder in "$@"; do check_fixture "$folder"; done
+check_volumes "$@"
 printf 'preflight: %s missing, %s warnings\n' "$missing" "$warnings"
 [[ "$missing" == 0 ]]
