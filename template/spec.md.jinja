@@ -8,6 +8,8 @@ Give each command a section like that one, then delete each line that starts wit
 
 Fill: for each command, what proves its success, why each declared effect exists, and each failure with its code.
 
+Fill: the failure of an input that exists but that the wrapped program cannot read, with a `{{ slug | upper | replace("-", "_") }}_` code and exit 2. A dry run gives the same failure.
+
 Fill: each limit that the readiness review accepted.
 
 ## ncly {{ example_command }}
@@ -26,3 +28,9 @@ Fill: each limit that the readiness review accepted.
 | Ctrl-C or SIGTERM arrives | `INTERRUPTED` or `TERMINATED` |
 
 **Limits.** None.
+
+## Acceptance
+
+Fill: the real fixture from the fixture registry of Nicely, and the properties that the output keeps.
+
+Fill: each input that the wrapped program accepts but that the domain refuses.

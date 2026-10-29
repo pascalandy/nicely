@@ -22,6 +22,14 @@ For an annotated tag, Git can warn that the tag `is not a commit!`, then note a 
 `just install` replaces a previous install, and grants no key.
 An agent reads `ncly skill view {{ slug }}` to learn when to use the extension.
 
+## Let your agent find it
+
+Add one line to your agent instructions, such as `AGENTS.md` or `CLAUDE.md`, to teach an agent to use Nicely:
+
+```text
+When asked to use nicely, run ncly skill view nicely
+```
+
 ## Change the extension
 
 `AGENTS.md` gives the reading order, the change steps, the recipes, and the release steps.

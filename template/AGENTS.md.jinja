@@ -19,9 +19,9 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 2. `manifest.toml`: its declaration, with its effects, programs, keys, and result schema
 3. `locales/en.toml`: its text, each entry with a description
 4. Add a placeholder handler that compiles, and register it in `extension.go`
-5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands
+5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands. For a command with a dry run, give each refusal of the run a dry-run scenario with the same code
 6. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more
-7. `skill/SKILL.md`: when to use the command, and when not to
+7. `skill/SKILL.md`: when to use the command, and when not to. For a command with a dry run, tell the agent to dry-run the call first
 
 `extension.Check` must pass before a scenario can fail for the missing behavior. Steps 1 through 4 prepare that check.
 
@@ -52,7 +52,7 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 
 ## Done when
 
-`just check` passes, and the installed command ran once on real input. For a paid command, its dry run is enough. For a command that needs a key, relay the grant hint to the human and wait.
+`just check` passes, and the installed command ran once on the fixture of `## Acceptance`. For a paid command, its dry run is enough. For a command that needs a key, relay the grant hint to the human and wait.
 
 ## Release
 
