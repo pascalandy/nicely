@@ -45,6 +45,35 @@ fct_volume_cases() {
 	fct_unsaid "checkout at"
 	fct_said "preflight: 0 missing, 1 warnings"
 
+	test_case="on macOS, a grant of Cua Spaces in the TCC database turns the warning into ok"
+	fct_present
+	fct_macos
+	fct_stub stubs go "case \"\$*\" in
+\"env GOCACHE\") echo ${root}/ext/go-build ;;
+\"env GOMODCACHE\") echo ${root}/ext/go-mod ;;
+esac"
+	fct_stub stubs sqlite3 "case \"\$*\" in
+\"-readonly ${root}/Library/Application Support/com.apple.TCC/TCC.db \"*kTCCServiceSystemPolicyRemovableVolumes*com.trycua.spaces.macos*) echo 2 ;;
+esac"
+	fct_run 0
+	fct_said "ok    on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: the TCC database lets Cua Spaces read removable volumes"
+	fct_said "preflight: 0 missing, 0 warnings"
+
+	test_case="on macOS, a denied grant or an unreadable TCC database keeps the warning"
+	fct_stub stubs sqlite3 'echo 0'
+	fct_run 0
+	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext"
+	fct_stub stubs sqlite3 'echo "Error: unable to open database" >&2; exit 1'
+	fct_run 0
+	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext"
+	fct_said "preflight: 0 missing, 1 warnings"
+
+	test_case="on macOS, the grant leaves the warning for a volume that diskutil cannot read"
+	fct_macos
+	fct_stub stubs sqlite3 'echo 2'
+	fct_run 0
+	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/net"
+
 	test_case="on Linux, preflight names no volume"
 	fct_present
 	fct_macos
