@@ -167,12 +167,13 @@ fmt-check:
     for dir in {{ standalone }}; do (cd "$dir" && {{ golangci }} fmt --diff); done
     cd tools && go tool golangci-lint fmt --diff
 
-# Check the shell scripts, those of the skills too, and the dormant manual workflow
+# Check the shell scripts, those of the skills too, and the GitHub workflows, the template's too
 [group('checks')]
 release-lint:
     shellcheck scripts/*.sh .agents/skills/*/scripts/*.sh
     shfmt -d scripts/*.sh .agents/skills/*/scripts/*.sh
     {{ go-tools }} actionlint
+    {{ go-tools }} actionlint template/.github/workflows/check.yml
 
 # Build and inspect a local release without publishing
 [group('checks')]

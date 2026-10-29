@@ -96,6 +96,7 @@ fct_repository() {
 		[[ -z "$(sed -n '/^\[/q; /^name = /p' "${repo}/manifest.toml")" ]] || fct_fail 'the whole-domain manifest declares a name'
 	fi
 	[[ -f "${repo}/cmd/ncly-${slug}/main.go" ]] || fct_fail "the entry directory is not cmd/ncly-${slug}"
+	fct_test_files "${repo}"
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
