@@ -196,7 +196,7 @@ check_volumes() {
 	if [[ -n "$external" && -z "$unread" ]] && cua_granted; then
 		pass "on an external volume: ${external#, }: the TCC database lets Cua Spaces read removable volumes"
 	elif [[ -n "$external" ]]; then
-		warn "on an external volume: ${external#, }: through cua do shell, macOS asks a human to allow access first" "ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session, as docs/qa/protocol.md says"
+		warn "on an external volume: ${external#, }: through cua do shell, macOS asks a human to allow access first" "ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session, as docs/qa/protocol.md#desktop-session says"
 	elif [[ -n "$internal" ]]; then
 		pass "on internal volumes: ${internal#, }"
 	fi

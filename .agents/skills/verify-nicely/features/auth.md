@@ -93,7 +93,7 @@ Preconditions:
 - Set `VERIFYNICELY_API_KEY` on the step itself, as written: the wrapper passes the caller's environment to `ncly`, so a value left in the shell changes the result of every later step
 - Quote each `--answer` as written: the shell would expand the brackets of `[y/N]` otherwise
 - `"keychain":"unavailable"` on Linux means that no Secret Service answers, such as gnome-keyring outside a desktop session: report it, because the steps that expect `available` then fail with `KEYRING_UNAVAILABLE`
-- On macOS, `prepare` needs `--mac-keychain`. Run the steps in the desktop session, such as through `cua do shell`, because the login keychain refuses an SSH session. Escalate to a human as [docs/qa](../../../../docs/qa/protocol.md#human-escalation) says
+- On macOS, `prepare` needs `--mac-keychain`. Run the steps in the desktop session, because the login keychain refuses an SSH session. [Desktop session](../../../../docs/qa/protocol.md#desktop-session) in docs/qa says how, and when to call a human
 - `ncly auth status` and `ncly doctor auth` fail the stored key with `KEY_NOT_GRANTED` until the step Grant in a terminal, and again after the step Revoke: a key that no extension may receive is a problem to fix, and exit 78 is the expected result there
 - `just verify step` has no terminal, and `grant` takes no `--force`, so only the `tmux` step grants the key. Never print the fake key to compare digests: pipe it straight into `sha256sum`
 - The cleanup logs the fake key out after a failed run too. When it cannot, because the keychain does not answer, it keeps the scratch folder and exits 1: run `just verify cleanup "$run"` again once the keychain answers, and report it if it still fails

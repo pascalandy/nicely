@@ -13,7 +13,7 @@ This file answers one question: how is a UAT of any extension run so that it can
 
 ## One run
 
-1. **Prerequisites.** In a Nicely checkout, run `just preflight` with the fixture folders that the issue names. It checks the host, then the checksum and the lock of each fixture. The offline Go probe may populate Go caches; it leaves source files and fixtures unchanged. Stop when it exits nonzero.
+1. **Prerequisites.** In a Nicely checkout, run `just preflight` with the fixture folders that the issue names. It checks the host, then the checksum and the lock of each fixture. Run it as [Desktop session](#desktop-session) says. The offline Go probe may populate Go caches; it leaves source files and fixtures unchanged. Stop when it exits nonzero.
 2. **New folder.** Create `ncly-uat-<issue>-<YYYYMMDD-HHMM>/` and copy the fixture into it. Check the checksum of the copy.
 3. **Discovery.** Give a fresh agent one sentence, without hints or `NCLY_*` variables. Its instructions hold only the agent line of the [README](../../README.md). It must reach the command through `ncly skill view nicely` and `ncly describe`.
 4. **Dry run.** When the command has a dry run, it comes before the run and passes on valid input.
@@ -31,10 +31,21 @@ The agent stops and calls Pascal only in these cases. Each UAT issue names its o
 
 - The OS or the keychain asks for a password.
 - A window takes the keyboard, and no action of the agent reaches it. `cua do click` cannot reach a SecurityAgent window, such as one about the keychain. Escape presses its Cancel button.
-- The OS asks for a permission, such as access to files on a removable volume. A desktop-session process that reads an external volume, such as a Go cache, opens this prompt.
+- The OS asks for a permission, such as access to files on a removable volume. A desktop-session process that reads an external volume, such as a Go cache, opens this prompt. `just preflight` warns about it first, see [Desktop session](#desktop-session).
 - A step stays blocked after one retry.
 
 Never press **Reset To Defaults** in a keychain window: it can replace the real keychain.
+
+## Desktop session
+
+On macOS, some steps run in the desktop session, such as the steps that use the login keychain. The agent reaches it through `cua do shell`.
+
+- Run `just preflight` over SSH or in a terminal of the desktop session, such as Ghostty. Through `cua do shell`, a checkout on an external volume can open the permission prompt before preflight warns.
+- On macOS, preflight warns when the checkout, a Go cache, or a fixture folder is on an external volume. It reads whether Pascal allowed Cua Spaces to read removable volumes. That read needs Full Disk Access, and without it, preflight warns.
+- When preflight warns, ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session.
+- Give `cua do shell` one script file, such as `cua do shell /bin/bash /path/step.sh`. It joins its arguments into one `/bin/sh -c` line and drops their quotes and backslashes.
+- In that script, set `PATH` and change to the folder of the step. `cua do shell` starts in the home folder, with only the system folders in `PATH`.
+- A permission prompt or a keychain window is a case of [Human escalation](#human-escalation).
 
 ## No-spawn probe
 
