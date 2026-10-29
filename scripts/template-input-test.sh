@@ -26,6 +26,11 @@ fct_test_refused_inputs() {
 		fi
 		grep -qE 'choose another domain|Give a domain' "${scratch}/refusal.out" || fct_fail "Copier refuses the domain ${invalid_domain} for another reason: $(cat "${scratch}/refusal.out")"
 	done
+	# A name does not help, since ncly bundles skills named nicely-<topic> too.
+	if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=nicely --data name=auth --data module=example.com/ncly-nicely-auth "${template_src}" "${scratch}/invalid-domain" 2>"${scratch}/refusal.out"; then
+		fct_fail "Copier accepts the domain nicely with the name auth"
+	fi
+	grep -qF 'choose another domain' "${scratch}/refusal.out" || fct_fail "Copier refuses nicely-auth for another reason: $(cat "${scratch}/refusal.out")"
 	for invalid_name in Convert 2convert convert-more 'convert more' convert_more $'convert\n'; do
 		if "${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=video --data "name=${invalid_name}" --data module=example.com/ncly-video-convert "${template_src}" "${scratch}/invalid" 2>"${scratch}/refusal.out"; then
 			fct_fail "Copier accepts the name ${invalid_name}"
