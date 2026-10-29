@@ -13,7 +13,6 @@ import (
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/pascalandy/nicely/sdk/runner"
-	"github.com/pascalandy/nicely/sdk/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -265,31 +264,6 @@ func grantTarget(p *i18n.Printer, extensions []*extension, service, domain strin
 func noGrant(p *i18n.Printer, data map[string]any) contract.Problem {
 	status := []string{"ncly", "auth", "status"}
 	return contract.Problem{Code: contract.NotFound, Message: p.T("auth.revoke_none", data), Hint: strings.Join(status, " "), Next: status}
-}
-
-// pathFacts shows the source of a grant as a fact of its confirmation. A
-// bundled extension has no path to show.
-func pathFacts(p *i18n.Printer, path *string) []tui.Fact {
-	if path == nil {
-		return nil
-	}
-	return []tui.Fact{{Label: p.T("auth.fact_path"), Value: *path}}
-}
-
-// replacedFacts shows the new and the old source of a grant that moves to
-// another source. A bundled extension's source has no path, so it shows
-// as bundled.
-func replacedFacts(p *i18n.Printer, path, old *string) []tui.Fact {
-	shown := func(path *string) string {
-		if path == nil {
-			return p.T("auth.fact_bundled")
-		}
-		return *path
-	}
-	return []tui.Fact{
-		{Label: p.T("auth.fact_new_path"), Value: shown(path)},
-		{Label: p.T("auth.fact_old_path"), Value: shown(old)},
-	}
 }
 
 // grantsFailure answers a failure to read or change the grants file:

@@ -42,3 +42,28 @@ func (c confirmation) ask(ctx context.Context, p *i18n.Printer, g command.Global
 	}
 	return nil
 }
+
+// pathFacts shows the source of a grant as a fact of its confirmation. A
+// bundled extension has no path to show.
+func pathFacts(p *i18n.Printer, path *string) []tui.Fact {
+	if path == nil {
+		return nil
+	}
+	return []tui.Fact{{Label: p.T("auth.fact_path"), Value: *path}}
+}
+
+// replacedFacts shows the new and the old source of a grant that moves to
+// another source. A bundled extension's source has no path, so it shows
+// as bundled.
+func replacedFacts(p *i18n.Printer, path, old *string) []tui.Fact {
+	shown := func(path *string) string {
+		if path == nil {
+			return p.T("auth.fact_bundled")
+		}
+		return *path
+	}
+	return []tui.Fact{
+		{Label: p.T("auth.fact_new_path"), Value: shown(path)},
+		{Label: p.T("auth.fact_old_path"), Value: shown(old)},
+	}
+}
