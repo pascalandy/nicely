@@ -24,7 +24,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 
 An agent creates the repository without prompts, with the Copier that the template pins. It passes a Nicely tag to `--vcs-ref`, then `--defaults`, and `--data` for `domain` and `module`, plus optional `name`.
 An empty Copier name input omits the manifest `name` and keeps the whole-domain layout.
-A named extension uses the slug for its executable, sidecars, skill, and config, as [Extension identity](extension-identity.md) defines. The bundled `nicely` skill shows the command. The agent then runs `go mod tidy` once, which writes `go.sum`, and commits the repository with Git. The root Go package keeps the domain as its name, including for named extensions.
+A named extension uses the slug for its executable, sidecars, skill, and config, as [Extension identity](extension-identity.md) defines. The bundled `nicely-extensions` skill shows the command. The agent then runs `go mod tidy` once, which writes `go.sum`, and commits the repository with Git. The root Go package keeps the domain as its name, including for named extensions.
 The template refuses `main` and each Go keyword as a domain, such as `type`. It also refuses the domain `nicely`, with or without a name, because `ncly` bundles the skill `nicely` and skills named `nicely-<topic>`. These would hide the skill of the extension. The template has no tasks and no migrations, so Copier needs no `--trust`. A push can skip Lefthook, so its GitHub workflow runs `just check` again on a standard runner, free for a public repository.
 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has six recipes:
