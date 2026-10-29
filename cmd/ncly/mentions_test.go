@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/contract"
@@ -33,9 +34,19 @@ var mentionedCode = regexp.MustCompile(`\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b=?`)
 // describe does not give, or a code that the registry lacks, or holds more
 // than 60 lines: mentions <skill-file> <describe-file> <codes-file>. After
 // a command path, a word is a command only when that path groups others.
+// With -bytes <max> first, it also fails for a skill of more than max bytes.
 func cmdMentions(ts *testscript.TestScript, neg bool, args []string) {
+	usage := "usage: mentions [-bytes <max>] <skill-file> <describe-file> <codes-file>"
+	maxBytes := -1
+	if len(args) > 1 && args[0] == "-bytes" {
+		n, err := strconv.Atoi(args[1])
+		if err != nil || n < 0 {
+			ts.Fatalf("%s", usage)
+		}
+		maxBytes, args = n, args[2:]
+	}
 	if len(args) != 3 {
-		ts.Fatalf("usage: mentions <skill-file> <describe-file> <codes-file>")
+		ts.Fatalf("%s", usage)
 	}
 	skill := ts.ReadFile(args[0])
 	var listing struct {
@@ -58,6 +69,9 @@ func cmdMentions(ts *testscript.TestScript, neg bool, args []string) {
 	var problems []string
 	if lines := strings.Count(skill, "\n"); lines > 60 {
 		problems = append(problems, fmt.Sprintf("%d lines, more than 60", lines))
+	}
+	if maxBytes >= 0 && len(skill) > maxBytes {
+		problems = append(problems, fmt.Sprintf("%d bytes, more than %d", len(skill), maxBytes))
 	}
 	for _, m := range mentionedCommand.FindAllStringSubmatch(skill, -1) {
 		words := strings.Fields(m[1])

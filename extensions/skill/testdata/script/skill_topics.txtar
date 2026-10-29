@@ -1,0 +1,62 @@
+# The nicely skill names a bundled skill per topic, which an agent reads when it needs it:
+# nicely-auth, nicely-runs, and nicely-extensions. view prints each without a folder line,
+# and each names only the commands and codes that this ncly has, in at most 60 lines.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+mkdir $WORK/.config/nicely
+
+exec ncly skill view nicely-auth
+! stdout 'skill-dir'
+stdout '\A---\nname: nicely-auth\n'
+cp stdout auth.md
+exec ncly skill view nicely-runs
+stdout '\A---\nname: nicely-runs\n'
+cp stdout runs.md
+exec ncly skill view nicely-extensions
+stdout '\A---\nname: nicely-extensions\n'
+cp stdout extensions.md
+exec ncly skill view nicely-runs --json
+answer stdout ok
+stdout '"name":"nicely-runs","path":null,"source":"bundled"\}$'
+
+# nicely-auth teaches auth status, whose report lists its findings under services
+grep '`ncly auth status --json`' auth.md
+grep 'under `services`' auth.md
+# On a missing key or a missing grant, the agent relays the hint to the human, who logs in,
+# grants the key, or takes a grant back, and never types, pipes, or grants a key itself
+grep '`AUTH_MISSING`, `KEYRING_UNAVAILABLE`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human' auth.md
+grep 'grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`' auth.md
+grep 'Never type or pipe a key yourself, and never grant one' auth.md
+# nicely-runs teaches run IDs, and the recovery of a lost answer with run list and run view
+grep 'your own new `--run-id`' runs.md
+grep '`ncly run list --path ''PATH'' --key KEY --json`' runs.md
+grep '`ncly run view` exits 0 for a run that failed' runs.md
+# nicely-extensions gives the command that creates an extension repository from the template,
+# with the Copier that the template pins, and links Extensions
+grep '^uv tool run copier@[0-9.]+ copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github\.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME$' extensions.md
+grep '\[Extensions\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md\)' extensions.md
+# It tells how to install an extension at a release tag. It quotes the install rule of
+# Release and install, gives its commands, and confirms the install with describe
+grep '^## Install an extension$' extensions.md
+grep '\[Release and install\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md#release-and-install\)' extensions.md
+grep '^> A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`\.$' extensions.md
+grep '^git clone --branch TAG https://github\.com/OWNER/REPO$' extensions.md
+grep '^cd REPO && just install$' extensions.md
+grep 'Then run `ncly describe ROOT --json`' extensions.md
+# It tells how to remove an extension: its four files leave the extensions folder, describe
+# then answers NOT_FOUND, and the keys and grants stay until the human revokes a grant
+grep '^## Remove an extension$' extensions.md
+grep '`ncly doctor extensions --json` gives the `path` of each extension' extensions.md
+grep '`ncly-SLUG`, `ncly-SLUG\.toml`, `ncly-SLUG\.locales/`, and `ncly-SLUG\.skill/`' extensions.md
+grep '`just uninstall` does it' extensions.md
+grep 'Run `ncly describe ROOT --json`\. It answers `NOT_FOUND`' extensions.md
+grep 'The removal keeps the keys and the grants\.' extensions.md
+grep '`GRANT_UNUSED`: relay its `next`, `ncly auth revoke SERVICE SLUG`, to the human' extensions.md
+
+# Each names only the commands that ncly describe gives, and the codes of the registry
+exec ncly describe --json
+cp stdout describe.json
+exec codes
+cp stdout codes.txt
+mentions auth.md describe.json codes.txt
+mentions runs.md describe.json codes.txt
+mentions extensions.md describe.json codes.txt

@@ -151,7 +151,7 @@ fct_main() {
 	# just update runs the Copier that the template pins, and so does this test.
 	pin="$(sed -n 's/^copier := "\(.*\)"$/\1/p' "${root}/template/justfile")"
 	[[ "${pin}" == "uv tool run copier@"* ]] || fct_fail "template/justfile pins no Copier"
-	grep -qF -- "${pin}" "${root}/extensions/skill/nicely/SKILL.md" || fct_fail "the nicely skill does not give ${pin}, which template/justfile pins"
+	grep -qF -- "${pin}" "${root}/extensions/skill/nicely-extensions/SKILL.md" || fct_fail "the nicely-extensions skill does not give ${pin}, which template/justfile pins"
 	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")"
 	readonly NCLY_TEMPLATE_TEST_ROOT="${scratch}"
 	trap 'rm -rf "${NCLY_TEMPLATE_TEST_ROOT}"' EXIT

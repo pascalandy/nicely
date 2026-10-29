@@ -15,7 +15,7 @@ symlink linked -> $WORK/store
 
 exec ncly skill list --json
 answer stdout ok
-stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/alpha","source":"config"\},\{"name":"gamma","description":"Use for gamma\.","path":"'${WORK@R}'/linked/gamma","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]\}$'
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/alpha","source":"config"\},\{"name":"gamma","description":"Use for gamma\.","path":"'${WORK@R}'/linked/gamma","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth",[^}]*"source":"bundled"\},\{"name":"nicely-extensions",[^}]*"source":"bundled"\},\{"name":"nicely-runs",[^}]*"source":"bundled"\}\]\}$'
 ! stderr .
 
 -- config.toml --

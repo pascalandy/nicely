@@ -8,7 +8,7 @@ The current build implements help, the version, shell completion, and `ncly desc
 
 `ncly` finds the extensions named `ncly-<domain>` in `~/.local/share/nicely/extensions/` and in `PATH`. It shows their help and completion from their manifests. It starts them with a call that it has checked against their declared arguments, flags, and flag groups. It checks their JSON answer before passing it on, and stops them and their child processes on Ctrl-C.
 
-It bundles the `skill` extension. `ncly skill list` lists the skills in the folders that `[skill] paths` names in the config, and the skill of each installed extension. `ncly skill view <name>` prints one of them without its frontmatter, and a terminal shows it as styled Markdown. Shell completion suggests the names of the skills after `ncly skill view`. An extension's argument or flag can complete from one of its list commands.
+It bundles the `skill` extension. `ncly skill list` lists the skills in the folders that `[skill] paths` names in the config, and the skill of each installed extension. It also lists the bundled `nicely` skill and its topic skills. `ncly skill view <name>` prints one of them without its frontmatter, and a terminal shows it as styled Markdown. Shell completion suggests the names of the skills after `ncly skill view`. An extension's argument or flag can complete from one of its list commands.
 
 ## Doctor
 
@@ -63,4 +63,4 @@ Ctrl-C exits 130 and SIGTERM 143, and neither leaves a `uv`, Python, or yt-dlp p
 
 ## Extension template
 
-`copier.yml` and `template/` hold the extension template. With the Copier that the template pins, an agent creates the repository of an extension outside Nicely, as the `nicely` skill shows. Its example command, `inspect`, runs a Python worker through `sdk/wrap`, and its scenarios cover each failure of a wrapped program. In that repository, `just check` runs the checks and the test kit, and `just install` installs the extension. `just update <version>` carries the repository to another Nicely version, and stops before `go get` on a conflict. Its `README.md` gives a user the commands that install a release tag, and its `AGENTS.md` gives the release steps.
+`copier.yml` and `template/` hold the extension template. With the Copier that the template pins, an agent creates the repository of an extension outside Nicely, as the `nicely-extensions` skill shows. Its example command, `inspect`, runs a Python worker through `sdk/wrap`, and its scenarios cover each failure of a wrapped program. In that repository, `just check` runs the checks and the test kit, and `just install` installs the extension. `just update <version>` carries the repository to another Nicely version, and stops before `go get` on a conflict. Its `README.md` gives a user the commands that install a release tag, and its `AGENTS.md` gives the release steps.

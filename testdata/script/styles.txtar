@@ -23,8 +23,9 @@ exec ncly skill list
 cmpenv stdout list.txt
 ! stdout '\x1b'
 exec pty none.txt ncly skill list
-stdout '^\x1b\[1malpha:\x1b\[m   Use when '
-stdout '^\x1b\[1mnicely:\x1b\[m  Use before '
+stdout '^\x1b\[1malpha:\x1b\[m              Use when '
+stdout '^\x1b\[1mnicely:\x1b\[m             Use before '
+stdout '^\x1b\[1mnicely-extensions:\x1b\[m  Use to install'
 plain stdout shown.txt
 cmpenv shown.txt list.txt
 
@@ -137,9 +138,12 @@ colour = "blue"
 [skill]
 paths = ["~/skills"]
 -- list.txt --
-alpha:   Use when the user asks for alpha.
-beta:    Use when the user asks for beta, which has a long description that a terminal wraps when it is too long for the line.
-nicely:  Use before running any ncly command.
+alpha:              Use when the user asks for alpha.
+beta:               Use when the user asks for beta, which has a long description that a terminal wraps when it is too long for the line.
+nicely:             Use before running any ncly command.
+nicely-auth:        Use when an ncly command needs a key, or answers AUTH_MISSING, KEYRING_UNAVAILABLE, KEY_NOT_GRANTED, or TERMINAL_REQUIRED.
+nicely-extensions:  Use to install, build, or remove an ncly extension.
+nicely-runs:        Use before a recorded ncly command, or after the answer of one is lost.
 -- status.txt --
 keychain  available
 

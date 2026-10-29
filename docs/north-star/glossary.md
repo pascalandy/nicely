@@ -98,7 +98,7 @@ See [Contract](glossary/contract.md).
   - Def.: a named combination of harness, provider, model, and effort, stored in the config
 - Skill
   - Def.: a folder with a `SKILL.md` that teaches an agent a task
-  - Project note: an extension's skill is named after its slug. The bundled `nicely` skill teaches core
+  - Project note: an extension's skill is named after its slug. The bundled `nicely` skill teaches core, and names a bundled skill per topic, such as `nicely-runs`
 
 ## Configuration and text
 

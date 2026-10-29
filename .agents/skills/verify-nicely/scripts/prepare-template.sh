@@ -6,8 +6,8 @@
 #                                       scratch home, with the real python3 first in PATH
 
 # prepare_template renders the extension template of the checkout as the extension probe, with
-# the Copier that the template pins, as an agent does with the command of the nicely skill. The
-# template of a change has no release tag, so the source is a scratch Git repository of
+# the Copier that the template pins, as an agent does with the command of the nicely-extensions
+# skill. The template of a change has no release tag, so the source is a scratch Git repository of
 # copier.yml and template/, as the checkout holds them, tagged v0.0.0. The go.mod of probe then
 # builds against the checkout, and just install puts probe in the scratch data folder. The real
 # python3, 3.9 or later, goes first in the wrapper's PATH, because a shim needs the real home.
