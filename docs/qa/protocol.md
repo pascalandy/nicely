@@ -41,7 +41,7 @@ Never press **Reset To Defaults** in a keychain window: it can replace the real 
 This probe proves that a replay starts no harness, such as Codex.
 
 1. Count the harness processes with `pgrep -x codex | wc -l`, and its sessions with `find ~/.codex/sessions -type f | wc -l`.
-2. Repeat the call under its run ID, with a `PATH` that holds no folder with the harness. Under that `PATH`, `command -v codex` prints nothing.
+2. Repeat the call under its run ID, with a `PATH` that holds no folder with the harness. Under that `PATH`, `command -v codex` prints nothing, and `ncly` cannot start the harness, because it finds each program only in `PATH`.
 3. Count both again. Equal counts and a replay that succeeds prove that nothing started.
 
 ## Criteria families
