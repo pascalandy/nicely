@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # template-test.sh renders the extension template of this checkout with Copier,
 # as D062 decides, and proves the rendered repository. It passes go mod tidy,
-# just check, and just install into scratch folders. A clone at a release tag
-# installs with the commands of its README.md. just update then carries
-# a customized repository to the next template revision and keeps the edits of
-# its author. On a conflict, it stops before any go command. The test runs on
-# macOS and Linux, with the bash 3.2 of macOS, and uses no network once uv
-# holds the pinned Copier.
+# just check, just install, and just uninstall into scratch folders. A clone at
+# a release tag installs with the commands of its README.md. just update then
+# carries a customized repository to the next template revision and keeps the
+# edits of its author. On a conflict, it stops before any go command. The test
+# runs on macOS and Linux, with the bash 3.2 of macOS, and uses no network once
+# uv holds the pinned Copier.
 set -Eeuo pipefail
 trap 'printf "%s: line %s failed: %s\n" "${BASH_SOURCE[0]##*/}" "${LINENO}" "${BASH_COMMAND}" >&2' ERR
 
@@ -122,6 +122,7 @@ fct_repository() {
 	[[ ! -e "${extensions}/ncly-${slug}.locales/stale.toml" && ! -e "${extensions}/ncly-${slug}.skill/stale.md" ]] || fct_fail 'install keeps stale sidecars'
 	PATH="/usr/bin:${PATH}" "$(command -v go)" -C "${repo}" tool ncly "${command_words[@]}" "${repo}/go.mod" --json >"${scratch}/reinstalled.out"
 	grep -qF '"ok":true' "${scratch}/reinstalled.out" || fct_fail 'the replacement install does not run'
+	fct_test_uninstall "${repo}" "${slug}" "${data}" "${domain}${name:+ ${name}}" "${scratch}"
 	fct_test_release "${repo}" "${scratch}" "${slug}" "${domain}${name:+ ${name}}"
 	fct_test_update "${src}" "${repo}" "${scratch}" "${root}"
 	if [[ -z "${name}" ]]; then
@@ -141,6 +142,8 @@ fct_main() {
 	source "${root}/scripts/template-input-test.sh"
 	# shellcheck source=scripts/template-release-test.sh
 	source "${root}/scripts/template-release-test.sh"
+	# shellcheck source=scripts/template-recipes-test.sh
+	source "${root}/scripts/template-recipes-test.sh"
 	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
 	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
 	# just update runs the Copier that the template pins, and so does this test.
