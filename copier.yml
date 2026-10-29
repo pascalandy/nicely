@@ -22,6 +22,8 @@ domain:
     Give a domain of lowercase letters and digits that starts with a letter: --data domain=notes
     {% elif domain in ["auth", "completion", "config", "core", "describe", "doctor", "extensions", "help", "run", "skill", "tap", "version"] %}
     ncly reserves the name {{ domain }}: choose another domain
+    {% elif domain == "nicely" %}
+    ncly bundles the skill nicely and skills named nicely-<topic>, which would hide the skill of the extension: choose another domain
     {% elif domain in ["main", "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto", "if", "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var"] %}
     {{ domain }} cannot name the Go package of the extension, which other packages import: choose another domain
     {% endif %}
@@ -33,8 +35,6 @@ name:
   validator: >-
     {% if name and not name | regex_search("^[a-z][a-z0-9]*\\Z") %}
     Give one name of lowercase letters and digits that starts with a letter: choose another name
-    {% elif domain == "nicely" and not name %}
-    The skill nicely that ncly bundles would hide the skill of the extension: choose another domain
     {% endif %}
 
 slug:
