@@ -98,10 +98,10 @@ With done and todo cards, the item becomes Active.
 With no todo card, it becomes Shipped and leaves the queue.
 `just test` rejects any other combination.
 
-## Release an accepted item
+## Release a shipped item
 
 [D065](../north-star/decisions/D065-backlog-items.md) owns release versions.
-[D043](../north-star/decisions/D043-milestone-versions.md) owns acceptance, and
+[D043](../north-star/decisions/D043-milestone-versions.md) owns the release triggers, and
 [release-nicely](../../.agents/skills/release-nicely/SKILL.md) owns the release procedure.
 
 ## Everyday domains

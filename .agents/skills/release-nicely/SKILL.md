@@ -1,19 +1,18 @@
 ---
 name: release-nicely
-description: "Use after Pascal accepts a completed Nicely item, or when he requests a release: generate notes, check, tag, publish, and verify."
+description: "Use after a merge that makes a Nicely item Shipped or fixes a released behavior, or when Pascal requests a release: generate notes, check, tag, publish, and verify."
 ---
 
 # Release nicely
 
-Run this cycle after each completed item that Pascal accepts, without a separate release request.
-For an explicitly requested patch, use the same cycle.
-[D043](../../../docs/north-star/decisions/D043-milestone-versions.md) owns acceptance, and [D065](../../../docs/north-star/decisions/D065-backlog-items.md) owns version numbering.
+Run this cycle after each merge that makes an item Shipped or fixes a released behavior, without a request.
+[D043](../../../docs/north-star/decisions/D043-milestone-versions.md) owns these triggers, and [D065](../../../docs/north-star/decisions/D065-backlog-items.md) owns version numbering.
 A release is never a card and never blocks the next item.
 
 Copy this checklist and tick each step:
 
 ```
-- [ ] 1. Ready: the item's cards are merged on origin/main, and Pascal accepted it as D043 says
+- [ ] 1. Ready: origin/main holds the Shipped item or the fix that D043 names
 - [ ] 2. Changelog: `just changelog vX.Y.Z` writes this version's notes, reviewed against its commits
 - [ ] 3. Check: `just release-check vX.Y.Z` passes in a clean checkout of origin/main, and so does `runner-rehearsal.sh vX.Y.Z`
 - [ ] 4. Tag: vX.Y.Z on origin names the SHA of step 3

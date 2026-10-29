@@ -48,7 +48,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D040](D040-wire-contract.md) | Serve extensions through a wire contract and a public Go SDK |
 | [D041](D041-first-party-extensions.md) | Keep first-party extensions in the Nicely repository |
 | [D042](D042-milestones-and-cards.md) | Plan work as backlog items of small cards |
-| [D043](D043-milestone-versions.md) | Release each accepted backlog item |
+| [D043](D043-milestone-versions.md) | Release each shipped backlog item |
 | [D044](D044-additive-extensions.md) | Let extensions add commands, never change core |
 | [D045](D045-step-effects.md) | Derive retry safety from declared step effects |
 | [D046](D046-machine-output-never-asks.md) | Never ask a human for machine output |

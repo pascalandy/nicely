@@ -80,9 +80,9 @@ Report any failed step as an incomplete merge. Never manually close an open pull
 
 Create a separate GitHub issue for each UAT. Keep its task and procedure there, with only a link in the Epic.
 
-## Release each accepted item
+## Release without a request
 
-After each completed item that Pascal accepts, run the release cycle without a separate request.
-Use [D043](decisions/D043-milestone-versions.md) for acceptance and [D065](decisions/D065-backlog-items.md) for version numbering.
+When your merge makes an item Shipped, or fixes a behavior of the latest release, run the release cycle.
+Do not wait for a request or an acceptance from Pascal.
+Use [D043](decisions/D043-milestone-versions.md) for the triggers and [D065](decisions/D065-backlog-items.md) for version numbering.
 Use [release-nicely](../../.agents/skills/release-nicely/SKILL.md) for the full procedure.
-Item acceptance does not replace the merge authorization above.

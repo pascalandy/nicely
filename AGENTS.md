@@ -26,7 +26,7 @@ Run `lefthook install` once per clone.
 | How is the plan made? | [docs/backlog/](docs/backlog/README.md) | `just next` names an item | Planning work. Any other idea becomes a 6xx item |
 | How is a scenario written? | [testdata/script/](testdata/script/README.md) | Step 2 of a card | A card changes how a scenario is written |
 | How is a card proven on the real `ncly`? | [verify-nicely](.agents/skills/verify-nicely/SKILL.md) | Step 6 of a card | A card changes or adds a feature |
-| How is a release made? | [release-nicely](.agents/skills/release-nicely/SKILL.md) | Pascal accepts a completed item or asks for a release | The release steps change |
+| How is a release made? | [release-nicely](.agents/skills/release-nicely/SKILL.md) | Your merge ships an item or fixes a released behavior | The release steps change |
 | Where does a new rule go? | The file whose question it answers | Before you write a rule | Never in this file |
 
 ## Work on a card
