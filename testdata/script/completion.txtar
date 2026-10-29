@@ -20,7 +20,7 @@ stdout '^#compdef ncly'
 ! stderr .
 
 # bash loads the script and registers the completion
-exec bash -c 'source <(ncly completion bash) && complete -p ncly'
+exec bash -c 'eval "$(ncly completion bash)" && complete -p ncly'
 stdout 'ncly'
 
 # The script asks ncly for values, and ncly lists its commands with their descriptions
@@ -332,7 +332,7 @@ lang =
 for f in /usr/share/bash-completion/bash_completion /opt/homebrew/share/bash-completion/bash_completion; do
   [[ -r $f ]] && source "$f" && break
 done
-source <(ncly completion bash)
+eval "$(ncly completion bash)"
 # compopt works only inside a completion that readline started, which a script cannot start.
 compopt() { :; }
 tab() {

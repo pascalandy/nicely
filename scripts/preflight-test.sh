@@ -39,7 +39,6 @@ fct_present() {
 	rm -rf "${root}/stubs" "${root}/second"
 	fct_stub stubs tmux 'echo "tmux 3.5a"'
 	fct_stub stubs python3 'echo 3.12.7'
-	fct_stub stubs bash "echo '5.2.37(1)-release'"
 	fct_stub stubs go 'exit 0'
 	fct_stub stubs codex 'echo "codex-cli 0.165.0"'
 	fct_stub stubs git "case \"\$*\" in *rev-parse*) echo ${head_commit} ;; esac"
@@ -107,7 +106,6 @@ fct_main() {
 	fct_run 0
 	fct_said "ok    tmux 3.5a"
 	fct_said "ok    python3 3.12.7"
-	fct_said "ok    bash 5.2.37(1)-release"
 	fct_said "ok    Go modules of tools are in the module cache"
 	fct_said "ok    codex-cli 0.165.0"
 	fct_said "built from HEAD ${head_commit}"
@@ -141,14 +139,6 @@ fct_main() {
 	fct_run 1
 	fct_said "FAIL  Go modules of tools are missing from the module cache"
 	fct_hint "FAIL  Go modules of tools"
-
-	test_case="bash 3.2 warns"
-	fct_present
-	fct_stub stubs bash "echo '3.2.57(1)-release'"
-	fct_run 0
-	fct_said "warn  bash 3.2.57(1)-release"
-	fct_said "see #296"
-	fct_hint "warn  bash 3.2.57"
 
 	test_case="an ncly hides another, and comes from another commit"
 	fct_present

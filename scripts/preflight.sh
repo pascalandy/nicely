@@ -71,18 +71,6 @@ check_python() {
 	fi
 }
 
-# check_bash asks the first bash of PATH, which runs the scripts of just check.
-check_bash() {
-	local version
-	version="$(bash -c 'printf "%s\n" "$BASH_VERSION"')"
-	if [[ "${version%%.*}" -ge 5 ]]; then
-		pass "bash $version at $(command -v bash)"
-	else
-		# Remove this warning once #296 is fixed.
-		warn "bash $version at $(command -v bash): under bash 3.2, the completion scenarios of just test fail, see #296" "$(install_hint bash)"
-	fi
-}
-
 # check_modules lists, without the network, the packages that just check builds in each Go
 # module. A package whose module the cache lacks fails, as on the first check of a clone.
 check_modules() {
@@ -176,7 +164,6 @@ check_fixture() {
 
 check_tmux
 check_python
-check_bash
 check_modules
 check_codex
 check_ncly
