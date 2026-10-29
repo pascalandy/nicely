@@ -50,7 +50,7 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
 - `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would, in scratch folders. It works on a copy of the fixture, or on an input that it makes
-- `just update <version>`: moves the repository to another Nicely version, the template first and then the SDK, on a clean Git tree
+- `just update <version>`: moves the repository to another Nicely version, the template first and then the SDK, on a clean Git tree. It keeps `go.mod` with your dependencies, and moves its Nicely pin with `go get`
 - `just contract`: prints the folder of the contract at the Nicely version that `go.mod` pins
 
 ## Done when

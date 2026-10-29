@@ -2,7 +2,7 @@
 
 This part says how the Git repository of an extension outside Nicely is laid out, created, and checked. The extension template creates it, as [D062](../decisions/D062-copier-template.md) decides. [Release and install](extensions.md#release-and-install) says how an author releases a version, and how a user installs and removes it.
 
-The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `README.md`, `vision.md`, `worker/`, and `AGENTS.md`:
+The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. The template writes `go.mod` only at creation, so the repository owns it with its own dependencies. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `README.md`, `vision.md`, `worker/`, and `AGENTS.md`:
 
 | File | Holds |
 |---|---|
@@ -33,7 +33,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last
 - `just uninstall` removes the install of the slug from that folder, the executable first. With nothing installed, it says so and exits 0
 - `just acceptance [fixture]` runs `acceptance.sh` as an agent would, with `--json` and `--no-input`. It installs the extension and the `ncly` of the pinned Nicely version into scratch XDG folders. It works on a copy of the fixture and checks that the fixture keeps its checksum. Without a fixture, it makes an input
-- `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree. Copier can leave a conflict as markers, a `.rej` file, or an unmerged index entry, and still exit 0. On a conflict, the recipe stops before `go get` and prints the commands that finish the update. It never resets, stashes, or commits
+- `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree. Copier leaves `go.mod`, which holds the dependencies of the author. Copier can leave a conflict as markers, a `.rej` file, or an unmerged index entry, and still exit 0. On a conflict, the recipe stops before `go get` and prints the commands that finish the update. Otherwise, `go get` moves the Nicely pin, and the recipe copies each `replace` of Nicely's `go.mod` and drops each one that Nicely dropped. It never resets, stashes, or commits
 - `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.

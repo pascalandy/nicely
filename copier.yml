@@ -14,6 +14,12 @@
 # Copier needs no --trust. scripts/template-test.sh renders it in just check.
 _subdirectory: template
 
+# go.mod holds the dependencies of the author, so the repository owns it after
+# its first render, as #347 U1 found. just update moves its Nicely pin with go
+# get, and copies the replace lines of Nicely's go.mod.
+_skip_if_exists:
+  - go.mod
+
 domain:
   type: str
   help: The domain of the extension, lowercase letters and digits that start with a letter, such as notes

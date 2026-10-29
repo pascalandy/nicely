@@ -4,9 +4,10 @@
 # just check, just install, just uninstall, and just acceptance into scratch
 # folders. A clone at a release tag installs with the commands of its
 # README.md. just update then carries a customized repository to the next
-# template revision and keeps the edits of its author. On a conflict, it stops
-# before any go command. The test runs on macOS and Linux, with the bash 3.2 of
-# macOS, and uses no network once uv holds the pinned Copier.
+# template revision, and keeps the edits and the dependencies of its author. On
+# a conflict, it stops before any go command. The test runs on macOS and Linux,
+# with the bash 3.2 of macOS, and uses no network once uv holds the pinned
+# Copier.
 set -Eeuo pipefail
 trap 'printf "%s: line %s failed: %s\n" "${BASH_SOURCE[0]##*/}" "${LINENO}" "${BASH_COMMAND}" >&2' ERR
 
@@ -152,6 +153,8 @@ fct_main() {
 	pin="$(sed -n 's/^copier := "\(.*\)"$/\1/p' "${root}/template/justfile")"
 	[[ "${pin}" == "uv tool run copier@"* ]] || fct_fail "template/justfile pins no Copier"
 	grep -qF -- "${pin}" "${root}/extensions/skill/nicely-extensions/SKILL.md" || fct_fail "the nicely-extensions skill does not give ${pin}, which template/justfile pins"
+	awk '$1 == "replace" && !($3 == "=>" && NF == 5) { exit 1 }' "${root}/go.mod" ||
+		fct_fail "write each replace of Nicely's go.mod as one line, replace X => Y V: just update of template/justfile copies only that form"
 	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")"
 	readonly NCLY_TEMPLATE_TEST_ROOT="${scratch}"
 	trap 'rm -rf "${NCLY_TEMPLATE_TEST_ROOT}"' EXIT

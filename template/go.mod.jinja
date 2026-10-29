@@ -11,6 +11,6 @@ require github.com/pascalandy/nicely {{ _copier_answers._commit }}
 // replaces it with a fork that holds the fix of
 // https://github.com/charmbracelet/lipgloss/pull/759. A replace never reaches
 // another module, so this repository repeats it, and lipgloss.txtar proves
-// that ncly and the extension get the fork. Remove this line once a release
-// of Lip Gloss ships the fix.
+// that ncly and the extension get the fork. just update copies this line from
+// Nicely's go.mod, and removes it once Nicely's go.mod drops it.
 replace charm.land/lipgloss/v2 => github.com/pascalandy/lipgloss/v2 v2.0.7-0.20261016054459-6d92d28af73f

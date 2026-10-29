@@ -131,7 +131,12 @@ update version:
         echo "  just check" >&2
         exit 1
     fi
+    # Copier leaves go.mod and the dependencies of the author, so go get moves its Nicely pin.
+    # A replace never reaches another module. go.mod takes each line replace X => Y V of Nicely's go.mod, and drops each one that Nicely dropped.
+    previous="$(go list -m -f '{{{{.GoMod}}' github.com/pascalandy/nicely)"
     go get "github.com/pascalandy/nicely@$version"
+    edits="$(awk 'FNR == 1 { file++ } $1 == "replace" && $3 == "=>" && NF == 5 { if (file == 1) dropped[$2] = 1; else { delete dropped[$2]; print "-replace=" $2 "=" $4 "@" $5 } } END { for (path in dropped) print "-dropreplace=" path }' "$previous" "$(go list -m -f '{{{{.GoMod}}' github.com/pascalandy/nicely)")"
+    if [[ -n "$edits" ]]; then go mod edit $edits; fi
     go mod tidy
     just check
 
