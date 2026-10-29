@@ -62,7 +62,8 @@ fct_run() {
 
 # fct_log <lines of log.all> requires the log to hold the first lines of log.all.
 fct_log() {
-	head -n "${1}" "${root}/log.all" >"${root}/log.expected"
+	# BSD head refuses -n 0, so awk takes the first lines.
+	awk -v n="${1}" 'NR <= n' "${root}/log.all" >"${root}/log.expected"
 	if ! cmp -s "${root}/log.expected" "${root}/log"; then
 		diff "${root}/log.expected" "${root}/log" >&2 || true
 		fct_fail "ran other checks"
