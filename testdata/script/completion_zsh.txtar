@@ -1,0 +1,14 @@
+# The help of zsh shows the script loaded after compinit, because the script calls compdef
+exec ncly completion zsh --help
+stdout '^  \$ autoload -Uz compinit && compinit && eval "\$\(ncly completion zsh\)"$'
+
+[!exec:zsh] skip 'needs zsh'
+
+# zsh registers the completion when the script loads after compinit
+exec zsh -f -c 'autoload -Uz compinit && compinit -u -d $WORK/zcompdump && eval "$(ncly completion zsh)" && print -r -- $_comps[ncly]'
+stdout '\A_ncly\n\z'
+! stderr .
+
+# Before compinit, the script finds no compdef
+exec zsh -f -c 'eval "$(ncly completion zsh)"'
+stderr 'command not found: compdef'
