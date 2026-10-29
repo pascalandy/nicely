@@ -31,6 +31,7 @@ The agent stops and calls Pascal only in these cases. Each UAT issue names its o
 
 - The OS or the keychain asks for a password.
 - A window takes the keyboard, and no action of the agent reaches it. `cua do click` cannot reach a SecurityAgent window, such as one about the keychain. Escape presses its Cancel button.
+- The OS asks for a permission, such as access to files on a removable volume. A desktop-session process that reads an external volume, such as a Go cache, opens this prompt.
 - A step stays blocked after one retry.
 
 Never press **Reset To Defaults** in a keychain window: it can replace the real keychain.
