@@ -86,7 +86,7 @@ auth status      List the keys that extensions need, and where each one comes fr
 bonjour          Say hello in French
 bonjour dire     Say it out loud
 completion       Print shell completion scripts
-completion bash  Print the completion script for bash
+completion bash  Print the completion script for bash, which needs bash-completion
 completion fish  Print the completion script for fish
 completion zsh   Print the completion script for zsh
 describe         Describe installed commands and their capabilities

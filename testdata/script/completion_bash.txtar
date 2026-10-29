@@ -1,0 +1,3 @@
+# The help of bash says that the script needs bash-completion, which the bash 3.2 of macOS lacks
+exec ncly completion bash --help
+stdout '\APrint the completion script for bash, which needs bash-completion\n'

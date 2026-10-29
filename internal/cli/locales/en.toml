@@ -22,8 +22,8 @@ description = "Help page: summary of `ncly completion zsh`. zsh is the name of a
 other = "Print the completion script for zsh"
 
 ["completion.bash_summary"]
-description = "Help page: summary of `ncly completion bash`. bash is the name of a shell and stays as is."
-other = "Print the completion script for bash"
+description = "Help page: summary of `ncly completion bash`. bash is the name of a shell, and bash-completion the package that the script needs: both stay as is."
+other = "Print the completion script for bash, which needs bash-completion"
 
 ["completion.fish_summary"]
 description = "Help page: summary of `ncly completion fish`. fish is the name of a shell and stays as is."
