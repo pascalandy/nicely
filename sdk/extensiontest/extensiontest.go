@@ -25,6 +25,10 @@
 //     repository cannot import either
 //   - The kit builds every program that it runs from Go source: the
 //     extension, ncly, and the fake child of the fake/ folder
+//   - The kit copies each program to where it runs, and never makes a hard
+//     link. macOS checks a new program at its first start through one name
+//     of its file. A scenario deletes its names when it ends. A check through
+//     such a name fails, and macOS kills the start with exit 137. See #371
 //   - Each failure names its file, the missing link, and its fix
 package extensiontest
 
@@ -124,7 +128,7 @@ func (k *kit) build(t *testing.T) {
 	}
 	host, err := goCommand(k.root, "tool", "-n", "ncly")
 	if err == nil {
-		err = link(host, filepath.Join(k.bin, "ncly"))
+		err = copyProgram(host, filepath.Join(k.bin, "ncly"))
 	}
 	if err != nil {
 		t.Fatalf("go.mod: go tool ncly fails: %v. Fix: run go get -tool github.com/pascalandy/nicely/cmd/ncly", err)
@@ -172,7 +176,7 @@ func (k *kit) setup(env *testscript.Env) error {
 	if err := extension.Export(k.ext, extensions); err != nil {
 		return err
 	}
-	return link(k.built, k.installed(env.Getenv))
+	return copyProgram(k.built, k.installed(env.Getenv))
 }
 
 // installed returns the path of ncly-<slug> in the extensions folder of
@@ -218,12 +222,8 @@ func goCommand(dir string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// link makes to the same executable as from: a hard link when the file
-// system allows one, a copy otherwise.
-func link(from, to string) error {
-	if os.Link(from, to) == nil {
-		return nil
-	}
+// copyProgram copies the program from to the new file to.
+func copyProgram(from, to string) error {
 	source, err := os.Open(from)
 	if err != nil {
 		return err

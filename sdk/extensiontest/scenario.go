@@ -137,7 +137,7 @@ func (k *kit) fakeChild(ts *testscript.TestScript, neg bool, args []string) {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		ts.Fatalf("fake: %v", err)
 	}
-	ts.Check(link(k.fake, path))
+	ts.Check(copyProgram(k.fake, path))
 }
 
 // checkAnswer checks the answer of a call of the extension against the
