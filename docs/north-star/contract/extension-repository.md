@@ -16,13 +16,14 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `.agents/skills/nicely-extension/` | The skill that takes a script from intake to a verified command, and reviews readiness when the user asks |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
+| `.github/workflows/check.yml` | The `just check` that GitHub runs for each push to `main` and each pull request |
 
 `spec.md` holds only what the manifest cannot say, so it never repeats a flag or a type. [Extension identity](extension-identity.md) defines which commands it owns.
 
 An agent creates the repository without prompts, with the Copier that the template pins. It passes a Nicely tag to `--vcs-ref`, then `--defaults`, and `--data` for `domain` and `module`, plus optional `name`.
 An empty Copier name input omits the manifest `name` and keeps the whole-domain layout.
 A named extension uses the slug for its executable, sidecars, skill, and config, as [Extension identity](extension-identity.md) defines. The bundled `nicely` skill shows the command. The agent then runs `go mod tidy` once, which writes `go.sum`, and commits the repository with Git. The root Go package keeps the domain as its name, including for named extensions.
-The template refuses `main` and each Go keyword as a domain, such as `type`. It also refuses any slug that equals `nicely`, because the bundled skill would hide that extension skill. The template has no tasks and no migrations, so Copier needs no `--trust`. It ships no GitHub workflow, since `just` and Lefthook run the checks.
+The template refuses `main` and each Go keyword as a domain, such as `type`. It also refuses any slug that equals `nicely`, because the bundled skill would hide that extension skill. The template has no tasks and no migrations, so Copier needs no `--trust`. A push can skip Lefthook, so its GitHub workflow runs `just check` again on a standard runner, free for a public repository.
 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has five recipes:
 

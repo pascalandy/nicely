@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# Sourced by template-test.sh to prove the recipes that a rendered repository
-# gives its user beside just install.
+# Sourced by template-test.sh to prove the files and the recipes that a
+# rendered repository adds to the extension.
+
+# fct_test_files checks the files of the rendered repository $1 that no
+# recipe runs.
+fct_test_files() {
+	local repo="${1}"
+	fct_has "${repo}/.github/workflows/check.yml" "        run: just check"
+}
 
 # fct_test_uninstall removes the install that just install made in the data
 # folder $3 for the rendered repository $1. ncly then finds no root $4 of the
