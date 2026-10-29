@@ -1,8 +1,8 @@
 # ncly agent run runs Codex once per run ID, and answers a repeated call from the record, as
 # Records and replay in spec.md defines. The stub codex appends each call to $TMPDIR/calls.log
 # and each task to $TMPDIR/task.log, saves the depth and any key that the task receives in
-# $TMPDIR/task.env, waits for $TMPDIR/release once it wrote $TMPDIR/started when CODEX_WAIT is
-# set, exits 1 when CODEX_FAIL is set, and otherwise writes $CODEX_ANSWER as its last message.
+# $TMPDIR/task.env, exits 1 when CODEX_FAIL is set, and otherwise writes $CODEX_ANSWER as its
+# last message.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 chmod 755 bin/codex
 onlyncly agent-external
@@ -142,21 +142,9 @@ exec /bin/sh -c '/usr/bin/sed -e "s/\"path\":\"agent run\"/\"path\":\"transcript
 exits 2 ncly agent run 'Review this branch' --tools --run-id t1 --json
 answer stderr USAGE_INVALID
 
-# Two calls under one ID start one task: while the first one holds the run, the second one,
-# and its dry run, exit 75 with TEMPORARY and start nothing
-env CODEX_WAIT=1
-exec ncly agent run 'Review this branch' --tools --run-id c1 --json &
-waitfile $TMPDIR/started
-exits 75 ncly agent run 'Review this branch' --tools --run-id c1 --json
-answer stderr TEMPORARY
-exits 75 ncly agent run 'Review this branch' --tools --run-id c1 --dry-run --json
-answer stderr TEMPORARY
-exec /bin/sh -c ': > "$TMPDIR/release"'
-wait
-stdout '"answer":"OK from Codex".*"run_id":"c1"'
-env CODEX_WAIT=
-grep -count=11 '(?m)^(--version|exec )' $TMPDIR/calls.log
-grep -count=5 '(?m)^exec ' $TMPDIR/task.log
+# In all, Codex got these calls
+grep -count=9 '(?m)^(--version|exec )' $TMPDIR/calls.log
+grep -count=4 '(?m)^exec ' $TMPDIR/task.log
 
 # A dry run with an ID that no record holds plans a new task, and creates neither the record
 # nor the lock file
@@ -189,10 +177,6 @@ fi
 echo "$*" >> "$TMPDIR/task.log"
 /usr/bin/env | /usr/bin/grep -E '^(NCLY_AGENT_DEPTH|[A-Z_]*API_KEY)=' > "$TMPDIR/task.env"
 /bin/cat > /dev/null
-if [ -n "$CODEX_WAIT" ]; then
-  : > "$TMPDIR/started"
-  while [ ! -e "$TMPDIR/release" ]; do /bin/sleep 0.05; done
-fi
 if [ -n "$CODEX_FAIL" ]; then
   exit 1
 fi

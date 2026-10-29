@@ -1,0 +1,40 @@
+# Two calls under one ID start one task, as Records and replay in spec.md defines. The stub codex
+# appends each call to $TMPDIR/calls.log and each task to $TMPDIR/task.log, writes
+# $TMPDIR/started, waits for $TMPDIR/release, then writes $CODEX_ANSWER as its last message.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+chmod 755 bin/codex
+onlyncly agent-external
+env CODEX_ANSWER='OK from Codex'
+
+# While the first call holds the run, the second one, and its dry run, exit 75 with TEMPORARY
+# and start nothing
+exec ncly agent run 'Review this branch' --tools --model m1 --run-id c1 --json &
+waitfile $TMPDIR/started
+exits 75 ncly agent run 'Review this branch' --tools --model m1 --run-id c1 --json
+answer stderr TEMPORARY
+exits 75 ncly agent run 'Review this branch' --tools --model m1 --run-id c1 --dry-run --json
+answer stderr TEMPORARY
+exec /bin/sh -c ': > "$TMPDIR/release"'
+wait
+stdout '"answer":"OK from Codex".*"run_id":"c1"'
+grep -count=2 '(?m)^(--version|exec )' $TMPDIR/calls.log
+grep -count=1 '(?m)^exec ' $TMPDIR/task.log
+
+-- bin/codex --
+#!/bin/sh
+echo "$*" >> "$TMPDIR/calls.log"
+if [ "$1" = --version ]; then
+  echo "codex-cli 0.163.0"
+  exit 0
+fi
+echo "$*" >> "$TMPDIR/task.log"
+/bin/cat > /dev/null
+: > "$TMPDIR/started"
+while [ ! -e "$TMPDIR/release" ]; do /bin/sleep 0.05; done
+out=
+while [ $# -gt 0 ]; do
+  if [ "$1" = --output-last-message ]; then out=$2; fi
+  shift
+done
+echo '{"type":"turn.completed"}'
+printf '%s' "$CODEX_ANSWER" > "$out"
