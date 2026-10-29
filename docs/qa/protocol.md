@@ -30,7 +30,7 @@ Make at least 3 runs, to measure discovery and determinism.
 | Discovery | A fresh agent finds the command without hints |
 | Preview | The dry run refuses what the run refuses, with the same code |
 | Result | A third-party tool accepts the output |
-| Fidelity | The output keeps the input properties that `qa.md` names |
+| Fidelity | The output keeps the input properties that `## Acceptance` in the `spec.md` of the extension names |
 | Errors | Invalid input gets its own code, the right exit code, and a message that names the file |
 | Integrity | The input and the original are unchanged, and no partial file remains |
 | Contract | With `--json`, a failure leaves stdout empty and the error object ends stderr, as [Output](../north-star/contract/output.md) says |

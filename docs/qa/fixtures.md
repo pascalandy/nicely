@@ -13,7 +13,7 @@ Fixtures stay outside the repository, since they are large and can be private. T
 
 ## Registry
 
-| Name | Folder | For | Properties to keep |
+| Name | Folder | For | Properties |
 |---|---|---|---|
 | `IMG_1642.MOV` | `nicely/video/` | video-convert | HEVC 10-bit 1920x1080, 30 fps, HDR HLG, rotation -180, 2 min 49 s, AAC audio |
 
