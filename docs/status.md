@@ -35,7 +35,7 @@ In a terminal, a call that lacks a required value opens a form that asks only fo
 
 ## agent
 
-From a checkout, `just install` puts `ncly` in `~/.local/bin/` and the `agent` extension in `~/.local/share/nicely/extensions/`. `ncly doctor agent` checks that Codex 0.162.1 or later is installed.
+From a checkout, `just install` puts `ncly` in `~/.local/bin/` and the `agent` extension in `~/.local/share/nicely/extensions/`. `just install agent` installs the extension alone. `ncly doctor agent` checks that Codex 0.162.1 or later is installed.
 
 `ncly agent run <task> --tools --model <id> --dry-run` checks one trusted task, the folder, and Codex. It also checks the model and effort from its flags or the `[agent]` table of the config. It then shows the invocation of Codex without starting it. It refuses with `AGENT_DEPTH_LIMIT` a call that already runs inside `[agent] max_depth` agents, 2 by default, as `NCLY_AGENT_DEPTH` counts them. It gives Codex that depth plus one.
 

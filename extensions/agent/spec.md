@@ -6,7 +6,7 @@
 
 ## Install
 
-`just install`, from a checkout, builds `ncly` into `~/.local/bin/`. It builds each first-party external extension, such as `ncly-agent`, into the `extensions` folder of Nicely's data folder, such as `~/.local/share/nicely/extensions/`. It writes the extension's manifest, catalogs, and skill beside it, as `ncly-agent.toml`, `ncly-agent.locales/`, and `ncly-agent.skill/`, where [Discovery](../../docs/north-star/contract/discovery.md) finds them. It honors an absolute `XDG_DATA_HOME`. It builds every file before it replaces an installed one, so a failed build keeps the previous install.
+`just install [ncly] [<extension>...]`, from a checkout, builds `ncly` and each first-party external extension, or only the named ones, into the folders that [Install](../../README.md#install) names. It writes the manifest, catalogs, and skill of `ncly-agent` beside it, as `ncly-agent.toml`, `ncly-agent.locales/`, and `ncly-agent.skill/`, where [Discovery](../../docs/north-star/contract/discovery.md) finds them. An unknown name fails before any write. A failed build keeps the previous install, because it builds every file before it replaces one.
 
 ## ncly agent
 

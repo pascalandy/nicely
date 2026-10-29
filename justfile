@@ -24,9 +24,10 @@ next:
 status:
     @go -C tools run ./cmd/plan status "{{ justfile_directory() }}"
 
-# Build ncly into ~/.local/bin and the first-party extensions into Nicely's data folder
-install:
-    @exec bash scripts/install.sh
+# Build ncly into $XDG_BIN_HOME or ~/.local/bin and the first-party extensions into Nicely's data folder, or only the given names, such as ncly agent
+[positional-arguments]
+install *names:
+    @exec bash scripts/install.sh "$@"
 
 # Run every check that signoff requires, up to the first failure, or each one with --keep-going
 [group('checks')]
@@ -80,6 +81,7 @@ test *args:
     bash scripts/check-test.sh
     bash scripts/preflight-test.sh
     bash scripts/scenario-test.sh
+    bash scripts/install-test.sh
 
 # Render the extension template and check the rendered repository
 [group('checks')]
