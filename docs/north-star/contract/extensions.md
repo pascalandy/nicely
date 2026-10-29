@@ -26,6 +26,11 @@ For an annotated tag, Git can warn that the tag `is not a commit!`, then note a 
 `ncly describe <root> --json` then confirms the install.
 The generated `README.md` gives these commands for its repository, and `AGENTS.md` gives the release steps.
 Taps, which would install without Go, wait in [COR-622](../../backlog/COR-622-taps-offer.md#later).
+A user removes an extension by moving its four files out of the extensions folder of [Discovery](discovery.md): `ncly-<slug>`, `ncly-<slug>.toml`, `ncly-<slug>.locales/`, and `ncly-<slug>.skill/`.
+`just uninstall` in a clone does it, the executable first.
+`ncly describe <root> --json` then answers `NOT_FOUND`, unless a folder of `PATH` holds another `ncly-<slug>`.
+Removal keeps the keys and the grants, so an install at the same path has its grants again.
+`ncly auth revoke <service> <slug>` takes a grant back.
 
 ## What a great extension does
 

@@ -47,6 +47,7 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
+- `just uninstall`: removes that install, and keeps its keys and grants
 - `just update <version>`: moves the repository to another Nicely version, the template first and then the SDK, on a clean Git tree
 - `just contract`: prints the folder of the contract at the Nicely version that `go.mod` pins
 

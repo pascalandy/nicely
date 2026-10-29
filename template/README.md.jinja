@@ -19,7 +19,7 @@ ncly describe {{ root }} --json
 
 For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
 `ncly describe` confirms the install, with `{{ root }}` and the source `extension`.
-`just install` replaces a previous install, and grants no key.
+`just install` replaces a previous install, and grants no key. `just uninstall` in the clone removes it.
 An agent reads `ncly skill view {{ slug }}` to learn when to use the extension.
 
 ## Let your agent find it
