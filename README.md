@@ -49,12 +49,12 @@ Further work lives in [docs hub](docs/backlog/XT-104-docs-hub.md), [Canadian Fre
 
 In a terminal, a form asks a human for each missing value. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
 
-## Agent instructions
+## Let your agent find it
 
 Add one line to your agent instructions, such as `AGENTS.md` or `CLAUDE.md`, to teach an agent to use Nicely:
 
 ```text
-Before using ncly, run ncly skill view nicely
+When asked to use nicely, run ncly skill view nicely
 ```
 
 The bundled `nicely` skill teaches only what this release can do: find a command with `ncly describe`, dry-run it when it writes or bills, check the machine with `ncly doctor` when a problem has no explanation, and act on the stable `code` of each error and on the exit code, which says who acts. When the hint names a command that runs as is, `next` holds that command as words. Each extension ships a skill for its own commands, which `ncly skill list` lists. It teaches [run IDs](docs/north-star/contract/run-ids.md) that the caller chooses, the inspection of a run with `ncly run list` and `ncly run view`, and the verified replay of a completed call. An uncertain paid result never permits an automatic second charge. [Explicit resume](docs/backlog/COR-621-resume-sdk.md#later) waits for a workflow that needs it. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules.
