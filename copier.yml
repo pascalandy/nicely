@@ -2,7 +2,7 @@
 # Nicely tag is a template version, and
 # docs/north-star/contract/extension-repository.md holds the layout that it renders.
 # An agent creates a repository without prompts, with the Copier that the
-# line copier := of template/justfile pins, as the nicely skill shows:
+# line copier := of template/justfile pins, as the nicely-extensions skill shows:
 #
 #   uv tool run copier@<pinned version> copy --vcs-ref VERSION --defaults \
 #     --data domain=notes --data module=github.com/me/ncly-notes \
