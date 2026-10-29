@@ -42,7 +42,7 @@ func Build(p, text *i18n.Printer, d contract.Command, run func(*cobra.Command, [
 			if c.HasSubCommands() {
 				return Fail(UnknownCommand(p, c, extra))
 			}
-			return Fail(HelpUsage(c, p.T("usage.unexpected_argument", map[string]any{"Arg": extra})))
+			return Fail(HelpUsage(c, p.T("usage.unexpected_argument", map[string]any{"Arg": i18n.Clip(extra)})))
 		},
 		RunE: run,
 		// Beyond its declared arguments, a command takes no word, so the
@@ -212,7 +212,7 @@ func AddGlobalFlags(root *cobra.Command, p *i18n.Printer) {
 
 // UnknownCommand reports a word that names no command under c.
 func UnknownCommand(p *i18n.Printer, c *cobra.Command, word string) contract.Problem {
-	return HelpUsage(c, p.T("usage.unknown_command", map[string]any{"Name": word}))
+	return HelpUsage(c, p.T("usage.unknown_command", map[string]any{"Name": i18n.Clip(word)}))
 }
 
 // HelpUsage reports USAGE_INVALID with the help of c as its hint.
@@ -260,13 +260,13 @@ func flagProblem(p *i18n.Printer, c *cobra.Command, err error) contract.Problem 
 		if notExist.GetSpecifiedShortnames() != "" {
 			flag = "-" + notExist.GetSpecifiedName()
 		}
-		problem.Message = p.T("usage.unknown_flag", map[string]any{"Flag": flag})
+		problem.Message = p.T("usage.unknown_flag", map[string]any{"Flag": i18n.Clip(flag)})
 	case errors.As(err, &required):
 		problem.Message = p.T("usage.flag_needs_value", map[string]any{"Flag": "--" + required.GetFlag().Name})
 	case errors.As(err, &invalid):
-		problem.Message = p.T("usage.invalid_flag_value", map[string]any{"Flag": "--" + invalid.GetFlag().Name, "Value": invalid.GetValue()})
+		problem.Message = p.T("usage.invalid_flag_value", map[string]any{"Flag": "--" + invalid.GetFlag().Name, "Value": i18n.Clip(invalid.GetValue())})
 	case errors.As(err, &syntax):
-		problem.Message = p.T("usage.invalid_flag_syntax", map[string]any{"Arg": syntax.GetSpecifiedFlag()})
+		problem.Message = p.T("usage.invalid_flag_syntax", map[string]any{"Arg": i18n.Clip(syntax.GetSpecifiedFlag())})
 	default:
 		problem.Message = p.T("usage.invalid")
 	}

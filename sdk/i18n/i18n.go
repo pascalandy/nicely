@@ -8,7 +8,8 @@
 // message that holds a number its plural forms. Send such a message through
 // N, Size, or Duration: T always shows its other form, and the test binary
 // of cmd/ncly refuses it. Format numbers, sizes, durations, and dates through
-// this package, and let translated text set its own width.
+// this package, and let translated text set its own width. Pass a value from
+// the command line through Clip before a message that refuses it quotes it.
 package i18n
 
 import (

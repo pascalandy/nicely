@@ -126,7 +126,7 @@ func addRun(p *i18n.Printer, root *cobra.Command) {
 		if value, _ := c.Flags().GetString("since"); c.Flags().Changed("since") {
 			since, err := time.Parse(time.RFC3339, value)
 			if err != nil {
-				return command.Fail(command.HelpUsage(c, p.T("run.list.since_invalid", map[string]any{"Value": value})))
+				return command.Fail(command.HelpUsage(c, p.T("run.list.since_invalid", map[string]any{"Value": i18n.Clip(value)})))
 			}
 			f.since = &since
 		}
@@ -134,7 +134,7 @@ func addRun(p *i18n.Printer, root *cobra.Command) {
 		if value, _ := c.Flags().GetString("limit"); c.Flags().Changed("limit") {
 			n, err := strconv.Atoi(value)
 			if err != nil || n < 1 {
-				return command.Fail(command.HelpUsage(c, p.T("run.list.limit_invalid", map[string]any{"Value": value})))
+				return command.Fail(command.HelpUsage(c, p.T("run.list.limit_invalid", map[string]any{"Value": i18n.Clip(value)})))
 			}
 			limit = n
 		}
@@ -151,7 +151,7 @@ func addRun(p *i18n.Printer, root *cobra.Command) {
 	group.AddCommand(command.Build(p, p, runViewCommand, func(c *cobra.Command, args []string) error {
 		id := args[0]
 		if !record.ValidID(id) {
-			return command.Fail(command.HelpUsage(c, p.T("run.view.id_invalid", map[string]any{"ID": id})))
+			return command.Fail(command.HelpUsage(c, p.T("run.view.id_invalid", map[string]any{"ID": i18n.Clip(id)})))
 		}
 		store := runs()
 		rec, keys, err := store.View(id)

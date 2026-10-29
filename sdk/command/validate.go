@@ -27,7 +27,7 @@ func invalid(p *i18n.Printer, c *cobra.Command, d contract.Command, args []strin
 		}
 		for _, v := range values {
 			if !accepts(a.ArgType(), a.Values, v) {
-				return usage(p.T("usage.invalid_argument_value", map[string]any{"Name": a.Name, "Value": v}))
+				return usage(p.T("usage.invalid_argument_value", map[string]any{"Name": a.Name, "Value": i18n.Clip(v)}))
 			}
 		}
 	}
@@ -38,7 +38,7 @@ func invalid(p *i18n.Printer, c *cobra.Command, d contract.Command, args []strin
 		}
 		for _, v := range FlagValues(flag) {
 			if !accepts(f.FlagType(), f.Values, v) {
-				return usage(p.T("usage.invalid_flag_value", map[string]any{"Flag": "--" + f.Name, "Value": v}))
+				return usage(p.T("usage.invalid_flag_value", map[string]any{"Flag": "--" + f.Name, "Value": i18n.Clip(v)}))
 			}
 		}
 	}

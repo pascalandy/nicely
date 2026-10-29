@@ -46,7 +46,7 @@ func addAuthLogout(p *i18n.Printer, g command.Globals, group *cobra.Command, ext
 		}
 		force, _ := c.Flags().GetBool(forceFlag.Name)
 		human := interactive(g, c.OutOrStdout())
-		data := map[string]any{"Service": service, "Variable": keyVariable(service)}
+		data := map[string]any{"Service": i18n.Clip(service), "Variable": keyVariable(service)}
 		ctx := runner.OnSignal()
 		k := keychain.New(b, human)
 		_, stored, err := k.Read(ctx, service)

@@ -25,6 +25,8 @@ Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON`
 | `hint` | The command or the action that fixes the problem. A command is never translated. |
 | `next` | Optional. The command that the hint names, as an array of words, such as `["ncly","skill","list"]`, present only when that command runs as is, with no value left to fill in. Agents run it instead of copying a command out of the hint, as [D053](../decisions/D053-next-command.md) decides. |
 
+A message that refuses a value from the command line, such as an unknown command or path, quotes only its first 80 characters, then `…`. A valid run ID, at most 64 characters, stays whole. The hint and `next` keep the whole value, so that they still run as is.
+
 `next` never changes what the exit code allows. After exit 78, a human runs it. It never names a repeat of a call that the exit code forbids repeating. A `next` command that writes or bills still gets its dry run first.
 
 A failure after partial work keeps the data keys that still apply, such as `output_dir`, next to `errors`. A recorded operation also returns `run_id`, including on failure. Large results are referenced by their artifact paths instead of copied into diagnostics or run listings.

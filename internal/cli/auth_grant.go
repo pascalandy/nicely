@@ -72,7 +72,7 @@ type grantDryRun struct {
 func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, extensions []*extension) {
 	c := command.Build(p, p, authGrantCommand, func(c *cobra.Command, args []string) error {
 		service, domain := args[0], args[1]
-		data := map[string]any{"Service": service, "Domain": domain}
+		data := map[string]any{"Service": i18n.Clip(service), "Domain": i18n.Clip(domain)}
 		if problem := badService(p, service); problem != nil {
 			return command.Fail(*problem)
 		}
@@ -157,7 +157,7 @@ func addAuthGrant(p *i18n.Printer, g command.Globals, group *cobra.Command, exte
 // An unknown slug or undeclared service gets NOT_FOUND.
 // An extension that cannot run gets EXTENSION_INVALID.
 func grantTarget(p *i18n.Printer, extensions []*extension, service, domain string) (*extension, *contract.Problem) {
-	data := map[string]any{"Service": service, "Domain": domain}
+	data := map[string]any{"Service": i18n.Clip(service), "Domain": i18n.Clip(domain)}
 	status := []string{"ncly", "auth", "status"}
 	i := slices.IndexFunc(extensions, func(e *extension) bool { return e.slug == domain })
 	switch {

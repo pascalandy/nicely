@@ -197,7 +197,7 @@ func noComponent(p *i18n.Printer, name string, components []component) contract.
 	}
 	return contract.Problem{
 		Code:    contract.NotFound,
-		Message: p.T("doctor.no_component", map[string]any{"Component": name, "Components": strings.Join(names, ", ")}),
+		Message: p.T("doctor.no_component", map[string]any{"Component": i18n.Clip(name), "Components": strings.Join(names, ", ")}),
 		Hint:    "ncly doctor",
 		Next:    []string{"ncly", "doctor"},
 	}
@@ -216,7 +216,7 @@ func parseTimeout(p *i18n.Printer, flag *pflag.Flag) (time.Duration, *contract.P
 		d, err = time.Duration(seconds)*time.Second, nil
 	}
 	if err != nil || d <= 0 {
-		problem := command.Usage(p.T("doctor.timeout_invalid", map[string]any{"Value": value}), "ncly doctor --timeout 30s")
+		problem := command.Usage(p.T("doctor.timeout_invalid", map[string]any{"Value": i18n.Clip(value)}), "ncly doctor --timeout 30s")
 		return 0, &problem
 	}
 	return d, nil

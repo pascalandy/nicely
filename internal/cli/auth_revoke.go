@@ -36,7 +36,7 @@ var authRevokeCommand = contract.Command{
 func addAuthRevoke(p *i18n.Printer, g command.Globals, group *cobra.Command, extensions []*extension) {
 	c := command.Build(p, p, authRevokeCommand, func(c *cobra.Command, args []string) error {
 		service, domain := args[0], args[1]
-		data := map[string]any{"Service": service, "Domain": domain}
+		data := map[string]any{"Service": i18n.Clip(service), "Domain": i18n.Clip(domain)}
 		if problem := badService(p, service); problem != nil {
 			return command.Fail(*problem)
 		}

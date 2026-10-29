@@ -87,7 +87,7 @@ func view(ctx context.Context, call extension.Call) contract.Outcome {
 	if i < 0 {
 		return contract.Outcome{Errors: []contract.Problem{{
 			Code:    contract.NotFound,
-			Message: p.T("skill.not_found", map[string]any{"Name": name}),
+			Message: p.T("skill.not_found", map[string]any{"Name": i18n.Clip(name)}),
 			Hint:    "ncly skill list",
 			Next:    []string{"ncly", "skill", "list"},
 		}}}

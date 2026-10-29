@@ -71,3 +71,22 @@ func (p *Printer) measure(id string, v float64, decimals int) string {
 // Date formats a day as ISO 8601, such as 2026-10-06, in every language:
 // it reads the same in English and is the Canadian French standard.
 func (p *Printer) Date(t time.Time) string { return t.Format(time.DateOnly) }
+
+// clipLimit is the number of characters that a message quotes of a value
+// that it refuses. A valid run ID, at most 64 characters, stays whole.
+const clipLimit = 80
+
+// Clip returns the first clipLimit characters of a value from the command
+// line, then …, when the value is longer. A message that refuses the value
+// quotes it so, as Output in contract.md asks. A hint or a next command keeps
+// the whole value.
+func Clip(value string) string {
+	count := 0
+	for i := range value {
+		if count == clipLimit {
+			return value[:i] + "…"
+		}
+		count++
+	}
+	return value
+}

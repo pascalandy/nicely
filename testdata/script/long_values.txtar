@@ -1,0 +1,60 @@
+# A message quotes only the first 80 characters of a long path, then …
+exits 2 sh -c 'ncly describe "$(printf "%5000s" "" | tr " " x)" --json'
+! stdout .
+answer stderr NOT_FOUND
+stderr '"message":"No command \\"x{80}…\\" is installed\."'
+stderr '"hint":"ncly describe","next":\["ncly","describe"\]'
+! stderr '.{500}'
+
+# A short path, or one of exactly 80 characters, stays whole
+exits 2 ncly describe nope --json
+stderr '"message":"No command \\"nope\\" is installed\."'
+env EIGHTY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+exits 2 ncly describe $EIGHTY --json
+stderr '"message":"No command \\"x{80}\\" is installed\."'
+
+# The limit counts characters, not bytes
+env LONG=éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé
+exits 2 ncly describe $LONG --json
+stderr '"message":"No command \\"é{80}…\\" is installed\."'
+
+# Usage errors quote a long word the same way
+env LONG=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+exits 2 ncly $LONG --json
+stderr '"message":"Unknown command \\"x{80}…\\"\."'
+exits 2 ncly doctor --$LONG --json
+stderr '"message":"Unknown flag --x{78}…\."'
+exits 2 ncly completion zsh $LONG --json
+stderr '"message":"Unexpected argument \\"x{80}…\\"\."'
+exits 2 ncly --verbose=$LONG --json
+stderr '"message":"The flag --verbose does not accept \\"x{80}…\\"\."'
+exits 2 ncly-hello pick Ada --mood calm --left --times $LONG --json
+stderr '"message":"The flag --times does not accept \\"x{80}…\\"\."'
+exits 2 ncly doctor ---$LONG --json
+stderr '"message":"The argument ---x{77}… is not a valid flag\."'
+
+# ncly's commands quote a long value that they refuse the same way
+exits 2 ncly doctor $LONG --json
+stderr '"message":"Doctor has no component x{80}…\. '
+exits 2 ncly doctor --timeout $LONG --json
+stderr '"message":"\\"x{80}…\\" is no duration'
+exits 2 ncly run list --since $LONG --json
+stderr '"message":"x{80}… is no RFC 3339 time'
+exits 2 ncly run list --limit $LONG --json
+stderr '"message":"The flag --limit does not accept \\"x{80}…\\"\.'
+exits 2 ncly run view $LONG --json
+stderr '"message":"x{80}… is no run ID'
+exits 2 ncly auth login $LONG- --json
+stderr '"message":"x{80}… is no service name'
+exits 2 ncly auth grant deepgram $LONG --json
+stderr '"message":"No installed extension has the slug x{80}…\."'
+exits 2 ncly auth logout $LONG --json
+stderr '"message":"The keychain holds no key for x{80}…\.'
+exits 2 ncly auth revoke deepgram $LONG --json
+stderr '"message":"No grant gives the key of deepgram to x{80}…\."'
+exits 2 ncly skill view $LONG --json
+stderr '"message":"No skill is named x{80}…\."'
+
+# A hint keeps the whole value, so that it still runs as is
+exits 2 ncly-hello pick $LONG --left --json
+stderr '"hint":"ncly hello pick x{100} --mood'

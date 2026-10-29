@@ -170,7 +170,7 @@ func badService(p *i18n.Printer, service string) *contract.Problem {
 	}
 	problem := contract.Problem{
 		Code:    contract.UsageInvalid,
-		Message: p.T("auth.invalid_service", map[string]any{"Service": service}),
+		Message: p.T("auth.invalid_service", map[string]any{"Service": i18n.Clip(service)}),
 		Hint:    "ncly auth status",
 		Next:    []string{"ncly", "auth", "status"},
 	}

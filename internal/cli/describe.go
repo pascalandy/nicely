@@ -169,7 +169,7 @@ func within(path, words []string) bool {
 func notFound(p *i18n.Printer, path string) contract.Problem {
 	return contract.Problem{
 		Code:    contract.NotFound,
-		Message: p.T("describe.not_found", map[string]any{"Path": path}),
+		Message: p.T("describe.not_found", map[string]any{"Path": i18n.Clip(path)}),
 		Hint:    "ncly describe",
 		Next:    []string{"ncly", "describe"},
 	}
