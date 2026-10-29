@@ -13,6 +13,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
 | Go files | One handler per command, `extension_test.go`, which calls the test kit, `cmd/ncly-<slug>/main.go`, which calls `extension.Main`, and `internal/export/`, which calls `extension.Export` for `just install` |
 | `testdata/script/` | The scenarios, which the [test kit](test-kit.md) runs |
+| `qa.md` | How a user accepts the extension: what its UAT adds to the UAT protocol of Nicely, with its error cases and its removal |
 | `acceptance.sh` | The run of the command on the real input of `## Acceptance`, which checks each property and each refusal that it lists |
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `.agents/skills/nicely-extension/` | The skill that takes a script from intake to a verified command, and reviews readiness when the user asks |
