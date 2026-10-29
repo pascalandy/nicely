@@ -28,7 +28,7 @@ var rootCommand = contract.Command{
 	Summary: "root.summary",
 	Examples: []string{
 		`ncly skill view nicely`,
-		`autoload -Uz compinit && compinit && eval "$(ncly completion zsh)"`,
+		`eval "$(ncly completion zsh)"`,
 		`ncly --version`,
 		`NCLY_JSON=1 ncly help`,
 	},
