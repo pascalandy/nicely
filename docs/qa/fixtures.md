@@ -23,5 +23,5 @@ Each run makes these in its work folder, never in the fixture folder:
 
 - A fake file: text with the expected extension
 - An empty file
-- A truncated copy of a real fixture
+- A truncated copy: the first 5,000,000 bytes of a real fixture
 - A path that does not exist

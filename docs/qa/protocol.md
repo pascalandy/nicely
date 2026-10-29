@@ -14,10 +14,10 @@ This file answers one question: how is a UAT of any extension run so that it can
 1. **Prerequisites.** Check that the fixture volume is mounted, its checksum is `OK`, and its lock holds. Otherwise stop.
 2. **New folder.** Create `ncly-uat-<issue>-<YYYYMMDD-HHMM>/` and copy the fixture into it. Check the checksum of the copy.
 3. **Discovery.** Give a fresh agent one sentence, without hints or `NCLY_*` variables. It must reach the command through `ncly skill view nicely` and `ncly describe`.
-4. **Dry run.** It comes before the run and passes on valid input.
+4. **Dry run.** When the command has a dry run, it comes before the run and passes on valid input.
 5. **Run.** Keep the `--json` answer, the exit code, stdout, and stderr.
 6. **Independent check.** Check the output with a third-party tool, never with the extension.
-7. **Error cases.** Run each invalid input of the extension's `qa.md`, as a dry run and as a run.
+7. **Error cases.** Run each invalid input of the extension's `qa.md`, as a run, and as a dry run when the command has one.
 8. **Original.** Check that its checksum and its lock are unchanged.
 9. **Evidence.** Keep it in `~/.cache/ncly-uat-<issue>-runs/<run>/`. Then move the work folder to the trash.
 
@@ -28,7 +28,7 @@ Make at least 3 runs, to measure discovery and determinism.
 | Family | Requires |
 |---|---|
 | Discovery | A fresh agent finds the command without hints |
-| Preview | The dry run refuses what the run refuses, with the same code |
+| Preview | The dry run gives the code of the run for each error case of `qa.md` |
 | Result | A third-party tool accepts the output |
 | Fidelity | The output keeps the input properties that the `spec.md` of the extension names in `## Acceptance` |
 | Errors | Invalid input gets its own code, the right exit code, and a message that names the file |

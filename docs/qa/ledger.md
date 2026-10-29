@@ -16,4 +16,4 @@ The Template column gives `_commit` from the `.copier-answers.yml` of the extens
 | #346 | The dry run accepted a fake file that the run refused with `RUNTIME` | #350 |
 | #346 | The wrapped program accepts a still image that the domain should refuse | #351 |
 | #346 | The skill does not say where the error goes with `--json` | #352 |
-| #346 | A fresh agent found Nicely only after its `AGENTS.md` named `ncly skill view nicely` | #346 |
+| #346 | A fresh agent found `ncly` only after a detour. One `AGENTS.md` line now names `ncly skill view nicely`, and a fresh agent must retest it | #346 |
