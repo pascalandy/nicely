@@ -161,7 +161,7 @@ check_fixture() {
 		fail "fixture folder $folder: a checksum differs from SHA256SUMS" "stop the UAT and tell Pascal: an original changed"
 		return
 	fi
-	while read -r _ file; do
+	while read -r _ file || [[ -n "$file" ]]; do
 		if ! locked "$folder/${file#\*}"; then
 			fail "fixture $folder/${file#\*} is not locked" "ask Pascal to lock it, as docs/qa/fixtures.md says"
 			return

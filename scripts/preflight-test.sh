@@ -176,6 +176,16 @@ fct_main() {
 	fct_said "FAIL  fixture ${root}/fixtures/unlocked/clip.mov is not locked"
 	fct_said "FAIL  fixture folder ${root}/fixtures/gone holds no SHA256SUMS"
 	fct_said "preflight: 3 missing, 0 warnings"
+
+	test_case="a SHA256SUMS without a final newline"
+	fct_fixture noeol
+	if [[ "$(uname -s)" == Darwin ]]; then chflags nouchg "${root}/fixtures/noeol/clip.mov" "${root}/fixtures/noeol/SHA256SUMS"; fi
+	chmod 644 "${root}/fixtures/noeol/clip.mov" "${root}/fixtures/noeol/SHA256SUMS"
+	printf '%s' "$(cat "${root}/fixtures/noeol/SHA256SUMS")" >"${root}/fixtures/noeol/SHA256SUMS"
+	chmod 444 "${root}/fixtures/noeol/SHA256SUMS"
+	if [[ "$(uname -s)" == Darwin ]]; then chflags uchg "${root}/fixtures/noeol/SHA256SUMS"; fi
+	fct_run 1 "${root}/fixtures/noeol"
+	fct_said "FAIL  fixture ${root}/fixtures/noeol/clip.mov is not locked"
 	printf 'just preflight exits 0 once every prerequisite is present, and 1 with a hint for each one that is missing\n'
 }
 
