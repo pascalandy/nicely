@@ -1,0 +1,70 @@
+# {{ slug }} QA
+
+This file answers one question: what does the UAT of `ncly {{ root }}` add to the [UAT protocol](https://github.com/pascalandy/nicely/blob/main/docs/qa/protocol.md) of Nicely? [spec.md](spec.md) holds the behavior.
+
+This file is a form filled for the example command, `ncly {{ example_command }}`.
+Fill in each section for your commands, then delete each line that starts with "Fill:".
+
+## Prerequisites
+
+- `just acceptance` passes on the fixture that [spec.md](spec.md#acceptance) names in `## Acceptance`, in a clone at the tested tag
+- `python3` 3.9 or later, which the example command runs
+- `wc`, for the independent check
+
+Fill: each program that the extension wraps, at the version that `vision.md` names as tested, and each tool of the independent check.
+
+## Prompt for the fresh agent
+
+"Use Nicely to count the lines of `<run>/notes.md`"
+
+Fill: one sentence that a user would say, without a command, a flag, or a hint.
+
+## Criteria
+
+| Family | Criterion |
+|---|---|
+| Result | `wc -c` gives the `size_bytes` of the answer |
+| Fidelity | The answer keeps the properties that [spec.md](spec.md#acceptance) names in `## Acceptance` |
+| Determinism | Runs on one host give the same answer |
+
+Fill: for each family, what a tool other than the extension measures on the output.
+
+## Error cases
+
+Run each case as a run, and as a dry run when the command has one. A dry run gives the code of the run for each case of the shared preparation. `exit-codes.md`, `error-codes.md`, and `wrap.md` of the contract fix these codes. `just contract` prints its folder.
+
+| Case | Expected |
+|---|---|
+| A missing path, or a symbolic link to one | `USAGE_INVALID`, exit 2, and the message names the path |
+| A symbolic link to the input | The answer for the file that the link names |
+| `--timeout soon`, which is no duration | `USAGE_INVALID`, exit 2 |
+| A `--timeout` that expires, such as `1s` on a long run | `RUNTIME`, exit 1, and the wrapped program stops |
+| Ctrl-C during the run | `INTERRUPTED`, exit 130 |
+| SIGTERM during the run | `TERMINATED`, exit 143 |
+| An existing output without `--force` | `CONFIRMATION_REQUIRED`, exit 2, and the output does not change |
+| A read-only output folder | `RUNTIME`, exit 1, before any effect |
+
+Fill: the code of each case that `spec.md` decides, such as a command that refuses a symbolic link. The contract fixes no code for a link.
+
+Fill: for a command that writes no file, such as the example, delete the two cases of the output.
+
+Fill: each input that the wrapped program accepts but that the domain refuses, with its code, as `## Acceptance` in [spec.md](spec.md#acceptance) lists it.
+
+## Uninstall
+
+1. After the last run, run `just uninstall` in the clone.
+2. Run `ncly describe {{ root }} --json`. It answers `NOT_FOUND`, exit 2.
+
+Removal keeps the keys and the grants, as [Release and install](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md#release-and-install) says.
+
+## Known limits
+
+None for the example command.
+
+Fill: each limit that a UAT found, with its issue.
+
+## Gotchas
+
+- Scratch XDG folders break a `just` that mise installed, because its shim then reads the config, state, and installs of mise there. Run `mise which just` before you move them, and call that path. `just acceptance` finds each program first.
+
+Fill: each surprise that the next tester must know, such as the time of one run on the test host.

@@ -10,8 +10,9 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 
 1. `vision.md`: the job of the extension, what it wraps, and what it refuses
 2. `spec.md`: what proves the success of each command, why each effect exists, and its failures
-3. `manifest.toml`: the machine facts of each command, which `ncly describe {{ root }} --json` shows once the extension is installed
-4. The contract, at the Nicely version that `go.mod` pins. `just contract` prints its folder. Start with "What a great extension does" in its `extensions.md`, and open only the parts that it links
+3. `qa.md`: how a user accepts the extension, with the UAT protocol of Nicely
+4. `manifest.toml`: the machine facts of each command, which `ncly describe {{ root }} --json` shows once the extension is installed
+5. The contract, at the Nicely version that `go.mod` pins. `just contract` prints its folder. Start with "What a great extension does" in its `extensions.md`, and open only the parts that it links
 
 ## Change a command
 
@@ -36,7 +37,7 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 {% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
 2. Replace the example declaration at `{{ example_command }}` and its examples in `manifest.toml`. Remove `[programs.python3]` when no command needs it
 3. Replace the `{{ slug }}.inspect` catalog entries for the new command. {% if not name %}Rewrite `{{ slug }}.summary` for the remaining commands. {% endif %}Keep every catalog ID under `{{ slug }}.`
-4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`. Replace it in `acceptance.sh`
+4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `qa.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`. Replace it in `acceptance.sh`
 5. Remove its handler entry from `extension.go`. When `worker/` is empty, also remove `//go:embed worker`, its variable, and `Resources`. Then run `gofmt -w .`
 
 ## Recipes

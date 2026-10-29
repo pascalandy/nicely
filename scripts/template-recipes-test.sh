@@ -3,10 +3,16 @@
 # rendered repository adds to the extension.
 
 # fct_test_files checks the files of the rendered repository $1 that no
-# recipe runs.
+# recipe runs, and that its forms keep no Jinja. The slug is $2.
 fct_test_files() {
-	local repo="${1}"
+	local repo="${1}" slug="${2}" file
 	fct_has "${repo}/.github/workflows/check.yml" "        run: just check"
+	fct_has "${repo}/qa.md" "# ${slug} QA"
+	for file in qa.md acceptance.sh; do
+		if grep -nE '\{\{|\}\}|\{%|%\}|\{#|#\}' "${repo}/${file}"; then
+			fct_fail "${file} keeps Jinja after the render"
+		fi
+	done
 }
 
 # fct_test_uninstall removes the install that just install made in the data
