@@ -53,16 +53,20 @@ check_tmux() {
 	fi
 }
 
+# check_python reads the minimum Python from the header of transcript.py, as dev-preferences.md
+# says.
 check_python() {
-	local version hint="run under uv: uv run --no-project --python 3.12 just preflight"
+	local version minimum hint
+	minimum="$(sed -n 's/^# requires-python = ">=\([0-9.]*\)"$/\1/p' "$root/extensions/transcript/python/transcript.py")"
+	hint="run under uv: uv run --no-project --python $minimum just preflight"
 	if ! command -v python3 >/dev/null; then
-		fail "python3 is missing: the transcript scenarios need Python 3.12 or later" "$hint"
+		fail "python3 is missing: the transcript scenarios need Python $minimum or later" "$hint"
 		return
 	fi
-	if version="$(python3 -c 'import sys; print("%d.%d.%d" % sys.version_info[:3]); sys.exit(sys.version_info < (3, 12))')"; then
+	if version="$(python3 -c 'import sys; print("%d.%d.%d" % sys.version_info[:3]); sys.exit(sys.version_info < tuple(map(int, sys.argv[1].split("."))))' "$minimum")"; then
 		pass "python3 $version at $(command -v python3)"
 	else
-		fail "python3 $version at $(command -v python3): Python 3.12 or later required" "$hint"
+		fail "python3 $version at $(command -v python3): Python $minimum or later required" "$hint"
 	fi
 }
 

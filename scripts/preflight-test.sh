@@ -52,7 +52,7 @@ fct_setup() {
 	root="$(mktemp -d "${TMPDIR:-/tmp}/ncly-preflight-test.XXXXXXXX")"
 	PREFLIGHT_TEST_ROOT="${root}"
 	mkdir -p "${root}/tools"
-	for tool in uname tr head stat sha256sum shasum; do
+	for tool in uname tr head sed stat sha256sum shasum; do
 		if path="$(command -v "${tool}")"; then ln -s "${path}" "${root}/tools/${tool}"; fi
 	done
 	fct_present
