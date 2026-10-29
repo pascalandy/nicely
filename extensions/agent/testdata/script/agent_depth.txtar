@@ -81,6 +81,14 @@ env NCLY_AGENT_DEPTH=two
 exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
 answer stderr USAGE_INVALID
 
+# The message quotes only the first 80 characters of a long value, then …, as Output in the contract asks
+env NCLY_AGENT_DEPTH=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --dry-run --json
+stderr '"message":"NCLY_AGENT_DEPTH holds x{80}…, which is no whole number from 0\."'
+env NCLY_AGENT_DEPTH=
+exits 2 ncly agent run 'Review this branch' --tools --model m1 --run-id YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY --dry-run --json
+stderr '"message":"Y{80}… is no run ID\."'
+
 # describe gives max_depth with its source, and the manifest declares the code
 env NCLY_AGENT_DEPTH=
 cp three.toml $CFG/config.toml

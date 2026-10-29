@@ -58,12 +58,12 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	}
 	limit, valid := command.Duration(value)
 	if !valid {
-		return refused(usage(p, "transcript.run.timeout_invalid", "transcript.run.timeout_invalid_hint", map[string]any{"Value": value}))
+		return refused(usage(p, "transcript.run.timeout_invalid", "transcript.run.timeout_invalid_hint", map[string]any{"Value": i18n.Clip(value)}))
 	}
 	ctx, cancel := context.WithTimeoutCause(ctx, limit, errTimedOut)
 	defer cancel()
 	if id, given := call.Flags["run-id"]; given && !record.ValidID(id) {
-		return refused(usage(p, "transcript.run.run_id_invalid", "transcript.run.run_id_invalid_hint", map[string]any{"ID": id}))
+		return refused(usage(p, "transcript.run.run_id_invalid", "transcript.run.run_id_invalid_hint", map[string]any{"ID": i18n.Clip(id)}))
 	}
 	job, problem := prepare(call)
 	if problem != nil {

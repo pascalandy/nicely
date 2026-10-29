@@ -23,6 +23,8 @@ exits 2 ncly transcript run youtube --url https://example.com/watch?v=EIEc43CxIv
 answer stderr USAGE_INVALID
 exits 2 ncly transcript run youtube --url https://www.youtube.com/@channel --output $OUT --dry-run --json
 answer stderr USAGE_INVALID
+exits 2 ncly transcript run youtube --url https://www.youtube.com/@channelxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx --output $OUT --dry-run --json
+stderr '"message":"https://www\.youtube\.com/@channelx{48}… is no URL of one YouTube video\."'
 ! exists $WORK/uv.log
 
 # A good plan answers the dry run. Go sends one request with every key of the protocol table.

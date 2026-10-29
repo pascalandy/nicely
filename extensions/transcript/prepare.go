@@ -58,7 +58,7 @@ func prepare(call extension.Call) (job, *contract.Problem) {
 	p := call.Printer
 	j := job{url: call.Flags["url"]}
 	if !isVideoURL(j.url) {
-		return j, usage(p, "transcript.run.url_invalid", "transcript.run.url_invalid_hint", map[string]any{"URL": j.url})
+		return j, usage(p, "transcript.run.url_invalid", "transcript.run.url_invalid_hint", map[string]any{"URL": i18n.Clip(j.url)})
 	}
 	home, _ := os.UserHomeDir()
 	j.cache = config.Locate(home, os.LookupEnv).Cache

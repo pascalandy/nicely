@@ -27,7 +27,7 @@ func childDepth(p *i18n.Printer, s settings) (int, *contract.Problem) {
 	if value != "" {
 		var err error
 		if depth, err = strconv.Atoi(value); err != nil || depth < 0 {
-			return 0, usage(p, "agent.run.depth_invalid", "agent.run.depth_invalid_hint", map[string]any{"Value": value})
+			return 0, usage(p, "agent.run.depth_invalid", "agent.run.depth_invalid_hint", map[string]any{"Value": i18n.Clip(value)})
 		}
 	}
 	if int64(depth) >= s.maxDepth {

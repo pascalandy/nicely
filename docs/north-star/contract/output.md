@@ -25,7 +25,7 @@ Parser failures use this envelope too. Machine mode is resolved from `NCLY_JSON`
 | `hint` | The command or the action that fixes the problem. A command is never translated. |
 | `next` | Optional. The command that the hint names, as an array of words, such as `["ncly","skill","list"]`, present only when that command runs as is, with no value left to fill in. Agents run it instead of copying a command out of the hint, as [D053](../decisions/D053-next-command.md) decides. |
 
-A message that refuses a value from the command line or a variable, such as an unknown command, quotes at most 80 characters of it. A longer value ends with `…` after its first 80 characters. A valid run ID, at most 64 characters, stays whole. The hint and `next` keep the whole value, so that they still run as is.
+A message that refuses a value from the command line or a variable, such as an unknown command, quotes at most 80 characters of it. A longer value ends with `…` after its first 80 characters. A valid run ID, at most 64 characters, stays whole, and so does the path of a file or a folder, which the message names. The hint and `next` keep the whole value, so that they still run as is.
 
 `next` never changes what the exit code allows. After exit 78, a human runs it. It never names a repeat of a call that the exit code forbids repeating. A `next` command that writes or bills still gets its dry run first.
 

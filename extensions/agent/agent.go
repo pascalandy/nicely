@@ -98,7 +98,7 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	}
 	limit, valid := command.Duration(value)
 	if !valid {
-		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.timeout_invalid", "agent.run.timeout_invalid_hint", map[string]any{"Value": value})}}
+		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.timeout_invalid", "agent.run.timeout_invalid_hint", map[string]any{"Value": i18n.Clip(value)})}}
 	}
 	// signals ends with Ctrl-C or SIGTERM alone, so it still tells a signal
 	// once the timeout has ended ctx.
@@ -112,7 +112,7 @@ func run(ctx context.Context, call extension.Call) contract.Outcome {
 	t.timeout = limit
 	id, given := call.Flags["run-id"]
 	if given && !record.ValidID(id) {
-		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.run_id_invalid", "agent.run.run_id_invalid_hint", map[string]any{"ID": id})}}
+		return contract.Outcome{Errors: []contract.Problem{*usage(p, "agent.run.run_id_invalid", "agent.run.run_id_invalid_hint", map[string]any{"ID": i18n.Clip(id)})}}
 	}
 	if call.Flags["dry-run"] != "true" {
 		return execute(ctx, signals, call, t, id)
