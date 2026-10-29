@@ -8,7 +8,7 @@ state: "Shipped by M04, bundled. Later: skill pack, index, run, MCP server, key 
 
 ## Demo
 
-`ncly skill list` and `ncly skill view` expose skills, including the bundled `nicely` skill.
+`ncly skill list` and `ncly skill view` expose skills, including the bundled `nicely` skill and its topic skills.
 
 ## Later
 

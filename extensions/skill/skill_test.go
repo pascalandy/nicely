@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"io/fs"
 	"os"
 	"slices"
 	"strings"
@@ -15,10 +16,26 @@ func TestTheExtensionMatchesItsManifest(t *testing.T) {
 	}
 }
 
-// The nicely skill quotes the install rule of "Release and install" in the
-// contract, which stays its one source. A change of the rule fails this test
-// until the quote follows it.
-func TestTheNicelySkillQuotesTheInstallRule(t *testing.T) {
+// Each bundled skill sits in a folder named after it, so gather keeps one
+// skill per name. The bundled skills are the topics of spec.md.
+func TestTheBundledSkillsAreNamedAfterTheirFolders(t *testing.T) {
+	var names []string
+	for _, k := range bundledSkills() {
+		names = append(names, k.Name)
+		if _, err := fs.Stat(bundled, k.Name+"/SKILL.md"); err != nil {
+			t.Errorf("the bundled skill %s is not in the folder %s", k.Name, k.Name)
+		}
+	}
+	want := []string{"nicely", "nicely-auth", "nicely-extensions", "nicely-runs"}
+	if !slices.Equal(names, want) {
+		t.Errorf("the bundled skills are %v, want %v", names, want)
+	}
+}
+
+// The nicely-extensions skill quotes the install rule of "Release and
+// install" in the contract, which stays its one source. A change of the rule
+// fails this test until the quote follows it.
+func TestTheNicelyExtensionsSkillQuotesTheInstallRule(t *testing.T) {
 	contract, err := os.ReadFile("../../docs/north-star/contract/extensions.md")
 	if err != nil {
 		t.Fatal(err)
@@ -29,16 +46,20 @@ func TestTheNicelySkillQuotesTheInstallRule(t *testing.T) {
 	}
 	section, _, _ = strings.Cut(section, "\n#")
 	rule := strings.Split(section, "\n")
+	skill, err := fs.ReadFile(bundled, "nicely-extensions/SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
 	var quotes []string
-	for line := range strings.SplitSeq(string(nicely), "\n") {
+	for line := range strings.SplitSeq(string(skill), "\n") {
 		if quote, ok := strings.CutPrefix(line, "> "); ok {
 			quotes = append(quotes, quote)
 			if !slices.Contains(rule, quote) {
-				t.Errorf("the nicely skill quotes %q, which Release and install in extensions.md lacks", quote)
+				t.Errorf("the nicely-extensions skill quotes %q, which Release and install in extensions.md lacks", quote)
 			}
 		}
 	}
 	if !slices.ContainsFunc(quotes, func(quote string) bool { return strings.HasPrefix(quote, "A user installs a fixed version with ") }) {
-		t.Error("the nicely skill does not quote the install rule of Release and install in extensions.md")
+		t.Error("the nicely-extensions skill does not quote the install rule of Release and install in extensions.md")
 	}
 }

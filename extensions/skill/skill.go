@@ -30,12 +30,6 @@ var manifest []byte
 //go:embed locales/*.toml
 var locales embed.FS
 
-// nicely is the skill that teaches an agent to use Nicely: the data of the
-// bundled source, not a skill of the skill domain, which ships none.
-//
-//go:embed nicely/SKILL.md
-var nicely []byte
-
 // Extension is the skill extension, which cmd/ncly bundles.
 var Extension = extension.Extension{
 	Manifest: manifest,
@@ -133,8 +127,8 @@ func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, 
 	for _, folder := range folders {
 		s.folder(folder, file)
 	}
-	if fm, err := extension.ParseSkill(nicely); err == nil {
-		s.keep(Skill{Name: fm.Name, Description: fm.Description, Source: sourceBundled, content: string(nicely)})
+	for _, k := range bundledSkills() {
+		s.keep(k)
 	}
 	for _, skill := range installed {
 		s.add(skill.folder, sourceExtension)
@@ -190,8 +184,7 @@ func configured(p *i18n.Printer, home string, paths config.Paths) ([]string, str
 
 // scan collects the skills of the sources in order, with their warnings.
 // owner maps each name to the path of the skill that took it first, nil
-// for the bundled one, and seen holds each folder already reached, links
-// resolved.
+// for a bundled one. seen holds each folder already reached, links resolved.
 type scan struct {
 	p        *i18n.Printer
 	seen     map[string]bool

@@ -9,10 +9,10 @@ mkdir $CFG
 # ncly skill status reports SKILL_NO_SOURCE instead
 exec ncly skill list --json
 answer stdout ok
-stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]\}$'
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth",[^}]*"source":"bundled"\},\{"name":"nicely-extensions",[^}]*"source":"bundled"\},\{"name":"nicely-runs",[^}]*"source":"bundled"\}\]\}$'
 ! stderr .
 exec ncly skill list
-stdout '^nicely:  Use before running any ncly command\.$'
+stdout '^nicely:  +Use before running any ncly command\.$'
 ! stderr .
 
 # Each folder of paths gives its skills, sorted by name byte by byte, whatever the folder
@@ -24,7 +24,7 @@ cmp stdout list.txt
 ! stderr .
 exec ncly skill list --json
 answer stdout ok
-stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"Zulu","description":"Use for upper case\.","path":"'${WORK@R}'/more/zulu","source":"config"\},\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/first","source":"config"\},\{"name":"beta","description":"Use for beta: with a colon\.","path":"'${WORK@R}'/more/beta","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]\}$'
+stdout '^\{"ok":true,"contract_version":1,"skills":\[\{"name":"Zulu","description":"Use for upper case\.","path":"'${WORK@R}'/more/zulu","source":"config"\},\{"name":"alpha","description":"Use for alpha\.","path":"'${WORK@R}'/skills/first","source":"config"\},\{"name":"beta","description":"Use for beta: with a colon\.","path":"'${WORK@R}'/more/beta","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth",[^}]*"source":"bundled"\},\{"name":"nicely-extensions",[^}]*"source":"bundled"\},\{"name":"nicely-runs",[^}]*"source":"bundled"\}\]\}$'
 ! stderr .
 unchanged before
 cp stdout list.json
@@ -59,7 +59,7 @@ pseudo stderr
 cp nopaths.toml $CFG/config.toml
 exec ncly skill list --json
 answer stdout ok
-stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]\}$'
+stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth",[^}]*"source":"bundled"\},\{"name":"nicely-extensions",[^}]*"source":"bundled"\},\{"name":"nicely-runs",[^}]*"source":"bundled"\}\]\}$'
 ! stdout '"warnings"'
 cp emptyskill.toml $CFG/config.toml
 exec ncly skill list --json
@@ -167,10 +167,13 @@ other = [1.5, nan]
 -- nofolder.txt --
 Not a folder.
 -- list.txt --
-Zulu:    Use for upper case.
-alpha:   Use for alpha.
-beta:    Use for beta: with a colon.
-nicely:  Use before running any ncly command.
+Zulu:               Use for upper case.
+alpha:              Use for alpha.
+beta:               Use for beta: with a colon.
+nicely:             Use before running any ncly command.
+nicely-auth:        Use when an ncly command needs a key, or answers AUTH_MISSING, KEYRING_UNAVAILABLE, KEY_NOT_GRANTED, or TERMINAL_REQUIRED.
+nicely-extensions:  Use to install, build, or remove an ncly extension.
+nicely-runs:        Use before a recorded ncly command, or after the answer of one is lost.
 -- skills/first/SKILL.md --
 ---
 name: alpha

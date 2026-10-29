@@ -57,7 +57,7 @@ Add one line to your agent instructions, such as `AGENTS.md` or `CLAUDE.md`, to 
 When asked to use nicely, run ncly skill view nicely
 ```
 
-The bundled `nicely` skill teaches only what this release can do: find a command with `ncly describe`, dry-run it when it writes or bills, check the machine with `ncly doctor` when a problem has no explanation, and act on the stable `code` of each error and on the exit code, which says who acts. When the hint names a command that runs as is, `next` holds that command as words. Each extension ships a skill for its own commands, which `ncly skill list` lists. It teaches [run IDs](docs/north-star/contract/run-ids.md) that the caller chooses, the inspection of a run with `ncly run list` and `ncly run view`, and the verified replay of a completed call. An uncertain paid result never permits an automatic second charge. [Explicit resume](docs/backlog/COR-621-resume-sdk.md#later) waits for a workflow that needs it. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules.
+The bundled `nicely` skill teaches only what this release can do: find a command with `ncly describe`, dry-run it when it writes or bills, check the machine with `ncly doctor` when a problem has no explanation, and act on the stable `code` of each error and on the exit code, which says who acts. When the hint names a command that runs as is, `next` holds that command as words. An agent reads it before every call, so it stays short and names three bundled skills to read when needed. `nicely-auth` covers keys and grants, which stay with the human. `nicely-runs` teaches [run IDs](docs/north-star/contract/run-ids.md) that the caller chooses, the inspection of a run with `ncly run list` and `ncly run view`, and the verified replay of a completed call. An uncertain paid result never permits an automatic second charge. [Explicit resume](docs/backlog/COR-621-resume-sdk.md#later) waits for a workflow that needs it. `nicely-extensions` teaches how to install, build, and remove an extension. Each extension ships a skill for its own commands, which `ncly skill list` lists. The [agent contract](docs/north-star/contract.md) defines the fields and recovery rules.
 
 ## Install
 
@@ -83,7 +83,7 @@ For a manual setup, `ncly completion <shell> --help` shows the commands. In bash
 
 From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `~/.local/bin/` and the first-party extensions, such as `agent` and `transcript`, into `~/.local/share/nicely/extensions/`, or into `$XDG_DATA_HOME/nicely/extensions/` when `XDG_DATA_HOME` holds an absolute path. The `agent` extension uses the login of an installed Codex, which `ncly doctor agent` checks. The `transcript` extension needs `uv` and Python 3.12 or later, which `ncly doctor transcript` checks, with the cookies of Arc when the config selects it.
 
-An external extension, such as `ncly-video-convert`, installs from its repository at a release tag, with Go and `just`. [Release and install](docs/north-star/contract/extensions.md#release-and-install) gives the commands, and `ncly skill view nicely` gives them to an agent.
+An external extension, such as `ncly-video-convert`, installs from its repository at a release tag, with Go and `just`. [Release and install](docs/north-star/contract/extensions.md#release-and-install) gives the commands, and `ncly skill view nicely-extensions` gives them to an agent, with the steps that remove an extension.
 
 ## Privacy
 

@@ -5,50 +5,22 @@ description: Use before running any ncly command.
 
 # Nicely
 
-`ncly` is a command line that agents operate as well as humans. Follow these rules on every call.
+Follow these rules on every `ncly` call.
 
-- Set `NCLY_NO_INPUT=1` and `NCLY_JSON=1` for every ncly call
+- Set `NCLY_NO_INPUT=1` and `NCLY_JSON=1`
 - List commands with `ncly describe --json`, then read one with `ncly describe PATH --json`: its flags, effects, modes, and result keys
 - Run a command that writes or bills with `--dry-run` first. The dry run checks what that call needs
-- Check the whole machine with `ncly doctor --json` during setup, or when a dry run reports a problem you cannot explain
-- Select one extension with its slug, such as `ncly doctor video-convert --json`. Auth grant and revoke use the same slug
-- List the keys that installed extensions need, and where each one comes from, with `ncly auth status --json`. Its findings are under `services`, and it never prints a key
-- On `AUTH_MISSING`, `KEYRING_UNAVAILABLE`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human, who stores the key with `ncly auth login` and grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`. Never type or pipe a key yourself, and never grant one
 - Branch on the exit code and `errors[].code`, never on `message` or `hint`. `next` holds the command to run as words
 - Exit 2: fix the call. Exit 78: relay `hint` and `next` to the human. Exit 1: inspect before anything else. Only exit 75 permits repeating the same call
-- `ncly doctor` and each status command marked `doctor` list their findings under `checks`, on stdout. On exit 78, relay the `hint` and `next` of each failed check to the human. Another report command lists its findings under the key that `ncly describe` gives it. `errors` holds only a failure of the command itself
 - An item error describes its item and never permits a retry
-- Give a recorded command your own new `--run-id`, such as `review-1`, and keep it. After a lost answer, inspect that run with `ncly run view ID --json`. The same call with the same ID answers from its record without new work only when `run.status` is `completed`. For any other status, the same call can start paid work again or refuse: dry-run it first, and follow the skill of its extension
-- Without an ID, list the runs of the command with `ncly run list --path 'PATH' --key KEY --json`, newest first. Check `more`, confirm a candidate with `ncly run view ID --json`, its inputs and every item, and report several matches to the human instead of picking the newest one. A run under `unreadable` may still have billed
-- `ncly run view` exits 0 for a run that failed: read `run.status`. While `run.active` is true, a process still holds the run: never start the same work beside it
+- Check the whole machine with `ncly doctor --json` during setup, or when a dry run reports a problem you cannot explain
+- Select one extension with its slug, such as `ncly doctor video-convert --json`
+- Doctor and each status command marked `doctor` list findings under `checks`, on stdout. On exit 78, relay the `hint` and `next` of each failed check. Another report uses the key that describe gives it. `errors` holds only a failure of the command
 - Give the shell a timeout longer than the command's `--timeout` plus 15 seconds of cleanup
-- Each extension ships a skill named after its slug: `ncly skill view SLUG`. Join its root's words from describe with `-`, such as `video-convert`. The skill domain has none: this skill covers it and core. `ncly skill list` lists every skill, and `ncly skill status --json` checks their folders, names, and files
+- Each extension ships a skill named after its slug, its root's words joined with `-`: `ncly skill view video-convert`. `ncly skill list` lists every skill, and `ncly skill status --json` checks them. The skill domain has none: this skill covers it
 
-## Install an extension
+## Read the skill of a topic
 
-[Release and install](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md#release-and-install) holds the install rule:
-
-> A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`.
-> For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
-> `ncly describe <root> --json` then confirms the install.
-
-For the repository `github.com/OWNER/REPO` at the tag TAG, such as `v0.1.0`:
-
-```sh
-git clone --branch TAG https://github.com/OWNER/REPO
-cd REPO && just install
-```
-
-`git ls-remote --tags https://github.com/OWNER/REPO` lists the tags. Then run `ncly describe ROOT --json`, such as `ncly describe video convert --json`, and `ncly skill view SLUG`. The install grants no key.
-
-## Build an extension
-
-Create the repository of a new extension from the extension template at VERSION. Replace VERSION with the release tag that `ncly --version` prints. Then follow the `AGENTS.md` of the new repository. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
-
-```sh
-uv tool run copier@9.19.1 copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME
-```
-
-The domain names a family of work, such as `video`, and the optional name identifies one job, such as `convert`.
-Neither names the wrapped tool.
-For a whole-domain extension, omit `--data name=NAME` and both `-NAME` suffixes.
+- Before a command whose describe lists `requires.keys`, or on `AUTH_MISSING`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, read `ncly skill view nicely-auth`. Never type, pipe, or grant a key
+- Before a command whose describe sets `modes.recorded`, or after a lost answer, read `ncly skill view nicely-runs`
+- To install, build, or remove an extension, read `ncly skill view nicely-extensions`

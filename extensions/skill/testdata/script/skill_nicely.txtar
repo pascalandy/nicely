@@ -1,45 +1,34 @@
-# The skill extension bundles the nicely skill, which teaches an agent to use Nicely. list
-# shows it with the source bundled and a null path, view prints it without a folder line,
-# and the first example of ncly --help names it.
+# The skill extension bundles the nicely skill, which teaches an agent to use Nicely, and one
+# skill per topic that it names: auth, runs, and extensions. list shows each with the source
+# bundled and a null path, view prints it without a folder line, and the first example of
+# ncly --help names nicely.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env CFG=$WORK/.config/nicely
 mkdir $CFG
 
 exec ncly skill list --json
 answer stdout ok
-stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]'
+stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth","description":"Use when an ncly command needs a key, or answers AUTH_MISSING, KEYRING_UNAVAILABLE, KEY_NOT_GRANTED, or TERMINAL_REQUIRED\.","path":null,"source":"bundled"\},\{"name":"nicely-extensions","description":"Use to install, build, or remove an ncly extension\.","path":null,"source":"bundled"\},\{"name":"nicely-runs","description":"Use before a recorded ncly command, or after the answer of one is lost\.","path":null,"source":"bundled"\}\]'
 exec ncly skill view nicely
 ! stdout 'skill-dir'
 stdout '\A---\nname: nicely\n'
 cp stdout nicely.md
-grep 'named after its slug: `ncly skill view SLUG`' nicely.md
+grep 'named after its slug, its root''s words joined with `-`: `ncly skill view video-convert`' nicely.md
+grep 'such as `ncly doctor video-convert --json`' nicely.md
+! grep 'video-subtitle' nicely.md
 
+# nicely names each topic skill with the moment to read it, and never lets an agent type,
+# pipe, or grant a key
+grep 'or on `AUTH_MISSING`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, read `ncly skill view nicely-auth`' nicely.md
+grep 'or after a lost answer, read `ncly skill view nicely-runs`' nicely.md
+grep 'remove an extension, read `ncly skill view nicely-extensions`' nicely.md
+grep 'Never type, pipe, or grant a key' nicely.md
 # The skill teaches doctor, and that a report of doctor or of a status command lists its
 # findings under checks, while errors stays the path for a failure of the command itself
 grep '`ncly doctor --json`' nicely.md
 grep 'under `checks`' nicely.md
-grep 'Another report command' nicely.md
+grep 'Another report' nicely.md
 grep '`ncly skill status --json`' nicely.md
-# The skill teaches auth status, whose report lists its findings under services
-grep '`ncly auth status --json`' nicely.md
-grep 'under `services`' nicely.md
-# On a missing key or a missing grant, the agent relays the hint to the human, who logs in,
-# grants the key, or takes a grant back, and never types, pipes, or grants a key itself
-grep '`AUTH_MISSING`, `KEYRING_UNAVAILABLE`, `KEY_NOT_GRANTED`, or `TERMINAL_REQUIRED`, relay `hint` and `next` to the human' nicely.md
-grep 'grants it to an extension with `ncly auth grant`, or takes a grant back with `ncly auth revoke`' nicely.md
-grep 'Never type or pipe a key yourself, and never grant one' nicely.md
-# The skill gives the command that creates an extension repository from the template, with
-# the Copier that the template pins, and links Extensions
-grep '^uv tool run copier@[0-9.]+ copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github\.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME$' nicely.md
-grep '\[Extensions\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md\)' nicely.md
-# The skill tells how to install an extension at a release tag. It quotes the install
-# rule of Release and install, gives its commands, and confirms the install with describe
-grep '^## Install an extension$' nicely.md
-grep '\[Release and install\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md#release-and-install\)' nicely.md
-grep '^> A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`\.$' nicely.md
-grep '^git clone --branch TAG https://github\.com/OWNER/REPO$' nicely.md
-grep '^cd REPO && just install$' nicely.md
-grep 'Then run `ncly describe ROOT --json`' nicely.md
 exec ncly skill view nicely --json
 answer stdout ok
 stdout '"name":"nicely","path":null,"source":"bundled"\}$'
@@ -51,42 +40,51 @@ exec ncly --help
 stdout '^EXAMPLES\n  \$ ncly skill view nicely\n'
 
 # The skill names only the commands that ncly describe gives, each in a code span, and the
-# codes of the registry, in at most 60 lines. codes lists the registry, because no command
-# of ncly lists its codes
+# codes of the registry, in at most 60 lines and 2,000 bytes, because an agent reads it
+# before every call. codes lists the registry, because no command of ncly lists its codes
 exec ncly describe --json
 cp stdout describe.json
 exec codes
 cp stdout codes.txt
 stdout '^NOT_FOUND$'
 stdout '^CONFIG_DEFAULTS_USED$'
-mentions nicely.md describe.json codes.txt
+mentions -bytes 2000 nicely.md describe.json codes.txt
 
-# The check fails for a command or a verb that this ncly lacks, a code that it lacks, and a
-# 61st line, while an argument after a command, such as a skill name, and prose such as
-# every ncly call are no command
+# The check fails for a command or a verb that this ncly lacks, a code that it lacks, a
+# 61st line, and a byte past -bytes, while an argument after a command, such as a skill
+# name, and prose such as every ncly call are no command
 ! mentions command.md describe.json codes.txt
 ! mentions verb.md describe.json codes.txt
 ! mentions code.md describe.json codes.txt
 ! mentions long.md describe.json codes.txt
 mentions argument.md describe.json codes.txt
+! mentions -bytes 50 argument.md describe.json codes.txt
 
-# A skill named nicely in [skill] paths wins with SKILL_SHADOWED, and the bundled one wins
-# over an installed extension's skill of the same name
+# A skill of [skill] paths named after a bundled skill wins with SKILL_SHADOWED, and a bundled
+# skill wins over an installed extension's skill of the same name, each name on its own
 cp config.toml $CFG/config.toml
 chmod 755 bin/ncly-other
+chmod 755 bin/ncly-another
 env PATH=$WORK/bin:$PATH
 exec ncly skill list --json
-stdout '"skills":\[\{"name":"nicely","description":"Use my own rules\.","path":"'${WORK@R}'/skills/nicely","source":"config"\}\]'
+stdout '"skills":\[\{"name":"nicely","description":"Use my own rules\.","path":"'${WORK@R}'/skills/nicely","source":"config"\},\{"name":"nicely-auth","description":"Use when an ncly command needs a key, [^"]*","path":null,"source":"bundled"\},\{"name":"nicely-extensions","description":"[^"]*","path":null,"source":"bundled"\},\{"name":"nicely-runs","description":"Use my own runs\.","path":"'${WORK@R}'/skills/nicely-runs","source":"config"\}\]'
 stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely that ncly bundles is hidden by the one in '${WORK@R}'/skills/nicely\.","hint":"Rename the skill in '${WORK@R}'/skills/nicely/SKILL\.md to read the one that ncly bundles\."\}'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely-runs that ncly bundles is hidden by the one in '${WORK@R}'/skills/nicely-runs\.",'
 stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely in '${WORK@R}'/bin/ncly-other\.skill is hidden by the one in '${WORK@R}'/skills/nicely\.",'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely-auth in '${WORK@R}'/bin/ncly-another\.skill is hidden by the one that ncly bundles\.",'
 exec ncly skill view nicely
 stdout 'Use my own rules\.'
+exec ncly skill view nicely-runs
+stdout 'Use my own runs\.'
+exec ncly skill view nicely-auth
+stdout '\A---\nname: nicely-auth\ndescription: Use when an ncly command needs a key'
 exec ncly --lang en-XA skill list
 pseudo stderr
 rm $CFG/config.toml
 exec ncly skill list --json
-stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]'
+stdout '"skills":\[\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth",[^}]*"source":"bundled"\},\{"name":"nicely-extensions",[^}]*"source":"bundled"\},\{"name":"nicely-runs",[^}]*"source":"bundled"\}\]'
 stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely in '${WORK@R}'/bin/ncly-other\.skill is hidden by the one that ncly bundles\.","hint":"Rename the skill in '${WORK@R}'/bin/ncly-other\.skill/SKILL\.md, or remove '${WORK@R}'/bin/ncly-other\.skill\."\}'
+stdout '\{"code":"SKILL_SHADOWED","message":"The skill nicely-auth in '${WORK@R}'/bin/ncly-another\.skill is hidden by the one that ncly bundles\.",'
 exec ncly --lang en-XA skill list
 pseudo stderr
 
@@ -97,6 +95,11 @@ paths = ["~/skills"]
 ---
 name: nicely
 description: Use my own rules.
+---
+-- skills/nicely-runs/SKILL.md --
+---
+name: nicely-runs
+description: Use my own runs.
 ---
 -- bin/ncly-other --
 #!/bin/sh
@@ -117,6 +120,26 @@ other = "Do other things"
 ---
 name: nicely
 description: Pretend to be the nicely skill.
+---
+-- bin/ncly-another --
+#!/bin/sh
+echo another >> "$WORK/ran"
+-- bin/ncly-another.toml --
+format_version = 1
+contract_version = 1
+domain = "another"
+
+[[commands]]
+path = "another"
+summary = "another.summary"
+-- bin/ncly-another.locales/en.toml --
+["another.summary"]
+description = "Summary of the another fixture."
+other = "Do another thing"
+-- bin/ncly-another.skill/SKILL.md --
+---
+name: nicely-auth
+description: Pretend to be the nicely-auth skill.
 ---
 -- command.md --
 Check the machine with `ncly inspect` first.

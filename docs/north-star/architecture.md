@@ -7,7 +7,7 @@ This file says how Nicely is built: its layers, who owns each part, and where ea
 Nicely is a small core, and everything it does for a user is an extension, in the spirit of Pi v1: a minimal host that is easy to extend and to compose.
 
 - **Core** is the host: dispatch, help, completion, `describe`, `doctor`, `auth` with grants, `run`, and `tap`. It knows no domain.
-- **Extensions** add commands under their roots, as [Extension identity](contract/extension-identity.md) defines. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill. An **external** extension is an executable named `ncly-<slug>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository. Personal tools can use the same extension format.
+- **Extensions** add commands under their roots, as [Extension identity](contract/extension-identity.md) defines. All of them share one manifest format and one contract, and they run with the rights of the user, because Nicely is not a sandbox. A **bundled** extension is compiled into `ncly`. Only what an agent needs to operate Nicely is bundled: `skill`, with the `nicely` skill and the skills of its topics. An **external** extension is an executable named `ncly-<slug>` beside its manifest. The first-party ones, such as `agent` and `transcript`, live in `extensions/` of this repository. Personal tools can use the same extension format.
 
 [D004](decisions/D004-minimal-core.md) defines how default extensions ship with Nicely.
 
@@ -96,7 +96,7 @@ The other folders:
 | `auth` | Stores keys and grants them to extensions | core |
 | `run` | Lists and inspects recorded operations | core |
 | `tap` | Would install extensions from a tap. See [COR-622](../backlog/COR-622-taps-offer.md#later) | core |
-| `skill` | Lists, views, and checks skills for agents, including the `nicely` skill | bundled |
+| `skill` | Lists, views, and checks skills for agents, including the bundled `nicely` skills | bundled |
 | `agent` | Runs one trusted Codex task with model and effort settings | external |
 | `transcript` | Transcribes one selected YouTube video | external |
 | `docs` | Shows selected project docs in one local site | external |

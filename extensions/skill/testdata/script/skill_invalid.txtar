@@ -9,7 +9,7 @@ mkdir skills/unreadable/SKILL.md
 
 exec ncly skill list --json
 answer stdout ok
-stdout '"skills":\[\{"name":"good","description":"Use when all is well\.","path":"'${WORK@R}'/skills/good","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\}\]'
+stdout '"skills":\[\{"name":"good","description":"Use when all is well\.","path":"'${WORK@R}'/skills/good","source":"config"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"nicely-auth",[^}]*"source":"bundled"\},\{"name":"nicely-extensions",[^}]*"source":"bundled"\},\{"name":"nicely-runs",[^}]*"source":"bundled"\}\]'
 stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/nodescription/SKILL\.md lacks description in its frontmatter, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/nodescription/SKILL\.md\."\}'
 stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/noname/SKILL\.md lacks name in its frontmatter, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/noname/SKILL\.md\."\}'
 stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/badyaml/SKILL\.md has no valid frontmatter, so it is no skill\.","hint":"Fix '${WORK@R}'/skills/badyaml/SKILL\.md\."\}'
@@ -21,7 +21,7 @@ stdout '\{"code":"SKILL_INVALID","message":"'${WORK@R}'/skills/unreadable/SKILL\
 ! stderr .
 
 exec ncly skill list
-stdout '^good:    Use when all is well\.$'
+stdout '^good:  +Use when all is well\.$'
 stderr '^warning\[SKILL_INVALID\]: '
 exec ncly --lang en-XA skill list
 pseudo stderr
