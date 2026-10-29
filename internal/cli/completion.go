@@ -17,7 +17,7 @@ var completionCommand = contract.Command{
 	Summary: "completion.summary",
 	Effects: &contract.Effects{},
 	Examples: []string{
-		`ncly completion zsh > "${fpath[1]}/_ncly"`,
+		`autoload -Uz compinit && compinit && eval "$(ncly completion zsh)"`,
 		`ncly completion bash > ~/.local/share/bash-completion/completions/ncly`,
 		`ncly completion fish > ~/.config/fish/completions/ncly.fish`,
 	},
@@ -33,7 +33,7 @@ var shells = []struct {
 			Summary:  "completion.zsh_summary",
 			Effects:  &contract.Effects{},
 			Result:   contract.Result{Kind: contract.ResultText},
-			Examples: []string{`ncly completion zsh > "${fpath[1]}/_ncly"`, `source <(ncly completion zsh)`},
+			Examples: []string{`ncly completion zsh > "${fpath[1]}/_ncly"`, `autoload -Uz compinit && compinit && eval "$(ncly completion zsh)"`},
 		},
 		func(root *cobra.Command, w io.Writer) error { return root.GenZshCompletion(w) },
 	},
