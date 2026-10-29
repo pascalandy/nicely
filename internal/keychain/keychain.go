@@ -7,6 +7,9 @@ package keychain
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/zalando/go-keyring"
@@ -52,7 +55,19 @@ var ErrWriteUnknown = errors.New("the keychain did not confirm the write")
 // ncly runs in contract.md allows.
 type System struct{}
 
-func (System) Get(service, account string) (string, error) { return keyring.Get(service, account) }
+// Get reads an entry. On macOS, security also finds no entry when no
+// default keychain exists, such as under a HOME that holds none. A write
+// would then fail or open a window. So Get refuses that read, and the
+// keychain counts as unavailable, as Keys defines. See #359.
+func (System) Get(service, account string) (string, error) {
+	key, err := keyring.Get(service, account)
+	if errors.Is(err, keyring.ErrNotFound) && runtime.GOOS == "darwin" {
+		if err := exec.Command("/usr/bin/security", "default-keychain").Run(); err != nil {
+			return "", fmt.Errorf("no default keychain: %w", err)
+		}
+	}
+	return key, err
+}
 
 func (System) Set(service, account, key string) error { return keyring.Set(service, account, key) }
 
