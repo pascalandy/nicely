@@ -93,6 +93,7 @@ prune() {
 	for run in "$root"/*; do
 		if [[ -f "$run/$marker" && ! -L "$run" ]]; then runs[${#runs[@]}]="$run"; fi
 	done
+	[[ ${#runs[@]} -gt 0 ]] || log "no run to prune in $root"
 	for ((i = ${#runs[@]} - 1; i >= 0; i--)); do
 		run="${runs[$i]}"
 		if ((keep > 0)); then

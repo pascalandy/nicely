@@ -54,7 +54,7 @@ just verify cleanup "$run"
 just verify prune --keep 5
 ```
 
-`prune --keep <n>` keeps the newest `<n>` runs, and removes the others with their evidence. It keeps a run whose scratch folder remains, because its cleanup has not ended. Done when it names each run that it removed or kept.
+`prune --keep <n>` keeps the newest `<n>` runs, and removes the others with their evidence. It keeps a run whose scratch folder remains, because its cleanup has not ended. Done when it names each run that it removed or kept, or says that it found no run.
 
 ## Evidence
 
