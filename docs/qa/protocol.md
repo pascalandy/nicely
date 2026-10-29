@@ -13,7 +13,7 @@ This file answers one question: how is a UAT of any extension run so that it can
 
 ## One run
 
-1. **Prerequisites.** In a Nicely checkout, run `just preflight` with the fixture folders that the issue names. It checks the host, then the checksum and the lock of each fixture. Stop when it exits nonzero.
+1. **Prerequisites.** In a Nicely checkout, run `just preflight` with the fixture folders that the issue names. It checks the host, then the checksum and the lock of each fixture. The offline Go probe may populate Go caches; it leaves source files and fixtures unchanged. Stop when it exits nonzero.
 2. **New folder.** Create `ncly-uat-<issue>-<YYYYMMDD-HHMM>/` and copy the fixture into it. Check the checksum of the copy.
 3. **Discovery.** Give a fresh agent one sentence, without hints or `NCLY_*` variables. Its instructions hold only the agent line of the [README](../../README.md). It must reach the command through `ncly skill view nicely` and `ncly describe`.
 4. **Dry run.** When the command has a dry run, it comes before the run and passes on valid input.
