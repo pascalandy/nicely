@@ -25,6 +25,24 @@ printf 'Filesystem 512-blocks Used Available Capacity Mounted on\n/dev/disk9s1 1
 esac"
 }
 
+# fct_tcc <auth_value>... writes the TCC database of the scratch HOME, which the real sqlite3 of
+# preflight.sh reads. Each argument adds a row for Cua Spaces and removable volumes. The rows of
+# another service, client, and client type allow, and preflight must ignore them. See #371.
+fct_tcc() {
+	local db="${root}/Library/Application Support/com.apple.TCC/TCC.db" value
+	mkdir -p "${db%/*}"
+	rm -f "${db}"
+	{
+		printf 'CREATE TABLE access (service TEXT, client TEXT, client_type INTEGER, auth_value INTEGER);\n'
+		printf "INSERT INTO access VALUES ('kTCCServiceSystemPolicyAllFiles', 'com.trycua.spaces.macos', 0, 2);\n"
+		printf "INSERT INTO access VALUES ('kTCCServiceSystemPolicyRemovableVolumes', 'com.example.other', 0, 2);\n"
+		printf "INSERT INTO access VALUES ('kTCCServiceSystemPolicyRemovableVolumes', 'com.trycua.spaces.macos', 1, 2);\n"
+		for value in "$@"; do
+			printf "INSERT INTO access VALUES ('kTCCServiceSystemPolicyRemovableVolumes', 'com.trycua.spaces.macos', 0, %s);\n" "${value}"
+		done
+	} | sqlite3 "${db}"
+}
+
 fct_volume_cases() {
 	test_case="on macOS, files on internal volumes pass"
 	fct_present
@@ -52,24 +70,23 @@ fct_volume_cases() {
 \"env GOCACHE\") echo ${root}/ext/go-build ;;
 \"env GOMODCACHE\") echo ${root}/ext/go-mod ;;
 esac"
-	fct_stub stubs sqlite3 "case \"\$*\" in
-\"-readonly ${root}/Library/Application Support/com.apple.TCC/TCC.db \"*kTCCServiceSystemPolicyRemovableVolumes*com.trycua.spaces.macos*) echo 2 ;;
-esac"
+	fct_tcc 2
 	fct_run 0
 	fct_said "ok    on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: the TCC database lets Cua Spaces read removable volumes"
 	fct_said "preflight: 0 missing, 0 warnings"
 
 	test_case="on macOS, a denied or missing grant keeps the warning"
-	fct_stub stubs sqlite3 'echo 0'
+	fct_tcc 0
 	fct_run 0
 	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: through cua do shell"
-	fct_stub stubs sqlite3 'exit 0'
+	fct_tcc
 	fct_run 0
 	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: through cua do shell"
 	fct_said "preflight: 0 missing, 1 warnings"
 
 	test_case="on macOS, an unreadable TCC database warns that preflight cannot check the grant"
-	fct_stub stubs sqlite3 'echo "Error: unable to open database: authorization denied" >&2; exit 1'
+	fct_tcc 2
+	chmod 000 "${root}/Library/Application Support/com.apple.TCC/TCC.db"
 	fct_run 0
 	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: this process cannot read the TCC database to check the grant of Cua Spaces"
 	fct_said "hint: run just preflight over SSH or in a terminal of the desktop session"
@@ -78,7 +95,7 @@ esac"
 
 	test_case="on macOS, the grant leaves the warning for a volume that diskutil cannot read"
 	fct_macos
-	fct_stub stubs sqlite3 'echo 2'
+	fct_tcc 2
 	fct_run 0
 	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/net"
 

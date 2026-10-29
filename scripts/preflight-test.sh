@@ -5,7 +5,8 @@
 #
 # preflight.sh runs with a PATH of stubs and of links to the few real tools
 # that it reads with, such as uname, so no tool of the host decides a case.
-# Each case writes the stubs that it needs. See #356.
+# Each case writes the stubs that it needs. The real sqlite3 reads a fake
+# TCC.db. See #356 and #371.
 set -Eeuo pipefail
 trap 'printf "%s: line %s failed: %s\n" "${BASH_SOURCE[0]##*/}" "${LINENO}" "${BASH_COMMAND}" >&2' ERR
 
@@ -54,7 +55,8 @@ fct_setup() {
 	root="$(mktemp -d "${TMPDIR:-/tmp}/ncly-preflight-test.XXXXXXXX")"
 	PREFLIGHT_TEST_ROOT="${root}"
 	mkdir -p "${root}/tools"
-	for tool in uname tr head sed stat sha256sum shasum; do
+	command -v sqlite3 >/dev/null || fct_fail "sqlite3 is missing: the TCC cases read a fake TCC.db with it"
+	for tool in uname tr head sed stat sha256sum shasum sqlite3; do
 		if path="$(command -v "${tool}")"; then ln -s "${path}" "${root}/tools/${tool}"; fi
 	done
 	fct_present
