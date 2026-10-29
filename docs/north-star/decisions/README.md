@@ -21,7 +21,7 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D013](D013-go-everywhere.md) | Write core and every extension in Go |
 | [D014](D014-public-from-day-one.md) | Publish from the first commit |
 | [D015](D015-macos-and-linux.md) | Target macOS and Linux with the same paths |
-| [D016](D016-local-ci.md) | Run CI locally and release by hand |
+| [D016](D016-local-ci.md) | Run checks locally and on GitHub, and release by hand |
 | [D017](D017-testscript-scenarios.md) | Write acceptance criteria as testscript scenarios |
 | [D018](D018-agent-extension.md) | Run agents through the `agent` extension |
 | [D019](D019-transcript-extension.md) | Ship transcript as a first-party extension |

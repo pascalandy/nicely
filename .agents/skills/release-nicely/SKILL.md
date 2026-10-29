@@ -66,7 +66,7 @@ Copy this checklist and tick each step:
    If it fails, report `gh run view <id> --repo pascalandy/nicely --log-failed` and stop.
 
 The tag and workflow stay on the checked commit even when `main` moves on.
-GitHub Actions runs only for this manual publication.
+The release workflow runs only for this manual publication.
 
 ## Verify and hand off
 
