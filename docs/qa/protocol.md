@@ -28,7 +28,7 @@ Make at least 3 runs, to measure discovery and determinism.
 | Family | Requires |
 |---|---|
 | Discovery | A fresh agent finds the command without hints |
-| Preview | The dry run gives the code of the run for each error case of `qa.md` |
+| Preview | When the command has a dry run, it refuses each error of the shared preparation with the code of the run |
 | Result | A third-party tool accepts the output |
 | Fidelity | The output keeps the input properties that the `spec.md` of the extension names in `## Acceptance` |
 | Errors | Invalid input gets its own code, the right exit code, and a message that names the file |
