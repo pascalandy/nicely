@@ -14,6 +14,8 @@ This folder holds one file per extension or core item and the ordered delivery q
 
 The queue lists exactly the Planned, Ready, and Active items.
 `just next` serves its first item.
+That item has a GitHub milestone named after its ID and title, such as `COR-101 release checks`, which holds its open issues.
+The pull request that changes the first item moves that milestone.
 `just status` reads the frontmatter and prints the extension and core tables.
 Parked items and ideas wait outside this queue.
 Process work stays in issues and gets no item ID.
