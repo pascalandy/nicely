@@ -41,8 +41,8 @@ Never press **Reset To Defaults** in a keychain window: it can replace the real 
 On macOS, some steps run in the desktop session, such as the steps that use the login keychain. The agent reaches it through `cua do shell`.
 
 - Run `just preflight` over SSH or in a terminal of the desktop session, such as Ghostty. Through `cua do shell`, a checkout on an external volume can open the permission prompt before preflight warns.
-- On macOS, preflight warns when the checkout, a Go cache, or a fixture folder is on an external volume. It reads whether Pascal allowed Cua Spaces to read removable volumes. That read needs Full Disk Access, and without it, preflight warns.
-- When preflight warns, ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session.
+- On macOS, preflight warns when the checkout, a Go cache, or a fixture folder is on an external volume. It reads whether Pascal allowed Cua Spaces to read removable volumes. That read needs Full Disk Access. Without it, preflight warns that it cannot check the grant, so run it over SSH.
+- When Cua Spaces has no grant, ask Pascal to allow it once. You can also run the steps in a terminal of the desktop session.
 - Give `cua do shell` one script file at a path without spaces, such as `cua do shell /bin/bash /tmp/step.sh`. It joins its arguments into one `/bin/sh -c` line and drops their quotes and backslashes.
 - In that script, set `PATH` and change to the folder of the step. `cua do shell` starts in the home folder, with only the system folders in `PATH`.
 - A permission prompt or a keychain window is a case of [Human escalation](#human-escalation).

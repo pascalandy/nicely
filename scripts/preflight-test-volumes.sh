@@ -59,13 +59,21 @@ esac"
 	fct_said "ok    on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: the TCC database lets Cua Spaces read removable volumes"
 	fct_said "preflight: 0 missing, 0 warnings"
 
-	test_case="on macOS, a denied grant or an unreadable TCC database keeps the warning"
+	test_case="on macOS, a denied or missing grant keeps the warning"
 	fct_stub stubs sqlite3 'echo 0'
 	fct_run 0
-	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext"
-	fct_stub stubs sqlite3 'echo "Error: unable to open database" >&2; exit 1'
+	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: through cua do shell"
+	fct_stub stubs sqlite3 'exit 0'
 	fct_run 0
-	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext"
+	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: through cua do shell"
+	fct_said "preflight: 0 missing, 1 warnings"
+
+	test_case="on macOS, an unreadable TCC database warns that preflight cannot check the grant"
+	fct_stub stubs sqlite3 'echo "Error: unable to open database: authorization denied" >&2; exit 1'
+	fct_run 0
+	fct_said "warn  on an external volume: GOCACHE at /Volumes/ext, GOMODCACHE at /Volumes/ext: this process cannot read the TCC database to check the grant of Cua Spaces"
+	fct_said "hint: run just preflight over SSH or in a terminal of the desktop session"
+	fct_unsaid "through cua do shell"
 	fct_said "preflight: 0 missing, 1 warnings"
 
 	test_case="on macOS, the grant leaves the warning for a volume that diskutil cannot read"

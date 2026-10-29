@@ -162,17 +162,25 @@ check_fixture() {
 	pass "fixture folder $folder: checksums OK, originals locked"
 }
 
-# cua_granted reports whether the TCC database of the user lets Cua Spaces read removable volumes:
-# auth_value 2 allows. Any failure means no, such as a terminal without Full Disk Access.
-cua_granted() {
-	[[ "$(sqlite3 -readonly "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT auth_value FROM access WHERE service = 'kTCCServiceSystemPolicyRemovableVolumes' AND client = 'com.trycua.spaces.macos' AND client_type = 0" 2>/dev/null)" == 2 ]]
+# cua_grant prints whether the TCC database of the user lets Cua Spaces read removable volumes:
+# allowed for auth_value 2, denied for another value or no row, and unknown when sqlite3 cannot
+# read the database. A process without Full Disk Access, such as one of cua do shell, cannot. See #369.
+cua_grant() {
+	local value
+	if ! value="$(sqlite3 -readonly "$HOME/Library/Application Support/com.apple.TCC/TCC.db" "SELECT auth_value FROM access WHERE service = 'kTCCServiceSystemPolicyRemovableVolumes' AND client = 'com.trycua.spaces.macos' AND client_type = 0" 2>/dev/null)"; then
+		echo unknown
+	elif [[ "$value" == 2 ]]; then
+		echo allowed
+	else
+		echo denied
+	fi
 }
 
 # check_volumes names, on macOS, the checkout, the Go caches, and the fixture folders that sit on a
 # volume that diskutil does not call internal. A process that cua do shell starts can read such a
 # volume only after a human allows it in a macOS prompt. See #366.
 check_volumes() {
-	local i folder mount internal="" external="" unread=""
+	local i folder mount internal="" external="" unread="" grant=""
 	local -a names=(checkout) paths=("$root")
 	[[ "$os" == Darwin ]] || return 0
 	if command -v go >/dev/null; then
@@ -193,8 +201,11 @@ check_volumes() {
 		*) external="$external, ${names[$i]} at $mount" unread=1 ;;
 		esac
 	done
-	if [[ -n "$external" && -z "$unread" ]] && cua_granted; then
+	[[ -z "$external" || -n "$unread" ]] || grant="$(cua_grant)"
+	if [[ "$grant" == allowed ]]; then
 		pass "on an external volume: ${external#, }: the TCC database lets Cua Spaces read removable volumes"
+	elif [[ "$grant" == unknown ]]; then
+		warn "on an external volume: ${external#, }: this process cannot read the TCC database to check the grant of Cua Spaces" "run just preflight over SSH or in a terminal of the desktop session, as docs/qa/protocol.md#desktop-session says"
 	elif [[ -n "$external" ]]; then
 		warn "on an external volume: ${external#, }: through cua do shell, macOS asks a human to allow access first" "ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session, as docs/qa/protocol.md#desktop-session says"
 	elif [[ -n "$internal" ]]; then
