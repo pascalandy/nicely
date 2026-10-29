@@ -20,6 +20,7 @@ Copy this checklist and tick each step:
 - [ ] 6. Wait: the workflow run succeeds
 - [ ] 7. Verify: `just release-verify vX.Y.Z` passes, and the report gives each result
 - [ ] 8. Mac: `brew-qa.sh vX.Y.Z` passes on the mini, or on Pascal's Mac when the mini is offline
+- [ ] 9. Extension: `extension-qa.sh vX.Y.Z` passes on the Mac of step 8, after `brew-qa.sh`
 ```
 
 ## Generate the changelog and check
@@ -77,4 +78,9 @@ The release workflow runs only for this manual publication.
    `ncly` stays installed on the mini, so the next release tests the upgrade.
    If the mini is offline, ask Pascal to run it on his Mac, because it changes the Homebrew of that Mac.
    If it fails, report its log and stop.
-4. Report its result with the others.
+4. On the same Mac, run `bash .agents/skills/release-nicely/scripts/extension-qa.sh vX.Y.Z` in the same clone.
+   It tests the `ncly` of Homebrew with video-convert, which it installs from its highest tag into scratch XDG folders.
+   It runs describe, doctor, a dry run, and one conversion of a clip that ffmpeg makes, then checks the output with ffprobe.
+   It needs Go, `just`, `jq`, HandBrakeCLI, and ffmpeg, installs none of them, and leaves the config, extensions, and keys of the Mac unchanged.
+   If it fails, report its output and stop.
+5. Report both results with the others.
