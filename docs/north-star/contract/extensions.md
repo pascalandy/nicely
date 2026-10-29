@@ -22,7 +22,7 @@ An author outside Nicely keeps an extension in a Git repository of its own, whic
 |---|---|
 | `README.md` | What the extension adds, and the commands that install a release |
 | `vision.md` | The job of the extension in one sentence, the source and revision of each program that it wraps, and what it refuses |
-| `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits |
+| `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits. Then `## Acceptance`: the real fixture, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
 | Go files | One handler per command, `extension_test.go`, which calls the test kit, `cmd/ncly-<slug>/main.go`, which calls `extension.Main`, and `internal/export/`, which calls `extension.Export` for `just install` |
