@@ -164,6 +164,10 @@ See [Contract](glossary/contract.md).
 - Decision
   - Def.: one file in [decisions/](decisions/README.md) that records what was decided, why, and what was rejected
 
+## Acceptance
+
+See [Acceptance](glossary/acceptance.md).
+
 ## Design vocabulary
 
 See [Design vocabulary](glossary/design-vocabulary.md).
