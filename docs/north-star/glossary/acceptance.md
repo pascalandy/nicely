@@ -14,6 +14,12 @@
 - UAT protocol
   - Def.: the steps that every UAT repeats, in [protocol.md](../../qa/protocol.md). The `qa.md` of an extension adds only its deltas
   - Distinct from: the contract, whose two scopes are never called protocols
+- QA north star
+  - Def.: the two axes that every UAT judges, Automation and Economy, in [north-star.md](../../qa/north-star.md)
+  - Distinct from: `docs/north-star/`, which holds the vision, principles, and specs of Nicely
+- Test as code
+  - Def.: a check that an agent runs without a human, such as `just check`, a scenario, or verify-nicely
+  - Distinct from: a manual step of a UAT
 - Fixture
   - Def.: real data that a UAT runs on, read-only and locked, listed in [fixtures.md](../../qa/fixtures.md)
   - Project note: a made fixture, such as an empty file, comes from the run itself, in its work folder

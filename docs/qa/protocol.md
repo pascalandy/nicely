@@ -1,6 +1,6 @@
 # UAT protocol
 
-This file answers one question: how is a UAT of any extension run so that it can be repeated? The `qa.md` of each extension adds only its deltas.
+This file answers one question: how is a UAT of any extension run so that it can be repeated? The `qa.md` of each extension adds only its deltas. [north-star.md](north-star.md) says what every UAT aims for.
 
 ## Fixed rules
 
@@ -66,6 +66,8 @@ This probe proves that a replay starts no harness, such as Codex.
 | Errors | Invalid input gets its own code, the right exit code, and a message that names the file |
 | Integrity | The input and the original are unchanged, and no partial file remains |
 | Contract | With `--json`, a failure leaves stdout empty and the error object ends stderr, as [Output](../north-star/contract/output.md) says |
+| Automation | A test as code covers each acceptance criterion, as [Automation](north-star.md#automation) says |
+| Economy | The output and the skills are short and correct, and the default flags suit the common case, as [Economy](north-star.md#economy) says |
 
 ## Severity and verdict
 
@@ -82,9 +84,11 @@ Post the report as a comment of the issue, in this order:
 2. Hosts and versions
 3. Fixtures
 4. Results by family
-5. Defects, with severity and issue
-6. Reservations
-7. Verdict
-8. Next tests
+5. Automation: the findings that [Automation](north-star.md#automation) lists
+6. Economy: the findings and the measurements of [Economy](north-star.md#economy)
+7. Defects, with severity and issue
+8. Reservations
+9. Verdict
+10. Next tests
 
 Only Pascal closes the issue.

@@ -8,12 +8,14 @@ This folder answers one question: how does a human accept a delivery of Nicely o
 - **The extension template and its workflow**: each tested extension is evidence about the template. Each UAT records what the template should have prevented.
 - **Discovery by a fresh agent**: does an agent without hints find the command?
 
+Every UAT also judges the two axes of the [QA north star](north-star.md): tests as code, and a light CLI.
+
 A UAT is acceptance by the user. [verify-nicely](../../.agents/skills/verify-nicely/SKILL.md) proves a card, and `testdata/script/` holds the scenarios.
 
 ## Start a UAT
 
 1. Read the assigned issue with the label `2-type:uat`.
-2. Read [protocol.md](protocol.md), then the `qa.md` file of the extension repository.
+2. Read [north-star.md](north-star.md) and [protocol.md](protocol.md), then the `qa.md` file of the extension repository.
 3. Check the fixtures in [fixtures.md](fixtures.md) before any run.
 4. Post the report in the issue, then update this folder.
 
