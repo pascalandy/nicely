@@ -15,12 +15,13 @@ Copy this checklist and tick each step:
 - [ ] 1. Ready: origin/main holds the Shipped item or the fix that D043 names
 - [ ] 2. Changelog: `just changelog vX.Y.Z` writes this version's notes, reviewed against its commits
 - [ ] 3. Check: `just release-check vX.Y.Z` passes in a clean checkout of origin/main, and so does `runner-rehearsal.sh vX.Y.Z`
-- [ ] 4. Tag: vX.Y.Z on origin names the SHA of step 3
-- [ ] 5. Start: one workflow_dispatch run of release.yml names the tag and that SHA
-- [ ] 6. Wait: the workflow run succeeds
-- [ ] 7. Verify: `just release-verify vX.Y.Z` passes, and the report gives each result
-- [ ] 8. Mac: `brew-qa.sh vX.Y.Z` passes on the mini, or on Pascal's Mac when the mini is offline
-- [ ] 9. Extension: `extension-qa.sh vX.Y.Z` passes on the Mac of step 8, after `brew-qa.sh`
+- [ ] 4. macOS: `just check --keep-going` exits 0 on the mini, in a clean clone at the SHA of step 3
+- [ ] 5. Tag: vX.Y.Z on origin names the SHA of step 3
+- [ ] 6. Start: one workflow_dispatch run of release.yml names the tag and that SHA
+- [ ] 7. Wait: the workflow run succeeds
+- [ ] 8. Verify: `just release-verify vX.Y.Z` passes, and the report gives each result
+- [ ] 9. Mac: `brew-qa.sh vX.Y.Z` passes on the mini, or on Pascal's Mac when the mini is offline
+- [ ] 10. Extension: `extension-qa.sh vX.Y.Z` passes on the Mac of step 9, after `brew-qa.sh`
 ```
 
 ## Generate the changelog and check
@@ -43,7 +44,13 @@ Copy this checklist and tick each step:
    It runs the steps of release.yml through the check in ubuntu:24.04, with the runner's tools, and publishes nothing.
    It caught the failures of v0.18.0 and v0.18.1, which passed on the host.
    If either fails, fix the cause through a merged pull request and restart the cycle.
-9. Require empty output from `git status --porcelain` and the same SHA from `git rev-parse HEAD`.
+9. Check the same SHA on macOS, through the `fleet` skill.
+   Make a clean clone or worktree at that SHA on the mini, and run `uv run --no-project --python 3.12 just check --keep-going` there.
+   Require exit 0.
+   Use the mbp only if the mini is offline or lacks Nicely or a required tool, as [dev-preferences.md](../../../docs/north-star/dev-preferences.md#run-macos-checks-on-the-mini) says.
+   Report the machine, and the reason for a fallback to the mbp.
+   If a check fails, fix the cause through a merged pull request and restart the cycle.
+10. Require empty output from `git status --porcelain` and the same SHA from `git rev-parse HEAD`.
 
 ## Tag and publish once
 
