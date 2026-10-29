@@ -14,7 +14,7 @@ This folder is the maintained source for verifying what a user of `ncly` sees. R
 - Copy each command as it is written, flags and quotes included
 - Read machine values from `--json` answers, and human text from the run without `--json`
 - Check the exit code of every step against the one the feature names: a report that finds a problem exits 78, and that is its expected result
-- Read stdout, stderr, and the exit code of a step from its transcript. A `tmux` call records what the terminal showed instead, stdout and stderr together. On a nonzero exit, `just` adds its own `error: Recipe` line on the terminal, which is not the stderr of `ncly`
+- Read stdout, stderr, and the exit code of a step from its transcript. A `tmux` call records what the terminal showed instead, stdout and stderr together
 
 ## Proof and skip reporting
 

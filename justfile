@@ -92,6 +92,7 @@ preflight *fixtures:
 # Build ncly into a scratch folder for the verify-nicely skill, or run one of its steps
 [group('checks')]
 [positional-arguments]
+[no-exit-message]
 verify *args:
     @bash .agents/skills/verify-nicely/scripts/verify.sh "$@"
 
