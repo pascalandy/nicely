@@ -43,7 +43,7 @@ var shells = []struct {
 			Summary:  "completion.bash_summary",
 			Effects:  &contract.Effects{},
 			Result:   contract.Result{Kind: contract.ResultText},
-			Examples: []string{`ncly completion bash > ~/.local/share/bash-completion/completions/ncly`, `source <(ncly completion bash)`},
+			Examples: []string{`ncly completion bash > ~/.local/share/bash-completion/completions/ncly`, `eval "$(ncly completion bash)"`},
 		},
 		func(root *cobra.Command, w io.Writer) error { return root.GenBashCompletionV2(w, true) },
 	},
