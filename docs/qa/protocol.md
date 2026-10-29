@@ -43,7 +43,7 @@ On macOS, some steps run in the desktop session, such as the steps that use the 
 - Run `just preflight` over SSH or in a terminal of the desktop session, such as Ghostty. Through `cua do shell`, a checkout on an external volume can open the permission prompt before preflight warns.
 - On macOS, preflight warns when the checkout, a Go cache, or a fixture folder is on an external volume. It reads whether Pascal allowed Cua Spaces to read removable volumes. That read needs Full Disk Access, and without it, preflight warns.
 - When preflight warns, ask Pascal to allow Cua Spaces once, or run the steps in a terminal of the desktop session.
-- Give `cua do shell` one script file, such as `cua do shell /bin/bash /path/step.sh`. It joins its arguments into one `/bin/sh -c` line and drops their quotes and backslashes.
+- Give `cua do shell` one script file at a path without spaces, such as `cua do shell /bin/bash /tmp/step.sh`. It joins its arguments into one `/bin/sh -c` line and drops their quotes and backslashes.
 - In that script, set `PATH` and change to the folder of the step. `cua do shell` starts in the home folder, with only the system folders in `PATH`.
 - A permission prompt or a keychain window is a case of [Human escalation](#human-escalation).
 
