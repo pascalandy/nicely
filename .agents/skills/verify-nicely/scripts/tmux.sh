@@ -31,7 +31,7 @@ stop_servers() {
 # presses Ctrl-C when the keys are ^C. The transcript never holds the typed
 # keys, only what the pane shows, so a typed key that never shows stays out.
 tmux_step() {
-	local run feature transcript work code="" limit=5 start i missed="" typed
+	local run feature transcript work code="" limit=5 start i missed="" typed at
 	local -a prompts=() keys=()
 	run="$(run_folder "${1:-}")"
 	check_feature "${2:-}"
@@ -89,6 +89,7 @@ tmux_step() {
 	# capture reads, as if the form stayed. An older tmux lacks the option.
 	tmux -L "$pane_server" set-option -g scroll-on-clear off 2>/dev/null || true
 	kill -STOP "$stuck_pid"
+	at="$(stamp)"
 	start=$SECONDS
 	: >"$work/go"
 	: >"$work/answers"
@@ -128,7 +129,7 @@ tmux_step() {
 	if ! {
 		printf '$ ncly'
 		printf ' %q' "$@"
-		printf '\n'
+		printf '\n--- at %s\n' "$at"
 		cat "$work/answers" || exit 1
 		[[ -z "$missed" ]] || printf -- '--- the prompt %s never showed\n' "$missed"
 		printf -- '--- terminal, inside tmux whose server does not answer\n'

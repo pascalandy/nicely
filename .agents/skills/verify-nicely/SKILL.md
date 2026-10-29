@@ -23,7 +23,7 @@ Copy this checklist and tick each step:
 run="$(just verify)"
 ```
 
-`just verify` runs `scripts/verify.sh start`. It builds `ncly` from the checkout as it is, uncommitted changes included, into `$run/build/`. It makes a scratch home in `$run/scratch/home/`, with its own XDG folders, and installs the Go fixture `hello` there as an external extension, in `.local/share/nicely/extensions/`, with its manifest, catalogs, and skill beside it. It writes the wrapper `$run/scratch/bin/ncly`, which sets `HOME`, the XDG folders, and a `PATH` without any folder that holds an `ncly-<domain>` file, and unsets `NCLY_CONFIG`, which would point the config elsewhere, so every later command reaches only the scratch folder. Its last line on stdout is the run folder, under `${XDG_CACHE_HOME:-$HOME/.cache}/nicely/verify/`. Done when that folder holds `scratch/bin/ncly`.
+`just verify` runs `scripts/verify.sh start`. It builds `ncly` from the checkout as it is, uncommitted changes included, into `$run/build/`. It makes a scratch home in `$run/scratch/home/`, with its own XDG folders, and installs the Go fixture `hello` there as an external extension, in `.local/share/nicely/extensions/`, with its manifest, catalogs, and skill beside it. It writes the wrapper `$run/scratch/bin/ncly`, which sets `HOME`, the XDG folders, and a `PATH` without any folder that holds an `ncly-<domain>` file, and unsets `NCLY_CONFIG`, which would point the config elsewhere, so every later command reaches only the scratch folder. On macOS, the auth feature points `HOME` back at the real home, as [auth](features/auth.md) says. Its last line on stdout is the run folder, under `${XDG_CACHE_HOME:-$HOME/.cache}/nicely/verify/`. Done when that folder holds `scratch/bin/ncly`.
 
 ## Doctor
 
@@ -32,7 +32,7 @@ just verify step "$run" doctor --version
 just verify step "$run" doctor doctor
 ```
 
-`step <run> <feature> <ncly args...>` runs the wrapper with those arguments and the caller's stdin, prints the call, its stdout, its stderr, and its exit code, appends them to `$run/evidence/<feature>.txt`, and exits with the code of `ncly`. When it cannot write that transcript, it exits 1 and leaves the outputs of the call in `$run/scratch/`. Done when `--version` prints `ncly v<version>-<commit>`, where `<commit>` is the first line of `$run/evidence/commit.txt`, followed by `+dirty` when its second line says `dirty`, and `ncly doctor` exits 0 with a `pass` line for `extensions.hello` whose path lies under `<run>/scratch/home`, and an `auth.keychain` line: a `pass` when the keychain answers, or a `warn` with `KEYRING_ENV_ONLY` when it does not. When doctor fails, stop and report its output: a feature driven on a broken build proves nothing.
+`step <run> <feature> <ncly args...>` runs the wrapper with those arguments and the caller's stdin. It prints the call, the time it started in ISO 8601 with its offset, its stdout, its stderr, and its exit code. It appends them to `$run/evidence/<feature>.txt`, and exits with the code of `ncly`. When it cannot write that transcript, it exits 1 and leaves the outputs of the call in `$run/scratch/`. Done when `--version` prints `ncly v<version>-<commit>`, where `<commit>` is the first line of `$run/evidence/commit.txt`, followed by `+dirty` when its second line says `dirty`, and `ncly doctor` exits 0 with a `pass` line for `extensions.hello` whose path lies under `<run>/scratch/home`, and an `auth.keychain` line: a `pass` when the keychain answers, or a `warn` with `KEYRING_ENV_ONLY` when it does not. When doctor fails, stop and report its output: a feature driven on a broken build proves nothing.
 
 ## Drive
 
@@ -48,7 +48,13 @@ A card that changes the steps or the end state of a feature updates its file fir
 just verify cleanup "$run"
 ```
 
-`cleanup` removes `$run/scratch/` and `$run/build/`, and keeps `$run/evidence/`. It refuses a folder that `start` did not create. When the run prepared the `auth` feature, it first logs the fake key out of the real keychain with `ncly auth logout`, then checks with `ncly auth status` that the keychain answers without the key, with `AUTH_MISSING`, both in `$run/evidence/cleanup.txt`. When the key may remain, it keeps the scratch folder and exits 1, so a second cleanup can try again. Run it after a failed run too, so no scratch folder and no fake key stay. Done when it lists the evidence files and `$run/scratch` is gone.
+`cleanup` removes `$run/scratch/` and `$run/build/`, and keeps `$run/evidence/`. It refuses a folder that `start` did not create. When the run prepared the `auth` feature, it first logs the fake key out of the real keychain with `ncly auth logout`, then checks with `ncly auth status` that the keychain answers without the key, with `AUTH_MISSING`, both in `$run/evidence/cleanup.txt`. Its stderr says `logged the fake key of verifynicely out of the keychain` only when the logout removed a key, and `found no fake key` otherwise. When the key may remain, it keeps the scratch folder and exits 1, so a second cleanup can try again. Run it after a failed run too, so no scratch folder and no fake key stay. Done when it lists the evidence files and `$run/scratch` is gone.
+
+```bash
+just verify prune --keep 5
+```
+
+`prune --keep <n>` keeps the newest `<n>` runs, and removes the others with their evidence. It keeps a run whose scratch folder remains, because its cleanup has not ended. Done when it names each run that it removed or kept.
 
 ## Evidence
 

@@ -21,7 +21,8 @@ A UAT is acceptance by the user. [verify-nicely](../../.agents/skills/verify-nic
 
 Use the title `UAT: <what the user does>`. Never name a host in a title.
 Add the label `2-type:uat` and a priority, and link the Epic without a closing keyword.
-The body holds these sections: Goal, Tested release, Prerequisites, Protocol deltas, Prompt for the fresh agent, Report, and Done when.
+The body holds these sections: Goal, Tested release, Prerequisites, Human escalation, Protocol deltas, Prompt for the fresh agent, Report, and Done when.
+Human escalation names each case where the agent calls Pascal, as [protocol.md](protocol.md#human-escalation) defines.
 
 ## Update after each UAT
 

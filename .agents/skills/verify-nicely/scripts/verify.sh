@@ -15,6 +15,7 @@
 #                                       its prompt shows, and record it the same way
 #   verify.sh quote <run> [<feature>]   print transcripts with placeholders for home paths
 #   verify.sh cleanup <run>             remove the scratch folder, keep the evidence
+#   verify.sh prune --keep <n>          remove the runs before the newest <n>, once cleaned up
 set -Eeuo pipefail
 
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
@@ -104,14 +105,24 @@ EOF
 	chmod +x "$wrapper"
 }
 
+# runs_root prints the folder of the runs. Not /tmp: Linux mounts it as tmpfs and macOS purges
+# it, and the evidence must outlive the run.
+runs_root() { printf '%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}/nicely/verify"; }
+
+# stamp prints the time in ISO 8601 with its offset, such as 2026-10-29T09:12:03-04:00. BSD
+# date lacks %:z, so the colon goes in here.
+stamp() {
+	local t
+	t="$(date +%Y-%m-%dT%H:%M:%S%z)"
+	printf '%s:%s\n' "${t%??}" "${t#"${t%??}"}"
+}
+
 start() {
-	local repo root run stamp home path
+	local repo run stamp home path
 	command -v go >/dev/null || die "go is missing: install it from https://go.dev/dl/"
 	repo="$(git -C "$script_dir" rev-parse --show-toplevel)" || die "run it from a checkout of nicely"
-	# Not /tmp: Linux mounts it as tmpfs and macOS purges it, and the evidence must outlive the run.
-	root="${XDG_CACHE_HOME:-$HOME/.cache}/nicely/verify"
 	stamp="$(date +%Y%m%d-%H%M%S)-$$"
-	run="$root/$stamp"
+	run="$(runs_root)/$stamp"
 	home="$run/scratch/home"
 	case "$run" in *"'"*) die "the run folder $run holds a quote, which the wrapper cannot hold" ;; esac
 	mkdir -p "$run/build" "$run/evidence" "$run/scratch/bin" "$home/.config" "$home/.local/share" "$home/.local/state" "$home/.cache"
@@ -137,7 +148,7 @@ test_service="verifynicely"
 # prepare.sh holds the prepare step and the fixture of each feature that needs one.
 # shellcheck source=/dev/null
 . "$script_dir/prepare.sh"
-# cleanup.sh holds the steps that end a run: cleanup and quote.
+# cleanup.sh holds the steps that end a run: cleanup, quote, and prune.
 # shellcheck source=/dev/null
 . "$script_dir/cleanup.sh"
 # tmux.sh holds the tmux step.
@@ -145,7 +156,7 @@ test_service="verifynicely"
 . "$script_dir/tmux.sh"
 
 step() {
-	local run feature transcript out err code
+	local run feature transcript out err code at
 	run="$(run_folder "${1:-}")"
 	check_feature "${2:-}"
 	feature="$2"
@@ -155,6 +166,7 @@ step() {
 	out="$run/scratch/step.out"
 	err="$run/scratch/step.err"
 	code=0
+	at="$(stamp)"
 	"$run/scratch/bin/ncly" "$@" >"$out" 2>"$err" || code=$?
 	# A caller may run step where errexit is off, as cleanup does, and the
 	# condition turns it off in the group too, so each read fails the group
@@ -163,7 +175,7 @@ step() {
 	if ! {
 		printf '$ ncly'
 		printf ' %q' "$@"
-		printf '\n--- stdout\n'
+		printf '\n--- at %s\n--- stdout\n' "$at"
 		cat "$out" || exit 1
 		printf -- '--- stderr\n'
 		cat "$err" || exit 1
@@ -184,6 +196,7 @@ step) step "$@" ;;
 tmux) tmux_step "$@" ;;
 quote) quote "$@" ;;
 cleanup) cleanup "$@" ;;
+prune) prune "$@" ;;
 -h | --help | help) usage help ;;
 *) usage ;;
 esac
