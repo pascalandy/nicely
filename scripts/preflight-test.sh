@@ -126,6 +126,15 @@ fct_main() {
 	fct_said "FAIL  ncly is missing from PATH"
 	fct_said "preflight: 4 missing, 0 warnings"
 
+	test_case="installed tools with failing version probes"
+	fct_present
+	fct_stub stubs tmux 'echo broken; exit 1'
+	fct_stub stubs codex 'echo broken; exit 1'
+	fct_run 1
+	fct_hint "FAIL  tmux is missing"
+	fct_hint "FAIL  codex is missing"
+	fct_said "preflight: 2 missing, 0 warnings"
+
 	test_case="Go modules missing from the cache"
 	fct_present
 	fct_stub stubs go 'exit 1'
