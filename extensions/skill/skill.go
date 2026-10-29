@@ -66,7 +66,6 @@ const (
 
 const (
 	codeShadowed      contract.Code = "SKILL_SHADOWED"
-	codeNoSource      contract.Code = "SKILL_NO_SOURCE"
 	codeInvalid       contract.Code = "SKILL_INVALID"
 	codeSourceMissing contract.Code = "SKILL_SOURCE_MISSING"
 )
@@ -121,8 +120,7 @@ func view(ctx context.Context, call extension.Call) contract.Outcome {
 // failed ncly describe.
 func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, *contract.Problem) {
 	home, _ := os.UserHomeDir()
-	paths := config.Locate(home, os.LookupEnv)
-	folders, file, problem := configured(p, home, paths)
+	folders, file, problem := configured(p, home, config.Locate(home, os.LookupEnv))
 	if problem != nil {
 		return nil, nil, problem
 	}
@@ -132,9 +130,6 @@ func gather(ctx context.Context, p *i18n.Printer) ([]Skill, []contract.Problem, 
 		return nil, nil, &problem
 	}
 	s := &scan{p: p, seen: map[string]bool{}, owner: map[string]*string{}, skills: []Skill{}}
-	if len(folders) == 0 {
-		s.warn(codeNoSource, "skill.no_source", "skill.no_source_hint", map[string]any{"File": paths.Shared})
-	}
 	for _, folder := range folders {
 		s.folder(folder, file)
 	}

@@ -9,6 +9,22 @@ chmod 755 bin/ncly-hello
 chmod 755 bin/ncly-bye
 env PATH=$WORK/bin:$PATH
 
+# Without a configured folder, skill.sources warns with SKILL_NO_SOURCE, whose hint names
+# [skill] paths in the shared config file, and so does an empty paths
+exec ncly skill status --json
+answer stdout ok
+stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"skill\.sources","component":"skill","status":"warn","code":"SKILL_NO_SOURCE","message":"No skill folder is configured\.","hint":"Add the folders of your skills to \[skill\] paths in '${CFG@R}'/config\.toml\."\},\{"id":"skill\.names",'
+! stderr .
+exec ncly skill status
+stdout '^warn  skill\.sources  +No skill folder is configured\.$'
+exec ncly --lang en-XA skill status
+pseudo stdout skill.sources skill.names skill.files
+cp nopaths.toml $CFG/config.toml
+exec ncly skill status --json
+stdout '"id":"skill\.sources","component":"skill","status":"warn","code":"SKILL_NO_SOURCE",'
+exec ncly doctor skill --json
+stdout '"id":"skill\.sources","component":"skill","status":"warn","code":"SKILL_NO_SOURCE",'
+
 # Without a problem, a kind passes once, while the skill of bye, named hi, warns
 cp good.toml $CFG/config.toml
 exec ncly skill status --json
@@ -45,6 +61,9 @@ stdout '"checks":\[\{"id":"skill\.status","component":"skill","status":"fail","c
 -- good.toml --
 [skill]
 paths = ["~/skills/good-only"]
+-- nopaths.toml --
+[skill]
+paths = []
 -- problems.toml --
 [skill]
 paths = ["~/skills", "~/missing", "~/skills"]

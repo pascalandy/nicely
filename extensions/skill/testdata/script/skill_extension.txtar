@@ -17,7 +17,7 @@ exists $DATA/ncly-hello.skill/SKILL.md
 exec ncly skill list --json
 answer stdout ok
 stdout '"skills":\[\{"name":"hello","description":"Use when greeting someone with ncly hello\.","path":"'${DATA@R}'/ncly-hello\.skill","source":"extension"\},\{"name":"nicely","description":"Use before running any ncly command\.","path":null,"source":"bundled"\},\{"name":"shop","description":"Use when buying with ncly shop\.","path":"'${WORK@R}'/bin/ncly-shop\.skill","source":"extension"\}\]'
-stdout '"warnings":\[\{"code":"SKILL_NO_SOURCE",'
+! stdout '"warnings"'
 ! stdout hidden
 ! stdout plain
 
