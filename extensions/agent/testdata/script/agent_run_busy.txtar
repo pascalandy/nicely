@@ -6,14 +6,16 @@ chmod 755 bin/codex
 onlyncly agent-external
 env CODEX_ANSWER='OK from Codex'
 
-# While the first call holds the run, the second one, and its dry run, exit 75 with TEMPORARY
-# and start nothing
+# While the first call holds the run, the second one, and its dry run, exit 75 with TEMPORARY,
+# name the run to inspect, and start nothing
 exec ncly agent run 'Review this branch' --tools --model m1 --run-id c1 --json &
 waitfile $TMPDIR/started
 exits 75 ncly agent run 'Review this branch' --tools --model m1 --run-id c1 --json
 answer stderr TEMPORARY
+stderr '"hint":"ncly run view c1","next":\["ncly","run","view","c1"\]'
 exits 75 ncly agent run 'Review this branch' --tools --model m1 --run-id c1 --dry-run --json
 answer stderr TEMPORARY
+stderr '"hint":"ncly run view c1","next":\["ncly","run","view","c1"\]'
 exec /bin/sh -c ': > "$TMPDIR/release"'
 wait
 stdout '"answer":"OK from Codex".*"run_id":"c1"'
