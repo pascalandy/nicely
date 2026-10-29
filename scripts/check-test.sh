@@ -38,6 +38,7 @@ fct_setup() {
 	# The list of checks comes from check.sh itself, so a new check needs no change here.
 	line="$(grep '^checks=(' "${repo_root}/scripts/check.sh")"
 	eval "${line}"
+	[[ ${#checks[@]} -gt 0 ]] || fct_fail "check.sh lists no checks"
 	printf '\nset allow-duplicate-recipes\n' >>"${root}/caller/justfile"
 	for check in "${checks[@]}"; do
 		name="${check%% *}"

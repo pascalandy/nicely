@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2154 # verify.sh sets script_dir and test_service before it sources this file
+# shellcheck disable=SC2154 # verify.sh sets script_dir before it sources this file
 # prepare.sh holds the prepare step of verify.sh, which sources it: the fixture of each
 # feature that needs one beside hello.
 #

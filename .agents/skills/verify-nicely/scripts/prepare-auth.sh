@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# shellcheck disable=SC2154 # verify.sh sets script_dir and test_service before prepare.sh sources this file
+# shellcheck disable=SC2154 # verify.sh sets test_service before prepare.sh sources this file
 # prepare-auth.sh holds the fixture of the auth feature, which prepare.sh sources:
 #
 #   verify.sh prepare <run> auth [--mac-keychain]

@@ -69,7 +69,7 @@ fct_run() {
 	fi
 }
 
-# fct_said <line> requires a line of the output that starts with the given text.
+# fct_said <text> requires the output to hold the given text.
 fct_said() {
 	grep -F -q -- "${1}" "${root}/output" || {
 		cat "${root}/output" >&2
