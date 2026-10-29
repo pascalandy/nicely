@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/config"
+	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -183,6 +184,29 @@ func Resolve(line Line) Globals {
 	}
 	g.Lang, _ = config.Lang(line.values["lang"], env, ConfigValues).Value.(string)
 	return g
+}
+
+// Refused returns USAGE_INVALID for the first value that Global flags or
+// Configuration in contract.md refuses, or nil. It checks the NCLY_ variable
+// of each switch that the line leaves to it, which must hold 1, 0, or
+// nothing. NO_COLOR follows no-color.org instead. It then checks --lang or
+// NCLY_LANG, whichever sets the language.
+func Refused(p *i18n.Printer, line Line) *contract.Problem {
+	for _, f := range contract.GlobalFlags {
+		value := os.Getenv(f.Env)
+		_, given := line.Switch(f.Name)
+		if f.Value != "" || !strings.HasPrefix(f.Env, "NCLY_") || given || value == "" || value == "0" || value == "1" {
+			continue
+		}
+		data := map[string]any{"Name": f.Env, "Value": i18n.Clip(value)}
+		return &contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid_variable", data), Hint: p.T("usage.invalid_variable_hint", data)}
+	}
+	lang := config.Lang(line.values["lang"], os.Getenv, func() config.Values { return nil })
+	if setting, _ := lang.Value.(string); (lang.Source == "--lang" || lang.Source == "NCLY_LANG") && !i18n.IsLanguage(setting) {
+		data := map[string]any{"Name": lang.Source, "Value": i18n.Clip(setting)}
+		return &contract.Problem{Code: contract.UsageInvalid, Message: p.T("usage.invalid_language", data), Hint: p.T("usage.invalid_language_hint")}
+	}
+	return nil
 }
 
 // ConfigValues reads the values of the config files. A load error gives

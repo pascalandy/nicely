@@ -77,9 +77,9 @@ func (p *Printer) Date(t time.Time) string { return t.Format(time.DateOnly) }
 const clipLimit = 80
 
 // Clip returns the first clipLimit characters of a value from the command
-// line, then …, when the value is longer. A message that refuses the value
-// quotes it so, as Output in contract.md asks. A hint or a next command keeps
-// the whole value.
+// line or a variable, then …, when the value is longer. A message that
+// refuses the value quotes it so, as Output in contract.md asks. A hint or a
+// next command keeps the whole value.
 func Clip(value string) string {
 	count := 0
 	for i := range value {

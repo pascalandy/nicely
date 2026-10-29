@@ -77,6 +77,7 @@ func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend
 	// puts them there, so the request is the first word after the flags.
 	completing := len(line.Words) > 0 && isCompletionRequest(line.Words[0])
 	broken := brokenTarget(extensions, line.Words)
+	refused := command.Refused(p, line)
 	form := command.NewForm(p, g, os.Stdin, stdout, stderr)
 	var err error
 	switch {
@@ -95,6 +96,9 @@ func Main(args []string, bundled []sdkextension.Extension, keys keychain.Backend
 		err = command.Fail(command.UnknownCommand(p, root, line.Operands[0]))
 	case len(line.Words) > 0 && !isCommand(root, line.Words[0]):
 		err = command.Fail(command.UnknownCommand(p, root, line.Words[0]))
+	case refused != nil:
+		// A refused value fails where the parser fails on a bad flag value: after an unknown first word.
+		err = command.Fail(*refused)
 	default:
 		err = root.ExecuteContext(command.WithForm(context.Background(), form))
 	}

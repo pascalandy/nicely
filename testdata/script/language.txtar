@@ -1,5 +1,5 @@
 # A language without a catalog falls back to English, without an error
-exec ncly --lang xx --help
+exec ncly --lang de --help
 stdout 'Curated CLI toolbox'
 ! stdout '⟦'
 ! stderr .

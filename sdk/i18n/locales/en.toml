@@ -260,6 +260,22 @@ other = "The argument {{.Arg}} is not a valid flag."
 description = "Error when the command line is wrong in a way no other message covers."
 other = "This command line is not valid."
 
+["usage.invalid_variable"]
+description = "Error when the variable of a global flag holds a value other than 1, 0, or nothing. {{.Name}} is the variable, such as NCLY_JSON, and {{.Value}} its value."
+other = "The variable {{.Name}} does not accept \"{{.Value}}\"."
+
+["usage.invalid_variable_hint"]
+description = "Hint of usage.invalid_variable. {{.Name}} is the variable, such as NCLY_JSON. 1 and 0 are values and stay as is."
+other = "Set {{.Name}} to 1 to turn it on, or to 0 to turn it off."
+
+["usage.invalid_language"]
+description = "Error when --lang or NCLY_LANG names no language, such as xx-YY. {{.Name}} is --lang or NCLY_LANG, and {{.Value}} the value that it holds."
+other = "{{.Name}} holds \"{{.Value}}\", which is not a language tag."
+
+["usage.invalid_language_hint"]
+description = "Hint of usage.invalid_language. en and fr-CA are language tags and stay as is."
+other = "Use a language tag, such as en or fr-CA."
+
 ["outcome.interrupted"]
 description = "Error when Ctrl-C stopped a command. Finished files stay on disk."
 other = "Stopped by Ctrl-C. Finished work is kept."

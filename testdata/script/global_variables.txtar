@@ -1,0 +1,105 @@
+# An NCLY_ variable of a switch other than 1, 0, or nothing is refused, and machine output stays off
+env NCLY_JSON=maybe
+exits 2 ncly doctor
+! stdout .
+stderr '^error\[USAGE_INVALID\]: The variable NCLY_JSON does not accept "maybe"\.$'
+stderr '^  hint: Set NCLY_JSON to 1 to turn it on, or to 0 to turn it off\.$'
+exits 2 ncly --lang en-XA doctor
+pseudo stderr NCLY_JSON maybe
+
+# The flag wins over its variable, so ncly refuses no variable behind it
+exec ncly describe completion zsh --json
+answer stdout ok
+exec ncly describe completion zsh --json=false
+! stdout '"ok"'
+! stderr .
+env NCLY_JSON=
+
+# NCLY_NO_INPUT and NCLY_VERBOSE follow the same rule, in machine output when NCLY_JSON=1 asks
+env NCLY_JSON=1 NCLY_NO_INPUT=yes
+exits 2 ncly describe
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"The variable NCLY_NO_INPUT does not accept \\"yes\\"\."'
+! stderr '"next"'
+exec ncly describe completion zsh --no-input
+answer stdout ok
+env NCLY_NO_INPUT= NCLY_VERBOSE=true
+exits 2 ncly describe
+answer stderr USAGE_INVALID
+stderr 'NCLY_VERBOSE does not accept'
+env NCLY_VERBOSE=
+
+# 0, nothing, and 1 read without an error
+env NCLY_JSON=0 NCLY_NO_INPUT=0 NCLY_VERBOSE=0
+exec ncly describe completion zsh
+! stdout '"ok"'
+! stderr .
+env NCLY_JSON=1 NCLY_NO_INPUT=1 NCLY_VERBOSE=
+exec ncly describe completion zsh
+answer stdout ok
+env NCLY_JSON= NCLY_NO_INPUT=
+
+# A long refused value keeps its first 80 characters, as any refused value does
+env NCLY_JSON=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+exits 2 ncly doctor
+stderr 'does not accept "x{80}…"\.$'
+env NCLY_JSON=
+
+# --lang or NCLY_LANG that names no language is refused, whichever sets the language
+exits 2 ncly --lang xx-YY describe --json
+! stdout .
+answer stderr USAGE_INVALID
+stderr '"message":"--lang holds \\"xx-YY\\", which is not a language tag\.","hint":"Use a language tag, such as en or fr-CA\."\}'
+exits 2 ncly --lang 123 describe --json
+stderr '"message":"--lang holds \\"123\\"'
+env NCLY_LANG=xx
+exits 2 ncly describe
+stderr '^error\[USAGE_INVALID\]: NCLY_LANG holds "xx", which is not a language tag\.$'
+exec ncly --lang en describe completion zsh --json
+answer stdout ok
+env NCLY_LANG=
+
+# Help, the version, and completion still work with a refused value, in English
+exec ncly --lang xx-YY --help
+stdout 'Curated CLI toolbox'
+! stderr .
+env NCLY_JSON=maybe NCLY_LANG=xx-YY
+exec ncly doctor --help
+stdout '^Check this machine'
+! stderr .
+exec ncly --version
+stdout '^ncly v'
+exec ncly __complete desc
+stdout '^describe\t'
+env NCLY_JSON= NCLY_LANG=
+
+# The SDK's entry point run directly refuses the same values
+env NCLY_NO_INPUT=yes
+exits 2 ncly-hello say
+stderr 'The variable NCLY_NO_INPUT does not accept "yes"\.'
+env NCLY_NO_INPUT=
+
+# A known language without a catalog, C, POSIX, and the POSIX form fall back to English silently
+exec ncly --lang de describe completion zsh --json
+stdout '"summary":"Print the completion script for zsh'
+! stderr .
+exec ncly --lang C.UTF-8 describe completion zsh --json
+answer stdout ok
+exec ncly --lang POSIX describe completion zsh --json
+answer stdout ok
+exec ncly --lang de_DE.UTF-8 describe completion zsh --json
+answer stdout ok
+
+# ncly never checks lang in the config or the locale variables
+env LANG=xx-YY LC_ALL=123
+exec ncly describe completion zsh --json
+answer stdout ok
+env LANG= LC_ALL=
+mkdir .config/nicely
+cp bad.toml .config/nicely/config.toml
+exec ncly describe completion zsh --json
+answer stdout ok
+
+-- bad.toml --
+lang = "xx-YY"

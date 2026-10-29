@@ -9,7 +9,8 @@
 // N, Size, or Duration: T always shows its other form, and the test binary
 // of cmd/ncly refuses it. Format numbers, sizes, durations, and dates through
 // this package, and let translated text set its own width. Pass a value from
-// the command line through Clip before a message that refuses it quotes it.
+// the command line or a variable through Clip before a message that refuses
+// it quotes it.
 package i18n
 
 import (
@@ -178,12 +179,27 @@ func Requested(setting string) string {
 	return tag.String()
 }
 
+// IsLanguage reports whether ncly accepts a language setting, with or
+// without a catalog. It accepts a known tag such as de, its POSIX form such
+// as fr_CA.UTF-8, C, and POSIX. It refuses an unknown language, such as xx-YY.
+func IsLanguage(setting string) bool {
+	if posix := withoutEncoding(setting); posix == "C" || posix == "POSIX" {
+		return true
+	}
+	_, err := parseSetting(setting)
+	return err == nil
+}
+
 // parseSetting reads a language setting as a tag, without the encoding and
 // the modifier of the POSIX form.
 func parseSetting(setting string) (language.Tag, error) {
+	return language.Parse(strings.ReplaceAll(withoutEncoding(setting), "_", "-"))
+}
+
+func withoutEncoding(setting string) string {
 	setting, _, _ = strings.Cut(setting, ".")
 	setting, _, _ = strings.Cut(setting, "@")
-	return language.Parse(strings.ReplaceAll(setting, "_", "-"))
+	return setting
 }
 
 // Printer returns catalog text and formats values in one language.

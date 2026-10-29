@@ -221,12 +221,15 @@ func run(e Extension, args []string, stdout, stderr *os.File) int {
 	root.SetHelpFunc(command.HelpFunc(p, g.NoColor))
 	codes := l.manifest.Registry()
 	form := command.NewForm(p, g, os.Stdin, stdout, stderr)
+	refused := command.Refused(p, line)
 	switch {
 	case line.Version() && !line.Help():
 		_, err = fmt.Fprintf(out, "ncly-%s %s\n", l.manifest.Slug(), command.ModuleVersion())
 	case line.Help():
 		target, _, _ := root.Find(args)
 		err = target.Help()
+	case refused != nil:
+		err = command.Fail(*refused)
 	default:
 		err = root.ExecuteContext(command.WithForm(context.Background(), form))
 	}

@@ -1,6 +1,6 @@
 # Global flags
 
-Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable. An `NCLY_` variable turns its flag on only when it equals `1`, and `NO_COLOR` turns color off when it is set and not empty, as [no-color.org](https://no-color.org/) defines it. [Programs that ncly runs](programs-that-ncly-runs.md) receive the resolved values.
+Each global flag other than `--help` and `--version` has an environment variable with the same effect. A flag wins over its variable, so `ncly` checks the variable only when the flag is absent. An `NCLY_` variable of a switch turns it on when it equals `1`, and leaves it off when it is unset, empty, or `0`. Any other value is `USAGE_INVALID` with exit 2, and a refused `NCLY_JSON` leaves machine output off, as [D066](../decisions/D066-refuse-unreadable-variables.md) decides. [Configuration](configuration.md) defines which languages `--lang` and `NCLY_LANG` refuse. `--help`, `--version`, and the completion requests of the shell scripts still work with a refused value, as they do with an invalid flag value. `NO_COLOR` turns color off when it is set and not empty, as [no-color.org](https://no-color.org/) defines it. [Programs that ncly runs](programs-that-ncly-runs.md) receive the resolved values.
 
 | Flag | Variable | Default | Effect |
 |---|---|---|---|
