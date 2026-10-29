@@ -30,8 +30,8 @@ Make at least 3 runs, to measure discovery and determinism.
 An isolated install leaves the host's `ncly`, extensions, config, and keys unchanged. `just acceptance` in an extension repository does these steps itself.
 
 1. **Tools first.** Before you change a variable, find the path of `just` and `go`: `mise which just` for a tool that mise installed, else `command -v just`. Call those paths. Once `XDG_CONFIG_HOME` moves, a shim of mise outside a folder that pins the tool fails with `No version is set for shim`.
-2. **Scratch folders.** Create one folder with `mktemp -d`, and point `XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_CACHE_HOME` to subfolders of it.
-3. **`ncly` from `main`.** In a Nicely checkout of `origin/main`, run `go build -o <scratch>/bin/ncly ./cmd/ncly`, and put `<scratch>/bin` first in `PATH`. Record `ncly --version`.
+2. **Scratch folders.** Create one folder with `mktemp -d`. Point `XDG_BIN_HOME`, `XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_CACHE_HOME` to subfolders of it.
+3. **`ncly` from `main`.** In a Nicely checkout of `origin/main`, run `just install ncly`, and put the folder of `XDG_BIN_HOME` first in `PATH`. Add the first-party extensions that the UAT needs, such as `just install ncly agent`. Record `ncly --version`.
 4. **The extension.** Run `just install` in its clone, under the same variables. It installs into the scratch data folder.
 5. **End.** Move the scratch folder to the trash.
 
