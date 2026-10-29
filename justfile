@@ -215,17 +215,7 @@ gitleaks-staged:
 # Prove the leak rules: every line of leaks.txt is blocked, every line of clean.txt passes
 [group('checks')]
 gitleaks-rules:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    scan() { printf '%s\n' "$1" | gitleaks stdin --config .gitleaks.toml --no-banner --log-level error >/dev/null; }
-    status=0
-    while IFS= read -r line; do
-        if scan "$line"; then echo "not blocked: $line" >&2; status=1; fi
-    done < testdata/gitleaks/leaks.txt
-    while IFS= read -r line; do
-        if ! scan "$line"; then echo "blocked: $line" >&2; status=1; fi
-    done < testdata/gitleaks/clean.txt
-    exit "$status"
+    @exec bash scripts/gitleaks-rules.sh
 
 # Format the Go files in place, or only the given files
 fmt *files:
