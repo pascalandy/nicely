@@ -29,3 +29,27 @@ fct_test_uninstall() {
 	(cd "${repo}" && just uninstall) >"${scratch}/uninstall.out"
 	fct_has "${scratch}/uninstall.out" "uninstall: nothing to remove, since ${extensions} holds no ncly-${slug}"
 }
+
+# fct_test_acceptance runs just acceptance in the rendered repository $1 on
+# the input that it makes. Then it runs it from another folder on a read-only
+# fixture, given by a relative path, which keeps its content.
+fct_test_acceptance() {
+	local repo="${1}" scratch="${2}" fixture="${2}/fixtures/notes.md"
+	# The author fills acceptance.sh, so it starts free of findings.
+	shellcheck "${repo}/acceptance.sh"
+	shfmt -d "${repo}/acceptance.sh"
+	if ! (cd "${repo}" && just acceptance) >"${scratch}/acceptance.out" 2>&1; then
+		cat "${scratch}/acceptance.out" >&2
+		fct_fail 'just acceptance fails on the input that it makes'
+	fi
+	grep -q '^acceptance: ncly .* passed on .*/work/notes\.md$' "${scratch}/acceptance.out" || fct_fail "just acceptance reports no pass: $(cat "${scratch}/acceptance.out")"
+	mkdir -p "${scratch}/fixtures"
+	printf 'one\ntwo\n' >"${fixture}"
+	chmod 444 "${fixture}"
+	if ! (cd "${scratch}/fixtures" && just --justfile "${repo}/justfile" acceptance notes.md) >"${scratch}/acceptance.out" 2>&1; then
+		cat "${scratch}/acceptance.out" >&2
+		fct_fail 'just acceptance fails on a fixture'
+	fi
+	grep -qF '"size_bytes":8' "${scratch}/acceptance.out" || fct_fail "just acceptance did not run on the fixture: $(cat "${scratch}/acceptance.out")"
+	[[ "$(cat "${fixture}")" == $'one\ntwo' ]] || fct_fail 'just acceptance changes the fixture'
+}

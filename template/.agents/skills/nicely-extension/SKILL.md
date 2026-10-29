@@ -52,7 +52,7 @@ Write each fact that nobody can give as an open question in `spec.md`.
 
 1. Follow "Change a command" in `AGENTS.md`. Give each case of the command's spec a scenario
 2. Run `just check`. Its test kit installs the extension into scratch folders and runs the scenarios
-3. Run `just install`, then run the installed command once on the real input of `## Acceptance` in `spec.md`. For a paid command, run only its dry run
+3. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. Then run `just acceptance` with the real input. For a paid command, run only its dry run
 4. For a command that needs a key, relay the grant hint to the human and wait. Never grant a key yourself
 
 ## Readiness review

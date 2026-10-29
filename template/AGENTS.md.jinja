@@ -36,7 +36,7 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 {% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
 2. Replace the example declaration at `{{ example_command }}` and its examples in `manifest.toml`. Remove `[programs.python3]` when no command needs it
 3. Replace the `{{ slug }}.inspect` catalog entries for the new command. {% if not name %}Rewrite `{{ slug }}.summary` for the remaining commands. {% endif %}Keep every catalog ID under `{{ slug }}.`
-4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`
+4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`. Replace it in `acceptance.sh`
 5. Remove its handler entry from `extension.go`. When `worker/` is empty, also remove `//go:embed worker`, its variable, and `Resources`. Then run `gofmt -w .`
 
 ## Recipes
@@ -48,12 +48,13 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
+- `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would, in scratch folders. It works on a copy of the fixture, or on an input that it makes
 - `just update <version>`: moves the repository to another Nicely version, the template first and then the SDK, on a clean Git tree
 - `just contract`: prints the folder of the contract at the Nicely version that `go.mod` pins
 
 ## Done when
 
-`just check` passes, and the installed command ran once on the real input of `## Acceptance`. For a paid command, its dry run is enough. For a command that needs a key, relay the grant hint to the human and wait.
+`just check` passes, and `just acceptance` passes on the real input of `## Acceptance`. For a paid command, its dry run is enough. For a command that needs a key, relay the grant hint to the human and wait.
 
 ## Release
 

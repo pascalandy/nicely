@@ -84,6 +84,10 @@ uninstall:
         echo "removed $extensions/$file"
     done
 
+# Run the command of ## Acceptance in spec.md as an agent would, through acceptance.sh, on a copy of the fixture or on a made input
+acceptance fixture="":
+    @bash acceptance.sh {{ if fixture == "" { "" } else { quote(join(invocation_directory(), fixture)) } }}
+
 # Move the repository to another Nicely version, such as v0.19.0: the template first, then the SDK, on a clean Git tree
 update version:
     #!/usr/bin/env bash
