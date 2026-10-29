@@ -97,6 +97,7 @@ prune() {
 		run="${runs[$i]}"
 		if ((keep > 0)); then
 			keep=$((keep - 1))
+			log "kept $run, one of the newest runs"
 		elif [[ -e "$run/scratch" ]]; then
 			log "kept $run, whose scratch folder remains: run cleanup on it first"
 		else
