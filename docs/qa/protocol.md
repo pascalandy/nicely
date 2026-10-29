@@ -5,6 +5,7 @@ This file answers one question: how is a UAT of any extension run so that it can
 ## Fixed rules
 
 - **Hosts.** Run on the macOS test host and on the Linux test host, never on the author's workstation. Name the host in the issue body, never in its title.
+- **Paid calls.** A demo call to Codex uses `gpt-6-luna` at effort `low`. It was the cheapest model that Codex listed on 2026-10-29.
 - **Runner.** An agent runs each UAT by default, on macOS too, with screen control such as `cua`. It calls a human only for a case of [Human escalation](#human-escalation).
 - **Install.** Install the extension from its release tag, with the commands of its `README.md`. Record the versions of `ncly`, the tag, its commit, and the wrapped program.
 - **Fixtures.** Real data is a prerequisite that the issue names. Originals stay read-only and locked, as [fixtures.md](fixtures.md) says.
@@ -12,7 +13,7 @@ This file answers one question: how is a UAT of any extension run so that it can
 
 ## One run
 
-1. **Prerequisites.** Check that the fixture volume is mounted, its checksum is `OK`, and its lock holds. Otherwise stop.
+1. **Prerequisites.** In a Nicely checkout, run `just preflight` with the fixture folders that the issue names. It checks the host, then the checksum and the lock of each fixture. Stop when it exits nonzero.
 2. **New folder.** Create `ncly-uat-<issue>-<YYYYMMDD-HHMM>/` and copy the fixture into it. Check the checksum of the copy.
 3. **Discovery.** Give a fresh agent one sentence, without hints or `NCLY_*` variables. Its instructions hold only the agent line of the [README](../../README.md). It must reach the command through `ncly skill view nicely` and `ncly describe`.
 4. **Dry run.** When the command has a dry run, it comes before the run and passes on valid input.

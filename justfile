@@ -83,6 +83,12 @@ check *flags:
 check-layers *branches:
     @exec bash scripts/check-layers.sh "$@"
 
+# Check this host for a UAT, and the given fixture folders, without changing anything
+[group('checks')]
+[positional-arguments]
+preflight *fixtures:
+    @exec bash scripts/preflight.sh "$@"
+
 # Build ncly into a scratch folder for the verify-nicely skill, or run one of its steps
 [group('checks')]
 [positional-arguments]
@@ -114,6 +120,7 @@ test *args:
     bash scripts/check-layers-test.sh
     bash scripts/signoff-test.sh
     bash scripts/check-test.sh
+    bash scripts/preflight-test.sh
     bash scripts/scenario-test.sh
 
 # Render the extension template and check the rendered repository
