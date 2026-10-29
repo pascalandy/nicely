@@ -18,8 +18,8 @@ description = "Help page: summary of `ncly completion`, which prints scripts tha
 other = "Print shell completion scripts"
 
 ["completion.zsh_summary"]
-description = "Help page: summary of `ncly completion zsh`. zsh is the name of a shell and stays as is."
-other = "Print the completion script for zsh"
+description = "Help page: summary of `ncly completion zsh`. zsh is the name of a shell, and compinit the zsh function that starts completion: both stay as is."
+other = "Print the completion script for zsh, to load after compinit"
 
 ["completion.bash_summary"]
 description = "Help page: summary of `ncly completion bash`. bash is the name of a shell, and bash-completion the package that the script needs: both stay as is."

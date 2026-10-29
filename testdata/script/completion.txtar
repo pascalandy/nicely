@@ -27,7 +27,7 @@ stdout 'ncly'
 exec ncly __complete ''
 stdout '^completion\tPrint shell completion scripts$'
 exec ncly __complete completion ''
-stdout '^zsh\tPrint the completion script for zsh$'
+stdout '^zsh\tPrint the completion script for zsh'
 stdout '^bash\t'
 stdout '^fish\t'
 

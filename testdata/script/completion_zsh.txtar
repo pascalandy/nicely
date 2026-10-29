@@ -1,5 +1,6 @@
 # The help of zsh shows the script loaded with eval, which goes after compinit because the script calls compdef
 exec ncly completion zsh --help
+stdout '\APrint the completion script for zsh, to load after compinit\n'
 stdout '^  \$ eval "\$\(ncly completion zsh\)"$'
 ! stdout 'autoload'
 
