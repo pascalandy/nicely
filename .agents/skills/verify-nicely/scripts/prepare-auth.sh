@@ -13,9 +13,10 @@
 prepare_auth() {
 	local run="$1" extensions
 	if [[ "$(uname -s)" == Darwin && "${2:-}" != --mac-keychain ]]; then
-		die "on macOS, the keychain may ask for a password, so only a human runs the auth feature there, with --mac-keychain"
+		die "on macOS, pass --mac-keychain: the auth feature then uses the login keychain, which may ask for a password"
 	fi
 	[[ -d "$run/scratch" ]] || die "$run was cleaned up: start a new run"
+	[[ "$(uname -s)" != Darwin ]] || keep_home "$run"
 	extensions="$run/scratch/home/.local/share/nicely/extensions"
 	cat >"$extensions/ncly-verifykeys" <<'FIXTURE'
 #!/bin/sh
@@ -59,4 +60,20 @@ FIXTURE
 		'other = "Answer the SHA-256 of the key of the test service"' >"$extensions/ncly-verifykeys.locales/en.toml"
 	: >"$run/auth-prepared"
 	log "verifykeys declares the service $test_service, whose variable is VERIFYNICELY_API_KEY, and answers the SHA-256 of its key"
+}
+
+# keep_home points the HOME of the run's wrapper at the real home. On macOS, security finds the
+# default keychain under HOME, and the scratch home holds none, so a login would fail with the
+# window "Keychain Not Found". The XDG folders, where ncly keeps its files, stay in the scratch
+# home. See #359.
+keep_home() {
+	local wrapper="$1/scratch/bin/ncly"
+	case "$HOME" in
+	/*"'"* | [!/]* | "") die "HOME must be an absolute path without a quote, which the wrapper cannot hold" ;;
+	esac
+	REAL_HOME="$HOME" awk -v q="'" '/^HOME=/ { print "HOME=" q ENVIRON["REAL_HOME"] q; next } { print }' \
+		"$wrapper" >"$wrapper.new"
+	chmod +x "$wrapper.new"
+	mv -f "$wrapper.new" "$wrapper"
+	log "the wrapper keeps HOME=$HOME for the login keychain, and the XDG folders in the scratch home"
 }

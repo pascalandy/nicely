@@ -5,6 +5,7 @@ This file answers one question: how is a UAT of any extension run so that it can
 ## Fixed rules
 
 - **Hosts.** Run on the macOS test host and on the Linux test host, never on the author's workstation. Name the host in the issue body, never in its title.
+- **Runner.** An agent runs each UAT by default, on macOS too, with screen control such as `cua`. It calls a human only for a case of [Human escalation](#human-escalation).
 - **Install.** Install the extension from its release tag, with the commands of its `README.md`. Record the versions of `ncly`, the tag, its commit, and the wrapped program.
 - **Fixtures.** Real data is a prerequisite that the issue names. Originals stay read-only and locked, as [fixtures.md](fixtures.md) says.
 - **Deletion.** Move work folders to the trash. Never modify or unlock an original.
@@ -22,6 +23,24 @@ This file answers one question: how is a UAT of any extension run so that it can
 9. **Evidence.** Keep it in `~/.cache/ncly-uat-<issue>-runs/<run>/`. Then move the work folder to the trash.
 
 Make at least 3 runs, to measure discovery and determinism.
+
+## Human escalation
+
+The agent stops and calls Pascal only in these cases. Each UAT issue names its own in its Human escalation section.
+
+- The OS or the keychain asks for a password.
+- A window takes the keyboard, and no action of the agent reaches it. `cua do click` cannot reach a SecurityAgent window, such as one about the keychain. Escape presses its Cancel button.
+- A step stays blocked after one retry.
+
+Never press **Reset To Defaults** in a keychain window: it can replace the real keychain.
+
+## No-spawn probe
+
+This probe proves that a replay starts no harness, such as Codex.
+
+1. Count the harness processes with `pgrep -x codex | wc -l`, and its sessions with `find ~/.codex/sessions -type f | wc -l`.
+2. Repeat the call under its run ID, with a `PATH` that holds no folder with the harness. Under that `PATH`, `command -v codex` prints nothing.
+3. Count both again. Equal counts and a replay that succeeds prove that nothing started.
 
 ## Criteria families
 

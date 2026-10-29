@@ -4,18 +4,20 @@
 #
 #   verify.sh quote <run> [<feature>]   print transcripts with placeholders for home paths
 #   verify.sh cleanup <run>             remove the scratch folder, keep the evidence
+#   verify.sh prune --keep <n>          remove the runs before the newest <n>, once cleaned up
 
 # logout_fake_key logs the fake key of the auth feature out of the real
 # keychain, then checks that status no longer finds it. Both calls go to the
 # transcript evidence/cleanup.txt. It fails when the key may remain.
 logout_fake_key() {
-	local run="$1" code=0 answer
+	local run="$1" code=0 answer outcome
 	# The key must come from the keychain, never from the caller's variable.
 	unset VERIFYNICELY_API_KEY
 	answer="$(step "$run" cleanup auth logout "$test_service" --force --json)" || code=$?
 	# 0 removed the key, and 2 with NOT_FOUND found none to remove.
 	case "$code:$answer" in
-	0:* | 2:*'"errors":[{"code":"NOT_FOUND"'*) ;;
+	0:*) outcome="logged the fake key of $test_service out of the keychain" ;;
+	2:*'"errors":[{"code":"NOT_FOUND"'*) outcome="found no fake key of $test_service in the keychain" ;;
 	*)
 		log "ncly auth logout $test_service exited with $code: see $run/evidence/cleanup.txt"
 		return 1
@@ -33,7 +35,7 @@ logout_fake_key() {
 		return 1
 		;;
 	esac
-	log "logged the fake key of $test_service out of the keychain"
+	log "$outcome"
 }
 
 cleanup() {
@@ -76,5 +78,30 @@ quote() {
 			}
 			{ print swap(swap($0, ENVIRON["RUN"], "<run>"), ENVIRON["HOME_DIR"], "/Users/me") }
 		' "$file"
+	done
+}
+
+# prune keeps the newest <n> runs that start created, by the time that starts their names, and
+# removes the others with their evidence. It keeps a run whose scratch folder remains, because
+# its cleanup has not ended, such as one that may leave a fake key in the keychain.
+prune() {
+	local root keep run i
+	local -a runs=()
+	[[ $# -eq 2 && "$1" == --keep && "$2" =~ ^[0-9]+$ ]] || usage
+	keep=$((10#$2))
+	root="$(runs_root)"
+	for run in "$root"/*; do
+		if [[ -f "$run/$marker" && ! -L "$run" ]]; then runs[${#runs[@]}]="$run"; fi
+	done
+	for ((i = ${#runs[@]} - 1; i >= 0; i--)); do
+		run="${runs[$i]}"
+		if ((keep > 0)); then
+			keep=$((keep - 1))
+		elif [[ -e "$run/scratch" ]]; then
+			log "kept $run, whose scratch folder remains: run cleanup on it first"
+		else
+			rm -rf "${run:?}"
+			log "removed $run"
+		fi
 	done
 }
