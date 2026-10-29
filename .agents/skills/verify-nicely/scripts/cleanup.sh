@@ -1,6 +1,6 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2154 # verify.sh sets marker and test_service before it sources this file
-# cleanup.sh holds the steps of verify.sh that end a run, which verify.sh sources:
+# cleanup.sh holds cleanup, quote, and prune, which verify.sh sources:
 #
 #   verify.sh quote <run> [<feature>]   print transcripts with placeholders for home paths
 #   verify.sh cleanup <run>             remove the scratch folder, keep the evidence

@@ -148,7 +148,7 @@ test_service="verifynicely"
 # prepare.sh holds the prepare step and the fixture of each feature that needs one.
 # shellcheck source=/dev/null
 . "$script_dir/prepare.sh"
-# cleanup.sh holds the steps that end a run: cleanup, quote, and prune.
+# cleanup.sh holds cleanup, quote, and prune.
 # shellcheck source=/dev/null
 . "$script_dir/cleanup.sh"
 # tmux.sh holds the tmux step.
