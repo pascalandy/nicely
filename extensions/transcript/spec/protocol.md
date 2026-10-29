@@ -90,10 +90,11 @@ The `python` recipe runs the checks of the engine, and `check` runs that recipe:
 
 1. `uv tool run ruff@0.16.9 check --isolated`, then `uv tool run ruff@0.16.9 format --isolated --check`
 2. `uv export --script` writes the runtime packages of the header to a requirements file
-3. `uv tool run --with-requirements <file> --with pytest==9.1.1 pyright@1.1.414`
+3. `uv tool run --with-requirements <file> --with pytest==9.1.1 'pyright[nodejs]@1.1.414'`
 4. `uv tool run --with-requirements <file> --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto`
 
 The recipe pins only the tools.
+The `nodejs` extra gives pyright its own Node.js, because the nodeenv fallback fails on the alpha versions of Node 27.
 It runs pyright from the engine folder, because pyright resolves a sibling module only from there.
 That folder's `pyrightconfig.json` sets the root of pyright and Python 3.12, or pyright takes the first parent with a `pyproject.toml`, such as a home folder.
 It sits outside `just test`, so the nested hook fixture of [#230](https://github.com/pascalandy/nicely/issues/230) never reaches it.

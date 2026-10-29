@@ -149,7 +149,8 @@ python:
     trap 'rm -f "$requirements"' EXIT
     uv export --quiet --no-hashes --script transcript.py > "$requirements"
     # The header pins the runtime packages; this recipe pins only the tools. pyright reads the tests, so it needs pytest.
-    uv tool run --with-requirements "$requirements" --with pytest==9.1.1 pyright@1.1.414
+    # The nodejs extra brings its own Node.js. Without Node on PATH, the nodeenv fallback fails on the alpha versions of Node 27.
+    uv tool run --with-requirements "$requirements" --with pytest==9.1.1 'pyright[nodejs]@1.1.414'
     uv tool run --with-requirements "$requirements" --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto
 
 # Lint the Go code
