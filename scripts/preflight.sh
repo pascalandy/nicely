@@ -46,10 +46,11 @@ install_hint() {
 }
 
 check_tmux() {
-	if command -v tmux >/dev/null; then
-		pass "$(tmux -V) at $(command -v tmux)"
+	local version
+	if command -v tmux >/dev/null && version="$(tmux -V 2>/dev/null)"; then
+		pass "$version at $(command -v tmux)"
 	else
-		fail "tmux is missing: the terminal steps of verify-nicely need it" "$(install_hint tmux)"
+		fail "tmux is missing or its version probe failed: the terminal steps of verify-nicely need it" "$(install_hint tmux)"
 	fi
 }
 
@@ -106,10 +107,11 @@ check_modules() {
 }
 
 check_codex() {
-	if command -v codex >/dev/null; then
-		pass "$(codex --version 2>/dev/null | head -n 1) at $(command -v codex)"
+	local version
+	if command -v codex >/dev/null && version="$(codex --version 2>/dev/null)"; then
+		pass "${version%%$'\n'*} at $(command -v codex)"
 	else
-		fail "codex is missing: the agent extension and its demos need it" "$(install_hint codex openai-codex)"
+		fail "codex is missing or its version probe failed: the agent extension and its demos need it" "$(install_hint codex openai-codex)"
 	fi
 }
 
