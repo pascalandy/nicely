@@ -7,7 +7,7 @@ This file answers one question: how is a UAT of any extension run so that it can
 - **Hosts.** Run on the macOS test host and on the Linux test host, never on the author's workstation. Name the host in the issue body, never in its title.
 - **Paid calls.** A demo call to Codex uses `gpt-6-luna` at effort `low`. It was the cheapest model that Codex listed on 2026-10-29.
 - **Runner.** An agent runs each UAT by default, on macOS too, with screen control such as `cua`. It calls a human only for a case of [Human escalation](#human-escalation).
-- **Install.** Install the extension from its release tag, with the commands of its `README.md`. Record the versions of `ncly`, the tag, its commit, and the wrapped program.
+- **Install.** Install the extension from its release tag, with the commands of its `README.md`. Record the versions of `ncly`, the tag, its commit, and the wrapped program. To keep the host's own install, or to test `ncly` from `main`, install as [Isolated install](#isolated-install) says.
 - **Fixtures.** Real data is a prerequisite that the issue names. Originals stay read-only and locked, as [fixtures.md](fixtures.md) says.
 - **Deletion.** Move work folders to the trash. Never modify or unlock an original.
 
@@ -24,6 +24,16 @@ This file answers one question: how is a UAT of any extension run so that it can
 9. **Evidence.** Keep it in `~/.cache/ncly-uat-<issue>-runs/<run>/`. Then move the work folder to the trash.
 
 Make at least 3 runs, to measure discovery and determinism.
+
+## Isolated install
+
+An isolated install leaves the host's `ncly`, extensions, config, and keys unchanged. `just acceptance` in an extension repository does these steps itself.
+
+1. **Tools first.** Before you change a variable, find the path of `just` and `go`: `mise which just` for a tool that mise installed, else `command -v just`. Call those paths. Once `XDG_CONFIG_HOME` moves, a shim of mise outside a folder that pins the tool fails with `No version is set for shim`.
+2. **Scratch folders.** Create one folder with `mktemp -d`, and point `XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_CACHE_HOME` to subfolders of it.
+3. **`ncly` from `main`.** In a Nicely checkout of `origin/main`, run `go build -o <scratch>/bin/ncly ./cmd/ncly`, and put `<scratch>/bin` first in `PATH`. Record `ncly --version`.
+4. **The extension.** Run `just install` in its clone, under the same variables. It installs into the scratch data folder.
+5. **End.** Move the scratch folder to the trash.
 
 ## Human escalation
 
