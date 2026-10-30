@@ -45,6 +45,7 @@ Each part is one file, in reading order.
     - [Wrapped programs](contract/wrap.md)
     - [Test kit](contract/test-kit.md)
       - [Manifest examples](contract/manifest-examples.md)
+      - [Spec IDs](contract/spec-ids.md)
   - [Extension repository](contract/extension-repository.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)
