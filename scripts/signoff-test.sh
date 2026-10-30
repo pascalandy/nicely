@@ -25,7 +25,7 @@ fct_setup() {
 	done
 	repo_root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
 	root="$(mktemp -d "${TMPDIR:-/tmp}/ncly-signoff-test.XXXXXXXX")"
-	mkdir -p "${root}/bin" "${root}/caller/scripts" "${root}/cache"
+	mkdir -p "${root}/bin" "${root}/caller/scripts" "${root}/caller/signoff-fixture" "${root}/cache"
 	export NCLY_SIGNOFF_TEST="${root}" PATH="${root}/bin:${PATH}" XDG_CACHE_HOME="${root}/cache"
 	cat >"${root}/bin/gh" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -64,10 +64,23 @@ signoff-test-check:
     @git rev-parse HEAD >>"${NCLY_SIGNOFF_TEST}/checked"
     @test -z "${GIT_DIR-}${GIT_WORK_TREE-}${GIT_SIGNOFF_TEST-}${JUST_SIGNOFF_TEST-}${JUST_NO_DEPS-}"
     @test "$(cat fix.txt)" = fixed || { echo COMMITTED-FAILURE >&2; exit 1; }
+    @go test -count=1 ./signoff-fixture
     @if [[ -e "${NCLY_SIGNOFF_TEST}/move-head" ]]; then git checkout --quiet --detach HEAD~; fi
     @if [[ -e "${NCLY_SIGNOFF_TEST}/change-tracked" ]]; then echo changed >fix.txt; fi
     @if [[ -e "${NCLY_SIGNOFF_TEST}/move-caller" ]]; then git -C "${NCLY_SIGNOFF_TEST}/caller" -c commit.gpgsign=false commit --quiet --allow-empty --message 'caller moved'; fi
 JUST
+	printf 'package fixture\n\nfunc fixed() bool { return false }\n' >"${root}/caller/signoff-fixture/fix.go"
+	cat >"${root}/caller/signoff-fixture/fix_test.go" <<'GO'
+package fixture
+
+import "testing"
+
+func TestFix(t *testing.T) {
+	if !fixed() {
+		t.Fatal("COMMITTED-FAILURE")
+	}
+}
+GO
 	git -C "${root}/caller" init -q
 	git -C "${root}/caller" config user.name 'Signoff test'
 	git -C "${root}/caller" config user.email 'test@example.com'
@@ -101,6 +114,7 @@ fct_main() {
 	trap fct_cleanup EXIT
 	test_case="dirty fix"
 	printf 'fixed\n' >"${root}/caller/fix.txt"
+	printf 'package fixture\n\nfunc fixed() bool { return true }\n' >"${root}/caller/signoff-fixture/fix.go"
 	(cd "${root}/caller" && just check) >"${root}/output" 2>&1
 	fct_run fails just signoff
 	grep -qF COMMITTED-FAILURE "${root}/output" || fct_fail 'the committed defect did not fail the check'
@@ -110,10 +124,30 @@ fct_main() {
 	git -C "${root}/caller" add fix.txt
 	git -C "${root}/caller" commit -qm 'committed fix'
 	sha="$(git -C "${root}/caller" rev-parse HEAD)"
+	test_case="dirty Go fix without overlay"
+	fct_run fails just signoff
+	grep -qF COMMITTED-FAILURE "${root}/output" || fct_fail 'the committed Go defect did not fail the check'
+	[[ ! -s "${root}/signed" ]] || fct_fail 'signed the unfixed Go commit'
+	fct_receipt 1 null
+	jq -n --arg fixed "${root}/caller/signoff-fixture/fix.go" '{Replace:{"signoff-fixture/fix.go":$fixed}}' >"${root}/overlay.json"
+	printf 'GOFLAGS=-overlay=%s/overlay.json\n' "${root}" >"${root}/go-env"
+	local form
+	for form in GOFLAGS GOENV; do
+		test_case="dirty Go fix through ${form}"
+		case "${form}" in
+		GOFLAGS) fct_run fails env GOFLAGS="-overlay=${root}/overlay.json" just signoff ;;
+		GOENV) fct_run fails env GOENV="${root}/go-env" just signoff ;;
+		esac
+		grep -qF COMMITTED-FAILURE "${root}/output" || fct_fail 'the overlay bypassed the committed Go defect'
+		[[ ! -s "${root}/signed" ]] || fct_fail 'signed the overlay-fixed commit'
+		fct_receipt 1 null
+	done
+	git -C "${root}/caller" add signoff-fixture/fix.go
+	git -C "${root}/caller" commit -qm 'committed Go fix'
+	sha="$(git -C "${root}/caller" rev-parse HEAD)"
 	printf 'dirty caller\n' >"${root}/caller/fix.txt"
 	printf 'untracked caller\n' >"${root}/caller/untracked.txt"
 	git -C "${root}/caller" diff >"${root}/before"
-	local form
 	mkdir "${root}/decoy"
 	git -C "${root}/decoy" init -q
 	printf 'check:\n    @exit 1\n' >"${root}/decoy/justfile"

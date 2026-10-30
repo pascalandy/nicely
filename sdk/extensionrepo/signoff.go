@@ -122,11 +122,17 @@ func signoffUnchanged(ctx context.Context, env []string, worktree, sha string) e
 func signoffEnv() []string {
 	var env []string
 	for _, entry := range os.Environ() {
-		if !strings.HasPrefix(entry, "JUST_") && !strings.HasPrefix(entry, "GIT_") {
-			env = append(env, entry)
+		name, _, _ := strings.Cut(entry, "=")
+		if strings.HasPrefix(name, "JUST_") || strings.HasPrefix(name, "GIT_") {
+			continue
 		}
+		switch name {
+		case "GOFLAGS", "GOWORK", "GOENV":
+			continue
+		}
+		env = append(env, entry)
 	}
-	return env
+	return append(env, "GOWORK=off", "GOENV=off")
 }
 
 func signoffCommand(ctx context.Context, env []string, dir, name string, args ...string) *exec.Cmd {
