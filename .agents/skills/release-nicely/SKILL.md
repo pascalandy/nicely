@@ -22,6 +22,7 @@ Copy this checklist and tick each step:
 - [ ] 8. Verify: `just release-verify vX.Y.Z` passes, and the report gives each result
 - [ ] 9. Mac: `brew-qa.sh vX.Y.Z` passes on the mini, or on Pascal's Mac when the mini is offline
 - [ ] 10. Extension: `extension-qa.sh vX.Y.Z` passes on the Mac of step 9, after `brew-qa.sh`
+- [ ] 11. Author: `author-path.sh vX.Y.Z` passes against the published tag
 ```
 
 ## Generate the changelog and check
@@ -90,4 +91,10 @@ The release workflow runs only for this manual publication.
    It runs describe, doctor, a dry run, and one conversion of a clip that ffmpeg makes, then checks the output with ffprobe.
    It needs Go, `just`, `jq`, HandBrakeCLI, and ffmpeg, installs none of them, and leaves the config, extensions, and keys of the Mac unchanged.
    If it fails, report its output and stop.
-5. Report both results with the others.
+5. Run `bash .agents/skills/release-nicely/scripts/author-path.sh vX.Y.Z` on Linux or macOS.
+   It needs Go, Git, `just`, `uv`, and `jq` on PATH.
+   It renders the published tag with Copier and resolves the SDK through the Go module proxy.
+   It checks the documented author steps, example removal, scenario order, and short module refusal.
+   It keeps its rendered repositories, source documentation, commands, and exit codes in the reported scratch folder.
+   If it fails, report its findings and stop.
+6. Report these results with the others.
