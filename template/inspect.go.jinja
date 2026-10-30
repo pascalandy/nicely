@@ -17,7 +17,8 @@ import (
 // worker inspect.py through sdk/wrap, which answers each failure that Wrapped
 // programs in the contract lists. The handler checks its input before the
 // worker starts. It never maps an exit other than 0, or output that it cannot
-// read, to a success.
+// read, to a success. It also refuses a file that the worker accepts but
+// whose lines mean nothing, as testdata/script/refusal.txtar shows.
 func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	file := call.Args[0]
@@ -43,12 +44,16 @@ func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 		var answer struct {
 			Size  *int64 `json:"size_bytes"`
 			Lines *int   `json:"lines"`
+			Text  *bool  `json:"text"`
 		}
 		switch {
 		case end.Exit != 0:
 			return end.Failed()
-		case json.Unmarshal(end.Stdout, &answer) != nil || answer.Size == nil || answer.Lines == nil || *answer.Size < 0 || *answer.Lines < 0:
+		case json.Unmarshal(end.Stdout, &answer) != nil || answer.Size == nil || answer.Lines == nil || answer.Text == nil || *answer.Size < 0 || *answer.Lines < 0:
 			return end.Malformed()
+		case !*answer.Text:
+			problem := contract.Problem{Code: "{{ slug | upper | replace("-", "_") }}_NOT_TEXT", Message: p.T("{{ slug }}.inspect.not_text", data), Hint: p.T("{{ slug }}.inspect.not_text_hint", data)}
+			return contract.Outcome{Errors: []contract.Problem{problem}}
 		}
 		data["Size"] = p.Size(*answer.Size)
 		_, _ = fmt.Fprintln(call.Stdout, p.N("{{ slug }}.inspect.result", *answer.Lines, data))

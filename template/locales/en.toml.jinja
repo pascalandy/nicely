@@ -30,3 +30,11 @@ other = "--timeout {% raw %}{{.Timeout}}{% endraw %} is no duration, such as 30s
 description = "Text of `ncly {{ example_command }}`: the line count and the size of the file. {% raw %}{{.File}}{% endraw %} is the path that the caller gave, {% raw %}{{.Count}}{% endraw %} the line count, and {% raw %}{{.Size}}{% endraw %} the size with its unit, such as 12 B."
 one = "{% raw %}{{.File}}{% endraw %}: {% raw %}{{.Count}}{% endraw %} line, {% raw %}{{.Size}}{% endraw %}"
 other = "{% raw %}{{.File}}{% endraw %}: {% raw %}{{.Count}}{% endraw %} lines, {% raw %}{{.Size}}{% endraw %}"
+
+["{{ slug }}.inspect.not_text"]
+description = "Message of {{ slug | upper | replace("-", "_") }}_NOT_TEXT when the file of `ncly {{ example_command }}` holds a NUL byte, such as an image, so its lines mean nothing. {% raw %}{{.File}}{% endraw %} is the path that the caller gave."
+other = "{% raw %}{{.File}}{% endraw %} is no text file, so its lines mean nothing."
+
+["{{ slug }}.inspect.not_text_hint"]
+description = "Hint of {{ slug | upper | replace("-", "_") }}_NOT_TEXT, which names a text file to inspect instead. {% raw %}{{.File}}{% endraw %} is the path that the caller gave."
+other = "Give ncly {{ example_command }} a text file, such as notes.md, instead of {% raw %}{{.File}}{% endraw %}."

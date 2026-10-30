@@ -1,6 +1,7 @@
 # ncly {{ example_command }} runs worker/inspect.py with python3 through sdk/wrap. Each
 # case below is a case of Wrapped programs, in the contract that just contract
 # prints. The test kit checks each answer against the schema of the command.
+# Each line # spec: names the lines of spec.md that the commands below it prove.
 #
 # The kit gives each scenario a scratch HOME, where the shim of a version
 # manager, such as mise or pyenv, finds no Python. bin/python3, first in PATH,
@@ -27,6 +28,7 @@ grep '^stdin is empty$' stdin.log
 env STUB=
 
 # An invalid input is a usage error, before python3 starts.
+# spec: bad-input
 exits 2 ncly {{ example_command }} missing.md --json
 stderr '"code":"USAGE_INVALID"'
 stderr 'missing.md is no file that {{ root }} can inspect[.]'
@@ -35,6 +37,7 @@ stderr '"code":"USAGE_INVALID"'
 
 # python3 too old, or a version probe that does not finish in time, is
 # PREREQ_MISSING with exit 78, before the worker starts.
+# spec: no-python
 env STUB=old
 exits 78 ncly {{ example_command }} notes/input.md --json
 stderr '"code":"PREREQ_MISSING"'
@@ -44,6 +47,7 @@ stderr '"code":"PREREQ_MISSING"'
 
 # An exit other than 0, even the program's own 75, is RUNTIME with exit 1, and
 # so is output that the handler cannot read, or that is over the limit of 1 MB.
+# spec: worker-fails
 env STUB=fail
 exits 1 ncly {{ example_command }} notes/input.md --json
 stderr '"code":"RUNTIME"'
@@ -58,11 +62,13 @@ exits 1 ncly {{ example_command }} notes/input.md --json
 stderr '"code":"RUNTIME"'
 
 # At the timeout, the program stops, and the answer is RUNTIME with exit 1.
+# spec: worker-fails
 env STUB=hang
 exits 1 ncly {{ example_command }} notes/input.md --timeout 1s --json
 stderr '"code":"RUNTIME"'
 
 # Ctrl-C stops the program too, and the answer is INTERRUPTED, whose exit is 130.
+# spec: interrupted
 rm hang.pid
 ! exec ncly {{ example_command }} notes/input.md --json &
 exec sh -c 'i=0; until [ -f hang.pid ]; do i=$((i+1)); [ $i -lt 200 ] || exit 1; sleep 0.05; done'
@@ -70,7 +76,18 @@ kill -INT
 wait
 stderr '"code":"INTERRUPTED"'
 
+# SIGTERM stops it the same way, and the answer is TERMINATED, whose exit is
+# 143. kill of testscript sends no SIGTERM, so sh records the PID of ncly.
+# spec: terminated
+rm hang.pid
+! exec sh -c 'echo $$ > ncly.pid; exec ncly {{ example_command }} notes/input.md --json' &
+exec sh -c 'i=0; until [ -f hang.pid ]; do i=$((i+1)); [ $i -lt 200 ] || exit 1; sleep 0.05; done'
+exec sh -c 'kill -TERM "$(cat ncly.pid)"'
+wait
+stderr '"code":"TERMINATED"'
+
 # python3 missing from PATH is PREREQ_MISSING with exit 78, before any work.
+# spec: no-python
 env STUB=
 rm bin/python3
 env PATH=$WORK/bin
@@ -93,7 +110,7 @@ esac
 case "$STUB" in
 stdin)
   if read -r line; then echo "stdin holds $line"; else echo 'stdin is empty'; fi > "$WORK/stdin.log"
-  echo '{"size_bytes":0,"lines":0}'
+  echo '{"size_bytes":0,"lines":0,"text":true}'
   ;;
 fail) echo 'inspect.py: broken' >&2; exit 3 ;;
 retry) exit 75 ;;

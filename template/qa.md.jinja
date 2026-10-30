@@ -21,34 +21,34 @@ Fill: one sentence that a user would say, without a command, a flag, or a hint.
 
 ## Criteria
 
-| Family | Criterion |
-|---|---|
-| Result | `wc -c` gives the `size_bytes` of the answer |
-| Fidelity | The answer keeps the properties that [spec.md](spec.md#acceptance) names in `## Acceptance` |
-| Determinism | Runs on one host give the same answer |
+| Family | Criterion | Covered by |
+|---|---|---|
+| Result | `wc -c` gives the `size_bytes` of the answer | `just acceptance` |
+| Fidelity | The answer keeps the properties that [spec.md](spec.md#acceptance) names in `## Acceptance` | `just acceptance`, which claims the spec ID of each property |
+| Determinism | Runs on one host give the same answer | `just acceptance`, which runs the command twice |
+| Errors | Each line of Failures and each refusal of `## Acceptance` in [spec.md](spec.md) gives its code | The test that claims its spec ID, which the test kit requires. The replay of [Error cases](#error-cases) on the host |
+| Uninstall | The steps of [Uninstall](#uninstall) | `just acceptance`, on its scratch install |
 
 Fill: for each family, what a tool other than the extension measures on the output.
 
+Fill: in Covered by, the test that proves the criterion. When no test can, write `Manual:` and the reason, such as a screen that only a human sees.
+
 ## Error cases
 
-Run each case as a run, and as a dry run when the command has one. A dry run gives the code of the run for each case of the shared preparation. `exit-codes.md`, `error-codes.md`, and `wrap.md` of the contract fix these codes. `just contract` prints its folder.
+Run each case as a run, and as a dry run when the command has one. A dry run gives the code of the run for each case of the shared preparation. The line of [spec.md](spec.md) that the spec ID names holds the expected code. `exit-codes.md` of the contract, in the folder that `just contract` prints, gives the exit code of each code.
 
-| Case | Expected |
-|---|---|
-| A missing path, or a symbolic link to one | `USAGE_INVALID`, exit 2, and the message names the path |
-| A symbolic link to the input | The answer for the file that the link names |
-| `--timeout soon`, which is no duration | `USAGE_INVALID`, exit 2 |
-| A `--timeout` that expires, such as `1s` on a long run | `RUNTIME`, exit 1, and the wrapped program stops |
-| Ctrl-C during the run | `INTERRUPTED`, exit 130 |
-| SIGTERM during the run | `TERMINATED`, exit 143 |
-| An existing output without `--force` | `CONFIRMATION_REQUIRED`, exit 2, and the output does not change |
-| A read-only output folder | `RUNTIME`, exit 1, before any effect |
+| Case | spec.md | Expected, in addition to the code |
+|---|---|---|
+| A missing path, a symbolic link to one, or `--timeout soon` | `bad-input` | The message names the path or the value |
+| A symbolic link to the input | None | The answer for the file that the link names |
+| A `--timeout` that expires, such as `1s` on a long run | `worker-fails` | The wrapped program stops |
+| Ctrl-C during the run | `interrupted` | The wrapped program stops |
+| SIGTERM during the run | `terminated` | The wrapped program stops |
+| An image, such as a PNG | `not-text` | The message names the file |
 
-Fill: the code of each case that `spec.md` decides, such as a command that refuses a symbolic link. The contract fixes no code for a link.
+Fill: for a command that writes, the cases of its output, such as an existing output without `--force`, and a read-only output folder. After each case, the output does not change.
 
-Fill: for a command that writes no file, such as the example, delete the two cases of the output.
-
-Fill: each input that the wrapped program accepts but that the domain refuses, with its code, as `## Acceptance` in [spec.md](spec.md#acceptance) lists it.
+Fill: a row for each refusal of `## Acceptance` in [spec.md](spec.md#acceptance).
 
 ## Uninstall
 
@@ -59,9 +59,9 @@ Removal keeps the keys and the grants, as [Release and install](https://github.c
 
 ## Known limits
 
-None for the example command.
+[spec.md](spec.md) holds each accepted limit. A limit never contradicts a line of Failures or of Acceptance.
 
-Fill: each limit that a UAT found, with its issue.
+Fill: each defect that a UAT found and that is still open, with its issue.
 
 ## Gotchas
 

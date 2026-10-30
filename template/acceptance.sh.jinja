@@ -4,7 +4,8 @@
 # the extension and the ncly of the Nicely version that go.mod pins into scratch
 # folders, so the install of the user stays as it is. With a fixture, it works
 # on a copy and checks that the checksum of the fixture does not change.
-# Without one, it makes an input.
+# Without one, it makes an input. Each line # spec: names the lines of spec.md
+# that the checks below it prove.
 #
 # This file is a form filled for the example command, ncly {{ example_command }}.
 # Do what each "Fill:" comment asks, then delete the comment.
@@ -69,7 +70,14 @@ fi
 grep -qF '"ok":true' "$scratch/answer" || die 'the answer holds no "ok":true'
 
 # Fill: check each property of ## Acceptance with a tool other than the extension.
+# spec: size
 grep -qF "\"size_bytes\":$(wc -c <"$input" | tr -d ' ')" "$scratch/answer" || die "the size differs from wc -c"
+# spec: lines
+grep -qF "\"lines\":$(awk 'END { print NR }' "$input")" "$scratch/answer" || die "the line count differs from awk"
+
+# A second run checks the Determinism criterion of qa.md.
+(cd "$work" && ncly "${command[@]}" "$input" --json --no-input) >"$scratch/second" || die "the second run failed"
+cmp -s "$scratch/answer" "$scratch/second" || die "two runs give different answers: $(cat "$scratch/second")"
 
 # refuses CODE EXIT FILE expects the refusal CODE, with the exit code EXIT, for FILE.
 refuses() {
@@ -80,6 +88,17 @@ refuses() {
 	fi
 }
 # Fill: each input that the wrapped program accepts but the domain refuses, which
-# ## Acceptance lists, such as: refuses VIDEO_CONVERT_UNREADABLE 2 "$work/still.png"
+# ## Acceptance lists, in place of the example.
+# spec: not-text
+printf '\211PNG\r\n\032\n\000\000\000\rIHDR' >"$work/image.png"
+refuses {{ slug | upper | replace("-", "_") }}_NOT_TEXT 2 "$work/image.png"
+
+# The steps of the Uninstall section of qa.md, on the scratch install.
+just uninstall >/dev/null
+code=0
+ncly describe {{ root }} --json >/dev/null 2>"$scratch/stderr" || code=$?
+if [[ "$code" != 2 ]] || ! grep -qF '"code":"NOT_FOUND"' "$scratch/stderr"; then
+	die "after just uninstall, ncly describe {{ root }} gives exit $code, want 2 with NOT_FOUND: $(cat "$scratch/stderr")"
+fi
 
 echo "acceptance: ncly ${command[*]} passed on $input"

@@ -16,11 +16,11 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 
 ## Change a command
 
-1. `spec.md`: its section, titled `## ncly <path>`, at the extension root or beneath it
+1. `spec.md`: its section, titled `## ncly <path>`, at the extension root or beneath it. Start each line of its Failures, and of `## Acceptance`, with a spec ID, as "Spec IDs" in `test-kit.md` of the contract says
 2. `manifest.toml`: its declaration, with its effects, programs, keys, and result schema
 3. `locales/en.toml`: its text, each entry with a description
 4. Add a placeholder handler that compiles, and register it in `extension.go`
-5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands. For a command with a dry run, give each refusal of the shared preparation a dry-run scenario with the same code
+5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands. For a command with a dry run, give each refusal of the shared preparation a dry-run scenario with the same code. Claim each spec ID that a scenario proves with a line `# spec: <id>` above its commands. `refusal.txtar` is the model of a refusal of `## Acceptance`
 6. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more
 7. `skill/SKILL.md`: when to use the command, and when not to. For a command with a dry run, tell the agent to dry-run the call first
 
@@ -34,8 +34,8 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 
 {% if name %}Keep the named extension's root. After these steps, follow "Change a command" for `ncly {{ root }}`.
 
-{% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`
-2. Replace the example declaration at `{{ example_command }}` and its examples in `manifest.toml`. Remove `[programs.python3]` when no command needs it
+{% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none
+2. Replace the example declaration at `{{ example_command }}` and its examples in `manifest.toml`. Remove the `[[errors]]` entry of `{{ slug | upper | replace("-", "_") }}_NOT_TEXT`, and `[programs.python3]` when no command needs it
 3. Replace the `{{ slug }}.inspect` catalog entries for the new command. {% if not name %}Rewrite `{{ slug }}.summary` for the remaining commands. {% endif %}Keep every catalog ID under `{{ slug }}.`
 4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `qa.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`. Replace it in `acceptance.sh`
 5. Remove its handler entry from `extension.go`. When `worker/` is empty, also remove `//go:embed worker`, its variable, and `Resources`. Then run `gofmt -w .`

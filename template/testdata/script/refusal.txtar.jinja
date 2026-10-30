@@ -1,0 +1,38 @@
+# A model of a refusal of ## Acceptance in spec.md: an input that the wrapped
+# program accepts, and that the domain refuses. python3 counts the lines of an
+# image and exits 0, but those lines mean nothing. So ncly {{ example_command }}
+# refuses the image with {{ slug | upper | replace("-", "_") }}_NOT_TEXT and exit 2.
+#
+# Give each refusal of ## Acceptance a scenario like this one. Show that the
+# program exits 0 on the input, then check the code, the exit code, and the
+# file that the message names. For a command that writes, check that no output
+# remains. For a command with a dry run, refuse in the dry run too.
+#
+# bin/python3, first in PATH, runs the Python of the system and logs its exit
+# code, so the scenario shows what the program did.
+chmod 755 bin/python3
+exec sh -c 'printf "\211PNG\r\n\032\n\000\000\000\rIHDR\000\000\000\001" > image.png'
+
+# spec: not-text
+exits 2 ncly {{ example_command }} image.png --json
+stderr '"code":"{{ slug | upper | replace("-", "_") }}_NOT_TEXT"'
+stderr '"message":"image\.png is no text file'
+! stdout .
+grep '^exit 0$' python3.log
+
+# A text file gives its answer, so the refusal comes from the bytes of the image.
+ncly {{ example_command }} notes.md --json
+stdout '"lines":2'
+
+-- notes.md --
+First line
+Last line
+-- bin/python3 --
+#!/bin/sh
+# python3 of this scenario: the Python of the system, which logs each exit code
+# of the worker.
+case "$1" in --version) exec /usr/bin/python3 --version ;; esac
+/usr/bin/python3 "$@"
+code=$?
+echo "exit $code" >>"$WORK/python3.log"
+exit "$code"

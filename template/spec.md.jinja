@@ -8,9 +8,11 @@ Give each command a section like that one, then delete each line that starts wit
 
 Fill: for each command, what proves its success, why each declared effect exists, and each failure with its code.
 
+Fill: start each line of Failures and of Acceptance with its own spec ID, such as `bad-input`. Then claim each ID with a line `# spec: <id>` in the test that proves it. `test-kit.md` in the folder that `just contract` prints defines both.
+
 Fill: the failure of an input that exists but that the wrapped program cannot read, with a `{{ slug | upper | replace("-", "_") }}_` code and exit 2. A dry run, when the command has one, gives the same failure.
 
-Fill: each limit that the readiness review accepted.
+Fill: each limit that the readiness review accepted. A limit never contradicts a line of Failures or of Acceptance.
 
 ## ncly {{ example_command }}
 
@@ -20,17 +22,27 @@ Fill: each limit that the readiness review accepted.
 
 **Failures.**
 
-| Condition | Code |
-|---|---|
-| The file is missing or is no regular file, or `--timeout` is no duration | `USAGE_INVALID` |
-| `python3` is missing or older than 3.9, or its version probe fails or does not finish in time | `PREREQ_MISSING` |
-| `python3` exits with a code other than 0, its output is missing, malformed, or over 1 MB, or the timeout expires | `RUNTIME` |
-| Ctrl-C or SIGTERM arrives | `INTERRUPTED` or `TERMINATED` |
+| ID | Condition | Code |
+|---|---|---|
+| `bad-input` | The file is missing or is no regular file, or `--timeout` is no duration | `USAGE_INVALID` |
+| `no-python` | `python3` is missing or older than 3.9, or its version probe fails or does not finish in time | `PREREQ_MISSING` |
+| `worker-fails` | `python3` exits with a code other than 0, its output is missing, malformed, or over 1 MB, or the timeout expires | `RUNTIME` |
+| `interrupted` | Ctrl-C arrives | `INTERRUPTED` |
+| `terminated` | SIGTERM arrives | `TERMINATED` |
 
 **Limits.** None.
 
 ## Acceptance
 
+The real input is a short Markdown file. Without a fixture, `acceptance.sh` makes one. The answer keeps these properties of the input:
+
+- `size`: `size_bytes` is the size that `wc -c` gives
+- `lines`: `lines` is the line count that `awk` gives, where a last line without a newline counts too
+
+| ID | Input that `python3` accepts | Code |
+|---|---|---|
+| `not-text` | A file that holds a NUL byte, such as an image, whose lines mean nothing | `{{ slug | upper | replace("-", "_") }}_NOT_TEXT` |
+
 Fill: the real input that proves the command, such as a fixture of the registry of Nicely, and the properties that the output keeps. `acceptance.sh` checks each property.
 
-Fill: each input that the wrapped program accepts but that the domain refuses, with its code. `acceptance.sh` runs each one.
+Fill: each input that the wrapped program accepts but that the domain refuses, with its code. A scenario and `acceptance.sh` refuse each one.
