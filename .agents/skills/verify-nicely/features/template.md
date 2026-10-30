@@ -11,6 +11,7 @@
 - `template-release` gives the release steps in the `AGENTS.md` of the rendered repository, and the commands that install a release tag in its `README.md`
 - `template-discovery` lists `probe` under the extensions of `ncly --help`
 - `template-inspect` gives the size and the line count of a file, as JSON and as text, through the worker `inspect.py`, which `python3` runs through `sdk/wrap`
+- `template-dry-run` gives the same size and line count without changing the file
 - `template-usage` refuses a missing file with `USAGE_INVALID`, before the worker starts
 - `template-refusal` refuses a file with a NUL byte, which the worker accepts, with `PROBE_NOT_TEXT`
 - `template-describe` describes `probe inspect`, with its program `python3` and no effect
@@ -23,6 +24,7 @@
 - The command of the `nicely-extensions` skill, `uv tool run copier@<version> copy ...`, then `just install` in the new repository
 - `ncly --help` and `ncly probe --help`
 - `ncly probe inspect <file>`
+- `ncly probe inspect <file> --dry-run --json`
 - `ncly describe probe inspect`
 - `ncly skill view probe`
 - `ncly doctor probe`
@@ -42,10 +44,12 @@ Preconditions:
 - **Discovery.** Run `just verify step "$run" template --help`. Exit 0, and the `EXTENSIONS` section lists `probe:  Inspect files` beside `hello` and `skill`.
 - **Help.** Run `just verify step "$run" template probe --help`. Exit 0, and `COMMANDS` lists `inspect:  Give the size and the line count of a file`.
 - **Inspect as JSON.** Run `just verify step "$run" template probe inspect README.md --json`. Exit 0, stderr is empty, and stdout is `{"ok":true,"contract_version":1,"lines":<n>,"size_bytes":<bytes>}`. `<n>` is the number that `wc -l < README.md` prints, plus 1 when the last line of `README.md` has no newline. `<bytes>` is the number that `wc -c < README.md` prints. Report the output of both `wc` calls beside the quote.
+- **Dry run.** Run `just verify step "$run" template probe inspect README.md --dry-run --json`. Exit 0, and stderr is empty. Stdout has `"ok":true`, `"contract_version":1`, and the same `lines` and `size_bytes` values as the run. Repeat both `wc` calls. Their results remain unchanged.
 - **Inspect as text.** Run `just verify step "$run" template probe inspect README.md`. Exit 0, and stdout is `README.md: <n> lines, <size>`. `<size>` is `<bytes>` in decimal units, with at most one decimal above 1,000 bytes, such as `5.4 kB` for 5372 bytes and `8 kB` for 7990 bytes.
 - **Missing file.** Run `just verify step "$run" template probe inspect nothere.md`. Exit 2, stdout is empty, and stderr starts with `error[USAGE_INVALID]: nothere.md is no file that probe can inspect.`, with the hint `ncly probe inspect notes.md`.
 - **Refusal.** Run `printf '\211PNG\r\n\032\n\000\000' > "$run/image.png"`, then `just verify step "$run" template probe inspect "$run/image.png"`. Exit 2, stdout is empty, and stderr starts with `error[PROBE_NOT_TEXT]: <run>/image.png is no text file, so its lines mean nothing.`, with a hint that names `notes.md`.
 - **Describe.** Run `just verify step "$run" template describe probe inspect --json`. Exit 0. The one entry of `commands` has the path `probe inspect` and the source `extension`. Its `effects` are all `false`, and `requires.bins` holds `python3` with the version `3.9`.
+  Its `modes` has `"dry_run":true`; every other mode is `false`.
 - **Skill.** Run `just verify step "$run" template skill view probe`. Exit 0. Its first line names the skill folder `<run>/scratch/home/.local/share/nicely/extensions/ncly-probe.skill`, and the file of the skill `probe` follows, from its frontmatter `name: probe`.
 - **Doctor.** Run `just verify step "$run" template doctor probe --json`. Exit 0, and the check `probe.python3` is a `pass` whose message names the version of `python3` and its path under `<run>/scratch/tools`.
 
