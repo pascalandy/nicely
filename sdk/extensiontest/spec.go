@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pascalandy/nicely/sdk/extensionrepo"
 )
 
 // A promise is a line of spec.md that a test must cover. It is a row of a
@@ -22,55 +24,16 @@ type claim struct {
 	line     int
 }
 
-var (
-	heading   = regexp.MustCompile(`^#{1,6}\s+(.+?)\s*$`)
-	label     = regexp.MustCompile(`^\*\*([^*]+)\*\*`)
-	bullet    = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+(.*)$`)
-	separator = regexp.MustCompile(`^\s*\|?(?:\s*:?-+:?\s*\|)*\s*:?-+:?\s*\|?\s*$`)
-	cellID    = regexp.MustCompile("^`([a-z][a-z0-9]*(?:-[a-z0-9]+)*)`$")
-	bulletID  = regexp.MustCompile("^`([a-z][a-z0-9]*(?:-[a-z0-9]+)*)`:")
-	claimLine = regexp.MustCompile(`^\s*#\s*spec:(.*)$`)
-)
+var claimLine = regexp.MustCompile(`^\s*#\s*spec:(.*)$`)
 
-// promises returns each promise of a spec.md. A part starts at a heading,
-// or at a line that starts with a bold label, such as **Failures.**. A row
-// starts with its ID as its first cell. A bullet starts with its ID and a
-// colon, such as - `duration`: the duration. So a bullet that only starts
-// with code holds no ID.
+// promises returns each promise of a spec.md: each row and each bullet of
+// the parts Failures and Acceptance, which extensionrepo.SpecLines reads.
 func promises(spec string) []promise {
 	var found []promise
-	part := ""
-	lines := strings.Split(spec, "\n")
-	for i, line := range lines {
-		if m := heading.FindStringSubmatch(line); m != nil {
-			part = m[1]
-			continue
+	for _, l := range extensionrepo.SpecLines(spec) {
+		if (l.Part == "Failures" || l.Part == "Acceptance") && (l.Kind == extensionrepo.SpecRow || l.Kind == extensionrepo.SpecBullet) {
+			found = append(found, promise{id: l.ID, part: l.Part, line: l.Number})
 		}
-		if m := label.FindStringSubmatch(line); m != nil {
-			part = strings.TrimSuffix(strings.TrimSpace(m[1]), ".")
-		}
-		if part != "Failures" && part != "Acceptance" {
-			continue
-		}
-		p := promise{part: part, line: i + 1}
-		switch row := strings.TrimSpace(line); {
-		case strings.HasPrefix(row, "|"):
-			// A separator, and the header row above it, hold no promise.
-			if separator.MatchString(row) || i+1 < len(lines) && separator.MatchString(lines[i+1]) {
-				continue
-			}
-			first, _, _ := strings.Cut(row[1:], "|")
-			if m := cellID.FindStringSubmatch(strings.TrimSpace(first)); m != nil {
-				p.id = m[1]
-			}
-		case bullet.MatchString(line):
-			if m := bulletID.FindStringSubmatch(bullet.FindStringSubmatch(line)[1]); m != nil {
-				p.id = m[1]
-			}
-		default:
-			continue
-		}
-		found = append(found, p)
 	}
 	return found
 }
