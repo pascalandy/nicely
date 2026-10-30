@@ -40,10 +40,23 @@ func (k *kit) checkInstallOrder(dir string) error {
 	return nil
 }
 
-// uninstall removes the scratch install, then checks discovery through the real host.
-func (k *kit) uninstall(dir string, env *testscript.Env) error {
+// uninstall removes only the extension under test from the scratch install.
+func (k *kit) uninstall(dir string) error {
 	if _, err := extensionrepo.Uninstall(k.ext, dir); err != nil {
 		return fmt.Errorf("uninstall: %w", err)
+	}
+	return nil
+}
+
+// checkInstallLifecycle checks discovery after uninstall in its own scratch folders.
+// Extensions that a scenario adds cannot keep the root present here.
+func (k *kit) checkInstallLifecycle(work string) error {
+	env := &testscript.Env{WorkDir: work, Vars: os.Environ()}
+	if err := k.installScratch(env); err != nil {
+		return err
+	}
+	if err := k.uninstall(filepath.Dir(k.installed(env.Getenv))); err != nil {
+		return err
 	}
 	args := append([]string{"describe"}, k.manifest.Root()...)
 	args = append(args, "--json", "--no-input")

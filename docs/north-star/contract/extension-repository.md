@@ -62,4 +62,8 @@ Both tasks use the data folder of [Configuration](configuration.md), with an abs
 
 The test kit calls the same install and uninstall package on scratch folders.
 It proves that a failed sidecar publication exposes no executable.
-Each scenario ends with uninstall and `ncly describe <root> --json`, which must exit 2 with `NOT_FOUND`.
+Each scenario ends with uninstall as cleanup.
+Once per suite, a separate scratch install holds only the extension under test.
+The kit installs and uninstalls that extension there.
+Then `ncly describe <root> --json` must exit 2 with `NOT_FOUND`.
+Extensions that a scenario adds cannot affect this lifecycle check.

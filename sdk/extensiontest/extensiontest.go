@@ -77,6 +77,9 @@ func Run(t *testing.T, e extension.Extension) {
 	if err := k.checkInstallOrder(t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
+	if err := k.checkInstallLifecycle(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
 	testscript.Run(t, testscript.Params{
 		Dir:                filepath.Join(k.root, "testdata", "script"),
 		RequireUniqueNames: true,
@@ -142,10 +145,23 @@ func (k *kit) build(t *testing.T) {
 	}
 }
 
-// setup gives a scenario its scratch folders, its sentinel keys, and the
-// extension, installed with the sidecars that Export writes, the
-// executable last.
+// setup installs the extension in a scenario's scratch folders and registers cleanup.
 func (k *kit) setup(env *testscript.Env) error {
+	if err := k.installScratch(env); err != nil {
+		return err
+	}
+	extensions := filepath.Dir(k.installed(env.Getenv))
+	env.Defer(func() {
+		if err := k.uninstall(extensions); err != nil {
+			env.T().Fatal(err)
+		}
+	})
+	return nil
+}
+
+// installScratch gives an install its scratch folders, sentinel keys, and extension.
+// It publishes the executable last, after the sidecars that Export writes.
+func (k *kit) installScratch(env *testscript.Env) error {
 	work := env.WorkDir
 	vars := map[string]string{
 		"HOME":            work,
@@ -168,15 +184,7 @@ func (k *kit) setup(env *testscript.Env) error {
 	if err := os.MkdirAll(filepath.Join(work, "bin"), 0o755); err != nil {
 		return err
 	}
-	if err := k.install(extensions); err != nil {
-		return err
-	}
-	env.Defer(func() {
-		if err := k.uninstall(extensions, env); err != nil {
-			env.T().Fatal(err)
-		}
-	})
-	return nil
+	return k.install(extensions)
 }
 
 // installed returns the path of ncly-<slug> in the extensions folder of
