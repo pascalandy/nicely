@@ -15,6 +15,10 @@ check:
 signoff:
     go run ./internal/export signoff
 
+# Release the signed, pushed SHA and prove the published README install in scratch folders
+release version fixture="":
+    go run ./internal/export release {{ quote(version) }} {{ if fixture == "" { "" } else { quote(join(invocation_directory(), fixture)) } }}
+
 # Build the extension and install its sidecars before its executable
 install:
     go run ./internal/export install

@@ -20,7 +20,32 @@ An author outside Nicely keeps an extension in a Git repository of its own, whic
 
 ### Release and install
 
-An author releases a version as one Git tag `vX.Y.Z` of Semantic Versioning, such as `v0.1.0`, on a pushed commit where `just check` passes.
+An author releases a version with `just release vX.Y.Z [fixture]`.
+The SDK requires a clean HEAD equal to the fetched default branch of `origin`.
+A successful signoff receipt must name that SHA, with exit 0 for every check and signoff.
+Release runs `just acceptance [fixture]`, then creates and pushes an annotated tag whose message holds that signoff receipt.
+It executes the fenced `sh` block under `## Install` in `README.md`, with `TAG` replaced by the new tag.
+The install uses scratch HOME and XDG folders, without the caller's keys or installed extensions.
+The clone's HEAD must equal the tagged SHA, even when another README paragraph names the new tag.
+Release then checks discovery, measures [Economy](../../qa/north-star.md#economy), uninstalls, and requires `NOT_FOUND`.
+Economy runs literal manifest examples in both output formats, with a dry run when supported.
+It selects these modes even when an example already sets them.
+An optional fixture is copied beside those examples, under its original filename.
+Each measurement uses a fresh working folder, so previous output cannot change the next measurement.
+Each measurement records the command, exit, elapsed milliseconds, and separate stdout and stderr byte counts.
+Failed Economy calls and exceeded budgets are reservations, not release failures.
+When available, `gh` reads the SHA's hosted check runs. Missing or failed hosted evidence becomes a note.
+Release stores its receipt and command logs outside the repository, under the Nicely cache's `release/` folder.
+It prints the receipt path, and its last success line names the tag and SHA.
+A failed published install keeps the pushed tag and records the failure. Release never replaces an existing tag.
+
+The receipt uses `tag`, `sha`, `os`, `signoff`, `pushed`, `cloned_sha`, `steps`, `economy`, `hosted_checks`, `notes`, `reservations`, and optional `failure`.
+`signoff` holds the original signoff receipt. `pushed` records tag publication, and `cloned_sha` records the published clone's HEAD.
+`hosted_checks` holds paginated check-run responses. `notes` records unavailable hosted evidence, and `reservations` records Economy findings.
+`failure` holds the fatal diagnostic.
+Each row in `steps` or `economy` holds `name`, `command`, `exit`, `elapsed_ms`, `stdout_bytes`, `stderr_bytes`, `stdout`, and `stderr`.
+`stdout` and `stderr` name log files relative to the receipt. Scratch installs and measurement folders are removed after use.
+
 A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`.
 For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
 `ncly describe <root> --json` then confirms the install.

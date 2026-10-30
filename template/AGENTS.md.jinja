@@ -85,6 +85,10 @@ A release is one Git tag `vX.Y.Z` of Semantic Versioning, such as `v0.1.0`.
 3. Run `just signoff` for that pushed commit
 4. Make sure that "Done when" holds for this commit
 5. Merge that exact signed SHA into the default branch
-6. Tag that commit, such as with `git tag v0.1.0`
-7. Push the tag, such as with `git push origin v0.1.0`
-8. Run the commands of `README.md` for the new tag in a new folder. `ncly describe {{ root }} --json` must describe `{{ root }}`
+6. Run `just release vX.Y.Z`, with an optional fixture path
+7. Read the printed receipt for acceptance, the published install, Economy reservations, hosted checks, and uninstall
+
+`just release` requires the successful signoff receipt for the pushed SHA.
+It runs acceptance, pushes an annotated tag with that receipt, and executes the README install block in scratch folders.
+It requires the tagged SHA and proves uninstall with `NOT_FOUND`.
+A failed published install keeps the tag. Read the receipt before choosing a new version.

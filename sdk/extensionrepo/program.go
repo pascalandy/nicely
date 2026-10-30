@@ -19,6 +19,9 @@ func Main(e extension.Extension) {
 }
 
 func run(e extension.Extension, args []string) int {
+	if len(args) > 0 && args[0] == "release" {
+		return report("release", release(e, args[1:]))
+	}
 	if len(args) > 0 && args[0] == "test" {
 		return Test(args[1:])
 	}
@@ -38,7 +41,7 @@ func run(e extension.Extension, args []string) int {
 		return report("export", extension.Export(e, args[1]))
 	}
 	if len(args) != 1 || (args[0] != "install" && args[0] != "uninstall") {
-		fmt.Fprintln(os.Stderr, "usage: export install | uninstall | signoff | check | contract | export <folder> | test [go test arguments] | update vX.Y.Z /absolute/repository [--continue]")
+		fmt.Fprintln(os.Stderr, "usage: export install | uninstall | signoff | release <tag> [fixture] | check | contract | export <folder> | test [go test arguments] | update vX.Y.Z /absolute/repository [--continue]")
 		return 2
 	}
 	action := args[0]
