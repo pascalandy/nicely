@@ -55,6 +55,8 @@ fct_command_order() {
 
 Success means that the answer gives the greeting ready.
 
+## Acceptance
+
 - `greeting`: the message is ready
 EOF
 			saw_spec=1
@@ -151,14 +153,16 @@ fct_remove_example() {
 	while IFS= read -r step; do
 		printf 'author-path: follow %s\n' "${step}"
 		case "${step}" in
-		*'Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`'*)
+		'1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`' | \
+			'1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none')
 			mkdir "${scratch}/removed"
-			for file in inspect.go worker/inspect.py testdata/script/inspect.txtar; do
+			while IFS= read -r file; do
 				mv "${repo}/${file}" "${scratch}/removed/${file##*/}"
-			done
+			done < <(printf '%s\n' "${step}" | awk -F '`' '{ for (i=2; i<NF; i+=2) print $i }')
 			saw_files=1
 			;;
-		*'Replace the example declaration at `probe inspect`'*'`manifest.toml`'*'`[programs.python3]`'*)
+		'2. Replace the example declaration at `probe inspect` and its examples in `manifest.toml`. Remove `[programs.python3]` when no command needs it' | \
+			'2. Replace the example declaration at `probe inspect` and its examples in `manifest.toml`. Remove the `[[errors]]` entry of `PROBE_NOT_TEXT`, and `[programs.python3]` when no command needs it')
 			cat >"${repo}/manifest.toml" <<'EOF'
 format_version = 1
 contract_version = 1
