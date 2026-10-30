@@ -80,9 +80,9 @@ The first implementation is incomplete by design. The open lines start the next 
 ### Each next round
 
 1. Select open lines.
-2. For each line, write a scenario that fails first, with the claim `# spec: <id>`.
-3. Change the handler until the scenario passes.
-4. Move the line from `## Open lines` into Failures or Acceptance, where it is `proven`.
+2. Move each line from `## Open lines` into Failures or Acceptance.
+3. For each line, write a scenario with the claim `# spec: <id>`. It fails first, for the missing behavior.
+4. Change the handler until the scenario passes. The line is then `proven`.
 5. End the round.
 
 ### End of a round
