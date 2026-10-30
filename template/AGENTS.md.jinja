@@ -16,6 +16,9 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 
 ## Change a command
 
+Build each command with the skill in `.agents/skills/nicely-extension/`, from the first command.
+It runs these steps in rounds, one pull request per round:
+
 1. Write the command's spec before its implementation.
 2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.
 3. Write a scenario that fails for the missing behavior.
@@ -31,7 +34,7 @@ In `acceptance.sh`, judge the result with a tool other than the extension.
 Use the real input and criteria of `## Acceptance`.
 For a paid command, run only its dry run.
 
-A wrapped script goes in `worker/`. To take in a script, or to review the extension when the user asks, use the skill in `.agents/skills/nicely-extension/`.
+A wrapped script goes in `worker/`.
 
 `sdk/wrap` keeps 1 MB of stdout, and answers `RUNTIME` once a program writes more. A program that prints its progress on stdout, such as an encoder, can pass that limit in a long run. When the decoder reads no stdout, set `DiscardStdout: true` in `wrap.Program`. When it reads stdout, set an `OutputLimit` that the longest run cannot pass. Prove it with a scenario whose stub prints more than 1 MB on stdout, then exits 0.
 
@@ -55,8 +58,13 @@ The paragraphs above state the rules marked "Prose only".
 | Sign off through `just signoff` and release through `just release vX.Y.Z` | [Signoff receipt][signoff], [release receipt][release] |
 | A copied recipe holds no script | [Core template test][template-test] |
 | `acceptance.sh` judges with another tool | Prose only; [release runs acceptance][release] |
+| A test claims each line of Failures and Acceptance in `spec.md` | [Kit spec IDs][spec] |
 | One bounded job, no arbitrary argument relay; the skill teaches when | Prose only |
 | Spec first; a scenario fails before the handler body exists | Prose only |
+| Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
+| The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
+| Each round ends with an independent review and the readiness review | Prose only |
+| The rounds stop at "Done when", or after 5 rounds with a report of each open line | Prose only |
 
 [calls]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/calls.go
 [links]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/links.go
@@ -65,6 +73,7 @@ The paragraphs above state the rules marked "Prose only".
 [codes]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/codes.go
 [refuses]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/paired.go
 [signal]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/signal.go
+[spec]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/spec.go
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
 [release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
 [template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh
@@ -111,7 +120,13 @@ This finishes dependency updates and runs `just check`.
 
 ## Done when
 
-`just check` and `just acceptance` pass.
+The rounds of the skill in `.agents/skills/nicely-extension/` stop when all of these hold:
+
+- No line of `spec.md` is `open`
+- The readiness verdict is Ready, or Ready with stated limits
+- `just check` and `just acceptance` pass, and the hosted checks pass
+
+After 5 rounds, stop anyway, and report each open line to the user.
 For a command that needs a key, relay the grant hint to the human and wait.
 
 ## Release

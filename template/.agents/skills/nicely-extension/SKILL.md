@@ -1,11 +1,11 @@
 ---
 name: nicely-extension
-description: Use when wrapping a script or a program as a command of this Nicely extension, when changing a command, or when the user asks whether the extension is ready.
+description: Use for each command of this Nicely extension, from the first one, when wrapping a script or a program, when changing a command, or when the user asks whether the extension is ready.
 ---
 
 # Nicely extension
 
-This skill takes a script from intake to a verified command.
+This skill takes each command from intake to a verified command, in rounds of pull requests.
 `AGENTS.md` gives the reading order, recipes, and extension root.
 The domain names a family of work, such as `video`.
 An optional name identifies one job, such as `convert`.
@@ -14,7 +14,7 @@ Read "Extension identity" in the contract for the slug and command ownership.
 
 The contract holds every rule. `just contract` prints its folder at the Nicely version that `go.mod` pins. Read "What a great extension does" in its `extensions.md` first. Then read only the parts that it links.
 
-## Intake
+## Intake of a script
 
 Get these facts before you write code. Read the source of the script, and ask its author what the source does not show. Do not run the script to learn what it does, because even its `--help` can write or bill.
 
@@ -27,6 +27,14 @@ Get these facts before you write code. Read the source of the script, and ask it
 - Its exit codes, and what a repeat of the same call does
 
 Write each fact that nobody can give as an open question in `spec.md`.
+
+## Intake of a program
+
+A third-party program, such as an encoder, has no author to ask.
+Get the facts of the script intake from its documentation and its manual page.
+Also read its exit codes, its limits, and its known failure modes, such as the open issues of its tracker.
+Do not run a command that writes or bills to learn its behavior.
+Write each fact that the documentation does not give as an open question in `spec.md`.
 
 ## Choice of operations
 
@@ -46,21 +54,56 @@ Write each fact that nobody can give as an open question in `spec.md`.
 - Never give exit 75 for the program's own 75. Only the handler can prove that a repeat is safe, as "Retry safety" in the contract says
 - Put each message and hint in `locales/en.toml`, never in code
 
-## Verification
+## Acceptance lines
 
-1. Follow "Change a command" and the rule index in `AGENTS.md`.
-2. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`.
-3. For a paid command, limit `acceptance.sh` to the dry run.
-4. Run `just check` until every check passes.
-5. For a command that needs a key, relay the grant hint to the human and wait.
-6. Run `just acceptance` on the real input until its independent checks pass.
+The lines of Failures and Acceptance in `spec.md` are the acceptance criteria of a command.
+
+1. For a command that reads or writes user files, start from the cases of `generic-cases.md` in the contract.
+2. Add one line for each case of the program that the intake found, such as an exit code, a limit, or a known failure.
+3. Give each line a spec ID and a state, as the opening of `spec.md` says: `open`, `proven`, or `limit`.
+
+A case that cannot occur for the command needs no line.
+
+## Rounds
+
+Each round is one pull request.
+
+### Round 1
+
+1. Implement the main path of the command, with "Change a command" in `AGENTS.md`.
+2. Write every line of the command in `spec.md`. Each line that has no test stays `open`, under `## Open lines`.
+3. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. For a paid command, limit it to the dry run.
+4. End the round.
+
+The first implementation is incomplete by design. The open lines start the next round.
+
+### Each next round
+
+1. Select open lines.
+2. For each line, write a scenario that fails first, with the claim `# spec: <id>`.
+3. Change the handler until the scenario passes.
+4. Move the line from `## Open lines` into Failures or Acceptance, where it is `proven`.
+5. End the round.
+
+### End of a round
+
+1. Run `just check` until every check passes.
+2. For a command that needs a key, relay the grant hint to the human and wait.
+3. Run `just acceptance` on the real input until its independent checks pass.
+4. Ask an agent that did not write the round to review its pull request.
+5. Run the readiness review.
+6. Write each finding that a test can prove as an open line.
+7. Stop as "Done when" in `AGENTS.md` says.
+8. Otherwise, open the next pull request from the open lines and the other findings. When the previous pull request is not merged, base it on that branch.
+
+The release receipt and the human items of `qa.md` come after the merge, as "Release" in `AGENTS.md` says.
 
 For a command that replaces a user file or replays paid work, run `create-formal-verification-skill`.
 Use ncly-video-convert's publication verification skill as the example.
 
 ## Readiness review
 
-Run this review only when the user asks for it. The checks of the contract apply in all cases: `just check` runs them, and declining the review never waives one.
+Run this review at the end of each round, and when the user asks for it. The checks of the contract apply in all cases, and `just check` runs them.
 
 Review the extension against "What a great extension does" and against the facts of the intake. Write each finding with these six parts:
 
@@ -74,7 +117,7 @@ Review the extension against "What a great extension does" and against the facts
 End the review with one verdict:
 
 - **Ready**: no finding has the severity `block`
-- **Ready with stated limits**: no finding blocks, and the user accepts each `warn` as a limit. Write each accepted limit in the "Limits" part of its command in `spec.md`
+- **Ready with stated limits**: no finding blocks, and the user accepts each `warn` as a limit. Write each accepted limit in the "Limits" part of its command in `spec.md`, as a line with the state `limit`
 - **Needs work**: at least one finding blocks
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.

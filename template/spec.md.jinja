@@ -2,6 +2,10 @@
 
 `manifest.toml` holds the machine facts of each command, and `ncly describe {{ root }} --json` shows them. This file holds only what the manifest cannot say, so it never repeats a flag or a type.
 
+Each line of Failures and Acceptance has the state `proven`: a test claims it, and the test kit requires that claim.
+A line that no test proves yet has the state `open`, and waits under `## Open lines`.
+A line that the user accepted as a limit has the state `limit`, under **Limits.** of its command.
+
 This file is a form filled for the example command, `ncly {{ example_command }}`.
 It inspects a file until you replace it.
 Give each command a section like that one, then delete each line that starts with "Fill:".
@@ -10,9 +14,11 @@ Fill: for each command, what proves its success, why each declared effect exists
 
 Fill: start each line of Failures and of Acceptance with its own spec ID, such as `bad-input`. Then claim each ID with a line `# spec: <id>` in the test that proves it. `test-kit.md` in the folder that `just contract` prints defines both.
 
+Fill: write every line of a command in its first pull request, from the generic cases of the contract and the cases of the program. The skill in `.agents/skills/nicely-extension/` says how.
+
 Fill: the failure of an input that exists but that the wrapped program cannot read, with a `{{ slug | upper | replace("-", "_") }}_` code and exit 2. A dry run, when the command has one, gives the same failure.
 
-Fill: each limit that the readiness review accepted. A limit never contradicts a line of Failures or of Acceptance.
+Fill: each limit that the readiness review accepted, with its spec ID. A limit never contradicts a line of Failures or of Acceptance.
 
 ## ncly {{ example_command }}
 
@@ -47,3 +53,11 @@ The real input is a short Markdown file. Without a fixture, `acceptance.sh` make
 Fill: the real input that proves the command, such as a fixture of the registry of Nicely, and the properties that the output keeps. `acceptance.sh` checks each property.
 
 Fill: each input that the wrapped program accepts but that the domain refuses, with its code. A scenario and `acceptance.sh` refuse each one.
+
+## Open lines
+
+A round of the skill in `.agents/skills/nicely-extension/` moves an open line into Failures or Acceptance once a test claims it.
+
+None.
+
+Fill: each line that no test proves yet, in a table with the columns ID, Command, Part, Case, and Code. The test kit does not read this part.
