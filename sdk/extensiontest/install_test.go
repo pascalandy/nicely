@@ -2,8 +2,21 @@ package extensiontest_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
+
+func TestInstallLifecycleIgnoresCallerSettings(t *testing.T) {
+	config := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(config, []byte("[invalid\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("NCLY_CONFIG", config)
+	t.Setenv("NCLY_LANG", "xx-YY")
+	if out, err := goTest(t, "standalone", os.Getenv("PATH")); err != nil {
+		t.Fatalf("go test failed:\n%s", out)
+	}
+}
 
 // A sibling can keep a shared domain present after scenario cleanup.
 func TestScenarioCanLeaveSiblingExtension(t *testing.T) {

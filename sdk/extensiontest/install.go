@@ -51,7 +51,21 @@ func (k *kit) uninstall(dir string) error {
 // checkInstallLifecycle checks discovery after uninstall in its own scratch folders.
 // Extensions that a scenario adds cannot keep the root present here.
 func (k *kit) checkInstallLifecycle(work string) error {
-	env := &testscript.Env{WorkDir: work, Vars: os.Environ()}
+	tmp := filepath.Join(work, ".tmp")
+	if err := os.MkdirAll(tmp, 0o755); err != nil {
+		return err
+	}
+	// Match testscript's runtime defaults before adding the scratch settings.
+	env := &testscript.Env{WorkDir: work, Vars: []string{
+		"WORK=" + work,
+		"TMPDIR=" + tmp,
+		"GOTRACEBACK=system",
+	}}
+	for _, name := range []string{"GOCOVERDIR", "GORACE"} {
+		if value := os.Getenv(name); value != "" {
+			env.Setenv(name, value)
+		}
+	}
 	if err := k.installScratch(env); err != nil {
 		return err
 	}
