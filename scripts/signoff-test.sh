@@ -72,6 +72,7 @@ JUST
 	git -C "${root}/caller" config user.name 'Signoff test'
 	git -C "${root}/caller" config user.email 'test@example.com'
 	git -C "${root}/caller" config core.hooksPath /dev/null
+	git -C "${root}/caller" config commit.gpgsign false
 	printf 'broken\n' >"${root}/caller/fix.txt"
 	git -C "${root}/caller" add .
 	git -C "${root}/caller" commit -qm 'broken commit'
