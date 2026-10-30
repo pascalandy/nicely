@@ -62,7 +62,7 @@ func specProblems(spec string) []string {
 				case state < 0 || accepted < 0 || state >= len(l.Cells) || accepted >= len(l.Cells):
 					problems = append(problems, fmt.Sprintf("spec.md:%d: the limit `%s` has no State or Accepted cell. Fix: give its table the columns ID, State, Limit, and Accepted", l.Number, l.ID))
 				case strings.Trim(l.Cells[state], "`") != "limit":
-					problems = append(problems, fmt.Sprintf("spec.md:%d: the limit `%s` has the state %q. Fix: give it the state `limit`", l.Number, l.ID, l.Cells[state]))
+					problems = append(problems, fmt.Sprintf("spec.md:%d: the limit `%s` has the state %q. Fix: give it the state `limit`", l.Number, l.ID, strings.Trim(l.Cells[state], "`")))
 				case l.Cells[accepted] == "":
 					problems = append(problems, fmt.Sprintf("spec.md:%d: no record says that the user accepted the limit `%s`. Fix: ask the user, then record who accepted it, when, and where", l.Number, l.ID))
 				}

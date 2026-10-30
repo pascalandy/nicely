@@ -47,6 +47,10 @@ fct_test_finish() {
 
 	fct_edit "${finish}/spec.md" '| `large-file` | inspect | Failures | A file over 1 GB | `RUNTIME` |' ''
 	fct_edit "${finish}/spec.md" '**Limits.** A file over 1 GB takes more than 30 s to count.' $'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `large-file` | `limit` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |'
+	fct_edit "${finish}/spec.md" '| `large-file` | `limit` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |' '| `large-file` | `open` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |'
+	fct_finish 1
+	fct_finish_said 'the limit `large-file` has the state "open"'
+	fct_edit "${finish}/spec.md" '| `large-file` | `open` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |' '| `large-file` | `limit` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |'
 	git -C "${finish}" commit -qam 'accepted limit'
 	sha="$(git -C "${finish}" rev-parse HEAD)"
 	printf '# Readiness review\n\nCommit: %s\nVerdict: Needs work\n' "${sha}" >"${finish}/readiness.md"
