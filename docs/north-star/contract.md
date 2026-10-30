@@ -44,6 +44,7 @@ Each part is one file, in reading order.
   - [SDK](contract/sdk.md)
     - [Wrapped programs](contract/wrap.md)
     - [Test kit](contract/test-kit.md)
+      - [Manifest examples](contract/manifest-examples.md)
   - [Extension repository](contract/extension-repository.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)
