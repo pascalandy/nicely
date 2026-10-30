@@ -13,14 +13,14 @@ description: Use to install, build, or remove an ncly extension.
 > For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
 > `ncly describe <root> --json` then confirms the install.
 
-For the repository `github.com/OWNER/REPO` at the tag TAG, such as `v0.1.0`:
+For the repository `github.com/OWNER/REPO` at its highest release tag TAG:
 
 ```sh
 git clone --branch TAG https://github.com/OWNER/REPO
 cd REPO && just install
 ```
 
-`git ls-remote --tags https://github.com/OWNER/REPO` lists the tags. Then run `ncly describe ROOT --json`, such as `ncly describe video convert --json`, and `ncly skill view SLUG`. The install grants no key.
+`git ls-remote --tags --refs --sort=-v:refname https://github.com/OWNER/REPO` lists the tags, highest first. Then run `ncly describe ROOT --json`, such as `ncly describe video convert --json`, and `ncly skill view SLUG`. The install grants no key.
 
 ## Build an extension
 
