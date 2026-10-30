@@ -138,7 +138,7 @@ See [Contract](glossary/contract.md).
 
 ### Relations
 
-- An item holds cards, at most five of them for agents; a card is one pull request
+- An item holds the cards that its feature needs; a card is one pull request
 - A stack holds layers, bottom to top; a layer is one branch and its pull request, based on the layer below
 - A principle links its decisions; a decision records what was decided, why, and what was rejected
 
