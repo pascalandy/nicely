@@ -18,7 +18,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `.agents/skills/nicely-extension/` | The skill that takes a script from intake to a verified command, and reviews readiness when the user asks |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
-| `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu and macOS for each push to `main` and each pull request |
+| `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu, plus macOS for public repositories, for each push to `main` and each pull request |
 
 `spec.md` holds only what the manifest cannot say, so it never repeats a flag or a type. [Extension identity](extension-identity.md) defines which commands it owns.
 
@@ -28,8 +28,8 @@ An agent creates the repository without prompts, with the Copier that the templa
 An empty Copier name input omits the manifest `name` and keeps the whole-domain layout.
 A named extension uses the slug for its executable, sidecars, skill, and config, as [Extension identity](extension-identity.md) defines. The bundled `nicely-extensions` skill shows the command. The agent then runs `go mod tidy` once, which writes `go.sum`, and commits the repository with Git. The root Go package keeps the domain as its name, including for named extensions.
 The template refuses `main` and each Go keyword as a domain, such as `type`. It also refuses the domain `nicely`, with or without a name, because `ncly` bundles the skill `nicely` and skills named `nicely-<topic>`. These would hide the skill of the extension. The template has no tasks and no migrations, so Copier needs no `--trust`.
-A push can skip Lefthook, so its GitHub workflow runs `just check` again on `ubuntu-24.04` and `macos-15`.
-Both runners use the same steps and are free for a public repository.
+A push can skip Lefthook, so its GitHub workflow runs `just check` again on `ubuntu-24.04`.
+Public repositories also run the same steps on `macos-15`, and both runners are free.
 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has six recipes:
 
