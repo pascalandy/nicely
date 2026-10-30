@@ -33,7 +33,7 @@ Each check fails first on one named past mistake.
 | COR-103-T8 | Update through the target updater | agent | COR-103-T7 | todo |
 | COR-103-T9 | Sign off an isolated checkout | agent | COR-103-T7 | todo |
 | COR-103-T10 | Release with a receipt | agent | COR-103-T7, COR-103-T9 | todo |
-| COR-103-T11 | macOS job in the template | agent | - | todo |
+| COR-103-T11 | macOS job in the template | agent | - | done |
 | COR-103-T12 | Author path from the published tag | agent | - | todo |
 | COR-103-T13 | Rules and prose | agent | COR-103-T4, COR-103-T5, COR-103-T6, COR-103-T8, COR-103-T10, COR-103-T11, COR-103-T12 | todo |
 | COR-103-T14 | Video-convert rollout | agent | COR-103-T1, COR-103-T13 | todo |

@@ -7,6 +7,8 @@
 fct_test_files() {
 	local repo="${1}" slug="${2}" file
 	fct_has "${repo}/.github/workflows/check.yml" "        run: just check"
+	fct_has "${repo}/.github/workflows/check.yml" '        os: [ubuntu-24.04, macos-15]'
+	fct_has "${repo}/.github/workflows/check.yml" "    runs-on: \${{ matrix.os }}"
 	fct_has "${repo}/qa.md" "# ${slug} QA"
 	for file in qa.md acceptance.sh; do
 		if grep -nE '\{\{|\}\}|\{%|%\}|\{#|#\}' "${repo}/${file}"; then
