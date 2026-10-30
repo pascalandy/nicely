@@ -23,16 +23,27 @@ fct_test_files() {
 
 # fct_test_example_notices requires skip reasons from plain just check in the rendered repository $1.
 fct_test_example_notices() {
-	local repo="${1}" scratch="${2}" status=0
+	local repo="${1}" scratch="${2}" status=0 line
 	cp "${repo}/manifest.toml" "${scratch}/examples-manifest.toml"
 	fct_edit "${repo}/manifest.toml" 'effects = {}' 'effects = { paid = true }'
-	if ! (cd "${repo}" && just check) >"${scratch}/examples-check.out" 2>&1; then
-		cat "${scratch}/examples-check.out" >&2
+	if ! (cd "${repo}" && just check) >"${scratch}/examples-check.out" 2>"${scratch}/examples-check.err"; then
+		cat "${scratch}/examples-check.out" "${scratch}/examples-check.err" >&2
 		fct_fail 'just check fails when a paid example has no dry run'
 	fi
 	cat "${scratch}/examples-check.out"
-	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-check.out" ||
-		fct_fail 'plain just check hides the paid example skip reason'
+	cat "${scratch}/examples-check.err" >&2
+	if ! (cd "${repo}" && go run ./internal/export test -json) >"${scratch}/examples-test.jsonl" 2>"${scratch}/examples-test.err"; then
+		cat "${scratch}/examples-test.err" >&2
+		fct_fail 'the JSON test wrapper fails'
+	fi
+	[[ -s "${scratch}/examples-test.jsonl" ]] || fct_fail 'the JSON test wrapper prints no test events'
+	while IFS= read -r line || [[ -n "${line}" ]]; do
+		PATH="/usr/bin:${PATH}" jq -e . <<<"${line}" >/dev/null || fct_fail 'the test wrapper prints non-JSON output on stdout'
+	done <"${scratch}/examples-test.jsonl"
+	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-test.err" ||
+		fct_fail 'the JSON test wrapper hides the skip reason on stderr'
+	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-check.err" ||
+		fct_fail 'plain just check hides the paid example skip reason on stderr'
 	cp "${repo}/testdata/script/refusal.txtar" "${scratch}/examples-refusal.txtar"
 	{
 		printf 'notice-regression\n'

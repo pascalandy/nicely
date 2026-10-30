@@ -68,9 +68,9 @@ test *args:
     # A hook or a caller can export GIT_DIR. Fixture commits must see a normal repository.
     while IFS= read -r git_variable; do unset "${git_variable}"; done < <(git rev-parse --local-env-vars)
     # ./... skips testdata/, so the Go fixture extensions are named.
-    go run ./sdk/extensionrepo/test ./... ./testdata/extensions/... {{ args }}
+    go test ./... ./testdata/extensions/... {{ args }}
     # Its test kit builds ncly, whose source the test cache of the fixture never rechecks.
-    for dir in {{ standalone }}; do go -C "$dir" run github.com/pascalandy/nicely/sdk/extensionrepo/test ./... {{ args }}; done
+    for dir in {{ standalone }}; do go -C "$dir" test -count=1 ./... {{ args }}; done
     # Go's test cache never rechecks a file outside the tools module, such as the docs or the release workflow, so these tests run uncached.
     (cd tools && go test -count=1 ./cmd/... {{ args }})
     bash scripts/release-check-test.sh

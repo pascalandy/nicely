@@ -99,8 +99,9 @@ Without that mode, it runs only commands whose `effects` explicitly declare `pai
 A missing effects declaration permits no assumption.
 Each skipped example prints its reason, including commands outside the extension's manifest.
 The template runs tests through `go run ./internal/export test`, which keeps package list output without `-v`.
-The SDK wrapper prints collected notices after the tests, including when tests fail, and preserves their exit code.
-Core uses the same wrapper through `go run ./sdk/extensionrepo/test`.
+The SDK wrapper prints collected notices to stderr after the tests, including when tests fail.
+It preserves their exit code and keeps stdout valid for `go test -json`.
+Core keeps Go's result cache and uses the rendered template sample to check notices.
 `extensionrepo.Notice(message)` collects one notice for that run and returns any write error.
 Without the wrapper, it prints to test output, which Go can hide for passing packages.
 Other kit checks use this path for notices, including each declared code's `untested` reason after the scenarios.

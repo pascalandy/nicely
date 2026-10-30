@@ -25,7 +25,7 @@ func Notice(message string) error {
 	return errors.Join(err, file.Close())
 }
 
-// Test runs go test without its result cache, then prints notices outside Go's output filter.
+// Test runs go test without its result cache, then prints notices to stderr outside Go's output filter.
 // It accepts go test arguments, defaults to ./..., and preserves the test exit code.
 func Test(args []string) int {
 	file, err := os.CreateTemp("", "ncly-test-notices-*")
@@ -47,7 +47,7 @@ func Test(args []string) int {
 	if err != nil {
 		return report("test notices", err)
 	}
-	if _, err := os.Stdout.Write(notices); err != nil {
+	if _, err := os.Stderr.Write(notices); err != nil {
 		return report("test notices", err)
 	}
 	var exit *exec.ExitError
