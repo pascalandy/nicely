@@ -24,7 +24,8 @@ fct_setup() {
 		case "${variable}" in GIT_* | JUST_*) unset "${variable}" ;; esac
 	done
 	repo_root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
-	root="$(mktemp -d "${TMPDIR:-/tmp}/ncly-signoff-test.XXXXXXXX")"
+	# Signoff prints the resolved receipt path, so resolve links such as /var on macOS.
+	root="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/ncly-signoff-test.XXXXXXXX")" && pwd -P)"
 	mkdir -p "${root}/bin" "${root}/caller/scripts" "${root}/caller/signoff-fixture" "${root}/cache"
 	export NCLY_SIGNOFF_TEST="${root}" PATH="${root}/bin:${PATH}" XDG_CACHE_HOME="${root}/cache"
 	cat >"${root}/bin/gh" <<'SCRIPT'
