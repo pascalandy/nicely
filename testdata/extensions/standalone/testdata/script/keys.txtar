@@ -1,6 +1,7 @@
 # The kit gives the example service the sentinel key sentinel-example, so ncly
 # passes a granted key from its variable and never reads the keychain.
 # Without a grant, ncly passes no key, and the extension names the grant.
+# spec: not-granted
 exits 78 ncly standalone fetch --json
 stderr '"code":"KEY_NOT_GRANTED"'
 stderr '"next":\["ncly","auth","grant","example","standalone"\]'
@@ -12,6 +13,7 @@ stdout '"sha256":"d6d31537518a7b2a474bb480861a0c57d94e64a4b3ca41f2020d3463bd9488
 
 # Run directly, the extension answers the code that NCLY_MISSING_KEYS names,
 # and no ncly runs, so nothing reads the keychain.
+# spec: key-missing no-keychain
 env NCLY_MISSING_KEYS=example=AUTH_MISSING
 exits 78 ncly-standalone fetch --json
 stderr '"code":"AUTH_MISSING"'

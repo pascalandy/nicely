@@ -43,5 +43,5 @@ Every extension meets this bar, a first-party one included. Each line links the 
 5. **A failure says what to do next, and a repeat is safe or refused** ([Output](output.md), [Retry safety](retry-safety.md)). Checked by the scenarios
 6. **It travels whole.** One build gives the executable, its sidecars, and its embedded workers ([SDK](sdk.md)). Checked by the scratch install of the test kit
 7. **Its skill teaches when, not how.** `ncly describe` already lists the flags, as [D054](../decisions/D054-extension-skills-through-describe.md) decides. The test kit checks that the skill names only declared commands. The rest is judgment
-8. **Each promise of its spec has a scenario.** The test kit checks that each command appears in a scenario. The rest is judgment
+8. **Each promise of its spec has a test.** The test kit checks that each command appears in a scenario, and that a test claims each line of Failures and Acceptance ([Spec IDs](test-kit.md#spec-ids)). Whether that test proves its line is judgment
 9. **It keeps the rules that the Go types cannot express**, which [SDK](sdk.md#rules-that-the-types-cannot-express) lists. The scenarios catch a broken answer or exit code. The rest is judgment

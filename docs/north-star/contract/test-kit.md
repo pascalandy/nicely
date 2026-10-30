@@ -40,10 +40,25 @@ The fake child runs the actions of `$WORK/bin/<name>.fake`, one per line: `stdou
 - Each answer of a call through `ncly` or `ncly-<slug>`, for a success and for a failure. Its schema is the one that `contract.AnswerSchema` builds from the command's declaration
 - No scenario runs `ncly` or `ncly-<slug>` through `exec` in the foreground, by name or by path, which would skip the answer check. The kit splits each line into words as testscript does, so quotes and comments hide no call. A background call, which ends with `&`, keeps `exec`, and the kit does not check its answer
 - Each command that runs appears in the `ncly <root> ...` call of at least one scenario
+- Each line of Failures and of Acceptance in `spec.md` starts with its own spec ID, and a test claims each ID, as [Spec IDs](#spec-ids) says. Each claim names an ID of `spec.md`
 - The skill names no `ncly <root>` command that the manifest lacks. Core's commands and commands outside that root stay free to mention, including sibling extensions
 - When the repository holds `.copier-answers.yml`, its `_commit`, the Nicely version of the template, equals the one in `go.mod`. The failure says to run `just update <version>`
 
 The two checks of commands match literal `ncly <root> ...` text, and parse no shell or Markdown. Each failure names the file, the missing link, and its fix. The fixture extension repository in `testdata/extensions/standalone/` proves each check.
 `testdata/extensions/standalone-named/` proves the named-extension checks, and Nicely's `just test`, `just lint`, `just fmt-check`, and `just tidy-check` cover both modules.
 
-The kit proves the declared cases. Whether each promise of `spec.md` has a scenario, and whether a command has a hidden effect, stay judgments for the author and the reviewer.
+The kit proves the declared cases. Whether a claimed test proves its line, and whether a command has a hidden effect, stay judgments for the author and the reviewer.
+
+## Spec IDs
+
+The kit reads each part of `spec.md` named `Failures` or `Acceptance`. A part starts at a heading, or at a line that starts with a bold label, such as `**Failures.**`. It ends at the next one. Each row of a table and each bullet of these parts is one promise, and starts with its spec ID in backticks:
+
+| ID | Condition | Code |
+|---|---|---|
+| `missing-file` | The file is missing or is no regular file | `USAGE_INVALID` |
+
+- `duration`: The duration of the output, within 0.1 s
+
+A spec ID is lowercase words that hyphens join. No two lines share one. A bullet takes a colon after its ID, so a bullet that only starts with code holds no ID. A prose paragraph holds no promise.
+
+A test claims IDs with a line of its own, `# spec: <id>...`, above the commands that prove them. The line goes in the script of a scenario, or in `acceptance.sh`, which proves the real input of `## Acceptance`.

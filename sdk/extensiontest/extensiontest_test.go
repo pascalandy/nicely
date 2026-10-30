@@ -70,9 +70,38 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 			want: []string{
 				"testdata/script/tally.txtar:4: exec runs ncly, so the kit cannot check its answer. Fix: drop exec, and run the kit's command ncly",
 				"testdata/script/lipgloss.txtar:12: exec runs ncly-standalone, so the kit cannot check its answer. Fix: drop exec",
-				"testdata/script/keys.txtar:10: exec runs ncly, so the kit cannot check its answer",
+				"testdata/script/keys.txtar:11: exec runs ncly, so the kit cannot check its answer",
 			},
-			absent: []string{"keys.txtar:11:"},
+			absent: []string{"keys.txtar:12:"},
+		},
+		{
+			name: "a line of spec.md without an ID, with the ID of another, or without a claim",
+			edits: []edit{
+				{"spec.md", "| `tally-fails` |", "| tally-fails |"},
+				{"spec.md", "| `key-missing` |", "| `not-granted` |"},
+				{"testdata/script/tally.txtar", "# spec: tally-missing\n", ""},
+			},
+			want: []string{
+				"spec.md:14: this line of Failures has no ID. Fix: give it an ID in backticks",
+				"spec.md:25: the ID `not-granted` repeats the one of line 24. Fix: give each line its own ID",
+				"spec.md:13: no test claims `tally-missing`. Fix: write the line `# spec: tally-missing` above the commands that prove it",
+				"testdata/script/keys.txtar:16: `# spec: key-missing` names no line of Failures or Acceptance in spec.md. Fix: correct the ID",
+			},
+			absent: []string{"no test claims `not-granted`", "no test claims `no-keychain`"},
+		},
+		{
+			name: "a claim of acceptance.sh covers a line, and one names no line",
+			edits: []edit{
+				{"spec.md", "## ncly standalone fetch", "## Acceptance\n\n- `total`: The count of a real input\n\n## ncly standalone fetch"},
+				{file: "acceptance.sh", new: "#!/usr/bin/env bash\n# spec: total\n# spec: ghost\n"},
+			},
+			want:   []string{"acceptance.sh:3: `# spec: ghost` names no line of Failures or Acceptance in spec.md"},
+			absent: []string{"no test claims `total`"},
+		},
+		{
+			name:  "a repository without spec.md",
+			edits: []edit{{file: "spec.md"}},
+			want:  []string{"spec.md: the repository has no spec. Fix: add spec.md"},
 		},
 		{
 			name:  "an extension without a skill",

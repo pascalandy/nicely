@@ -1,8 +1,9 @@
 // Package extensiontest is the test kit of an extension repository, as Test
 // kit in contract.md defines. One test of the repository calls Run. Run
-// checks the links between the manifest, the skill, the scenarios, and the
-// Nicely versions. It then installs the real ncly-<slug> and the ncly of
-// go tool ncly in scratch folders, and runs the scenarios of testdata/script/.
+// checks the links between the manifest, the skill, the scenarios, the
+// spec, and the Nicely versions. It then installs the real ncly-<slug> and
+// the ncly of go tool ncly in scratch folders, and runs the scenarios of
+// testdata/script/.
 //
 // A scenario runs the extension through the commands that the kit adds, so
 // that the kit checks each answer against the schema of its command:

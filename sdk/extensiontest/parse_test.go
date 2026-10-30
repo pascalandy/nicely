@@ -133,8 +133,12 @@ func TestScenarioLinksReadExecAsTestscript(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "exec.txtar"), []byte(script.String()), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	scripts, err := k.scripts()
+	if err != nil {
+		t.Fatal(err)
+	}
 	var got []string
-	for _, problem := range k.scenarioLinks() {
+	for _, problem := range k.scenarioLinks(scripts) {
 		if strings.Contains(problem, "exec runs") {
 			got = append(got, strings.TrimPrefix(problem[:strings.Index(problem, " ")], filepath.Join("testdata", "script")+string(filepath.Separator)))
 		}
@@ -173,5 +177,62 @@ func TestFindReadsEverySwitch(t *testing.T) {
 	}
 	if _, found := k.find([]string{"doctor", "--json"}); found {
 		t.Error("find took a call of core for one of the extension")
+	}
+}
+
+// TestPromisesReadFailuresAndAcceptance reads a spec.md with both kinds of
+// part: a heading and a bold label. Only the rows and the bullets of the
+// parts named Failures and Acceptance are promises. A cell or a bullet that
+// only starts with code holds no ID.
+func TestPromisesReadFailuresAndAcceptance(t *testing.T) {
+	spec := strings.Join([]string{
+		"# demo spec",                            // 1
+		"## ncly demo run",                       // 2
+		"- `demo run` reads one file",            // 3
+		"**Failures.**",                          // 4
+		"",                                       // 5
+		"| ID | Condition | Code |",              // 6
+		"|---|---|---|",                          // 7
+		"| `missing-file` | No file | `USAGE` |", // 8
+		"| `python3` is missing | `PREREQ` |",    // 9
+		"",                                       // 10
+		"**Limits.** None.",                      // 11
+		"- `slow`: not a promise",                // 12
+		"## Acceptance",                          // 13
+		"The real input is a fixture.",           // 14
+		"- `duration`: The duration, within 0.1 s", // 15
+		"- `ffprobe` reads the duration",           // 16
+		"  1. `nested`: a numbered bullet",         // 17
+		"| ID | Input | Code |",                    // 18
+		"| :-- | :-: | --: |",                      // 19
+		"| `still-image` | A PNG | `UNREADABLE` |", // 20
+		"## Failures",                              // 21
+		"* `stopped`: Ctrl-C",                      // 22
+	}, "\n")
+	want := []promise{
+		{id: "missing-file", part: "Failures", line: 8},
+		{id: "", part: "Failures", line: 9},
+		{id: "duration", part: "Acceptance", line: 15},
+		{id: "", part: "Acceptance", line: 16},
+		{id: "nested", part: "Acceptance", line: 17},
+		{id: "still-image", part: "Acceptance", line: 20},
+		{id: "stopped", part: "Failures", line: 22},
+	}
+	if got := promises(spec); !slices.Equal(got, want) {
+		t.Errorf("promises() = %+v\nwant %+v", got, want)
+	}
+}
+
+// TestClaimsReadEachIDOfASpecLine reads the IDs of each line # spec:, with
+// any space, and no other comment.
+func TestClaimsReadEachIDOfASpecLine(t *testing.T) {
+	text := "# spec: missing-file\nncly demo run\n  #spec:  duration   still-image\n# the spec: says nothing\necho '# spec: quoted'\n"
+	want := []claim{
+		{id: "missing-file", file: "a.txtar", line: 1},
+		{id: "duration", file: "a.txtar", line: 3},
+		{id: "still-image", file: "a.txtar", line: 3},
+	}
+	if got := claims("a.txtar", text); !slices.Equal(got, want) {
+		t.Errorf("claims() = %+v\nwant %+v", got, want)
 	}
 }

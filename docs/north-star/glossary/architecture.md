@@ -66,6 +66,12 @@
 - Test kit
   - Def.: the SDK package `sdk/extensiontest`, which lets an extension repository test itself
   - Project note: [Test kit](../contract/test-kit.md) says what it runs and checks
+- Spec ID
+  - Def.: the name in backticks that starts a line of Failures or of Acceptance in the `spec.md` of an extension repository, such as `still-image`
+  - Project note: [Spec IDs](../contract/test-kit.md#spec-ids) defines its form
+  - Distinct from: an error code, which the answer of a failure holds
+- Claim
+  - Def.: a line `# spec: <id>...` in a scenario or in `acceptance.sh`, which says that the test proves the lines of those spec IDs
 - Engine
   - Def.: transcript's Python program, which it copied from `pascalandy/skills`
   - Project note: [the transcript spec](../../../extensions/transcript/spec/protocol.md#the-engine) uses this name

@@ -10,6 +10,7 @@ stdout '"count":3'
 
 # Output that is no whole number fails with RUNTIME, and so does an exit
 # other than 0.
+# spec: tally-fails
 cp words.fake bin/tally-tool.fake
 exits 1 ncly standalone tally --json
 stderr '"code":"RUNTIME"'
@@ -18,6 +19,7 @@ exits 1 ncly standalone tally --json
 stderr '"code":"RUNTIME"'
 
 # Without tally-tool in PATH, the command fails before it starts anything.
+# spec: tally-missing
 rm bin/tally-tool
 exits 78 ncly standalone tally --json
 stderr '"code":"PREREQ_MISSING"'
