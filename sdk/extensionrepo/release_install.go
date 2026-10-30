@@ -99,7 +99,7 @@ func (r *releaseReceipt) publishedInstall(ctx context.Context, env []string, roo
 	if err := r.require(ctx, isolated, clone, "describe", append([]string{"ncly", "describe"}, append(m.Root(), "--json")...)...); err != nil {
 		return err
 	}
-	if err := r.economy(ctx, isolated, m, fixture); err != nil {
+	if err := r.economy(ctx, isolated, clone, m, fixture); err != nil {
 		return err
 	}
 	if err := r.require(ctx, isolated, clone, "uninstall", "just", "uninstall"); err != nil {

@@ -30,7 +30,9 @@ The clone's HEAD must equal the tagged SHA, even when another README paragraph n
 Release then checks discovery, measures [Economy](../../qa/north-star.md#economy), uninstalls, and requires `NOT_FOUND`.
 Economy runs literal manifest examples in both output formats, with a dry run when supported.
 It selects these modes even when an example already sets them.
-An optional fixture is copied beside those examples, under its original filename.
+Each extension invocation extracts the files of `testdata/examples.txtar` from the tagged scratch clone.
+It ignores archive setup commands and keeps extracted files off PATH.
+An optional fixture replaces the first example argument that names an archive file, under that argument's filename.
 Each measurement uses a fresh working folder, so previous output cannot change the next measurement.
 Each measurement records the command, exit, elapsed milliseconds, and separate stdout and stderr byte counts.
 Failed Economy calls and exceeded budgets are reservations, not release failures.

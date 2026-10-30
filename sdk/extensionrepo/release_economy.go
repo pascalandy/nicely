@@ -11,21 +11,30 @@ import (
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/rogpeppe/go-internal/txtar"
 )
 
 // economy measures declared examples. Acceptance owns proof on the extension's real input.
-func (r *releaseReceipt) economy(ctx context.Context, env []string, m contract.Manifest, fixture string) error {
+func (r *releaseReceipt) economy(ctx context.Context, env []string, clone string, m contract.Manifest, fixture string) error {
+	archive, err := txtar.ParseFile(filepath.Join(clone, "testdata", "examples.txtar"))
+	if os.IsNotExist(err) {
+		archive, err = &txtar.Archive{}, nil
+	}
+	if err != nil {
+		return err
+	}
 	type sample struct {
 		command []string
 		budget  int
-		fixture bool
+		files   []txtar.File
+		input   string
 	}
 	samples := []sample{
-		{[]string{"ncly", "skill", "view", "nicely"}, 2500, false},
-		{[]string{"ncly", "skill", "view", m.Slug()}, 1600, false},
-		{[]string{"ncly", "describe"}, 2500, false},
-		{append([]string{"ncly", "describe"}, m.Root()...), 4500, false},
-		{[]string{"ncly", "doctor", m.Slug()}, 500, false},
+		{[]string{"ncly", "skill", "view", "nicely"}, 2500, nil, ""},
+		{[]string{"ncly", "skill", "view", m.Slug()}, 1600, nil, ""},
+		{[]string{"ncly", "describe"}, 2500, nil, ""},
+		{append([]string{"ncly", "describe"}, m.Root()...), 4500, nil, ""},
+		{[]string{"ncly", "doctor", m.Slug()}, 500, nil, ""},
 	}
 	for _, c := range m.Commands {
 		if !m.Runs(c) {
@@ -43,10 +52,17 @@ func (r *releaseReceipt) economy(ctx context.Context, env []string, m contract.M
 			r.Reservations = append(r.Reservations, "Economy: no runnable manifest example for "+strings.Join(c.Path, " "))
 			continue
 		}
-		if c.Modes.DryRun {
-			samples = append(samples, sample{releaseFlags(command, "--dry-run"), 1000, true})
+		input := ""
+		for _, arg := range command[1+len(c.Path):] {
+			if slices.ContainsFunc(archive.Files, func(file txtar.File) bool { return filepath.Clean(file.Name) == filepath.Clean(arg) }) {
+				input = arg
+				break
+			}
 		}
-		samples = append(samples, sample{command, 1000, true})
+		if c.Modes.DryRun {
+			samples = append(samples, sample{releaseFlags(command, "--dry-run"), 1000, archive.Files, input})
+		}
+		samples = append(samples, sample{command, 1000, archive.Files, input})
 	}
 	for i, sample := range samples {
 		for _, jsonOutput := range []bool{false, true} {
@@ -54,11 +70,7 @@ func (r *releaseReceipt) economy(ctx context.Context, env []string, m contract.M
 			if jsonOutput {
 				command, format = releaseFlags(command, "--json"), "json"
 			}
-			input := ""
-			if sample.fixture {
-				input = fixture
-			}
-			row, err := r.economyMeasure(ctx, env, fmt.Sprintf("economy-%d-%s", i, format), input, command...)
+			row, err := r.economyMeasure(ctx, env, fmt.Sprintf("economy-%d-%s", i, format), fixture, sample.input, sample.files, command...)
 			r.Economy = append(r.Economy, row)
 			if err != nil {
 				return err
@@ -75,14 +87,27 @@ func (r *releaseReceipt) economy(ctx context.Context, env []string, m contract.M
 }
 
 // economyMeasure gives each invocation fresh inputs and output paths.
-func (r *releaseReceipt) economyMeasure(ctx context.Context, env []string, name, fixture string, args ...string) (releaseMeasurement, error) {
+func (r *releaseReceipt) economyMeasure(ctx context.Context, env []string, name, fixture, input string, files []txtar.File, args ...string) (releaseMeasurement, error) {
 	work, err := os.MkdirTemp(r.dir, "economy-work-")
 	if err != nil {
 		return releaseMeasurement{}, err
 	}
 	defer func() { _ = os.RemoveAll(work) }()
-	if fixture != "" {
-		if err := releaseCopyFixture(fixture, filepath.Join(work, filepath.Base(fixture))); err != nil {
+	// Extract only data files. Archive setup and fake programs never enter the command environment.
+	for _, file := range files {
+		if !filepath.IsLocal(file.Name) {
+			return releaseMeasurement{}, fmt.Errorf("examples.txtar file is outside its working folder: %s", file.Name)
+		}
+		path := filepath.Join(work, file.Name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			return releaseMeasurement{}, err
+		}
+		if err := os.WriteFile(path, file.Data, 0o600); err != nil {
+			return releaseMeasurement{}, err
+		}
+	}
+	if fixture != "" && input != "" {
+		if err := releaseCopyFixture(fixture, filepath.Join(work, input)); err != nil {
 			return releaseMeasurement{}, err
 		}
 	}
@@ -96,7 +121,7 @@ func releaseCopyFixture(from, to string) error {
 		return err
 	}
 	defer func() { _ = input.Close() }()
-	output, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	output, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}

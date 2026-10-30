@@ -6,7 +6,7 @@ source "${BASH_SOURCE[0]%/*}/template-release-helpers.sh"
 
 fct_test_release() {
 	local repo="${1}" scratch="${2}" slug="${3}" extension_root="${4}" sha previous receipt dir status out_file out_bytes err_file err_bytes i examples command
-	local remote="${2}/release-origin.git" fixture="${2}/release-fixture/notes.md"
+	local remote="${2}/release-origin.git" fixture="${2}/release-fixture/input.md"
 	fct_has "${repo}/AGENTS.md" '## Release'
 	fct_has "${repo}/README.md" "ncly describe ${extension_root} --json"
 	fct_has "${repo}/README.md" "git clone --branch TAG https://example.com/ncly-${slug} ncly-${slug}"
@@ -82,6 +82,9 @@ SCRIPT
 	fi
 	git -C "${repo}" push -q origin HEAD:main
 	fct_release_attempt "${repo}" "${scratch}" v0.1.0 || fct_fail 'first local release failed'
+	receipt="$(sed -n 's/^release: receipt in //p' "${scratch}/release.out")"
+	PATH="/usr/bin:${PATH}" jq -r '.economy[] | select(.command[1:3] != ["skill", "view"] and .command[1] != "describe" and .command[1] != "doctor") | "default Economy: \(.command | join(" ")), exit \(.exit)"' "${receipt}"
+	PATH="/usr/bin:${PATH}" jq -e '[.economy[] | select(.command | index("notes.md"))] | length == 4 and all(.[]; .exit == 0)' "${receipt}" >/dev/null || fct_fail 'default release Economy did not run all four extension samples successfully'
 	previous="$(git -C "${repo}" rev-parse HEAD)"
 
 	# D095: a new tag in prose cannot repair an install block pinned to the previous tag.
@@ -104,11 +107,12 @@ SCRIPT
 	git -C "${repo}" push -q origin HEAD:main
 	fct_release_receipt "${repo}" "${scratch}"
 	sha="$(git -C "${repo}" rev-parse HEAD)"
-	fct_release_attempt "${repo}" "${scratch}" v0.1.2 release-fixture/notes.md || fct_fail 'correct README release failed'
+	fct_release_attempt "${repo}" "${scratch}" v0.1.2 release-fixture/input.md || fct_fail 'correct README release failed'
 	[[ "$(tail -n 1 "${scratch}/release.out")" == "Released v0.1.2 ${sha}" ]] || fct_fail 'release ends without the tag and SHA'
 	receipt="$(sed -n 's/^release: receipt in //p' "${scratch}/release.out")"
 	dir="${receipt%/*}"
 	PATH="/usr/bin:${PATH}" jq -e '.ok == true' "${dir}/economy-6-json.stdout" >/dev/null || fct_fail 'Economy JSON mode returned no answer'
+	PATH="/usr/bin:${PATH}" jq -e --argjson bytes "$(wc -c <"${fixture}" | tr -d ' ')" '.size_bytes == $bytes' "${dir}/economy-6-json.stdout" >/dev/null || fct_fail 'Economy did not replace the example input with the supplied fixture'
 	if PATH="/usr/bin:${PATH}" jq -e . "${dir}/economy-6-text.stdout" >/dev/null 2>&1; then fct_fail 'Economy text mode returned JSON'; fi
 	PATH="/usr/bin:${PATH}" jq -e --arg sha "${sha}" '.tag == "v0.1.2" and .sha == $sha and .cloned_sha == $sha and .pushed and (.failure == null) and .signoff.sha == $sha and .hosted_checks[0].check_runs[0].head_sha == $sha and any(.reservations[]; contains("exceeds a budget")) and (.economy | length == 14) and all(.economy[]; .exit == 0 and (.elapsed_ms | type) == "number") and ([.steps[] | select(.name == "not-found")][0].exit == 2)' "${receipt}" >/dev/null || fct_fail 'release receipt lacks published proof or Economy rows'
 	while IFS=$'\t' read -r out_file out_bytes err_file err_bytes; do
