@@ -17,7 +17,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `acceptance.sh` | The run of the command on the real input of `## Acceptance`, which checks each property and each refusal that it lists |
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
-| `readiness.md` | The last readiness review: the commit that it reviewed, its verdict, and its findings |
+| `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 | `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu, plus macOS for public repositories, for each push to `main` and each pull request |
 

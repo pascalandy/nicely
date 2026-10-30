@@ -17,7 +17,7 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 ## Change a command
 
 Build each command with the skill in `.agents/skills/nicely-extension/`, from the first command.
-It runs these steps in rounds, one pull request per round:
+It runs these steps in rounds:
 
 1. Write the command's spec before its implementation.
 2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.
@@ -131,7 +131,7 @@ The rounds of the skill stop when all of these hold:
 After 5 rounds, stop anyway, and report each open line to the user.
 For a command that needs a key, relay the grant hint to the human and wait.
 A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
-It never replaces "Done when". When the previous pull request is not merged, the next round stacks on its branch.
+It never replaces "Done when". When the previous pull request is not merged, a new pull request stacks on its branch.
 
 ## Release
 

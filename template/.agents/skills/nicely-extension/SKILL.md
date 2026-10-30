@@ -5,7 +5,7 @@ description: Use for each command of this Nicely extension, from the first one, 
 
 # Nicely extension
 
-This skill takes each command from intake to a verified command, in rounds of pull requests.
+This skill takes each command from intake to a verified command, in rounds.
 `AGENTS.md` gives the reading order, recipes, and extension root.
 The domain names a family of work, such as `video`.
 An optional name identifies one job, such as `convert`.
@@ -66,7 +66,8 @@ A case that cannot occur for the command needs no line.
 
 ## Rounds
 
-Each round is one pull request.
+A round is new commits on the open pull request, or a new pull request.
+Each round ends with the independent review, the readiness review, and `just finish`.
 
 ### Round 1
 
@@ -92,11 +93,11 @@ The first implementation is incomplete by design. The open lines start the next 
 1. Run `just check` until every check passes.
 2. For a command that needs a key, relay the grant hint to the human and wait.
 3. Run `just acceptance` on the real input until its independent checks pass.
-4. Ask an agent that did not write the round to review its pull request.
-5. Run the readiness review, and record it in `readiness.md`.
+4. Ask an agent that did not write the round to review the changes of the round.
+5. Ask an agent that did not write the code to run the readiness review and record it in `readiness.md`. The author of the round never writes it.
 6. Write each finding that a test can prove as an open line.
-7. Stop as "Done when" in `AGENTS.md` says. Its `just finish` fails until the loop is done.
-8. Otherwise, open the next pull request from the open lines and the other findings. When the previous pull request is not merged, base it on that branch.
+7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
+8. Otherwise, start the next round from the open lines and the other findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
 
 A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
 It never replaces "Done when", and it never ends the rounds early.
