@@ -55,6 +55,10 @@ func TestDeclaredCodesRequireObservations(t *testing.T) {
 				"\nANSWER\n;;\n*) cat <<'ANSWER'\n" + c.run + "\nANSWER\n;;\nesac\n"
 			edits := []edit{
 				{"manifest.toml", `requires = { keys = ["example"] }`, "requires = { keys = [\"example\"] }\nmodes = { dry_run = true }"},
+				{"extension.go", "key, problem :=", `if call.Flags["dry-run"] == "true" {
+		return contract.Outcome{Data: map[string]string{"file": call.Args[0], "sha256": "dry-run"}}
+	}
+	key, problem :=`},
 				{"manifest.toml", "domain = \"video\"", "warnings = [{ code = \"VIDEO_CONVERT_WARNING\"" + inlineDeclaration(c.declaration) + " }]\ndomain = \"video\""},
 				{file: "testdata/script/convert.txtar", new: script},
 			}
@@ -122,7 +126,14 @@ func TestDeclaredErrorsObserveProblemArrays(t *testing.T) {
 		if batch {
 			name = "batch item"
 			answer = `{"ok":false,"contract_version":1,"errors":[{"code":"RUNTIME","message":"The batch failed.","hint":"Check the input."}],"results":[{"ok":false,"errors":[` + problem + `]}]}`
-			edits = append(edits, edit{"manifest.toml", "[commands.result.schema]", "[commands.result]\nkind = \"batch\"\n\n[commands.result.schema]"})
+			edits = append(edits,
+				edit{"manifest.toml", "[commands.result.schema]", "[commands.result]\nkind = \"batch\"\n\n[commands.result.schema]"},
+				edit{
+					"extension.go",
+					`return contract.Outcome{Data: map[string]string{"file": call.Args[0], "sha256": hex.EncodeToString(sum[:])}}`,
+					`return contract.Outcome{Data: map[string]string{"file": call.Args[0], "sha256": hex.EncodeToString(sum[:])}, Results: []contract.Item{{}}}`,
+				},
+			)
 		}
 		t.Run(name, func(t *testing.T) {
 			edits = append(edits,
