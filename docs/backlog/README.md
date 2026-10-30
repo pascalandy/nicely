@@ -6,7 +6,7 @@ This folder holds one file per extension or core item and the ordered delivery q
 
 ## Queue
 
-1. COR-101
+1. COR-103
 2. XT-102
 3. COR-102
 
