@@ -22,6 +22,7 @@ The current gate is `just check`.
 The receipt exists before signoff and then records the exit code of `gh signoff`.
 The run also keeps its check log, including failures.
 The scratch worktree goes when the program returns.
+After SIGKILL, run `git worktree remove --force <receipt-folder>/worktree` from the caller, using the printed receipt's folder.
 Every run repeats the checks, even when a receipt already exists.
 
 **Rejected.** Local checks alone, because a skipped hook then leaves a broken `main` unseen, as #373 found. GitHub Actions as the only gate, because Pascal often hits its limits, and local checks are faster. A required `check` status, because `signoff` already gates `main`.
