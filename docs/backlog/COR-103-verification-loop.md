@@ -1,7 +1,7 @@
 ---
 id: COR-103
 core: "verification loop"
-state: "Active. 15 cards across nicely and ncly-video-convert"
+state: "Shipped. 15 cards across nicely and ncly-video-convert"
 ---
 
 # COR-103 verification loop
@@ -36,8 +36,8 @@ Each check fails first on one named past mistake.
 | COR-103-T11 | macOS job in the template | agent | - | done |
 | COR-103-T12 | Author path from the published tag | agent | - | done |
 | COR-103-T13 | Rules and prose | agent | COR-103-T4, COR-103-T5, COR-103-T6, COR-103-T8, COR-103-T10, COR-103-T11, COR-103-T12 | done |
-| COR-103-T14 | Video-convert rollout | agent | COR-103-T1, COR-103-T13 | todo |
-| COR-103-T15 | Video-convert publication model | agent | COR-103-T14 | todo |
+| COR-103-T14 | Video-convert rollout | agent | COR-103-T1, COR-103-T13 | done |
+| COR-103-T15 | Video-convert publication model | agent | COR-103-T14 | done |
 
 ### COR-103-T1 Video-convert error cases and still images
 
