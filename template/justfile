@@ -17,7 +17,7 @@ check:
     go mod tidy -diff
     @test -z "$(gofmt -l .)" || { gofmt -l . >&2; echo 'check: format these files with gofmt -w .' >&2; exit 1; }
     go vet ./...
-    go test -count=1 ./...
+    go run ./internal/export test
 
 # Build ncly-<slug> and install it with its sidecars into Nicely's extensions folder, in place of its previous install
 install:

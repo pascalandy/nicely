@@ -39,7 +39,7 @@ fct_test_update() {
 		git -C "${repo}" status --short >&2
 		fct_fail "just update v0.0.2 failed on a customized repository"
 	}
-	fct_said "go test -count=1 ./..."
+	fct_said "go run ./internal/export test"
 	fct_has "${repo}/vision.md" "Author's note: kept through each update."
 	fct_has "${repo}/AGENTS.md" "# AGENTS.md of the author"
 	fct_has "${repo}/AGENTS.md" "This line comes from template v0.0.2."

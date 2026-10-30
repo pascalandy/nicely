@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/pascalandy/nicely/sdk/extensionrepo"
 	"github.com/rogpeppe/go-internal/testscript"
 	"github.com/rogpeppe/go-internal/txtar"
 )
@@ -44,7 +45,13 @@ func (c *Coverage) RunExamples(t *testing.T, fixture string, params testscript.P
 					continue
 				}
 				if reason != "" {
-					t.Run(name, func(t *testing.T) { t.Skipf("manifest.toml: example `%s`: skipped: %s", example, reason) })
+					t.Run(name, func(t *testing.T) {
+						message := fmt.Sprintf("manifest.toml: example `%s`: skipped: %s", example, reason)
+						if err := extensionrepo.Notice(message); err != nil {
+							t.Fatal(err)
+						}
+						t.Skip(message)
+					})
 					continue
 				}
 				// Each closure holds the original example and its prepared argument list.

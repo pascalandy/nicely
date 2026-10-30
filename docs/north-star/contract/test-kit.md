@@ -98,6 +98,12 @@ It adds `--dry-run` when the example's command supports that mode, including exa
 Without that mode, it runs only commands whose `effects` explicitly declare `paid = false`.
 A missing effects declaration permits no assumption.
 Each skipped example prints its reason, including commands outside the extension's manifest.
+The template runs tests through `go run ./internal/export test`, which keeps package list output without `-v`.
+The SDK wrapper prints collected notices after the tests, including when tests fail, and preserves their exit code.
+Core uses the same wrapper through `go run ./sdk/extensionrepo/test`.
+`extensionrepo.Notice(message)` collects one notice for that run and returns any write error.
+Without the wrapper, it prints to test output, which Go can hide for passing packages.
+Other kit checks use this path for notices, including each declared code's `untested` reason after the scenarios.
 
 Examples run as argument lists, without a shell, with single quotes, double quotes, and backslash escapes supported.
 The kit forces JSON and non-interactive mode, checks each answer through `Coverage.Observe`, and requires exit 0.

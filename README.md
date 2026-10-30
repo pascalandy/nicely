@@ -48,7 +48,7 @@ The template creates named repositories with `--data domain=video --data name=co
 Omit `name` for a whole-domain repository.
 Both use the SDK test kit and the same update recipe.
 The kit runs manifest examples with scratch fixtures and checks each answer.
-It uses dry runs where available and reports skipped examples when paid effects are possible.
+It uses dry runs where available and prints skip reasons in plain `just check` output.
 Further work lives in [docs hub](docs/backlog/XT-104-docs-hub.md), [Canadian French](docs/backlog/COR-102-canadian-french.md),
 [Markdown view](docs/backlog/XT-103-markdown-view.md), and [video and image jobs](docs/backlog/XT-602-video-image-jobs.md).
 

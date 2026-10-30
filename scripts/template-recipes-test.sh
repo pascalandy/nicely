@@ -21,6 +21,33 @@ fct_test_files() {
 	done
 }
 
+# fct_test_example_notices requires skip reasons from plain just check in the rendered repository $1.
+fct_test_example_notices() {
+	local repo="${1}" scratch="${2}" status=0
+	cp "${repo}/manifest.toml" "${scratch}/examples-manifest.toml"
+	fct_edit "${repo}/manifest.toml" 'effects = {}' 'effects = { paid = true }'
+	if ! (cd "${repo}" && just check) >"${scratch}/examples-check.out" 2>&1; then
+		cat "${scratch}/examples-check.out" >&2
+		fct_fail 'just check fails when a paid example has no dry run'
+	fi
+	cat "${scratch}/examples-check.out"
+	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-check.out" ||
+		fct_fail 'plain just check hides the paid example skip reason'
+	cp "${repo}/testdata/script/refusal.txtar" "${scratch}/examples-refusal.txtar"
+	{
+		printf 'notice-regression\n'
+		cat "${scratch}/examples-refusal.txtar"
+	} >"${repo}/testdata/script/refusal.txtar"
+	(cd "${repo}" && just check) >"${scratch}/examples-failed-check.out" 2>&1 || status=$?
+	[[ "${status}" != 0 ]] || fct_fail 'the notice wrapper hides a failed scenario'
+	grep -qF 'notice-regression' "${scratch}/examples-failed-check.out" ||
+		fct_fail 'just check failed before the broken scenario'
+	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-failed-check.out" ||
+		fct_fail 'a failed just check hides the skip reason'
+	mv "${scratch}/examples-refusal.txtar" "${repo}/testdata/script/refusal.txtar"
+	mv "${scratch}/examples-manifest.toml" "${repo}/manifest.toml"
+}
+
 # fct_test_uninstall removes the install that just install made in the data
 # folder $3 for the rendered repository $1. ncly then finds no root $4 of the
 # slug $2, and a second just uninstall finds nothing to remove.
