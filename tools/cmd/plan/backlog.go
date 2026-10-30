@@ -211,19 +211,13 @@ func (m *item) checkItem(root string) {
 	if strings.Contains(m.id, "-1") && m.status == "Idea" {
 		m.problem(4, "Idea needs a 6xx ID")
 	}
-	agents, ids := 0, map[string]bool{}
+	ids := map[string]bool{}
 	for _, c := range m.cards {
 		m.checkCard(root, c, ids)
-		if c.owner == "agent" {
-			agents++
-		}
 	}
 	m.checkCycles()
 	if len(m.cards) > 0 && len(extractSentences(m.path, []byte(strings.Join(m.demo, "\n")))) != 1 {
 		m.problem(0, "an item with cards needs a one-sentence Demo")
-	}
-	if agents > maxAgentCards {
-		m.problem(0, "%d agent cards is more than %d: split the item", agents, maxAgentCards)
 	}
 	done, total := m.done(), len(m.cards)
 	switch m.status {

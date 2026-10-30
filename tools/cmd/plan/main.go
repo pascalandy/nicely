@@ -42,10 +42,6 @@ var plainForms = map[rune]string{
 	'\u201D': "a straight quote",
 }
 
-// maxAgentCards keeps an item small enough for one agent to finish and
-// for Pascal to follow.
-const maxAgentCards = 5
-
 // readyRule says how many pull requests make a Planned item Ready.
 const readyRule = "Use one pull request by default, and a small stack when each layer brings a distinct review. A simple fix never needs several pull requests."
 

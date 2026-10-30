@@ -154,7 +154,6 @@ func TestCheck(t *testing.T) {
 		{"done card without its proof", "XT-101-host.md", edit(edit(host, "| XT-101-T2 | Manifest | agent | — | todo |", "| XT-101-T2 | Manifest | agent | — | done |"), "state: Ready", "state: Active"), "its proof testdata/manifest.txtar does not exist"},
 		{"ready with a done card", "XT-101-host.md", edit(host, "| XT-101-T1 | Pick the look | Pascal | — | todo |", "| XT-101-T1 | Pick the look | Pascal | — | done |"), "a Ready item needs todo cards, no done card, and no open questions"},
 		{"ready with open questions", "XT-101-host.md", host + "\n## Open questions\n\n- Which?\n", "a Ready item needs todo cards, no done card, and no open questions"},
-		{"too many agent cards", "XT-101-host.md", manyCards(6), "6 agent cards is more than 5"},
 		{"broken anchor", "XT-101-host.md", edit(host, "[Demo](#demo)", "[Demo](#nowhere)"), "the link #nowhere points to a missing heading"},
 		{"broken file", "XT-101-host.md", edit(host, "[Demo](#demo)", "[Spec](../spec.md)"), "the link ../spec.md points to a missing file"},
 		{"empty reading", "XT-101-host.md", edit(host, "- **Read:** [Demo](#demo)\n- **Proves:** `testdata/manifest.txtar`", "- **Read:**\n- **Proves:** `testdata/manifest.txtar`"), "XT-101-T2 needs a \"- **Read:**\" line that links"},
@@ -236,17 +235,6 @@ func repository(t *testing.T, files map[string]string) string {
 	write(t, filepath.Join(dir, "README.md"), queue)
 	write(t, filepath.Join(root, "proof.txt"), "proof\n")
 	return root
-}
-
-func manyCards(n int) string {
-	text := "---\nid: XT-101\nextension: Host\nstate: Ready\n---\n\n# XT-101 Host\n\n## Demo\n\nIt grows.\n\n## Cards\n\n| Card | Title | Owner | Depends on | Status |\n|---|---|---|---|---|\n"
-	var sections string
-	for i := 1; i <= n; i++ {
-		id := "XT-101-T" + string(rune('0'+i))
-		text += "| " + id + " | Card | agent | — | todo |\n"
-		sections += "\n### " + id + " Card\n\n- **Read:** [Demo](#demo)\n- **Proves:** `x.txtar`\n"
-	}
-	return text + sections
 }
 
 func edit(text, old, replacement string) string {

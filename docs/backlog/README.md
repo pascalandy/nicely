@@ -71,7 +71,7 @@ When `just next` names a Planned item with open questions, make it ready.
 2. Finish the cards and trace each through the [code map](../north-star/architecture.md#code-map).
    Name the package and check that it may reach what the card needs.
    Reach a forbidden import through the CLI after the item that adds its command.
-   Keep at most five agent cards per item, each proving one capability in one pull request.
+   Give an item the cards that its feature needs, each proving one capability in one pull request.
    Each card links what to read and names its scenarios.
    A decision that only Pascal can make is a card owned by Pascal.
    Cards waiting for that decision depend on it.

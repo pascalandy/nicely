@@ -1,7 +1,7 @@
 # D042 Plan work as backlog items of small cards
 
-Decided 2026-10-09. Revised 2026-10-25 by [D065](D065-backlog-items.md).
-A backlog item demonstrates one capability, with at most five agent cards.
+Decided 2026-10-09. Revised 2026-10-25 by [D065](D065-backlog-items.md), and on 2026-10-30 by Pascal for COR-103.
+A backlog item demonstrates one capability, with the cards that its feature needs.
 A card is one pull request.
 [The backlog README](../../backlog/README.md) owns readiness, ownership, dependencies, and format.
 D065 owns IDs.
