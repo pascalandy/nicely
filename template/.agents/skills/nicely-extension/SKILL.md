@@ -94,7 +94,7 @@ The first implementation is incomplete by design. The open lines start the next 
 2. For a command that needs a key, relay the grant hint to the human and wait.
 3. Run `just acceptance` on the real input until its independent checks pass.
 4. Ask an agent that did not write the round to review the changes of the round.
-5. Ask an agent that did not write the code to run the readiness review and record it in `readiness.md`. The author of the round never writes it.
+5. Ask an agent that did not write the code to run the readiness review and record it in `readiness.md`.
 6. Write each finding that a test can prove as an open line.
 7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
 8. Otherwise, start the next round from the open lines and the other findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
@@ -107,31 +107,39 @@ For a command that replaces a user file or replays paid work, run `create-formal
 
 ## Readiness review
 
-Run this review at the end of each round, and when the user asks for it. The checks of the contract apply in all cases, and `just check` runs them.
+An agent that did not write the code runs this review at the end of each round, and when the user asks for it.
+The author of the round never writes it. The checks of the contract apply in all cases, and `just check` runs them.
 
 Review the extension against "What a great extension does" and against the facts of the intake.
-Write the review in `readiness.md`, which starts with these two lines:
+Write the review in `readiness.md`, which starts with these three lines:
 
 ```
 Commit: <the full SHA of the reviewed commit>
+Reviewer: <the agent that wrote this review, which wrote none of the code>
 Verdict: <Ready, Ready with stated limits, or Needs work>
 ```
 
 Then commit `readiness.md` alone. `just finish` accepts the verdict while only `readiness.md` differs from that commit.
-Write each finding with these six parts:
+Put the findings under `## Findings`. Give each finding its own `###` heading, or write `None.` when the review finds none.
+Write each part of a finding as a bullet that starts with its bold name, such as ``- **Severity**: `warn` ``:
 
 - **Evidence**: the file and the line, the scenario, or the output that shows the problem
 - **Command**: the command that the finding affects
 - **Consequence**: what goes wrong for a user or an agent
 - **Severity**: `block` when the command breaks the contract, `warn` when the adapter works around a loss, or `advise` for a better practice
+- **Limit**: for a `warn` that the user accepted, the spec ID of its row under **Limits.**
 - **Owner**: who can fix it, the author of the extension or the author of the script
 - **Fix**: the smallest change that removes the problem
 
-End the review with one verdict:
+A loss that a user can see is `warn` or `block`, never `advise`.
+Examples are data that the output keeps or changes, and a promise of `spec.md` that does not hold.
+When in doubt between `warn` and `advise`, use `warn`.
 
-- **Ready**: no finding has the severity `block` or `warn`
-- **Ready with stated limits**: no finding blocks, and the user accepted each `warn` as a `limit` line
-- **Needs work**: at least one finding blocks, or a `warn` has no `limit` line that the user accepted
+End the review with one verdict. The verdict follows from the findings, and `just finish` checks it:
+
+- **Ready**: no finding has the severity `block` or `warn`, and `spec.md` states no limit
+- **Ready with stated limits**: no finding blocks, and each `warn` names in **Limit** a limit that the user accepted
+- **Needs work**: at least one finding blocks, or a `warn` names no limit that the user accepted
 
 Only the user accepts a limit. Ask the user, and wait for the answer.
 Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.

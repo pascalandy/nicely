@@ -22,7 +22,8 @@ func finishRepository() int {
 	if err != nil {
 		return report("finish", err)
 	}
-	problems = append(append(problems, specProblems(string(spec))...), readinessProblems()...)
+	specs, limits := specProblems(string(spec))
+	problems = append(append(problems, specs...), readinessProblems(limits)...)
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)
 	}
@@ -51,12 +52,23 @@ func formProblems() ([]string, error) {
 	return problems, nil
 }
 
+// A limit is a row with a spec ID under **Limits.** of spec.md. It is
+// accepted when it has the state limit and the record of the user's
+// acceptance.
+type limit struct {
+	id       string
+	line     int
+	accepted bool
+}
+
 // specProblems reports each open line under ## Open lines, and each line
 // under **Limits.** that is no table row with a spec ID, the state limit,
-// and the record of the user's acceptance.
-func specProblems(spec string) []string {
+// and the record of the user's acceptance. It also returns the limits, for
+// the verdict of readiness.md.
+func specProblems(spec string) ([]string, []limit) {
 	const freeLimit = "this limit has no spec ID, no state limit, and no acceptance. Fix: write each limit as a row of a table with the columns ID, State, Limit, and Accepted"
 	var problems []string
+	var limits []limit
 	state, accepted := -1, -1
 	for _, l := range SpecLines(spec) {
 		switch l.Part {
@@ -77,6 +89,9 @@ func specProblems(spec string) []string {
 					problems = append(problems, fmt.Sprintf("spec.md:%d: the table of Limits has no State or Accepted column. Fix: give it the columns ID, State, Limit, and Accepted", l.Number))
 				}
 			case SpecRow:
+				if l.ID != "" {
+					limits = append(limits, limit{id: l.ID, line: l.Number})
+				}
 				switch {
 				case l.ID == "":
 					problems = append(problems, fmt.Sprintf("spec.md:%d: this limit has no spec ID. Fix: start its row with an ID in backticks", l.Number))
@@ -86,11 +101,13 @@ func specProblems(spec string) []string {
 					problems = append(problems, fmt.Sprintf("spec.md:%d: the limit `%s` has the state %q. Fix: give it the state `limit`", l.Number, l.ID, strings.Trim(l.Cells[state], "`")))
 				case l.Cells[accepted] == "":
 					problems = append(problems, fmt.Sprintf("spec.md:%d: no record says that the user accepted the limit `%s`. Fix: ask the user, then record who accepted it, when, and where", l.Number, l.ID))
+				default:
+					limits[len(limits)-1].accepted = true
 				}
 			case SpecBullet, SpecText:
 				problems = append(problems, fmt.Sprintf("spec.md:%d: %s", l.Number, freeLimit))
 			}
 		}
 	}
-	return problems
+	return problems, limits
 }
