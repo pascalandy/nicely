@@ -7,8 +7,9 @@ Decided 2026-10-05. Changed 2026-10-29 by [#373](https://github.com/pascalandy/n
 `just signoff` uses `sdk/extensionrepo` in core and extension repositories.
 The program freezes the full HEAD SHA and creates a detached scratch worktree at that SHA.
 It clears `JUST_*` and `GIT_*` from its child environment before it resolves the repository or runs a check.
-It removes caller `GOFLAGS`, whose overlays and module flags can replace committed source or dependencies.
-It disables `GOWORK`, which can select external workspace modules, and `GOENV`, which can restore caller Go settings.
+It replaces caller `GOFLAGS` with a blank value, which also masks a `GOFLAGS` that `go env -w` keeps. Overlays and module flags can replace committed source or dependencies.
+It disables `GOWORK`, which can select external workspace modules.
+Other persisted Go settings, such as `GOPRIVATE`, stay.
 It runs that worktree's `just check` once, including its dependencies.
 A failed check, a changed HEAD, or a changed tracked file prevents signoff.
 Uncommitted changes in the caller cannot fix the checked commit.

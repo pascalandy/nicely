@@ -127,12 +127,14 @@ func signoffEnv() []string {
 			continue
 		}
 		switch name {
-		case "GOFLAGS", "GOWORK", "GOENV":
+		case "GOFLAGS", "GOWORK":
 			continue
 		}
 		env = append(env, entry)
 	}
-	return append(env, "GOWORK=off", "GOENV=off")
+	// A blank GOFLAGS also masks one persisted by go env -w, which an empty value does not.
+	// Other persisted settings, such as GOPRIVATE, stay.
+	return append(env, "GOWORK=off", "GOFLAGS= ")
 }
 
 func signoffCommand(ctx context.Context, env []string, dir, name string, args ...string) *exec.Cmd {

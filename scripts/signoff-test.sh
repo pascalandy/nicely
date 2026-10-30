@@ -65,6 +65,7 @@ signoff-test-check:
     @test -z "${GIT_DIR-}${GIT_WORK_TREE-}${GIT_SIGNOFF_TEST-}${JUST_SIGNOFF_TEST-}${JUST_NO_DEPS-}"
     @test "$(cat fix.txt)" = fixed || { echo COMMITTED-FAILURE >&2; exit 1; }
     @go test -count=1 ./signoff-fixture
+    @go env GOPRIVATE >"${NCLY_SIGNOFF_TEST}/goprivate"
     @if [[ -e "${NCLY_SIGNOFF_TEST}/move-head" ]]; then git checkout --quiet --detach HEAD~; fi
     @if [[ -e "${NCLY_SIGNOFF_TEST}/change-tracked" ]]; then echo changed >fix.txt; fi
     @if [[ -e "${NCLY_SIGNOFF_TEST}/move-caller" ]]; then git -C "${NCLY_SIGNOFF_TEST}/caller" -c commit.gpgsign=false commit --quiet --allow-empty --message 'caller moved'; fi
@@ -151,7 +152,8 @@ fct_main() {
 	mkdir "${root}/decoy"
 	git -C "${root}/decoy" init -q
 	printf 'check:\n    @exit 1\n' >"${root}/decoy/justfile"
-	for form in normal no-deps-env no-deps-flag caller-env; do
+	printf 'GOPRIVATE=example.com/private\n' >"${root}/go-env-private"
+	for form in normal no-deps-env no-deps-flag caller-env caller-go-env; do
 		test_case="passing commit, ${form}"
 		case "${form}" in
 		normal) fct_run passes just signoff ;;
@@ -161,6 +163,10 @@ fct_main() {
 			fct_run passes env GIT_DIR="${root}/decoy/.git" GIT_WORK_TREE="${root}/decoy" GIT_SIGNOFF_TEST=leak \
 				JUST_SIGNOFF_TEST=leak JUST_NO_DEPS=true JUST_JUSTFILE="${root}/decoy/justfile" JUST_WORKING_DIRECTORY="${root}/decoy" \
 				just --justfile "${root}/caller/justfile" --working-directory "${root}/caller" signoff
+			;;
+		caller-go-env)
+			fct_run passes env GOENV="${root}/go-env-private" just signoff
+			[[ "$(cat "${root}/goprivate")" == example.com/private ]] || fct_fail 'signoff dropped a persisted Go setting'
 			;;
 		esac
 		[[ "$(cat "${root}/signed")" == "signoff --commit ${sha}" ]] || fct_fail 'gh did not receive the frozen full SHA'
