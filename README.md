@@ -28,6 +28,8 @@ The current build brings:
 
 Extension manifests declare errors and warnings with optional command scopes, execution modes, and coverage exemptions linked to issues.
 `extension.Check` rejects invalid scopes with TOML line and column positions.
+The [test kit](docs/north-star/contract/test-kit.md#declared-codes) requires each declared code in every selected command and mode.
+It lists coverage exemptions for the UAT report.
 
 [The current build](docs/status.md) describes each command. The commands below are planned work.
 

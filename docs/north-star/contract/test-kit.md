@@ -88,12 +88,34 @@ The kit proves the declared cases. Whether a claimed test proves its line, and w
 Other scenario runners use `NewCoverage`, `Coverage.Observe`, and `Coverage.Missing` for the same answer and coverage checks.
 `Observe` receives completed calls, including their exit code and both streams, without changing process execution or output.
 Nicely's runner registers these checks for `agent` and `transcript`, for successful and failed calls.
+It checks declared codes for `hello`, whose signal commands run in the background.
+Its path-qualified direct calls pass the same answer check.
 Its `exits` command checks successful and failed calls, including `exits 0` for successes.
 `Coverage.ScenarioCommands` takes the registered host's absolute path and supplies `signal`, `survives`, `protect`, and `refuses` to other scenario runners.
 
 ## Manifest examples
 
 [Manifest examples](manifest-examples.md) says how the kit runs each example of the manifest, and how it reports a skipped example.
+
+## Declared codes
+
+Each declared error and warning must occur in a schema-valid JSON answer for each command and mode of its scope.
+The kit reads top-level `errors` and `warnings`, and batch item `errors`.
+Comments, assertions, arbitrary result fields, report findings, and human text earn no code coverage.
+An invalid answer earns no code coverage.
+
+The manifest's `commands` and `modes` select the scope, as [Manifest](manifest.md) defines.
+Without a scope, a declaration selects every running command, in run and each supported dry run.
+Narrow the scope to the commands and modes where the code can occur.
+Text-only warnings need a scope that excludes the text command, with a reason beside the declaration.
+The check leaves runtime prefix admission unchanged.
+
+An `untested` declaration defers its code coverage and gives a reason with an issue URL.
+The reviewer approves each deferral.
+After all scenarios finish, the kit logs each deferral as a reservation, including its declaration position and reason.
+Run `go test -count=1 -v ./...` to collect these lines for the [UAT report](../../qa/protocol.md#report).
+Other runners use `Coverage.Reservations` after their scenarios.
+Each missing observation names its declaration position, kind, code, command, mode, and fix.
 
 ## Spec IDs
 

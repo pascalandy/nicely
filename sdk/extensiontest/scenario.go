@@ -202,6 +202,7 @@ func (k *Coverage) Observe(words []string, exit int, stdout, stderr, jsonVariabl
 	if _, err := contract.CheckAnswer(k.manifest, kind, reply); err != nil {
 		return fmt.Sprintf("the answer on %s breaks the answer contract for `ncly %s`: %v. Fix: make the handler follow the answer contract", stream, call.path, err)
 	}
+	k.recordCodes(call, line)
 	if runs {
 		k.record(call.path)
 	}

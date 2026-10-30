@@ -86,5 +86,6 @@ Core reads only the keys of this table and ignores any other, as [Compatibility]
 
 A manifest must also follow the rules in [Valid manifest](valid-manifest.md).
 
-Code scopes declare applicability. They do not restrict runtime admission or require a scenario observation yet.
+Code scopes declare applicability. They do not restrict runtime admission.
+The [test kit](test-kit.md#declared-codes) requires each declared code in its scope, or an `untested` reason.
 Declared warnings appear in the registry's code list. Undeclared warnings with the extension prefix remain valid, as [Error codes](error-codes.md) defines.

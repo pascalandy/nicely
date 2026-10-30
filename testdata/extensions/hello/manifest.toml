@@ -187,5 +187,6 @@ modes = ["run"]
 
 [[warnings]]
 code = "HELLO_UNNAMED"
-commands = ["hello run", "hello say"]
+# Text-only hello say has no JSON warning to observe.
+commands = ["hello run"]
 modes = ["run"]

@@ -19,6 +19,7 @@ type Coverage struct {
 	printer  *i18n.Printer
 	mu       sync.Mutex
 	seen     map[string]bool
+	codes    map[codeObservation]bool
 }
 
 // NewCoverage prepares the manifest and answer checks that Run uses.
@@ -45,7 +46,7 @@ func (c *Coverage) record(path string) {
 	c.seen[path] = true
 }
 
-// Missing reports runnable commands without a validated call, in manifest order.
+// Missing reports commands and declared codes without validated observations, in manifest order.
 func (c *Coverage) Missing() []string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -56,5 +57,5 @@ func (c *Coverage) Missing() []string {
 			problems = append(problems, fmt.Sprintf("%s: no scenario runs `ncly %s`. Fix: add a scenario that runs it with a checked answer, such as %s", scenarios, path, filepath.Join(scenarios, strings.Join(command.Path[1:], "_")+".txtar")))
 		}
 	}
-	return problems
+	return append(problems, c.missingCodes()...)
 }

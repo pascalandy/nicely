@@ -609,3 +609,11 @@ other = "The worker {{.Name}} could not be written to a temporary folder."
 ["worker.extract_failed_hint"]
 description = "Hint under worker.extract_failed: what the user does next. TMPDIR is a variable and stays as is."
 other = "Free some space, or set TMPDIR to a folder that you can write."
+
+["extensiontest.code_missing"]
+description = "The kit found no validated answer with a declared code. Position is its manifest line and column. Kind is error or warning. Code, Path, and Mode are machine identifiers. The fix names the scenario or manifest change."
+other = 'manifest.toml:{{.Position}}: {{.Kind}} {{.Code}} never observed for `ncly {{.Path}}` in {{.Mode}}. Fix: add a JSON scenario that observes {{.Code}} in {{.Mode}}. Otherwise, correct commands or modes, or give untested a reason with an issue URL.'
+
+["extensiontest.code_untested"]
+description = "The kit logs one UAT reservation per untested declaration. Position is its manifest line and column. Kind, Code, Commands, and Modes identify its scope. Reason is the author's explanation and issue URL."
+other = 'manifest.toml:{{.Position}}: {{.Kind}} {{.Code}} untested (commands={{.Commands}}; modes={{.Modes}}): {{.Reason}}'

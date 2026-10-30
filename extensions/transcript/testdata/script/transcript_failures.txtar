@@ -88,7 +88,7 @@ grep -count=5 '(?m)^upload ' uploads.log
 # Cookies that could not be read leave a warning, which the evidence keeps for the replay
 env NCLY_TEST_TITLE=cookies
 env NCLY_TEST_COOKIES=skipped
-exec ncly transcript run youtube --url $URL --output $OUT --run-id f7 --json
+exits 0 ncly transcript run youtube --url $URL --output $OUT --run-id f7 --json
 stdout '"warnings":\[\{"code":"TRANSCRIPT_BROWSER_COOKIES_SKIPPED","message":"The cookies of Arc could not be read, so the download tried anonymous access\.","hint":"Open Arc once, or remove browser from the \[transcript\] table\."\}\]'
 cp stdout cookies.json
 env NCLY_TEST_COOKIES=

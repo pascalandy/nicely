@@ -11,7 +11,7 @@ cmp stdout run.json
 ! stderr .
 
 # A success with the fixture's own warning keeps exit 0
-exec ncly hello run --json
+exits 0 ncly hello run --json
 answer stdout ok
 stdout '"code":"HELLO_UNNAMED"'
 exec ncly hello run

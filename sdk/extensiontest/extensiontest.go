@@ -82,6 +82,9 @@ func Run(t *testing.T, e extension.Extension) {
 	})
 	// testscript starts parallel subtests. Cleanup runs after all scenarios finish.
 	t.Cleanup(func() {
+		for _, reservation := range k.Reservations() {
+			t.Log(reservation)
+		}
 		for _, problem := range k.Missing() {
 			t.Error(problem)
 		}

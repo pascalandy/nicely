@@ -99,8 +99,13 @@ Post the report as a comment of the issue, in this order:
 5. Automation: the findings that [Automation](north-star.md#automation) lists
 6. Economy: the findings and the measurements of [Economy](north-star.md#economy)
 7. Defects, with severity and issue
-8. Reservations
+8. Reservations: list each declared-code `untested` reason, with its code, manifest position, scope, and linked issue
 9. Verdict
 10. Next tests
 
 Only Pascal closes the issue.
+
+Collect declared-code reservations from `go test -count=1 -v ./...` in the extension repository at the tested commit.
+Keep the kit's `untested` lines with the UAT evidence.
+Copy every line into Reservations, even when all scenarios pass.
+Write `No declared-code reservations` when the kit lists none.
