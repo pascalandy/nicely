@@ -8,7 +8,7 @@
 
 A release installs with `ncly`, Go, and `just`.
 To install `ncly`, follow Install in [Nicely's README](https://github.com/pascalandy/nicely#install).
-Replace TAG with a release tag, such as `v0.1.0`. `git ls-remote --tags {{ repository }}` lists the tags.
+Replace TAG with the highest release tag. `git ls-remote --tags --refs --sort=-v:refname {{ repository }}` lists the tags, highest first.
 
 ```sh
 git clone --branch TAG {{ repository }} ncly-{{ slug }}
