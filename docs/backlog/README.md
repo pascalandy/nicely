@@ -2,7 +2,7 @@
 
 This folder holds one file per extension or core item and the ordered delivery queue.
 [D065](../north-star/decisions/D065-backlog-items.md) owns IDs, number bands, and release versions.
-[D042](../north-star/decisions/D042-milestones-and-cards.md) keeps each item small and each card one pull request.
+[D042](../north-star/decisions/D042-milestones-and-cards.md) keeps each item to one capability and each card one pull request.
 
 ## Queue
 
@@ -60,6 +60,7 @@ Create no new M file.
 | Shipped | Has no todo card or open questions |
 
 An extension maintained in its own repository, such as XT-101, keeps its cards in that repository's Epic.
+The exception is COR-103, which holds the verification cards of video-convert.
 
 ## Make an item ready
 
@@ -96,6 +97,7 @@ Name commands, such as just check, without code spans.
 For a done card, `just test` checks that each path exists.
 
 The card's pull request sets its table status to done.
+For a card done in another repository, a pull request here sets it to done and links that pull request.
 With done and todo cards, the item becomes Active.
 With no todo card, it becomes Shipped and leaves the queue.
 `just test` rejects any other combination.
