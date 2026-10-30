@@ -24,15 +24,15 @@ cd REPO && just install
 
 ## Build an extension
 
-Create the repository of a new extension from the extension template at VERSION. Replace VERSION with the release tag that `ncly --version` prints. Then follow the `AGENTS.md` of the new repository. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
+Create the repository of a new extension from the extension template at VERSION. Replace VERSION with the release tag that `ncly --version` prints, such as `v0.24.0`. A development build prints a pseudo-version instead, such as `v0.24.1-0.20261030091907-8355631969d4`. For a pseudo-version, use its commit as VERSION: the 12 characters after its last hyphen, such as `8355631969d4`.
 
 ```sh
 uv tool run copier@9.19.1 copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME
 ```
 
-The domain names a family of work, such as `video`, and the optional name identifies one job, such as `convert`.
-Neither names the wrapped tool.
-For a whole-domain extension, omit `--data name=NAME` and both `-NAME` suffixes.
+The domain names a family of work, such as `video`, and the optional name identifies one job, such as `convert`. Neither names the wrapped tool. For a whole-domain extension, omit `--data name=NAME` and both `-NAME` suffixes.
+
+Then build each command with the `nicely-extension` skill of the new repository, from the first command. That skill is in `.agents/skills/nicely-extension/`, and `AGENTS.md` gives the reading order and the recipes. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
 
 ## Update an extension repository
 

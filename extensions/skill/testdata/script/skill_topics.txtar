@@ -34,6 +34,10 @@ grep '`ncly run view` exits 0 for a run that failed' runs.md
 # with the Copier that the template pins, and links Extensions
 grep '^uv tool run copier@[0-9.]+ copy --vcs-ref VERSION --defaults --data domain=DOMAIN --data name=NAME --data module=github\.com/me/ncly-DOMAIN-NAME gh:pascalandy/nicely ncly-DOMAIN-NAME$' extensions.md
 grep '\[Extensions\]\(https://github\.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions\.md\)' extensions.md
+# A development build gives the commit of its pseudo-version as VERSION, and the
+# nicely-extension skill of the new repository builds each command (#405)
+grep 'For a pseudo-version, use its commit as VERSION: the 12 characters after its last hyphen' extensions.md
+grep '^Then build each command with the `nicely-extension` skill of the new repository, from the first command\.' extensions.md
 # It tells how to install an extension at a release tag. It quotes the install rule of
 # Release and install, gives its commands, and confirms the install with describe
 grep '^## Install an extension$' extensions.md
