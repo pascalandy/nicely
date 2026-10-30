@@ -74,6 +74,9 @@ func Run(t *testing.T, e extension.Extension) {
 			t.Error(problem)
 		}
 	})
+	if err := k.checkInstallOrder(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
 	testscript.Run(t, testscript.Params{
 		Dir:                filepath.Join(k.root, "testdata", "script"),
 		RequireUniqueNames: true,
@@ -165,13 +168,15 @@ func (k *kit) setup(env *testscript.Env) error {
 	if err := os.MkdirAll(filepath.Join(work, "bin"), 0o755); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(extensions, 0o755); err != nil {
+	if err := k.install(extensions); err != nil {
 		return err
 	}
-	if err := extension.Export(k.ext, extensions); err != nil {
-		return err
-	}
-	return copyProgram(k.built, k.installed(env.Getenv))
+	env.Defer(func() {
+		if err := k.uninstall(extensions, env); err != nil {
+			env.T().Fatal(err)
+		}
+	})
+	return nil
 }
 
 // installed returns the path of ncly-<slug> in the extensions folder of

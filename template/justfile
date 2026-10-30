@@ -21,68 +21,11 @@ check:
 
 # Build ncly-<slug> and install it with its sidecars into Nicely's extensions folder, in place of its previous install
 install:
-    #!/usr/bin/env bash
-    set -Eeuo pipefail
-    die() {
-        echo "install: $*" >&2
-        exit 1
-    }
-    name="ncly-{{ slug }}"
-    [[ "$name" != ncly- ]] || die "manifest.toml declares no domain"
-    [[ "${HOME:-}" == /* ]] || die "HOME must be an absolute path"
-    # An XDG variable counts only when it holds an absolute path, as Configuration in the contract says.
-    data="${XDG_DATA_HOME:-}"
-    [[ "$data" == /* ]] || data="$HOME/.local/share"
-    extensions="$data/nicely/extensions"
-    mkdir -p "$extensions"
-    # One go build gives the executable and the program that exports its sidecars. Both land in a
-    # staging folder beside the destination, so a failed build keeps the previous install.
-    stage="$(mktemp -d "$extensions/.install.XXXXXX")"
-    trap 'rm -rf "$stage"' EXIT
-    go build -o "$stage/" "./cmd/$name" ./internal/export
-    "$stage/export" "$stage"
-    # The previous sidecars move into the staging folder, which goes at exit. Each move is a
-    # rename on the same file system, and the executable moves last.
-    for file in "$name.locales" "$name.skill"; do
-        if [[ -e "$extensions/$file" ]]; then mv "$extensions/$file" "$stage/previous-$file"; fi
-    done
-    for file in "$name.toml" "$name.locales" "$name.skill" "$name"; do
-        if [[ -e "$stage/$file" ]]; then mv -f "$stage/$file" "$extensions/$file"; fi
-    done
-    echo "installed $extensions/$name"
+    go run ./internal/export install
 
 # Remove the install of ncly-<slug> and its sidecars from Nicely's extensions folder, the executable first
 uninstall:
-    #!/usr/bin/env bash
-    set -Eeuo pipefail
-    die() {
-        echo "uninstall: $*" >&2
-        exit 1
-    }
-    name="ncly-{{ slug }}"
-    [[ "$name" != ncly- ]] || die "manifest.toml declares no domain"
-    [[ "${HOME:-}" == /* ]] || die "HOME must be an absolute path"
-    # An XDG variable counts only when it holds an absolute path, as Configuration in the contract says.
-    data="${XDG_DATA_HOME:-}"
-    [[ "$data" == /* ]] || data="$HOME/.local/share"
-    extensions="$data/nicely/extensions"
-    # The executable comes first: without it, Discovery skips the sidecars, but an executable
-    # without its manifest answers EXTENSION_INVALID.
-    files=""
-    for file in "$name" "$name.toml" "$name.locales" "$name.skill"; do
-        if [[ -e "$extensions/$file" || -L "$extensions/$file" ]]; then files="$files $file"; fi
-    done
-    if [[ -z "$files" ]]; then
-        echo "uninstall: nothing to remove, since $extensions holds no $name"
-        exit 0
-    fi
-    # Each file moves into a staging folder, which goes at exit, so each removal is one rename.
-    stage="$(mktemp -d "$extensions/.uninstall.XXXXXX")"
-    trap 'rm -rf "$stage"' EXIT
-    for file in $files; do
-        mv "$extensions/$file" "$stage/$file"
-        echo "removed $extensions/$file"
-    done
+    go run ./internal/export uninstall
 
 # Run the command of ## Acceptance in spec.md as an agent would, through acceptance.sh, on a copy of the fixture or on a made input
 acceptance fixture="":

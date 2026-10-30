@@ -5,11 +5,15 @@
 # fct_test_files checks the files of the rendered repository $1 that no
 # recipe runs, and that its forms keep no Jinja. The slug is $2.
 fct_test_files() {
-	local repo="${1}" slug="${2}" file
+	local repo="${1}" slug="${2}" file recipe
 	fct_has "${repo}/.github/workflows/check.yml" "        run: just check"
 	fct_has "${repo}/.github/workflows/check.yml" "        os: \${{ github.event.repository.private && fromJSON('[\"ubuntu-24.04\"]') || fromJSON('[\"ubuntu-24.04\",\"macos-15\"]') }}"
 	fct_has "${repo}/.github/workflows/check.yml" "    runs-on: \${{ matrix.os }}"
 	fct_has "${repo}/qa.md" "# ${slug} QA"
+	for recipe in install uninstall; do
+		[[ "$(just --justfile "${repo}/justfile" --show "${recipe}" | sed '/^#/d')" == "${recipe}:"$'\n'"    go run ./internal/export ${recipe}" ]] ||
+			fct_fail "just ${recipe} must call the SDK program in one line"
+	done
 	for file in qa.md acceptance.sh; do
 		if grep -nE '\{\{|\}\}|\{%|%\}|\{#|#\}' "${repo}/${file}"; then
 			fct_fail "${file} keeps Jinja after the render"
@@ -36,6 +40,21 @@ fct_test_uninstall() {
 	fi
 	(cd "${repo}" && just uninstall) >"${scratch}/uninstall.out"
 	fct_has "${scratch}/uninstall.out" "uninstall: nothing to remove, since ${extensions} holds no ncly-${slug}"
+	fct_test_install_order "${repo}" "${slug}" "${extensions}" "${scratch}"
+}
+
+# fct_test_install_order blocks manifest publication in $3, then tries just install in $1.
+# A failed sidecar publication must leave no executable of the slug $2.
+fct_test_install_order() {
+	local repo="${1}" slug="${2}" extensions="${3}" scratch="${4}" status=0
+	mkdir "${extensions}/ncly-${slug}.toml"
+	(cd "${repo}" && just install) >"${scratch}/blocked-install.out" 2>&1 || status=$?
+	[[ "${status}" != 0 ]] || fct_fail 'just install accepts a directory in place of its manifest'
+	grep -qF "${extensions}/ncly-${slug}.toml" "${scratch}/blocked-install.out" ||
+		fct_fail "just install failed before manifest publication: $(cat "${scratch}/blocked-install.out")"
+	[[ ! -e "${extensions}/ncly-${slug}" && ! -L "${extensions}/ncly-${slug}" ]] ||
+		fct_fail 'just install published the executable before its sidecars'
+	mv "${extensions}/ncly-${slug}.toml" "${scratch}/blocked-manifest"
 }
 
 # fct_test_acceptance runs just acceptance in the rendered repository $1 on

@@ -11,7 +11,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits. Then `## Acceptance`: the real input, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses. Each line of Failures and of Acceptance starts with its spec ID, as [Test kit](test-kit.md#spec-ids) says |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
-| Go files | One handler per command, `extension_test.go`, which calls the test kit, `cmd/ncly-<slug>/main.go`, which calls `extension.Main`, and `internal/export/`, which calls `extension.Export` for `just install` |
+| Go files | One handler per command, `extension_test.go`, which calls the test kit, and `cmd/ncly-<slug>/main.go`, which calls `extension.Main`. `internal/export/` calls `extensionrepo.Main` for repository tasks |
 | `testdata/script/` | The scenarios, which the [test kit](test-kit.md) runs |
 | `qa.md` | How a user accepts the extension: what its UAT adds to the UAT protocol of Nicely, with its error cases and its removal. Each criterion names the test that covers it, or why none can |
 | `acceptance.sh` | The run of the command on the real input of `## Acceptance`, which checks each property and each refusal that it lists |
@@ -41,3 +41,25 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 - `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.
+
+The SDK package `extensionrepo` owns install and uninstall.
+The template's `internal/export/` program calls `extensionrepo.Main(Extension)`.
+The recipes each call that program in one line: `go run ./internal/export install` or `go run ./internal/export uninstall`.
+Its `export <folder>` subcommand writes the embedded sidecars of the staged build.
+
+Install stages both builds beside the destination with one `go build`.
+The staged export program writes the sidecars from that build.
+After preparation succeeds, install moves the old catalog and skill folders aside.
+It publishes the manifest, catalogs, and skill before the executable, with one rename per file or folder.
+A failed sidecar publication keeps the previous executable, or leaves no executable on a first install.
+The stage goes when the program returns.
+This order does not make replacement of all sidecars atomic.
+
+Uninstall moves the executable into a stage first, then the manifest, catalogs, and skill.
+It removes dangling symlinks too.
+Without an install, it exits 0.
+Both tasks use the data folder of [Configuration](configuration.md), with an absolute `HOME`.
+
+The test kit calls the same install and uninstall package on scratch folders.
+It proves that a failed sidecar publication exposes no executable.
+Each scenario ends with uninstall and `ncly describe <root> --json`, which must exit 2 with `NOT_FOUND`.
