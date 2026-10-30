@@ -42,11 +42,14 @@ The fake child runs the actions of `$WORK/bin/<name>.fake`, one per line: `stdou
 They enable JSON and non-interactive mode, and validate each answer through `Coverage.Observe`.
 Explicit flags that disable JSON or non-interactive mode are refused.
 Both commands leave the last call's streams available to `stdout` and `stderr` assertions.
+Their `ncly` calls use the registered host's absolute path, even when a scenario replaces `PATH`.
 
 `signal` runs the host in the foreground, without a shell cleanup command supplying its result.
 Its marker must not exist before the call.
 It waits up to 10 seconds for a regular marker file, then sends the signal to the host process.
-The host must exit within 15 seconds after the signal.
+The exit deadline allows `runner.Cleanup`, `runner.DrainLimit`, and a three-second scheduling margin after the signal.
+The host starts in its own process group, which the kit kills on timeout or failure.
+Stream draining stops within `runner.DrainLimit` after the host exits, even when a child keeps a stream open.
 INT requires exit 130 and `INTERRUPTED`; TERM requires exit 143 and `TERMINATED`.
 `survives` selects files for one signal call, including files that the call finishes before its marker.
 Their bytes and permissions must remain unchanged after the host exits.
@@ -86,7 +89,7 @@ Other scenario runners use `NewCoverage`, `Coverage.Observe`, and `Coverage.Miss
 `Observe` receives completed calls, including their exit code and both streams, without changing process execution or output.
 Nicely's runner registers these checks for `agent` and `transcript`, for successful and failed calls.
 Its `exits` command checks successful and failed calls, including `exits 0` for successes.
-`Coverage.ScenarioCommands` supplies `signal`, `survives`, `protect`, and `refuses` to other scenario runners.
+`Coverage.ScenarioCommands` takes the registered host's absolute path and supplies `signal`, `survives`, `protect`, and `refuses` to other scenario runners.
 
 ## Spec IDs
 

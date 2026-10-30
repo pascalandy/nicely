@@ -110,6 +110,7 @@ func TestPairedCommands(t *testing.T) {
 	refusal := strings.Replace(refusalHost, "if [ \"$1\" = fake.mov ]; then", "if false; then", 1)
 	cases := []struct{ name, host, script, problem string }{
 		{"signal host without PATH", strings.ReplaceAll(signalHost("TERMINATED", "143", ""), "sleep 0.01", "/bin/sleep 0.01"), "env PATH=$WORK/bin\nsignal TERM started ncly video convert clip.mov\n", ""},
+		{"signal stdin environment and directory", strings.Replace(signalHost("TERMINATED", "143", ""), "kill()", "read -r line\n[ \"$line\" = 'fake media' ] && [ \"$SIGNAL_FIXTURE\" = ready ] || exit 3\nkill()", 1), "env SIGNAL_FIXTURE=ready\nstdin fake.mov\nmkdir sub\ncd sub\nsignal TERM started ncly-video-convert clip.mov\n", ""},
 		{"refusal host without PATH", refusal, "env PATH=$WORK/bin\nrefuses USAGE_INVALID ncly video convert fake.mov\n", ""},
 		{"INT host", signalHost("INTERRUPTED", "130", ""), "survives finished.mov\nsignal INT started ncly video convert clip.mov\nstderr '\"code\":\"INTERRUPTED\"'\n", ""},
 		{"TERM direct", signalHost("TERMINATED", "143", ""), "survives finished.mov\nsignal TERM started ncly-video-convert clip.mov\nstderr '\"code\":\"TERMINATED\"'\n", ""},

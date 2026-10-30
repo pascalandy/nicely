@@ -109,8 +109,7 @@ func machineMode(ts *testscript.TestScript) func() {
 	}
 }
 
-func (c *Coverage) checkedCode(ts *testscript.TestScript, words []string, exit int) (contract.Code, string) {
-	stdout, stderr := ts.ReadFile("stdout"), ts.ReadFile("stderr")
+func (c *Coverage) checkedCode(words []string, exit int, stdout, stderr string) (contract.Code, string) {
 	if problem := c.Observe(words, exit, stdout, stderr, "1"); problem != "" {
 		return "", fmt.Sprintf("`ncly %s`: %s", strings.Join(words, " "), problem)
 	}
@@ -158,7 +157,7 @@ func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected 
 				observed = append(c.manifest.Root(), preview...)
 			}
 		}
-		code, problem := c.checkedCode(ts, observed, exit)
+		code, problem := c.checkedCode(observed, exit, ts.ReadFile("stdout"), ts.ReadFile("stderr"))
 		if problem != "" {
 			ts.Fatalf("refuses: %s: %s", mode, problem)
 		}
