@@ -23,12 +23,15 @@ fct_test_files() {
 
 # fct_test_example_notices requires skip reasons from plain just check in the rendered repository $1.
 fct_test_example_notices() {
-	local repo="${1}" scratch="${2}" status=0 line
+	local repo="${1}" scratch="${2}" status=0 line examples
+	local skipped='skipped: command is outside this manifest, so its paid effects are unknown'
 	cp "${repo}/manifest.toml" "${scratch}/examples-manifest.toml"
-	fct_edit "${repo}/manifest.toml" 'effects = {}' 'effects = { paid = true }'
+	# The template's command offers a dry run, so an example of a core command gives the skip.
+	examples="$(grep -m1 '^examples = \[' "${repo}/manifest.toml")"
+	fct_edit "${repo}/manifest.toml" "${examples}" "${examples%]}, \"ncly describe\"]"
 	if ! (cd "${repo}" && just check) >"${scratch}/examples-check.out" 2>"${scratch}/examples-check.err"; then
 		cat "${scratch}/examples-check.out" "${scratch}/examples-check.err" >&2
-		fct_fail 'just check fails when a paid example has no dry run'
+		fct_fail 'just check fails when an example is skipped'
 	fi
 	cat "${scratch}/examples-check.out"
 	cat "${scratch}/examples-check.err" >&2
@@ -40,10 +43,10 @@ fct_test_example_notices() {
 	while IFS= read -r line || [[ -n "${line}" ]]; do
 		PATH="/usr/bin:${PATH}" jq -e . <<<"${line}" >/dev/null || fct_fail 'the test wrapper prints non-JSON output on stdout'
 	done <"${scratch}/examples-test.jsonl"
-	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-test.err" ||
+	grep -qF "${skipped}" "${scratch}/examples-test.err" ||
 		fct_fail 'the JSON test wrapper hides the skip reason on stderr'
-	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-check.err" ||
-		fct_fail 'plain just check hides the paid example skip reason on stderr'
+	grep -qF "${skipped}" "${scratch}/examples-check.err" ||
+		fct_fail 'plain just check hides the skip reason on stderr'
 	cp "${repo}/testdata/script/refusal.txtar" "${scratch}/examples-refusal.txtar"
 	{
 		printf 'notice-regression\n'
@@ -53,7 +56,7 @@ fct_test_example_notices() {
 	[[ "${status}" != 0 ]] || fct_fail 'the notice wrapper hides a failed scenario'
 	grep -qF 'notice-regression' "${scratch}/examples-failed-check.out" ||
 		fct_fail 'just check failed before the broken scenario'
-	grep -qF 'skipped: the command declares paid effects and has no dry run' "${scratch}/examples-failed-check.out" ||
+	grep -qF "${skipped}" "${scratch}/examples-failed-check.out" ||
 		fct_fail 'a failed just check hides the skip reason'
 	mv "${scratch}/examples-refusal.txtar" "${repo}/testdata/script/refusal.txtar"
 	mv "${scratch}/examples-manifest.toml" "${repo}/manifest.toml"
