@@ -71,9 +71,9 @@ grep -qF '"ok":true' "$scratch/answer" || die 'the answer holds no "ok":true'
 
 # Fill: check each property of ## Acceptance with a tool other than the extension.
 # spec: size
-grep -qF "\"size_bytes\":$(wc -c <"$input" | tr -d ' ')" "$scratch/answer" || die "the size differs from wc -c"
+grep -qE "\"size_bytes\":$(wc -c <"$input" | tr -d ' ')[,}]" "$scratch/answer" || die "the size differs from wc -c"
 # spec: lines
-grep -qF "\"lines\":$(awk 'END { print NR }' "$input")" "$scratch/answer" || die "the line count differs from awk"
+grep -qE "\"lines\":$(awk 'END { print NR }' "$input")[,}]" "$scratch/answer" || die "the line count differs from awk"
 
 # A second run checks the Determinism criterion of qa.md.
 (cd "$work" && ncly "${command[@]}" "$input" --json --no-input) >"$scratch/second" || die "the second run failed"
