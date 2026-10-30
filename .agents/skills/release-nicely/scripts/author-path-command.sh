@@ -48,7 +48,7 @@ fct_command_order() {
 	while IFS= read -r step; do
 		printf 'author-path: follow %s\n' "${step}"
 		case "${step}" in
-		*'`spec.md`'*)
+		*'`spec.md`'* | "1. Write the command's spec before its implementation.")
 			cat >>"${repo}/spec.md" <<'EOF'
 
 ## ncly probe greet
@@ -61,7 +61,7 @@ Success means that the answer gives the greeting ready.
 EOF
 			saw_spec=1
 			;;
-		*'`manifest.toml`'*)
+		*'`manifest.toml`'* | '2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.')
 			cat >>"${repo}/manifest.toml" <<'EOF'
 
 [[commands]]
@@ -76,6 +76,12 @@ required = ["message"]
 properties = { message = { type = "string" } }
 EOF
 			saw_manifest=1
+			if [[ "${step}" == '2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.' ]]; then
+				fct_catalog
+				saw_catalog=1
+				fct_handler
+				saw_handler=1
+			fi
 			;;
 		*'`locales/en.toml`'*)
 			fct_catalog
@@ -85,7 +91,7 @@ EOF
 			fct_handler
 			saw_handler=1
 			;;
-		*'`testdata/script/`'*)
+		*'`testdata/script/`'* | '3. Write a scenario that fails for the missing behavior.')
 			fct_scenario
 			saw_scenario=1
 			break
