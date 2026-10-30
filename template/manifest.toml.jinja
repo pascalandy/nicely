@@ -13,6 +13,7 @@ path = "{{ example_command }}"
 summary = "{{ slug }}.inspect.summary"
 examples = ["ncly {{ example_command }} notes.md", "ncly {{ example_command }} notes.md --json"]
 effects = {}
+modes = { dry_run = true }
 requires = { bins = ["python3"] }
 
 [[commands.args]]
@@ -27,6 +28,11 @@ default = "30s"
 summary = "{{ slug }}.inspect.timeout"
 
 [commands.result.schema]
+type = "object"
+required = ["size_bytes", "lines"]
+properties = { size_bytes = { type = "integer", minimum = 0 }, lines = { type = "integer", minimum = 0 } }
+
+[commands.result.dry_run_schema]
 type = "object"
 required = ["size_bytes", "lines"]
 properties = { size_bytes = { type = "integer", minimum = 0 }, lines = { type = "integer", minimum = 0 } }

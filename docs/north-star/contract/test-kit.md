@@ -29,17 +29,43 @@ A scenario uses the commands of [testscript](https://pkg.go.dev/github.com/rogpe
 | `ncly <arg>...` | Runs `ncly`, which exits 0, or another code after `!`, and checks the answer |
 | `ncly-<slug> <arg>...` | Runs the extension directly, the same way |
 | `exits <code> <command> <arg>...` | Runs a command, these two included, and checks its exact exit code |
+| `signal INT\|TERM <marker> <command> <arg>...` | Waits for a new marker, signals the host, and checks its exit and answer |
+| `survives <file>...` | Requires these finished files at the next signal's marker and unchanged after its exit |
+| `protect <path>...` | Selects files, folders, or absent paths that subsequent `refuses` calls must keep unchanged |
+| `refuses <code> <command> <arg>...` | Requires the same refusal code and exit in a dry run and a run |
 | `grant <service>` | Grants the key of a declared service to the extension at its scratch path |
 | `fake <name>` | Puts the fake child in `$WORK/bin`, first in `PATH`, under the name `name` |
 
 The fake child runs the actions of `$WORK/bin/<name>.fake`, one per line: `stdout <text>`, `stderr <text>`, `stdin`, `env`, `sleep <duration>`, and `exit <code>`. `env` writes the names of its variables, never a value. The package comment of `sdk/extensiontest/fake` defines each action.
+
+`signal` and `refuses` accept only registered `ncly` and `ncly-<slug>` calls of runnable commands.
+They enable JSON and non-interactive mode, and validate each answer through `Coverage.Observe`.
+Explicit flags that disable JSON or non-interactive mode are refused.
+Both commands leave the last call's streams available to `stdout` and `stderr` assertions.
+
+`signal` runs the host in the foreground, without a shell cleanup command supplying its result.
+Its marker must not exist before the call.
+It waits up to 10 seconds for a regular marker file, then sends the signal to the host process.
+The host must exit within 15 seconds after the signal.
+INT requires exit 130 and `INTERRUPTED`; TERM requires exit 143 and `TERMINATED`.
+`survives` selects files for one signal call, including files that the call finishes before its marker.
+Their bytes and permissions must remain unchanged after the host exits.
+
+`refuses` requires a command with a declared dry run and arguments without dry-run flags.
+It adds `--dry-run` for the first call and uses the original arguments for the second call.
+Both calls receive the same stdin bytes.
+Both calls must fail with the requested leading error code and the same nonzero exit code.
+Each call must preserve the protected paths, including absent paths and each folder's contents.
+The comparison records symbolic links without following them.
+Nicely's cache stays unprotected unless a scenario selects its path.
+Select inputs and possible outputs with `protect` before each refusal group.
 
 ## What it checks
 
 - `extension.Check`, and a skill named after the slug, which every external extension ships, as [Extensions](extensions.md) defines
 - Each answer of a call through `ncly` or `ncly-<slug>`, for a success and for a failure. Its schema is the one that `contract.AnswerSchema` builds from the command's declaration
 - No scenario runs `ncly` or `ncly-<slug>` through `exec` in the foreground, by name or by path, which would skip the answer check. The kit splits each line into words as testscript does, so quotes and comments hide no call. A background call, which ends with `&`, keeps `exec`, and the kit does not check its answer
-- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, or `exits` after its JSON answer passes the answer check
+- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, or `refuses` after its answer passes validation
 - A command whose declared result kind is `text` counts a completed success, since that kind has no JSON answer
 - Coverage runs after all scenarios finish. Comments, assertions, skipped conditions, help, and shell or background `exec` calls earn no coverage
 - Human text earns no coverage for a command with a structured result
@@ -60,7 +86,7 @@ Other scenario runners use `NewCoverage`, `Coverage.Observe`, and `Coverage.Miss
 `Observe` receives completed calls, including their exit code and both streams, without changing process execution or output.
 Nicely's runner registers these checks for `agent` and `transcript`, for successful and failed calls.
 Its `exits` command checks successful and failed calls, including `exits 0` for successes.
-Future kit commands use the same `Observe` method after execution.
+`Coverage.ScenarioCommands` supplies `signal`, `survives`, `protect`, and `refuses` to other scenario runners.
 
 ## Spec IDs
 

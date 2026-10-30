@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,13 +36,15 @@ func (k *kit) commands() map[string]func(*testscript.TestScript, bool, []string)
 			}
 		}
 	}
-	return map[string]func(*testscript.TestScript, bool, []string){
+	commands := k.ScenarioCommands()
+	maps.Copy(commands, map[string]func(*testscript.TestScript, bool, []string){
 		"ncly":  expect("ncly"),
 		direct:  expect(direct),
 		"exits": k.exits,
 		"grant": k.grant,
 		"fake":  k.fakeChild,
-	}
+	})
+	return commands
 }
 
 // call runs ncly, or ncly-<slug> directly, checks the answer, and

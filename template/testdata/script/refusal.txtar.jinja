@@ -14,8 +14,8 @@ chmod 755 bin/python3
 exec sh -c 'printf "\211PNG\r\n\032\n\000\000\000\rIHDR\000\000\000\001" > image.png'
 
 # spec: not-text
-exits 2 ncly {{ example_command }} image.png --json
-stderr '"code":"{{ slug | upper | replace("-", "_") }}_NOT_TEXT"'
+protect image.png
+refuses {{ slug | upper | replace("-", "_") }}_NOT_TEXT ncly {{ example_command }} image.png --json
 stderr '"message":"image\.png is no text file'
 ! stdout .
 grep '^exit 0$' python3.log

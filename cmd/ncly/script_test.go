@@ -156,6 +156,10 @@ func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
 		Condition:           condition,
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"exits":     cmdExits,
+			"signal":    kitCommand("signal"),
+			"refuses":   kitCommand("refuses"),
+			"protect":   kitCommand("protect"),
+			"survives":  kitCommand("survives"),
 			"answer":    cmdAnswer,
 			"snapshot":  cmdSnapshot,
 			"unchanged": cmdUnchanged,

@@ -20,7 +20,7 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 2. `manifest.toml`: its declaration, with its effects, programs, keys, and result schema
 3. `locales/en.toml`: its text, each entry with a description
 4. Add a placeholder handler that compiles, and register it in `extension.go`
-5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands. For a command with a dry run, give each refusal of the shared preparation a dry-run scenario with the same code. Claim each spec ID that a scenario proves with a line `# spec: <id>` above its commands. `refusal.txtar` is the model of a refusal of `## Acceptance`
+5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands. Use `protect` and `refuses` to pair each preparation refusal in a dry run and a run. Use `signal INT|TERM <marker> <command>...` for signal outcomes. Use `survives` for files that must remain after a signal. Claim each spec ID with a line `# spec: <id>` above its commands. `refusal.txtar` models a refusal of `## Acceptance`
 6. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more
 7. `skill/SKILL.md`: when to use the command, and when not to. For a command with a dry run, tell the agent to dry-run the call first
 

@@ -15,9 +15,10 @@ import (
 type coverageKey struct{}
 
 type scenarioCoverage struct {
-	checks *extensiontest.Coverage
-	slug   string
-	root   []string
+	checks   *extensiontest.Coverage
+	slug     string
+	root     []string
+	commands map[string]func(*testscript.TestScript, bool, []string)
 }
 
 // setupCoverage registers the kit for first-party extension scenarios.
@@ -45,6 +46,7 @@ func setupCoverage(t *testing.T, dir string, setup func(*testscript.Env) error) 
 		return filepath.Ext(file) != ".txt" && filepath.Ext(file) != ".txtar"
 	})
 	var started atomic.Int64
+	commands := checks.ScenarioCommands()
 	t.Cleanup(func() {
 		if started.Load() != int64(len(files)) {
 			return
@@ -61,8 +63,19 @@ func setupCoverage(t *testing.T, dir string, setup func(*testscript.Env) error) 
 		if env.Values == nil {
 			env.Values = map[any]any{}
 		}
-		env.Values[coverageKey{}] = scenarioCoverage{checks: checks, slug: slug, root: m.Root()}
+		env.Values[coverageKey{}] = scenarioCoverage{checks: checks, slug: slug, root: m.Root(), commands: commands}
 		return nil
+	}
+}
+
+// kitCommand shares the kit's paired commands and file helpers with first-party extension scenarios.
+func kitCommand(name string) func(*testscript.TestScript, bool, []string) {
+	return func(ts *testscript.TestScript, neg bool, args []string) {
+		c, ok := ts.Value(coverageKey{}).(scenarioCoverage)
+		if !ok {
+			ts.Fatalf("%s: this scenario has no extension coverage adapter", name)
+		}
+		c.commands[name](ts, neg, args)
 	}
 }
 

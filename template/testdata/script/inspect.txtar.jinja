@@ -29,8 +29,8 @@ env STUB=
 
 # An invalid input is a usage error, before python3 starts.
 # spec: bad-input
-exits 2 ncly {{ example_command }} missing.md --json
-stderr '"code":"USAGE_INVALID"'
+protect missing.md notes/input.md
+refuses USAGE_INVALID ncly {{ example_command }} missing.md --json
 stderr 'missing.md is no file that {{ root }} can inspect[.]'
 exits 2 ncly {{ example_command }} notes/input.md --timeout soon --json
 stderr '"code":"USAGE_INVALID"'
@@ -70,21 +70,16 @@ stderr '"code":"RUNTIME"'
 # Ctrl-C stops the program too, and the answer is INTERRUPTED, whose exit is 130.
 # spec: interrupted
 rm hang.pid
-! exec ncly {{ example_command }} notes/input.md --json &
-exec sh -c 'i=0; until [ -f hang.pid ]; do i=$((i+1)); [ $i -lt 200 ] || exit 1; sleep 0.05; done'
-kill -INT
-wait
-stderr '"code":"INTERRUPTED"'
+survives finished.md
+signal INT hang.pid ncly {{ example_command }} notes/input.md --json
 
 # SIGTERM stops it the same way, and the answer is TERMINATED, whose exit is
-# 143. kill of testscript sends no SIGTERM, so sh records the PID of ncly.
+# 143. The kit reads the exit of the host, after its cleanup finishes.
 # spec: terminated
 rm hang.pid
-! exec sh -c 'echo $$ > ncly.pid; exec ncly {{ example_command }} notes/input.md --json' &
-exec sh -c 'i=0; until [ -f hang.pid ]; do i=$((i+1)); [ $i -lt 200 ] || exit 1; sleep 0.05; done'
-exec sh -c 'kill -TERM "$(cat ncly.pid)"'
-wait
-stderr '"code":"TERMINATED"'
+rm finished.md
+survives finished.md
+signal TERM hang.pid ncly {{ example_command }} notes/input.md --json
 
 # python3 missing from PATH is PREREQ_MISSING with exit 78, before any work.
 # spec: no-python
@@ -116,6 +111,6 @@ fail) echo 'inspect.py: broken' >&2; exit 3 ;;
 retry) exit 75 ;;
 garbled) echo 'not json' ;;
 noisy) yes | head -c 2000000 ;;
-hang) echo $$ > "$WORK/hang.pid"; exec sleep 30 ;;
+hang) cp "$2" "$WORK/finished.md"; echo $$ > "$WORK/hang.pid"; exec sleep 30 ;;
 *) exec /usr/bin/python3 "$@" ;;
 esac

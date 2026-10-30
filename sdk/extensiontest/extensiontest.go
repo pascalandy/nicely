@@ -11,6 +11,10 @@
 //	ncly <arg>...                 runs ncly, which exits 0, or not 0 after !
 //	ncly-<slug> <arg>...          runs the extension directly, the same way
 //	exits <code> <command> <arg>  runs a command, these two included, and checks its exact exit code
+//	signal INT|TERM <marker> <command> <arg>  checks the host's signal exit and answer
+//	survives <file>...           requires finished files before and after the next signal
+//	protect <path>...            selects paths that subsequent refusal pairs must preserve
+//	refuses <code> <command> <arg>  checks the same refusal in a dry run and a run
 //	grant <service>               grants the key of a declared service to the extension
 //	fake <name>                   puts the fake child in $WORK/bin as name
 //
