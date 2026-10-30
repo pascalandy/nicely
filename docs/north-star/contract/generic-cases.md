@@ -15,9 +15,11 @@ A case that cannot occur for the command needs no line.
 | Input | Unreadable | A text file without the read permission |
 | Input | Of the wrong type | A file that holds a NUL byte, given to `inspect`, which counts lines of text |
 | Input | Very large | A text file of several gigabytes |
+| Input | With active content | A text file that makes the program load a remote file, such as a line `include https://example.com/part.txt`, or start another program, such as a line `!date` |
 | Output | Exists, without `--force` | `notes.txt` exists before a command writes `notes.txt` from `notes.md` |
 | Output | Is a link to the input | `notes.txt` is a symbolic link to `notes.md` |
 | Output | Appears during the run | Another process writes `notes.txt` after the check and before the write |
+| Output | Keeps private data of the input | `notes.md` starts with the line `author: Ana Lima`, and `notes.txt` keeps that name |
 | Interruption | SIGINT or SIGTERM during the work | Ctrl-C while `inspect` counts the lines of a large file |
 | Interruption | Timeout | `inspect --timeout 1ms` on a large file |
 | File name | Spaces | `my notes.md` |
