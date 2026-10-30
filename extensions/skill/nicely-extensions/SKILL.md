@@ -34,6 +34,22 @@ The domain names a family of work, such as `video`, and the optional name identi
 Neither names the wrapped tool.
 For a whole-domain extension, omit `--data name=NAME` and both `-NAME` suffixes.
 
+## Update an extension repository
+
+Run `just update VERSION` on a clean, committed Git tree.
+Replace VERSION with the target Nicely tag, such as `v0.24.0`.
+
+For an older repository whose update recipe holds a script, bootstrap from its root:
+
+```sh
+go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/^[[:space:]]*"Dir": "\(.*\)",$/\1/p')" run ./sdk/extensionrepo/cmd/extensionrepo update VERSION "$PWD"
+```
+
+On a conflict, resolve each file and mark it with `git add`.
+Remove each `.rej` file, then run the printed bootstrap command with `--continue`.
+Success ends with `just check`.
+[Update an extension](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extension-repository.md#update-an-extension) holds the recovery rules.
+
 ## Remove an extension
 
 `just install` puts an extension in the extensions folder: `nicely/extensions` in the data folder, such as `~/.local/share/nicely/extensions`.

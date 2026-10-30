@@ -52,8 +52,23 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
 - `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would, in scratch folders. It works on a copy of the fixture, or on an input that it makes
-- `just update <version>`: moves the repository to another Nicely version, the template first and then the SDK, on a clean Git tree. It keeps `go.mod` with your dependencies, and moves its Nicely pin with `go get`
+- `just update <version>`: runs the target version's updater on a clean Git tree, with the template before the SDK
 - `just contract`: prints the folder of the contract at the Nicely version that `go.mod` pins
+
+### Update an older repository
+
+For a repository whose update recipe holds a script, run the target updater directly.
+Replace VERSION with the target Nicely tag, such as `v0.24.0`:
+
+```sh
+go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/^[[:space:]]*"Dir": "\(.*\)",$/\1/p')" run ./sdk/extensionrepo/cmd/extensionrepo update VERSION "$PWD"
+```
+
+The updater keeps your dependencies and reconciles Nicely's replacements in `go.mod`.
+On a Copier conflict, resolve each file and mark it with `git add`.
+Remove each `.rej` file, then run the printed bootstrap command with `--continue`.
+This finishes dependency updates and runs `just check`.
+"Update an extension" in `extension-repository.md` of the contract holds the recovery rules.
 
 ## Done when
 

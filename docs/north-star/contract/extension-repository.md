@@ -38,7 +38,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last
 - `just uninstall` removes the install of the slug from that folder, the executable first. With nothing installed, it says so and exits 0
 - `just acceptance [fixture]` runs `acceptance.sh` as an agent would, with `--json` and `--no-input`. It installs the extension and the `ncly` of the pinned Nicely version into scratch XDG folders. It works on a copy of the fixture and checks that the fixture keeps its checksum. Without a fixture, it makes an input
-- `just update <version>` moves the repository to another Nicely version: the template first, then the SDK, on a clean Git tree. Copier leaves `go.mod`, which holds the dependencies of the author. Copier can leave a conflict as markers, a `.rej` file, or an unmerged index entry, and still exit 0. On a conflict, the recipe stops before `go get` and prints the commands that finish the update. Otherwise, `go get` moves the Nicely pin, and the recipe copies each `replace` of Nicely's `go.mod` and drops each one that Nicely dropped. It never resets, stashes, or commits
+- `just update <version>` runs the target version's updater on a clean Git tree, with the template before the SDK. [Update an extension](#update-an-extension) defines bootstrap and conflict recovery
 - `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.
@@ -69,3 +69,34 @@ Once per suite, a separate scratch install holds only the extension under test.
 The kit installs and uninstalls that extension there.
 Then `ncly describe <root> --json` must exit 2 with `NOT_FOUND`.
 Extensions that a scenario adds cannot affect this lifecycle check.
+
+## Update an extension
+
+Each template recipe has one command line.
+The SDK program owns `check`, `contract`, and `update`, as well as install and uninstall.
+The update recipe downloads the target Nicely module, then runs its `sdk/extensionrepo/cmd/extensionrepo` program with `go -C`.
+This uses the target's updater and dependency replacements, even when the repository pins an older SDK.
+`go run package@version` cannot run a module that has `replace` directives.
+
+An older recipe cannot change during its own run.
+For a repository rendered before this recipe, the bootstrap runs the target program directly.
+Replace VERSION with the target tag, such as `v0.24.0`, from the extension repository:
+
+```sh
+go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/^[[:space:]]*"Dir": "\(.*\)",$/\1/p')" run ./sdk/extensionrepo/cmd/extensionrepo update VERSION "$PWD"
+```
+
+The updater accepts only `vX.Y.Z` tags and an absolute repository path.
+It first requires a committed, clean Git tree.
+Copier keeps the author's `go.mod` and applies the target template.
+The updater checks for conflict markers, `.rej` files, and unmerged index entries before changing dependencies.
+On a conflict, it prints each file and the bootstrap command with `--continue` appended.
+
+Resolve each conflict and mark its file with `git add`.
+Remove each `.rej` file, then run the printed command.
+Continuation requires the target tag in `.copier-answers.yml` and no remaining conflicts.
+It skips Copier, moves the Nicely pin, reconciles the previous and target module replacements, and runs `go mod tidy`.
+Both update paths finish with `just check`.
+The updater preserves unrelated dependencies and replacements.
+It never resets, stashes, or commits.
+If Copier fails, its output gives restoration commands and the bootstrap command to retry.

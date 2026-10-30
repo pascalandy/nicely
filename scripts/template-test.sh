@@ -5,7 +5,7 @@
 # folders. A clone at a release tag installs with the commands of its
 # README.md. just update then carries a customized repository to the next
 # template revision, and keeps the edits and the dependencies of its author. On
-# a conflict, it stops before any go command. The test runs on macOS and Linux,
+# a conflict, it stops before dependency changes. The test runs on macOS and Linux,
 # with the bash 3.2 of macOS, and uses no network once uv holds the pinned
 # Copier.
 set -Eeuo pipefail
@@ -21,6 +21,7 @@ fct_revision() {
 	git -C "${src}" add -A
 	git -C "${src}" commit -qm "template ${1}"
 	git -C "${src}" tag "${1}"
+	fct_proxy_revision "${src}" "${1}" "${proxy}"
 }
 
 # fct_commit commits every change of the rendered repository, as its author.
@@ -74,10 +75,9 @@ fct_repository() {
 	src="${scratch}/source" repo="${scratch}/ncly-${slug}" data="${scratch}/data"
 	extensions="${data}/nicely/extensions"
 	mkdir -p "${scratch}"
-	# The template source holds the working tree of this checkout, changes included, tagged as a version.
+	# The module proxy and Copier source both hold this checkout, with its changes.
 	mkdir "${src}"
-	cp "${root}/copier.yml" "${src}/"
-	cp -R "${root}/template" "${src}/template"
+	fct_copy_source "${src}"
 	git -C "${src}" init -q
 	fct_revision v0.0.1
 	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${slug}" "$@" "${src}" "${repo}"
@@ -138,8 +138,19 @@ fct_repository() {
 }
 
 fct_main() {
-	local root pin scratch copier template_src
+	local root pin scratch copier template_src proxy cache_proxy
 	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
+	# Copied recipes only wire commands to the SDK or an owned script.
+	awk '
+		/^[^[:space:]#].*:[[:space:]]*$/ { recipe = $1; sub(/:$/, "", recipe); lines = 0; reported = 0 }
+		/^[[:space:]]+#!/ || /^[[:space:]]+[^[:space:]#]/ {
+			if ((++lines > 1 || $1 ~ /^#!/) && !reported++) {
+				print "template-test.sh: recipe " recipe " must have one command line" > "/dev/stderr"
+				failed = 1
+			}
+		}
+		END { exit failed }
+	' "${root}/template/justfile"
 	# shellcheck source=scripts/template-update-test.sh
 	source "${root}/scripts/template-update-test.sh"
 	# shellcheck source=scripts/template-input-test.sh
@@ -154,17 +165,23 @@ fct_main() {
 	pin="$(sed -n 's/^copier := "\(.*\)"$/\1/p' "${root}/template/justfile")"
 	[[ "${pin}" == "uv tool run copier@"* ]] || fct_fail "template/justfile pins no Copier"
 	grep -qF -- "${pin}" "${root}/extensions/skill/nicely-extensions/SKILL.md" || fct_fail "the nicely-extensions skill does not give ${pin}, which template/justfile pins"
-	awk '$1 == "replace" && !($3 == "=>" && NF == 5) { exit 1 }' "${root}/go.mod" ||
-		fct_fail "write each replace of Nicely's go.mod as one line, replace X => Y V: just update of template/justfile copies only that form"
 	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")"
 	readonly NCLY_TEMPLATE_TEST_ROOT="${scratch}"
 	trap 'rm -rf "${NCLY_TEMPLATE_TEST_ROOT}"' EXIT
 	# Git, in Copier too, takes its identity from this file, without the signing of the user.
 	printf '[user]\n\tname = template-test\n\temail = template-test@example.com\n[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n[init]\n\tdefaultBranch = main\n' >"${scratch}/gitconfig"
 	export GIT_CONFIG_GLOBAL="${scratch}/gitconfig" GIT_CONFIG_NOSYSTEM=1
+	proxy="${scratch}/proxy/github.com/pascalandy/nicely/@v"
+	mkdir -p "${proxy}"
+	cache_proxy="file://$(go env GOMODCACHE)/cache/download"
+	export GOPROXY="file://${scratch}/proxy,${cache_proxy},${GOPROXY:-https://proxy.golang.org,direct}"
+	export GOMODCACHE="${scratch}/modcache" GONOSUMDB=github.com/pascalandy/nicely
+	# Go normally makes cached module folders read-only, which prevents scratch cleanup.
+	export GOFLAGS="${GOFLAGS:-} -modcacherw"
 	read -r -a copier <<<"${pin}"
 	fct_repository "${scratch}/named" video convert video-convert 'video convert' --data name=convert
 	fct_repository "${scratch}/whole" probe '' probe 'probe inspect'
+	fct_test_bootstrap "${scratch}/bootstrap" "${copier[@]}"
 	template_src="${scratch}/whole/source"
 	fct_test_import_domains "${template_src}" "${scratch}" "${root}" "${copier[@]}"
 	fct_test_release_url "${template_src}" "${scratch}" "${copier[@]}"

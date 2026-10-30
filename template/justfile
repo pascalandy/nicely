@@ -1,98 +1,36 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# The identity of the extension, which manifest.toml declares
-domain := `sed -n 's/^domain = "\([a-z][a-z0-9]*\)"$/\1/p' manifest.toml`
-name := `sed -n '/^\[/q; s/^name = "\([a-z][a-z0-9]*\)"$/\1/p' manifest.toml`
-slug := domain + if name == "" { "" } else { "-" + name }
-
-# The Copier of just update, pinned and run through uv. No template task runs, so it needs no --trust
+# The Copier used to create the repository, also pinned by the target SDK updater
 copier := "uv tool run copier@9.19.1"
 
 # List the recipes
 default:
     @just --list
 
-# Run every check: go mod tidy -diff, gofmt, go vet, and go test, whose test kit installs the extension into scratch folders
+# Run every repository check through the pinned SDK
 check:
-    go mod tidy -diff
-    @test -z "$(gofmt -l .)" || { gofmt -l . >&2; echo 'check: format these files with gofmt -w .' >&2; exit 1; }
-    go vet ./...
-    go run ./internal/export test
+    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo check
 
 # Check the committed SHA in a detached scratch worktree, then sign that exact SHA
 signoff:
     go run ./internal/export signoff
 
-# Build ncly-<slug> and install it with its sidecars into Nicely's extensions folder, in place of its previous install
+# Build the extension and install its sidecars before its executable
 install:
     go run ./internal/export install
 
-# Remove the install of ncly-<slug> and its sidecars from Nicely's extensions folder, the executable first
+# Remove the installed extension, with its executable first
 uninstall:
     go run ./internal/export uninstall
 
-# Run the command of ## Acceptance in spec.md as an agent would, through acceptance.sh, on a copy of the fixture or on a made input
+# Run the command of ## Acceptance on a copy of the fixture or on a made input
 acceptance fixture="":
     @bash acceptance.sh {{ if fixture == "" { "" } else { quote(join(invocation_directory(), fixture)) } }}
 
-# Move the repository to another Nicely version, such as v0.19.0: the template first, then the SDK, on a clean Git tree
+# Run the target version's updater, with the template before the SDK, on a clean Git tree
 update version:
-    #!/usr/bin/env bash
-    set -Eeuo pipefail
-    version={{ quote(version) }}
-    if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        echo "Usage: just update vX.Y.Z, such as just update v0.19.0" >&2
-        exit 2
-    fi
-    if ! head="$(git rev-parse --verify --quiet HEAD)" || [[ -n "$(git status --porcelain)" ]]; then
-        echo "update: the update needs a clean Git tree. Commit your changes, then run just update $version again" >&2
-        git status --short >&2 || true
-        exit 1
-    fi
-    # The recipe never resets, stashes, or commits: the author decides what to keep.
-    if ! {{ copier }} update --defaults --conflict inline --vcs-ref "$version"; then
-        echo "update: Copier stopped, so files can be incomplete without a conflict marker." >&2
-        echo "Return to the commit before the update, remove the files that it added, and run it again:" >&2
-        echo "  git restore --source=$head --staged --worktree -- ." >&2
-        echo "  git clean -d --dry-run" >&2
-        echo "  git clean -d --force" >&2
-        echo "  just update $version" >&2
-        exit 1
-    fi
-    # Copier writes a conflict as markers, or as a .rej file, and can still exit 0. It marks a
-    # conflicted file as unmerged in the index. Look for all three before go.mod changes.
-    conflicts="$(
-        git ls-files --unmerged | cut -f2
-        find . -name '*.rej' -not -path './.git/*' | sed 's|^\./||'
-        { git diff --name-only HEAD; git ls-files --others --exclude-standard; } | while IFS= read -r file; do
-            if [[ -f "$file" ]] && grep -qE '^(<<<<<<<|>>>>>>>)( |$)' "$file"; then echo "$file"; fi
-        done
-    )"
-    if [[ -n "$conflicts" ]]; then
-        echo "update: the template conflicts with your changes in these files:" >&2
-        printf '%s\n' "$conflicts" | sort -u | sed 's/^/  /' >&2
-        echo "Resolve each conflict, mark its file with git add, and delete each .rej file." >&2
-        echo "Then finish the update with these three commands:" >&2
-        echo "  go get github.com/pascalandy/nicely@$version" >&2
-        echo "  go mod tidy" >&2
-        echo "  just check" >&2
-        exit 1
-    fi
-    # Copier leaves go.mod and the dependencies of the author, so go get moves its Nicely pin.
-    # A replace never reaches another module. go.mod takes each line replace X => Y V of Nicely's go.mod, and drops each one that Nicely dropped.
-    previous="$(go list -m -f '{{{{.GoMod}}' github.com/pascalandy/nicely)"
-    go get "github.com/pascalandy/nicely@$version"
-    edits="$(awk 'FNR == 1 { file++ } $1 == "replace" && $3 == "=>" && NF == 5 { if (file == 1) dropped[$2] = 1; else { delete dropped[$2]; print "-replace=" $2 "=" $4 "@" $5 } } END { for (path in dropped) print "-dropreplace=" path }' "$previous" "$(go list -m -f '{{{{.GoMod}}' github.com/pascalandy/nicely)")"
-    if [[ -n "$edits" ]]; then go mod edit $edits; fi
-    go mod tidy
-    just check
+    go -C "$(go mod download -json github.com/pascalandy/nicely@{{ quote(version) }} | sed -n 's/^[[:space:]]*"Dir": "\(.*\)",$/\1/p')" run ./sdk/extensionrepo/cmd/extensionrepo update {{ quote(version) }} {{ quote(justfile_directory()) }}
 
-# Print the folder of the contract at the Nicely version that go.mod pins, to read its rules offline
+# Print the folder of the pinned contract
 contract:
-    #!/usr/bin/env bash
-    set -Eeuo pipefail
-    # go list gives the folder of a module only once the module cache holds it.
-    go mod download github.com/pascalandy/nicely
-    dir="$(go list -m -f '{{{{.Dir}}' github.com/pascalandy/nicely)/docs/north-star/contract"
-    [[ -d "$dir" ]] || { echo "contract: $dir is missing from the Nicely version that go.mod pins" >&2; exit 1; }
-    echo "$dir"
+    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo contract

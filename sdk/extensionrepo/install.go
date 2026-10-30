@@ -1,5 +1,5 @@
 // Package extensionrepo runs repository tasks through the extension's export program.
-// It owns staged install and uninstall, as Extension repository in contract.md defines.
+// It owns checks, contract lookup, updates, staged install, and uninstall, as Extension repository in contract.md defines.
 // Its test wrapper prints notices after Go's package results, as Test kit defines.
 package extensionrepo
 

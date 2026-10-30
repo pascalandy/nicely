@@ -1,4 +1,4 @@
-// Command extensionrepo runs repository tasks for core through the shared SDK.
+// Command extensionrepo runs repository tasks through the shared SDK, including from a downloaded Nicely module.
 package main
 
 import (
