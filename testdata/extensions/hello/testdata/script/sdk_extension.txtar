@@ -48,6 +48,9 @@ stdout '^The mood check failed\.$'
 exec ncly hello say Ada --json
 stdout '\AHello, Ada!\n\z'
 ! stderr .
+exits 0 ncly hello say --json
+stdout '^Hello, world!$'
+stderr '^warning\[HELLO_UNNAMED\]: No name was given, so hello greets the world\.$'
 exec ncly hello say
 stdout '^Hello, world!$'
 stderr '^warning\[HELLO_UNNAMED\]: No name was given, so hello greets the world\.$'

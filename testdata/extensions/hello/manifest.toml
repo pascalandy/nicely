@@ -187,6 +187,6 @@ modes = ["run"]
 
 [[warnings]]
 code = "HELLO_UNNAMED"
-# Text-only hello say has no JSON warning to observe.
-commands = ["hello run"]
+commands = ["hello run", "hello say"]
 modes = ["run"]
+untested = "The kit cannot observe warnings from text commands; https://github.com/pascalandy/nicely/issues/399"

@@ -107,7 +107,7 @@ An invalid answer earns no code coverage.
 The manifest's `commands` and `modes` select the scope, as [Manifest](manifest.md) defines.
 Without a scope, a declaration selects every running command, in run and each supported dry run.
 Narrow the scope to the commands and modes where the code can occur.
-Text-only warnings need a scope that excludes the text command, with a reason beside the declaration.
+Use `untested` when a text command's warning cannot appear in a JSON answer.
 The check leaves runtime prefix admission unchanged.
 
 An `untested` declaration defers its code coverage and gives a reason with an issue URL.
