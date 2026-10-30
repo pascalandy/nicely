@@ -29,7 +29,7 @@ func run(e extension.Extension, args []string) int {
 		return update(args[1:])
 	}
 	if len(args) == 1 && args[0] == "check" {
-		return report("check", checkRepository())
+		return checkRepository()
 	}
 	if len(args) == 1 && args[0] == "contract" {
 		return report("contract", printContractDirectory())

@@ -5,7 +5,7 @@ It adds `--dry-run` when the example's command supports that mode, including exa
 Without that mode, it runs only commands whose `effects` explicitly declare `paid = false`.
 A missing effects declaration permits no assumption.
 Each skipped example prints its reason, including commands outside the extension's manifest.
-The template runs tests through `go run ./internal/export test`, which keeps package list output without `-v`.
+The template's `just check` runs tests through `extensionrepo.Test`, which keeps package list output without `-v`.
 The SDK wrapper prints collected notices to stderr after the tests, including when tests fail.
 It preserves their exit code and keeps stdout valid for `go test -json`.
 Core keeps Go's result cache and uses the rendered template sample to check notices.

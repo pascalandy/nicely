@@ -9,22 +9,23 @@ import (
 	"strings"
 )
 
-func checkRepository() error {
+func checkRepository() int {
 	if err := updateRun("go", "mod", "tidy", "-diff"); err != nil {
-		return err
+		return report("check", err)
 	}
 	files, err := exec.Command("gofmt", "-l", ".").Output()
 	if err != nil {
-		return err
+		return report("check", err)
 	}
 	if len(files) != 0 {
 		fmt.Fprint(os.Stderr, string(files))
-		return errors.New("run gofmt -w . to format these files")
+		return report("check", errors.New("run gofmt -w . to format these files"))
 	}
 	if err := updateRun("go", "vet", "./..."); err != nil {
-		return err
+		return report("check", err)
 	}
-	return updateRun("go", "test", "-count=1", "./...")
+	fmt.Fprintln(os.Stderr, "go test -count=1 ./...")
+	return Test(nil)
 }
 
 func printContractDirectory() error {
