@@ -31,7 +31,7 @@ Each check fails first on one named past mistake.
 | COR-103-T6 | Signal and refuses commands | agent | COR-103-T3 | done |
 | COR-103-T7 | One install and uninstall path | agent | - | done |
 | COR-103-T8 | Update through the target updater | agent | COR-103-T7 | todo |
-| COR-103-T9 | Sign off an isolated checkout | agent | COR-103-T7 | todo |
+| COR-103-T9 | Sign off an isolated checkout | agent | COR-103-T7 | done |
 | COR-103-T10 | Release with a receipt | agent | COR-103-T7, COR-103-T9 | todo |
 | COR-103-T11 | macOS job in the template | agent | - | done |
 | COR-103-T12 | Author path from the published tag | agent | - | done |

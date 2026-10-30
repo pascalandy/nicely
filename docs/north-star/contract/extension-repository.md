@@ -31,9 +31,10 @@ The template refuses `main` and each Go keyword as a domain, such as `type`. It 
 A push can skip Lefthook, so its GitHub workflow runs `just check` again on `ubuntu-24.04`.
 Public repositories also run the same steps on `macos-15`, and both runners are free.
 
-The repository tests itself through the [test kit](test-kit.md). Its `justfile` has six recipes:
+The repository tests itself through the [test kit](test-kit.md). Its `justfile` has seven recipes:
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
+- `just signoff` checks the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last
 - `just uninstall` removes the install of the slug from that folder, the executable first. With nothing installed, it says so and exits 0
 - `just acceptance [fixture]` runs `acceptance.sh` as an agent would, with `--json` and `--no-input`. It installs the extension and the `ncly` of the pinned Nicely version into scratch XDG folders. It works on a copy of the fixture and checks that the fixture keeps its checksum. Without a fixture, it makes an input
@@ -42,9 +43,10 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.
 
-The SDK package `extensionrepo` owns install and uninstall.
+The SDK package `extensionrepo` owns install, uninstall, and signoff.
 The template's `internal/export/` program calls `extensionrepo.Main(Extension)`.
 The recipes each call that program in one line: `go run ./internal/export install` or `go run ./internal/export uninstall`.
+Signoff calls `go run ./internal/export signoff`.
 Its `export <folder>` subcommand writes the embedded sidecars of the staged build.
 
 Install stages both builds beside the destination with one `go build`.

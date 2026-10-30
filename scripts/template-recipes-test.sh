@@ -10,7 +10,7 @@ fct_test_files() {
 	fct_has "${repo}/.github/workflows/check.yml" "        os: \${{ github.event.repository.private && fromJSON('[\"ubuntu-24.04\"]') || fromJSON('[\"ubuntu-24.04\",\"macos-15\"]') }}"
 	fct_has "${repo}/.github/workflows/check.yml" "    runs-on: \${{ matrix.os }}"
 	fct_has "${repo}/qa.md" "# ${slug} QA"
-	for recipe in install uninstall; do
+	for recipe in install uninstall signoff; do
 		[[ "$(just --justfile "${repo}/justfile" --show "${recipe}" | sed '/^#/d')" == "${recipe}:"$'\n'"    go run ./internal/export ${recipe}" ]] ||
 			fct_fail "just ${recipe} must call the SDK program in one line"
 	done
@@ -82,6 +82,31 @@ fct_test_uninstall() {
 	(cd "${repo}" && just uninstall) >"${scratch}/uninstall.out"
 	fct_has "${scratch}/uninstall.out" "uninstall: nothing to remove, since ${extensions} holds no ncly-${slug}"
 	fct_test_install_order "${repo}" "${slug}" "${extensions}" "${scratch}"
+	fct_test_signoff "${repo}" "${scratch}"
+}
+
+# Run the rendered recipe with real Git and just. Only gh is a stub.
+fct_test_signoff() {
+	local repo="${1}" scratch="${2}" sha
+	sha="$(git -C "${repo}" rev-parse HEAD)"
+	mkdir -p "${scratch}/signoff-bin"
+	cat >"${scratch}/signoff-bin/gh" <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ "$*" == --version ]]; then echo 'gh version test'; exit 0; fi
+[[ "$#" == 3 && "$1" == signoff && "$2" == --commit ]]
+[[ "$(git rev-parse HEAD)" == "$3" ]]
+if git symbolic-ref --quiet HEAD; then exit 1; fi
+printf '%s\n' "$3" >"${NCLY_TEMPLATE_SIGNOFF}"
+SCRIPT
+	chmod 755 "${scratch}/signoff-bin/gh"
+	if ! (cd "${repo}" && PATH="${scratch}/signoff-bin:${PATH}" XDG_CACHE_HOME="${scratch}/signoff-cache" \
+		NCLY_TEMPLATE_SIGNOFF="${scratch}/signed-sha" just signoff) >"${scratch}/signoff.out" 2>&1; then
+		cat "${scratch}/signoff.out" >&2
+		fct_fail 'rendered just signoff failed'
+	fi
+	fct_has "${scratch}/signoff.out" "Signed off on ${sha}"
+	fct_has "${scratch}/signed-sha" "${sha}"
 }
 
 # fct_test_install_order blocks manifest publication in $3, then tries just install in $1.

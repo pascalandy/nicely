@@ -43,10 +43,12 @@ A wrapped script goes in `worker/`. To take in a script, or to review the extens
 ## Recipes
 
 The recipes need Go, `just`, and `uv`, which runs the pinned Copier of `just update`. The scenarios of `inspect` run `/usr/bin/python3`, 3.9 or later.
+Signoff also needs Git and `gh` with the `gh-signoff` extension.
 
 After Copier creates the repository, run `go mod tidy` once, which writes `go.sum` for the recipes. Then commit the repository with Git, since `just update` needs a clean Git tree. Run `lefthook install` once per clone, so `just check` runs before each push. GitHub runs it again for each push to `main` and each pull request.
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
+- `just signoff`: checks the committed SHA in a detached scratch worktree, writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
 - `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would, in scratch folders. It works on a copy of the fixture, or on an input that it makes
@@ -64,9 +66,10 @@ A release is one Git tag `vX.Y.Z` of Semantic Versioning, such as `v0.1.0`.
 "Release and install" in the contract's `extensions.md` holds these rules.
 
 1. Commit every change
-2. Run `just check` on the clean Git tree
-3. Make sure that "Done when" holds for this commit
-4. Push the commit to the default branch of the remote repository
-5. Tag that commit, such as with `git tag v0.1.0`
-6. Push the tag, such as with `git push origin v0.1.0`
-7. Run the commands of `README.md` for the new tag in a new folder. `ncly describe {{ root }} --json` must describe `{{ root }}`
+2. Push that commit to a review branch
+3. Run `just signoff` for that pushed commit
+4. Make sure that "Done when" holds for this commit
+5. Merge that exact signed SHA into the default branch
+6. Tag that commit, such as with `git tag v0.1.0`
+7. Push the tag, such as with `git push origin v0.1.0`
+8. Run the commands of `README.md` for the new tag in a new folder. `ncly describe {{ root }} --json` must describe `{{ root }}`

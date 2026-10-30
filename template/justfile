@@ -19,6 +19,10 @@ check:
     go vet ./...
     go run ./internal/export test
 
+# Check the committed SHA in a detached scratch worktree, then sign that exact SHA
+signoff:
+    go run ./internal/export signoff
+
 # Build ncly-<slug> and install it with its sidecars into Nicely's extensions folder, in place of its previous install
 install:
     go run ./internal/export install
