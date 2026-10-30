@@ -23,7 +23,7 @@ The current build brings:
 - The `agent` extension, which runs one trusted task through Codex and records it
 - The `transcript` extension, which transcribes one YouTube video with Deepgram, records the run, replays it, and stops cleanly on Ctrl-C
 - `ncly run list` and `ncly run view`, which read the records of the runs
-- The extension template, which creates the repository of an extension outside Nicely, with its tests and its recipes. Its `AGENTS.md` explains how to add a first command, remove the example, and release a version. Its `README.md` tells a user how to install a release
+- The extension template, which creates the repository of an extension outside Nicely, with its tests and its recipes. Its `AGENTS.md` explains how to add a first command, remove the example, and release a version. Its `nicely-extension` skill builds each command in rounds of pull requests, until a test proves each line of its spec. Its `README.md` tells a user how to install a release
 - SDK checks that explain broken manifest rules and missing catalog IDs in English, with their repository file names
 
 Extension manifests declare errors and warnings with optional command scopes, execution modes, and coverage exemptions linked to issues.
