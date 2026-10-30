@@ -18,10 +18,13 @@ func TestSignalRunnerCleanupBudget(t *testing.T) {
 	out, err := goTest(t, "standalone-named", os.Getenv("PATH"),
 		edit{"extension.go", `"fmt"`, "\"fmt\"\n\"github.com/pascalandy/nicely/sdk/runner\""},
 		edit{"extension.go", "func convert(_ context.Context", "func convert(ctx context.Context"},
+		// Only hang.mov starts the endless child, so the manifest example still ends.
 		edit{"extension.go", `key, problem := call.Key("example")`, `
-		_, _ = runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "trap '' INT TERM; echo ready > started; while :; do /bin/sleep 1; done"}})
+		if call.Args[0] == "hang.mov" {
+			_, _ = runner.Run(ctx, runner.Program{Path: "/bin/sh", Args: []string{"-c", "trap '' INT TERM; echo ready > started; while :; do /bin/sleep 1; done"}})
+		}
 		key, problem := call.Key("example")`},
-		edit{file: "testdata/script/convert.txtar", new: "grant example\nsignal TERM started ncly-video-convert clip.mov\nstderr '\"code\":\"TERMINATED\"'\n"})
+		edit{file: "testdata/script/convert.txtar", new: "grant example\nsignal TERM started ncly-video-convert hang.mov\nstderr '\"code\":\"TERMINATED\"'\n"})
 	if err != nil {
 		t.Fatalf("full SDK cleanup failed: %v\n%s", err, out)
 	}

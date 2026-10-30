@@ -98,7 +98,9 @@ func pairedFixture(t *testing.T, host, script string) (string, error) {
 		setup += "! ncly-video-convert --json\n"
 	}
 	setup += "rm $XDG_DATA_HOME/nicely/extensions/ncly-video-convert\ncp host.sh $XDG_DATA_HOME/nicely/extensions/ncly-video-convert\nchmod 755 $XDG_DATA_HOME/nicely/extensions/ncly-video-convert\n"
+	// The kit runs the manifest example as a dry run, where ncly passes no key.
 	return goTest(t, "standalone-named", os.Getenv("PATH"),
+		edit{"extension.go", "key, problem :=", "if call.Flags[\"dry-run\"] == \"true\" {\n\t\treturn contract.Outcome{Data: map[string]string{\"file\": call.Args[0], \"sha256\": \"dry-run\"}}\n\t}\n\tkey, problem :="},
 		edit{"manifest.toml", `requires = { keys = ["example"] }`, "requires = { keys = [\"example\"] }\nmodes = { dry_run = true }"},
 		edit{"manifest.toml", "[commands.result.schema]", "[commands.result.dry_run_schema]\ntype = \"object\"\nrequired = [\"file\", \"sha256\"]\nproperties = { file = { type = \"string\" }, sha256 = { type = \"string\" } }\n\n[commands.result.schema]"},
 		edit{"manifest.toml", "[[commands.args]]", "[[commands.flags]]\nname = \"label\"\nvalue = \"text\"\nsummary = \"video-convert.file\"\n\n[[commands.args]]"},
