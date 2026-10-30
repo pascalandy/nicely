@@ -101,3 +101,5 @@ install = { brew = ["brew", "install", "--cask", "codex"], pacman = ["sudo", "pa
 [[errors]]
 code = "AGENT_DEPTH_LIMIT"
 exit = 2
+commands = ["agent run"]
+modes = ["run", "dry_run"]

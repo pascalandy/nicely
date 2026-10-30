@@ -115,3 +115,10 @@ install = { brew = ["brew", "install", "python@3.13"], pacman = ["sudo", "pacman
 [[errors]]
 code = "TRANSCRIPT_DOWNLOAD_FAILED"
 exit = 1
+commands = ["transcript run youtube"]
+modes = ["run"]
+
+[[warnings]]
+code = "TRANSCRIPT_BROWSER_COOKIES_SKIPPED"
+commands = ["transcript run youtube"]
+modes = ["run"]

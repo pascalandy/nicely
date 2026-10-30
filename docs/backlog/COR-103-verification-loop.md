@@ -24,7 +24,7 @@ Each check fails first on one named past mistake.
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | COR-103-T1 | Video-convert error cases and still images | agent | - | todo |
-| COR-103-T2 | Declared codes with scopes | agent | - | todo |
+| COR-103-T2 | Declared codes with scopes | agent | - | done |
 | COR-103-T3 | Count executed calls | agent | - | done |
 | COR-103-T4 | Run manifest examples | agent | COR-103-T3 | todo |
 | COR-103-T5 | Observe declared codes | agent | COR-103-T2, COR-103-T3 | todo |

@@ -130,7 +130,12 @@ func (m Manifest) Registry() Registry {
 		}
 		return codes
 	}
-	r := Registry{warnings: warningCodes, prefix: m.codePrefix()}
+	r := Registry{warnings: slices.Clone(warningCodes), prefix: m.codePrefix()}
+	for _, d := range m.DeclaredCodes {
+		if d.Warning {
+			r.warnings = append(r.warnings, d.Code)
+		}
+	}
 	for i, e := range errorCodes {
 		if e.code == Runtime {
 			r.errors = append(r.errors, own(ExitRuntime)...)

@@ -165,6 +165,54 @@ other = "{{.File}} declares the error code {{.Code}} twice."
 description = "Reason inside extension.invalid. {{.File}} is the manifest's name, {{.Code}} an error code, and {{.Value}} the exit code it maps to. 1, 2, and 78 are exit codes and stay as is."
 other = "{{.File}} maps the error code {{.Code}} to exit {{.Value}}, and an extension's code maps to 1, 2, or 78."
 
+["extension.declared_code_twice"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} names a repeated declaration across errors and warnings."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}} appears twice across errors and warnings."
+
+["extension.warning_prefix"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} names a warning. {{.Prefix}} is its required uppercase prefix."
+other = "{{.File}}:{{.Line}}:{{.Column}}: warning {{.Code}} must use uppercase letters, digits, and underscores, starting with {{.Prefix}}."
+
+["extension.warning_core"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} names a warning declaration that uses a core code."
+other = "{{.File}}:{{.Line}}:{{.Column}}: warning {{.Code}} belongs to ncly."
+
+["extension.warning_exit"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} names a warning declaration with a forbidden exit field."
+other = "{{.File}}:{{.Line}}:{{.Column}}: warning {{.Code}} must not declare exit."
+
+["extension.code_commands_empty"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} has an empty commands scope."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: commands must name at least one command that runs."
+
+["extension.code_command"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} scopes to {{.Path}}, which is missing or groups other commands."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: command \"{{.Path}}\" must name a declared command that runs."
+
+["extension.code_command_twice"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} repeats {{.Path}} in its commands scope."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: command \"{{.Path}}\" appears twice."
+
+["extension.code_modes_empty"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} has an empty modes scope."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: modes must contain run or dry_run."
+
+["extension.code_mode"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} names a code. {{.Mode}} is an unknown execution mode."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: mode \"{{.Mode}}\" must be run or dry_run."
+
+["extension.code_mode_twice"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} repeats {{.Mode}} in its modes scope."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: mode \"{{.Mode}}\" appears twice."
+
+["extension.code_dry_run"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} selects dry_run for {{.Path}}, which does not offer it."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: command \"{{.Path}}\" does not offer dry_run. Narrow commands or modes."
+
+["extension.code_untested"]
+description = "Manifest rejection at {{.File}}:{{.Line}}:{{.Column}}. {{.Code}} has an untested exemption without both a reason and an issue URL."
+other = "{{.File}}:{{.Line}}:{{.Column}}: code {{.Code}}: untested must give a reason and an issue URL."
+
 ["extension.catalog_id"]
 description = "Reason inside extension.invalid. {{.File}} is the name of the extension's English catalog, such as ncly-hello.locales/en.toml, and {{.Value}} a catalog ID that the manifest names."
 other = "{{.File}} lacks the ID \"{{.Value}}\" that the manifest names."

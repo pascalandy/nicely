@@ -75,10 +75,8 @@ type manifestFile struct {
 			DryRunSchema map[string]any `toml:"dry_run_schema"`
 		} `toml:"result"`
 	} `toml:"commands"`
-	Errors []struct {
-		Code string `toml:"code"`
-		Exit int    `toml:"exit"`
-	} `toml:"errors"`
+	Errors   []declaredCodeFile     `toml:"errors"`
+	Warnings []declaredCodeFile     `toml:"warnings"`
 	Programs map[string]Requirement `toml:"programs"`
 	// Keys reads optional as any, so that a value that is not a boolean
 	// gets its own reason.

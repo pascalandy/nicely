@@ -1,6 +1,6 @@
 # Manifest
 
-The manifest is a TOML file that declares the extension's commands, in the same declarations as core's commands, as [Command descriptions](command-descriptions.md) defines, and its own error codes. Its text fields hold catalog IDs, never text.
+The TOML manifest declares the extension's commands, errors, and warnings. Commands follow [Command descriptions](command-descriptions.md). Text fields hold catalog IDs.
 
 ```toml
 format_version = 1
@@ -34,6 +34,12 @@ result = { kind = "report" }
 [[errors]]
 code = "HELLO_GRUMPY"
 exit = 1
+commands = ["hello run"]
+modes = ["run"]
+
+[[warnings]]
+code = "HELLO_UNNAMED"
+commands = ["hello run"]
 ```
 
 | Key | Type | Meaning |
@@ -64,6 +70,10 @@ exit = 1
 | `commands[].requires.bins` | array | The names of the programs that the command may run, each a key of `programs` |
 | `commands[].requires.keys` | array | The services whose keys the command may need, each a service name, as [Keys](keys.md) defines. `ncly auth status` and `ncly doctor` read them, and core passes their granted keys, as [Grants](grants.md) defines |
 | `errors` | array | The extension's own error codes, each with `code` and `exit`, in the order that decides which one leads an answer, as [Output](output.md) defines |
+| `warnings` | array | The extension's own warning codes, each with `code` and no `exit` |
+| `errors[].commands`, `warnings[].commands` | array | Optional. Command paths where the code can occur. Without this scope, the code applies to every command that runs |
+| `errors[].modes`, `warnings[].modes` | array | Optional. Execution modes where the code can occur: `run` or `dry_run`. Without this scope, each selected command contributes every mode it offers |
+| `errors[].untested`, `warnings[].untested` | string | Optional. A reason to defer scenario coverage, with an issue URL such as `https://github.com/OWNER/REPO/issues/123` |
 | `programs` | table | One table per program that a command may run, keyed by the name of the executable that core looks for in `PATH`, such as `[programs.ffmpeg]`, so that each program has one definition. [Required programs](../core-spec.md#required-programs) defines how doctor checks them |
 | `programs.<name>.conditional` | boolean | Optional. `true` when a command needs the program only for some configs or invocations, and no command needs it on every call. Doctor never checks a conditional program |
 | `programs.<name>.version` | string | Optional. The oldest version that works, as numbers joined by dots, such as `6.0`. Without it, finding the program is enough, and doctor starts no probe |
@@ -75,3 +85,6 @@ exit = 1
 Core reads only the keys of this table and ignores any other, as [Compatibility](compatibility.md) asks of readers. A field that an older core must not ignore needs a new `format_version`, which that core rejects instead of misreading.
 
 A manifest must also follow the rules in [Valid manifest](valid-manifest.md).
+
+Code scopes declare applicability. They do not restrict runtime admission or require a scenario observation yet.
+Declared warnings appear in the registry's code list. Undeclared warnings with the extension prefix remain valid, as [Error codes](error-codes.md) defines.

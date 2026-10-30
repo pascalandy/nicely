@@ -2,6 +2,7 @@ package extension
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -64,6 +65,82 @@ func TestCheckAcceptsAnExtensionWithoutSkill(t *testing.T) {
 func TestCheckAcceptsAValidExtension(t *testing.T) {
 	if err := Check(demo()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCheckRejectsInvalidCodeDeclarations(t *testing.T) {
+	prefix := validManifest[:strings.Index(validManifest, "[[errors]]")]
+	cases := []struct{ name, field, want string }{
+		{"empty commands", `commands = []`, "commands must name at least one command that runs"},
+		{"empty modes", `modes = []`, "modes must contain run or dry_run"},
+		{"unknown command", `commands = ["demo missing"]`, `command "demo missing" must name a declared command that runs`},
+		{"group command", `commands = ["demo"]`, `command "demo" must name a declared command that runs`},
+		{"duplicate command", `commands = ["demo run", "demo run"]`, `command "demo run" appears twice`},
+		{"unknown mode", `modes = ["typo"]`, `mode "typo" must be run or dry_run`},
+		{"duplicate mode", `modes = ["run", "run"]`, `mode "run" appears twice`},
+		{"unsupported dry run", `modes = ["dry_run"]`, `command "demo run" does not offer dry_run`},
+		{"empty exemption", `untested = ""`, "untested must give a reason and an issue URL"},
+		{"blank exemption", `untested = "  "`, "untested must give a reason and an issue URL"},
+		{"exemption without issue", `untested = "Needs a controlled host"`, "untested must give a reason and an issue URL"},
+		{"exemption without reason", `untested = "https://github.com/OWNER/REPO/issues/123"`, "untested must give a reason and an issue URL"},
+		{"exemption without issue number", `untested = "Needs a controlled host: https://github.com/OWNER/REPO/issues/0"`, "untested must give a reason and an issue URL"},
+	}
+	for _, kind := range []string{"errors", "warnings"} {
+		for _, c := range cases {
+			t.Run(kind+"/"+c.name, func(t *testing.T) {
+				e := demo()
+				declaration := "[[" + kind + "]]\ncode = \"DEMO_FAILED\"\n"
+				if kind == "errors" {
+					declaration += "exit = 1\n"
+				}
+				e.Manifest = []byte(prefix + declaration + c.field + "\n")
+				err := Check(e)
+				if err == nil {
+					t.Fatal("Check accepted an invalid code declaration")
+				}
+				for _, want := range []string{"manifest.toml:13:3:", "DEMO_FAILED", c.want} {
+					if !strings.Contains(err.Error(), want) {
+						t.Errorf("Check = %v, want %q", err, want)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestCheckUsesTOMLCodePositions(t *testing.T) {
+	cases := []struct {
+		name, manifest string
+		line, column   int
+	}{
+		{
+			name: "quoted header after a multiline string and a comment",
+			manifest: "notes = '''\n[[warnings]]\n'''\n# [[warnings]]\n" + validManifest +
+				"  [[ \"warnings\" ]] # a real declaration\ncode = 'DEMO_NOTICE'\nmodes = ['typo']\n",
+			line: 20, column: 6,
+		},
+		{
+			name:     "second inline declaration",
+			manifest: "warnings = [\n {code = 'DEMO_FIRST'},\n {code = 'DEMO_NOTICE', modes = ['typo']}\n]\n" + validManifest,
+			line:     3, column: 2,
+		},
+		{
+			name: "escaped key and CRLF",
+			manifest: strings.ReplaceAll(validManifest+
+				"[[\"warn\\u0069ngs\"]]\ncode = 'DEMO_NOTICE'\nmodes = ['typo']\n", "\n", "\r\n"),
+			line: 16, column: 3,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			e := demo()
+			e.Manifest = []byte(c.manifest)
+			err := Check(e)
+			position := fmt.Sprintf("manifest.toml:%d:%d:", c.line, c.column)
+			if err == nil || !strings.Contains(err.Error(), position) || !strings.Contains(err.Error(), `mode "typo"`) {
+				t.Fatalf("Check = %v, want %s and the invalid mode", err, position)
+			}
+		})
 	}
 }
 

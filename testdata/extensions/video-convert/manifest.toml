@@ -18,3 +18,10 @@ values_from = { command = "video subtitle list", key = "files", field = "name" }
 [[errors]]
 code = "VIDEO_CONVERT_FAILED"
 exit = 1
+commands = ["video convert"]
+modes = ["run"]
+
+[[warnings]]
+code = "VIDEO_CONVERT_WARNING"
+commands = ["video convert"]
+modes = ["run"]

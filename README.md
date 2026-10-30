@@ -26,6 +26,9 @@ The current build brings:
 - The extension template, which creates the repository of an extension outside Nicely, with its tests and its recipes. Its `AGENTS.md` explains how to add a first command, remove the example, and release a version. Its `README.md` tells a user how to install a release
 - SDK checks that explain broken manifest rules and missing catalog IDs in English, with their repository file names
 
+Extension manifests declare errors and warnings with optional command scopes, execution modes, and coverage exemptions linked to issues.
+`extension.Check` rejects invalid scopes with TOML line and column positions.
+
 [The current build](docs/status.md) describes each command. The commands below are planned work.
 
 ## Planned commands

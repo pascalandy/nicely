@@ -14,7 +14,7 @@ import (
 // ManifestFormat is the only manifest format that this version reads.
 const ManifestFormat = 1
 
-// Manifest declares an extension's commands and its own error codes, as the
+// Manifest declares an extension's commands and its own codes, as the
 // Manifest section of contract.md defines.
 type Manifest struct {
 	Domain   string
@@ -22,6 +22,8 @@ type Manifest struct {
 	Commands []Command
 	// Errors holds the own codes in the order that decides which one leads.
 	Errors []OwnCode
+	// DeclaredCodes holds errors and warnings with their scopes and TOML positions.
+	DeclaredCodes []CodeCoverage
 	// Programs holds the name of each program that a command may run, the
 	// keys of the manifest's programs table, sorted.
 	Programs []string
@@ -185,7 +187,14 @@ func ParseManifest(data []byte, slug string) (Manifest, error) {
 		m.Commands = append(m.Commands, c)
 	}
 	for _, e := range file.Errors {
-		m.Errors = append(m.Errors, OwnCode{Code: Code(e.Code), Exit: ExitCode(e.Exit)})
+		var exit int
+		if e.Exit != nil {
+			exit = *e.Exit
+		}
+		m.Errors = append(m.Errors, OwnCode{Code: Code(e.Code), Exit: ExitCode(exit)})
+	}
+	if m.DeclaredCodes, err = parseDeclaredCodes(data, file); err != nil {
+		return Manifest{}, err
 	}
 	m.Programs = slices.Sorted(maps.Keys(file.Programs))
 	m.Requirements = file.Programs

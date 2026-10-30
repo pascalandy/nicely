@@ -63,7 +63,10 @@ func (m Manifest) check() error {
 	if err := m.checkKeys(); err != nil {
 		return err
 	}
-	return m.checkCodes()
+	if err := m.checkCodes(); err != nil {
+		return err
+	}
+	return m.checkCodeScopes()
 }
 
 // checkNames applies the rules of names and shorthands to the arguments and
