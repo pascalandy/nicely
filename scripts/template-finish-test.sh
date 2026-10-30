@@ -27,8 +27,9 @@ fct_finish_said() {
 }
 
 fct_test_finish() {
-	local finish="${2}/finish" scratch="${2}" sha
+	local finish="${2}/finish" scratch="${2}" sha file number
 	local free='this limit has no spec ID, no state limit, and no acceptance'
+	local unfilled='this line of the form is not filled'
 	cp -R "${1}" "${finish}"
 	[[ "$(just --justfile "${finish}/justfile" --show finish | sed '/^#/d')" == $'finish:\n    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo finish' ]] ||
 		fct_fail 'just finish must call the SDK program in one line'
@@ -40,10 +41,20 @@ fct_test_finish() {
 	fct_finish_said "${free}"
 	fct_finish_said 'readiness.md: no readiness verdict is recorded'
 	fct_finish_said 'this line is open' absent
+	# A new repository keeps each Fill: line of its forms.
+	for file in vision.md spec.md qa.md; do
+		grep -n '^Fill:' "${finish}/${file}" >"${scratch}/fill.lines" || fct_fail "${file} of the template holds no Fill: line"
+		while IFS=: read -r number _; do
+			fct_finish_said "${file}:${number}: ${unfilled}"
+		done <"${scratch}/fill.lines"
+		grep -v '^Fill:' "${finish}/${file}" >"${scratch}/form.md"
+		mv "${scratch}/form.md" "${finish}/${file}"
+	done
 
 	fct_edit "${finish}/spec.md" 'None.' $'| ID | Command | Part | Case | Code |\n|---|---|---|---|---|\n| `large-file` | inspect | Failures | A file over 1 GB | `RUNTIME` |'
 	fct_finish 1
 	fct_finish_said 'this line is open'
+	fct_finish_said "${unfilled}" absent
 
 	fct_edit "${finish}/spec.md" '| `large-file` | inspect | Failures | A file over 1 GB | `RUNTIME` |' ''
 	fct_edit "${finish}/spec.md" '**Limits.** A file over 1 GB takes more than 30 s to count.' $'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `large-file` | `limit` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |'

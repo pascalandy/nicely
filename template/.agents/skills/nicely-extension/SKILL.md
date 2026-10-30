@@ -72,8 +72,10 @@ Each round is one pull request.
 
 1. Implement the main path of the command, with "Change a command" in `AGENTS.md`.
 2. Write every line of the command in `spec.md`. Each line that has no test stays `open`, under `## Open lines`.
-3. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. For a paid command, limit it to the dry run.
-4. End the round.
+3. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
+4. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`.
+5. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. For a paid command, limit it to the dry run.
+6. End the round.
 
 The first implementation is incomplete by design. The open lines start the next round.
 

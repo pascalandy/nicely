@@ -12,14 +12,18 @@ import (
 // finishRepository runs the finish gate of the loop of the nicely-extension
 // skill, which "Done when" of the template AGENTS.md runs (#405). just check
 // stays green for an incomplete round. This gate fails until the loop ends.
-// Then no line is open, the user accepted each limit, and a passing
-// readiness verdict names the commit under review.
+// Then each form is filled, no line is open, the user accepted each limit,
+// and a passing readiness verdict names the commit under review.
 func finishRepository() int {
+	problems, err := formProblems()
+	if err != nil {
+		return report("finish", err)
+	}
 	spec, err := os.ReadFile("spec.md")
 	if err != nil {
 		return report("finish", err)
 	}
-	problems := append(specProblems(string(spec)), readinessProblems()...)
+	problems = append(append(problems, specProblems(string(spec))...), readinessProblems()...)
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)
 	}
@@ -28,6 +32,24 @@ func finishRepository() int {
 	}
 	fmt.Println("finish: no line is open, the user accepted each limit, and readiness.md holds a passing verdict for this commit")
 	return 0
+}
+
+// formProblems reports each line that starts with "Fill:" in the forms that
+// the template writes. Round 1 of the skill replaces each one (#408).
+func formProblems() ([]string, error) {
+	var problems []string
+	for _, form := range []string{"vision.md", "spec.md", "qa.md"} {
+		data, err := os.ReadFile(form)
+		if err != nil {
+			return nil, err
+		}
+		for i, line := range strings.Split(string(data), "\n") {
+			if strings.HasPrefix(line, "Fill:") {
+				problems = append(problems, fmt.Sprintf("%s:%d: this line of the form is not filled. Fix: write what it asks for the commands of this extension, then delete it", form, i+1))
+			}
+		}
+	}
+	return problems, nil
 }
 
 // specProblems reports each open line under ## Open lines, and each line
