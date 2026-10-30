@@ -26,7 +26,7 @@ stdout '\{"id":"transcript\.cookies","component":"transcript","status":"pass",'
 cmp test-keychain.jsonl seed.jsonl
 
 # The status command alone answers its one check, with the schema that describe gives
-exec ncly transcript status --json
+exits 0 ncly transcript status --json
 stdout '\A\{"ok":true,"contract_version":1,"checks":\[\{"id":"transcript\.cookies","component":"transcript","status":"pass","message":"No browser is set, so downloads use anonymous access\."\}\]\}\n\z'
 cp stdout status.json
 exec ncly describe 'transcript status' --json

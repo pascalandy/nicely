@@ -53,7 +53,7 @@ func demoKit(t *testing.T) *kit {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &kit{manifest: m, printer: catalogs.Printer("en")}
+	return &kit{Coverage: &Coverage{manifest: m, printer: catalogs.Printer("en"), seen: map[string]bool{}}}
 }
 
 // TestMentionsTellACommandFromAnArgument reads the word after demo run,

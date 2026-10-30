@@ -17,7 +17,7 @@ env ANSWER_SUM=8afe105bfb636084c8a98d204b98c79b124e910816e3ca330136c7d6e2920d65
 # A call with --run-id saves the record before Codex starts: when the stub runs, the record is
 # running and its step is unknown, with its start time and no end. The task reaches Codex on
 # stdin
-exec ncly agent run 'Review this branch' --tools --model m1 --run-id r1 --json
+exits 0 ncly agent run 'Review this branch' --tools --model m1 --run-id r1 --json
 stdout '\A\{"ok":true,"contract_version":1,"answer":"OK from Codex","duration_ms":[0-9]+,"harness":"codex","model":"m1","run_id":"r1"\}\n\z'
 ! stderr .
 cp stdout $TMPDIR/answer.json

@@ -3,7 +3,7 @@
 // checks the links between the manifest, the skill, the scenarios, the
 // spec, and the Nicely versions. It then installs the real ncly-<slug> and
 // the ncly of go tool ncly in scratch folders, and runs the scenarios of
-// testdata/script/.
+// testdata/script/. Coverage requires a checked JSON answer or a completed success with a declared text result.
 //
 // A scenario runs the extension through the commands that the kit adds, so
 // that the kit checks each answer against the schema of its command:
@@ -38,7 +38,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"maps"
 	"os"
 	"os/exec"
@@ -47,9 +46,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
-	"github.com/pascalandy/nicely/sdk/i18n"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -71,6 +68,12 @@ func Run(t *testing.T, e extension.Extension) {
 		t.Error(problem)
 	}
 	k.build(t)
+	// testscript starts parallel subtests. Cleanup runs after all scenarios finish.
+	t.Cleanup(func() {
+		for _, problem := range k.Missing() {
+			t.Error(problem)
+		}
+	})
 	testscript.Run(t, testscript.Params{
 		Dir:                filepath.Join(k.root, "testdata", "script"),
 		RequireUniqueNames: true,
@@ -81,9 +84,8 @@ func Run(t *testing.T, e extension.Extension) {
 
 // kit is what Run knows of one extension repository.
 type kit struct {
-	ext      extension.Extension
-	manifest contract.Manifest
-	printer  *i18n.Printer
+	*Coverage
+	ext extension.Extension
 	// root is the folder of the repository's go.mod.
 	root string
 	// bin holds ncly, which go tool ncly built.
@@ -96,15 +98,7 @@ type kit struct {
 }
 
 func load(e extension.Extension) (*kit, error) {
-	m, err := contract.ParseManifest(e.Manifest, "")
-	if err != nil {
-		return nil, err
-	}
-	locales, err := fs.Sub(e.Locales, "locales")
-	if err != nil {
-		return nil, err
-	}
-	catalogs, err := i18n.Load(i18n.Locales(), locales)
+	coverage, err := NewCoverage(e)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +109,7 @@ func load(e extension.Extension) (*kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kit{ext: e, manifest: m, printer: catalogs.Printer("en"), root: filepath.Dir(gomod), path: isolate(os.Getenv("PATH"))}, nil
+	return &kit{Coverage: coverage, ext: e, root: filepath.Dir(gomod), path: isolate(os.Getenv("PATH"))}, nil
 }
 
 // build makes the programs that the scenarios run. ncly is the one that go

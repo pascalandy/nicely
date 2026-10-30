@@ -147,6 +147,7 @@ func TestScripts(t *testing.T) {
 }
 
 func runScripts(t *testing.T, dir string, setup func(*testscript.Env) error) {
+	setup = setupCoverage(t, dir, setup)
 	testscript.Run(t, testscript.Params{
 		Dir:                 dir,
 		RequireExplicitExec: true,

@@ -33,4 +33,5 @@ func cmdExits(ts *testscript.TestScript, neg bool, args []string) {
 	if got != want {
 		ts.Fatalf("%s exited with %d, want %d", args[1], got, want)
 	}
+	observeCall(ts, args[1], args[2:], got)
 }

@@ -108,6 +108,21 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 			want:  []string{"skill/SKILL.md: the extension ships no skill. Fix: add skill/SKILL.md, named standalone"},
 		},
 		{
+			name:    "issue 335 stdout mentions an unexecuted command",
+			fixture: "standalone-named",
+			edits:   []edit{{file: "testdata/script/convert.txtar", new: "ncly skill view video-convert\nstdout 'ncly video convert clip.mov'\n"}},
+			want:    []string{"testdata/script: no scenario runs `ncly video convert`. Fix: add a scenario that runs it"},
+		},
+		{
+			name:    "issue 335 path-qualified exits bypasses a broken schema",
+			fixture: "standalone-named",
+			edits: []edit{
+				{"manifest.toml", `file = { type = "string" }`, `file = { type = "integer" }`},
+				{file: "testdata/script/convert.txtar", new: "ncly skill view video-convert\nstdout 'ncly video convert clip.mov'\ngrant example\nexits 0 $XDG_DATA_HOME/nicely/extensions/ncly-video-convert clip.mov --json\n"},
+			},
+			want: []string{"use the registered command ncly-video-convert instead of its path"},
+		},
+		{
 			name:    "a sibling cannot cover the root",
 			fixture: "standalone-named",
 			edits:   []edit{{file: "testdata/script/convert.txtar", new: "ncly video convert-hdr clip.mov --json\n"}},
@@ -155,6 +170,7 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			out, err := goTest(t, cmp.Or(c.fixture, "standalone"), os.Getenv("PATH"), c.edits...)
+			t.Logf("fixture go test: %v\n%s", err, out)
 			if err == nil {
 				t.Fatalf("go test passed on the broken copy:\n%s", out)
 			}

@@ -1,7 +1,7 @@
 ---
 id: COR-103
 core: "verification loop"
-state: "Ready. 15 cards across nicely and ncly-video-convert"
+state: "Active. 15 cards across nicely and ncly-video-convert"
 ---
 
 # COR-103 verification loop
@@ -25,7 +25,7 @@ Each check fails first on one named past mistake.
 |---|---|---|---|---|
 | COR-103-T1 | Video-convert error cases and still images | agent | - | todo |
 | COR-103-T2 | Declared codes with scopes | agent | - | todo |
-| COR-103-T3 | Count executed calls | agent | - | todo |
+| COR-103-T3 | Count executed calls | agent | - | done |
 | COR-103-T4 | Run manifest examples | agent | COR-103-T3 | todo |
 | COR-103-T5 | Observe declared codes | agent | COR-103-T2, COR-103-T3 | todo |
 | COR-103-T6 | Signal and refuses commands | agent | COR-103-T3 | todo |

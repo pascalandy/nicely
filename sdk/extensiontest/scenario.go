@@ -55,7 +55,7 @@ func (k *kit) call(ts *testscript.TestScript, program string, args []string) int
 	if err != nil {
 		ts.Fatalf("%s: %v", program, err)
 	}
-	if problem := k.checkAnswer(words, exit, ts.ReadFile("stdout"), ts.ReadFile("stderr"), ts.Getenv("NCLY_JSON")); problem != "" {
+	if problem := k.Observe(words, exit, ts.ReadFile("stdout"), ts.ReadFile("stderr"), ts.Getenv("NCLY_JSON")); problem != "" {
 		ts.Fatalf("`%s %s`: %s", program, strings.Join(args, " "), problem)
 	}
 	return exit
@@ -73,6 +73,9 @@ func (k *kit) exits(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("exits: invalid code %q", args[0])
 	}
 	var got int
+	if name := filepath.Base(args[1]); name != args[1] && (name == "ncly" || name == "ncly-"+k.manifest.Slug()) {
+		ts.Fatalf("exits: use the registered command %s instead of its path, so the kit checks its answer", name)
+	}
 	if args[1] == "ncly" || args[1] == "ncly-"+k.manifest.Slug() {
 		got = k.call(ts, args[1], args[2:])
 	} else if got, err = exitCode(ts.Exec(args[1], args[2:]...)); err != nil {
@@ -140,11 +143,9 @@ func (k *kit) fakeChild(ts *testscript.TestScript, neg bool, args []string) {
 	ts.Check(copyProgram(k.fake, path))
 }
 
-// checkAnswer checks the answer of a call of the extension against the
-// schema of its command, as ncly describe gives it. words holds the words
-// after ncly. It returns the problem, or "" for a call that prints no
-// answer, such as a help page, human text, or a call outside the root.
-func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable string) string {
+// Observe checks and records a completed call's answer. words holds the arguments after ncly, including the root for direct calls.
+// It returns a problem without recording an invalid answer. A declared text result counts a completed success without JSON.
+func (k *Coverage) Observe(words []string, exit int, stdout, stderr, jsonVariable string) string {
 	call, found := k.find(words)
 	if !found {
 		return ""
@@ -156,7 +157,14 @@ func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable
 		return fallback
 	}
 	d, runs := call.command, call.runs
-	if set("help", false) || set("version", false) || !set("json", jsonVariable == "1") || runs && exit == 0 && d.Result.Kind == contract.ResultText {
+	if set("help", false) || set("version", false) {
+		return ""
+	}
+	if runs && exit == 0 && d.Result.Kind == contract.ResultText {
+		k.record(call.path)
+		return ""
+	}
+	if !set("json", jsonVariable == "1") {
 		return ""
 	}
 	kind, data := contract.ResultObject, map[string]any(nil)
@@ -180,8 +188,19 @@ func (k *kit) checkAnswer(words []string, exit int, stdout, stderr, jsonVariable
 	if !ok || line == "" || strings.Contains(line, "\n") {
 		return fmt.Sprintf("want one line of answer on %s, got %q", stream, answer)
 	}
-	if err := validate(contract.AnswerSchema(kind, data), line); err != nil {
+	schema := contract.AnswerSchema(kind, data)
+	if required, present := data["required"]; present && kind == contract.ResultReport && stream == "stdout" {
+		schema["allOf"] = []any{map[string]any{"required": required}}
+	}
+	if err := validate(schema, line); err != nil {
 		return fmt.Sprintf("the answer on %s breaks the schema that manifest.toml declares for `ncly %s`: %v. Fix: make the handler answer what the schema declares, or correct the schema", stream, call.path, err)
+	}
+	reply := contract.Reply{Exit: exit, Stdout: []byte(stdout), Last: []byte(answer)}
+	if _, err := contract.CheckAnswer(k.manifest, kind, reply); err != nil {
+		return fmt.Sprintf("the answer on %s breaks the answer contract for `ncly %s`: %v. Fix: make the handler follow the answer contract", stream, call.path, err)
+	}
+	if runs {
+		k.record(call.path)
 	}
 	return ""
 }
@@ -200,7 +219,7 @@ type parsed struct {
 // find returns what the parser of ncly finds in a call, given as the words
 // after ncly. A global flag may come before the domain. It returns false
 // for a call of core or outside the root.
-func (k *kit) find(words []string) (parsed, bool) {
+func (k *Coverage) find(words []string) (parsed, bool) {
 	root := &cobra.Command{Use: "ncly"}
 	command.AddGlobalFlags(root, k.printer)
 	command.AddManifest(root, k.printer, k.printer, k.manifest, func(contract.Command) func(*cobra.Command, []string) error {

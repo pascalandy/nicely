@@ -15,7 +15,6 @@ import (
 // links returns a problem for each broken link that the files show,
 // before any scenario runs:
 //   - a missing skill
-//   - a command that no scenario runs
 //   - a skill that names a command that the manifest lacks
 //   - a call that skips the answer check
 //   - a line of Failures or Acceptance in spec.md that no test claims
@@ -66,28 +65,17 @@ func (k *kit) scripts() ([]script, error) {
 	return scripts, nil
 }
 
-// scenarioLinks reports each command that runs and that no scenario calls
-// as ncly <root> .... It also reports each foreground exec of ncly or of
+// scenarioLinks reports each foreground exec of ncly or of
 // ncly-<slug>, by name or by path, whose answer the kit cannot check.
 func (k *kit) scenarioLinks(scripts []script) []string {
-	covered := map[string]bool{}
 	var problems []string
 	direct := "ncly-" + k.manifest.Slug()
 	for _, s := range scripts {
 		for i, line := range strings.Split(s.text, "\n") {
 			args := words(line)
-			for _, path := range k.mentions(strings.Join(args, " ")) {
-				covered[path] = true
-			}
 			if program := foregroundExec(args); program == "ncly" || program == direct {
 				problems = append(problems, fmt.Sprintf("%s:%d: exec runs %s, so the kit cannot check its answer. Fix: drop exec, and run the kit's command %s", s.name, i+1, program, program))
 			}
-		}
-	}
-	for _, c := range k.manifest.Commands {
-		path := strings.Join(c.Path, " ")
-		if k.manifest.Runs(c) && !covered[path] {
-			problems = append(problems, fmt.Sprintf("%s: no scenario runs `ncly %s`. Fix: add a scenario that runs it, such as %s", scenarios, path, filepath.Join(scenarios, strings.Join(c.Path[1:], "_")+".txtar")))
 		}
 	}
 	return problems
