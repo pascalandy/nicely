@@ -13,7 +13,7 @@ A case that cannot occur for the command needs no line.
 | Input | Empty | A text file of 0 bytes |
 | Input | Truncated | A JSON file that ends before its last closing brace |
 | Input | Unreadable | A text file without the read permission |
-| Input | Of the wrong type | An image given to `inspect`, which counts lines of text |
+| Input | Of the wrong type | A file that holds a NUL byte, given to `inspect`, which counts lines of text |
 | Input | Very large | A text file of several gigabytes |
 | Output | Exists, without `--force` | `notes.txt` exists before a command writes `notes.txt` from `notes.md` |
 | Output | Is a link to the input | `notes.txt` is a symbolic link to `notes.md` |
