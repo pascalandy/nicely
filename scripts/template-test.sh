@@ -139,7 +139,8 @@ fct_main() {
 	pin="$(sed -n 's/^copier := "\(.*\)"$/\1/p' "${root}/template/justfile")"
 	[[ "${pin}" == "uv tool run copier@"* ]] || fct_fail "template/justfile pins no Copier"
 	grep -qF -- "${pin}" "${root}/extensions/skill/nicely-extensions/SKILL.md" || fct_fail "the nicely-extensions skill does not give ${pin}, which template/justfile pins"
-	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")"
+	# The recipes print clean paths. On macOS, TMPDIR ends in a slash and sits under the /var link, so resolve the scratch root.
+	scratch="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/ncly-template-test.XXXXXXXX")" && pwd -P)"
 	readonly NCLY_TEMPLATE_TEST_ROOT="${scratch}"
 	trap 'rm -rf "${NCLY_TEMPLATE_TEST_ROOT}"' EXIT
 	# Git, in Copier too, takes its identity from this file, without the signing of the user.
