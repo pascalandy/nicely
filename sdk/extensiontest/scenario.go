@@ -36,7 +36,7 @@ func (k *kit) commands() map[string]func(*testscript.TestScript, bool, []string)
 			}
 		}
 	}
-	commands := k.ScenarioCommands()
+	commands := k.ScenarioCommands(filepath.Join(k.bin, "ncly"))
 	maps.Copy(commands, map[string]func(*testscript.TestScript, bool, []string){
 		"ncly":  expect("ncly"),
 		direct:  expect(direct),

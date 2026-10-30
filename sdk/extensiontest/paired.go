@@ -19,8 +19,8 @@ type scriptFiles struct {
 }
 
 // ScenarioCommands supplies signal, refuses, protect, and survives to a testscript runner.
-// Calls use the scenario's ncly and its scratch installation of ncly-<slug>.
-func (c *Coverage) ScenarioCommands() map[string]func(*testscript.TestScript, bool, []string) {
+// host is the registered ncly's absolute path, independent of the scenario's PATH.
+func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.TestScript, bool, []string) {
 	var mu sync.Mutex
 	files := map[*testscript.TestScript]*scriptFiles{}
 	state := func(ts *testscript.TestScript) *scriptFiles {
@@ -57,19 +57,23 @@ func (c *Coverage) ScenarioCommands() map[string]func(*testscript.TestScript, bo
 		"signal": func(ts *testscript.TestScript, neg bool, args []string) {
 			files := state(ts)
 			defer func() { files.survives = nil }()
-			c.signal(ts, neg, args, files.survives)
+			c.signal(ts, neg, args, files.survives, host)
 		},
 		"refuses": func(ts *testscript.TestScript, neg bool, args []string) {
-			c.refuses(ts, neg, args, state(ts).protect)
+			c.refuses(ts, neg, args, state(ts).protect, host)
 		},
 	}
 }
 
 // pairedCall resolves only registered calls and requires a structured JSON answer.
-func (c *Coverage) pairedCall(ts *testscript.TestScript, program string, args []string) (string, []string, parsed) {
+func (c *Coverage) pairedCall(ts *testscript.TestScript, program string, args []string, host string) (string, []string, parsed) {
 	path, words := program, slices.Clone(args)
 	switch program {
 	case "ncly":
+		if !filepath.IsAbs(host) {
+			ts.Fatalf("register ncly with its absolute executable path")
+		}
+		path = host
 	case "ncly-" + c.manifest.Slug():
 		path = filepath.Join(ts.Getenv("XDG_DATA_HOME"), "nicely", "extensions", program)
 		words = append(c.manifest.Root(), words...)
@@ -121,12 +125,12 @@ func (c *Coverage) checkedCode(ts *testscript.TestScript, words []string, exit i
 	return answer.Errors[0].Code, ""
 }
 
-func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected []string) {
+func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected []string, host string) {
 	if neg || len(args) < 2 {
 		ts.Fatalf("usage: refuses <code> <command> <arg>...")
 	}
 	defer machineMode(ts)()
-	program, words, call := c.pairedCall(ts, args[1], args[2:])
+	program, words, call := c.pairedCall(ts, args[1], args[2:], host)
 	if _, given := call.line.Switch("dry-run"); given || !call.command.Modes.DryRun {
 		ts.Fatalf("refuses: give a command with a dry run, without a dry-run flag")
 	}

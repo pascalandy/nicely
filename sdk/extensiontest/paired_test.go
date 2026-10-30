@@ -109,6 +109,8 @@ func pairedFixture(t *testing.T, host, script string) (string, error) {
 func TestPairedCommands(t *testing.T) {
 	refusal := strings.Replace(refusalHost, "if [ \"$1\" = fake.mov ]; then", "if false; then", 1)
 	cases := []struct{ name, host, script, problem string }{
+		{"signal host without PATH", strings.ReplaceAll(signalHost("TERMINATED", "143", ""), "sleep 0.01", "/bin/sleep 0.01"), "env PATH=$WORK/bin\nsignal TERM started ncly video convert clip.mov\n", ""},
+		{"refusal host without PATH", refusal, "env PATH=$WORK/bin\nrefuses USAGE_INVALID ncly video convert fake.mov\n", ""},
 		{"INT host", signalHost("INTERRUPTED", "130", ""), "survives finished.mov\nsignal INT started ncly video convert clip.mov\nstderr '\"code\":\"INTERRUPTED\"'\n", ""},
 		{"TERM direct", signalHost("TERMINATED", "143", ""), "survives finished.mov\nsignal TERM started ncly-video-convert clip.mov\nstderr '\"code\":\"TERMINATED\"'\n", ""},
 		{"finished file removed", signalHost("TERMINATED", "143", "rm finished.mov"), "survives finished.mov\nsignal TERM started ncly-video-convert clip.mov\n", "finished.mov: no such file"},

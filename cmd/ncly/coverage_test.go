@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -46,7 +47,11 @@ func setupCoverage(t *testing.T, dir string, setup func(*testscript.Env) error) 
 		return filepath.Ext(file) != ".txt" && filepath.Ext(file) != ".txtar"
 	})
 	var started atomic.Int64
-	commands := checks.ScenarioCommands()
+	host, err := exec.LookPath("ncly")
+	if err != nil {
+		t.Fatal(err)
+	}
+	commands := checks.ScenarioCommands(host)
 	t.Cleanup(func() {
 		if started.Load() != int64(len(files)) {
 			return

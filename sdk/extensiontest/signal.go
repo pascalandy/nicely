@@ -14,12 +14,12 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
-func (c *Coverage) signal(ts *testscript.TestScript, neg bool, args, survives []string) {
+func (c *Coverage) signal(ts *testscript.TestScript, neg bool, args, survives []string, registeredHost string) {
 	if neg || len(args) < 3 || (args[0] != "INT" && args[0] != "TERM") {
 		ts.Fatalf("usage: signal INT|TERM <marker> <command> <arg>...")
 	}
 	defer machineMode(ts)()
-	program, words, _ := c.pairedCall(ts, args[2], args[3:])
+	program, words, _ := c.pairedCall(ts, args[2], args[3:], registeredHost)
 	marker := ts.MkAbs(args[1])
 	if _, err := os.Lstat(marker); !os.IsNotExist(err) {
 		ts.Fatalf("signal: marker %s must not exist before the call", args[1])
