@@ -34,6 +34,9 @@ func run(e extension.Extension, args []string) int {
 	if len(args) == 1 && args[0] == "check" {
 		return checkRepository()
 	}
+	if len(args) == 1 && args[0] == "finish" {
+		return finishRepository()
+	}
 	if len(args) == 1 && args[0] == "contract" {
 		return report("contract", printContractDirectory())
 	}
@@ -41,7 +44,7 @@ func run(e extension.Extension, args []string) int {
 		return report("export", extension.Export(e, args[1]))
 	}
 	if len(args) != 1 || (args[0] != "install" && args[0] != "uninstall") {
-		fmt.Fprintln(os.Stderr, "usage: export install | uninstall | signoff | release <tag> [fixture] | check | contract | export <folder> | test [go test arguments] | update vX.Y.Z /absolute/repository [--continue]")
+		fmt.Fprintln(os.Stderr, "usage: export install | uninstall | signoff | release <tag> [fixture] | check | finish | contract | export <folder> | test [go test arguments] | update vX.Y.Z /absolute/repository [--continue]")
 		return 2
 	}
 	action := args[0]

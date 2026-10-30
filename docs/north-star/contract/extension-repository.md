@@ -8,7 +8,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 |---|---|
 | `README.md` | What the extension adds, and the commands that install a release |
 | `vision.md` | The job of the extension in one sentence, the source and revision of each program that it wraps, and what it refuses |
-| `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the accepted limits. Then `## Acceptance`: the real input, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses. Each line of Failures and of Acceptance starts with its spec ID, as [Test kit](test-kit.md#spec-ids) says |
+| `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the limits that the user accepted. Then `## Acceptance`: the real input, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses. Then `## Open lines`: the lines that no test proves yet. Each line of Failures and of Acceptance starts with its spec ID, as [Test kit](test-kit.md#spec-ids) says |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
 | Go files | One handler per command, `extension_test.go`, which calls the test kit, and `cmd/ncly-<slug>/main.go`, which calls `extension.Main`. `internal/export/` calls `extensionrepo.Main` for repository tasks |
@@ -16,7 +16,8 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `qa.md` | How a user accepts the extension: what its UAT adds to the UAT protocol of Nicely, with its error cases and its removal. Each criterion names the test that covers it, or why none can |
 | `acceptance.sh` | The run of the command on the real input of `## Acceptance`, which checks each property and each refusal that it lists |
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
-| `.agents/skills/nicely-extension/` | The skill that takes a script from intake to a verified command, and reviews readiness when the user asks |
+| `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
+| `readiness.md` | The last readiness review: the commit that it reviewed, its verdict, and its findings |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 | `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu, plus macOS for public repositories, for each push to `main` and each pull request |
 
@@ -31,9 +32,10 @@ The template refuses `main` and each Go keyword as a domain, such as `type`. It 
 A push can skip Lefthook, so its GitHub workflow runs `just check` again on `ubuntu-24.04`.
 Public repositories also run the same steps on `macos-15`, and both runners are free.
 
-The repository tests itself through the [test kit](test-kit.md). Its `justfile` has eight recipes:
+The repository tests itself through the [test kit](test-kit.md). Its `justfile` has nine recipes:
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
+- `just finish` is the exit of the loop of the skill. It fails on a line under `## Open lines`, on a line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance, and without a `Ready` or `Ready with stated limits` verdict in `readiness.md`. That verdict names a commit, and only `readiness.md` may differ from it. `just check` stays green for an incomplete round
 - `just signoff` checks the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines
 - `just release <tag> [fixture]` publishes the signed SHA and proves the README install, as [Release and install](extensions.md#release-and-install) defines
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last
@@ -44,7 +46,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.
 
-The SDK package `extensionrepo` owns install, uninstall, signoff, and release.
+The SDK package `extensionrepo` owns install, uninstall, finish, signoff, and release.
 The template's `internal/export/` program calls `extensionrepo.Main(Extension)`.
 The recipes each call that program in one line: `go run ./internal/export install` or `go run ./internal/export uninstall`.
 Signoff calls `go run ./internal/export signoff`.

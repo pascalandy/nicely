@@ -3,7 +3,7 @@
 This part says how `just update` carries an [extension repository](extension-repository.md) to another template version.
 
 Each template recipe has one command line.
-The SDK program owns `check`, `contract`, and `update`, as well as install and uninstall.
+The SDK program owns `check`, `finish`, `contract`, and `update`, as well as install and uninstall.
 The update recipe downloads the target Nicely module, then runs its `sdk/extensionrepo/cmd/extensionrepo` program with `go -C`.
 This uses the target's updater and dependency replacements, even when the repository pins an older SDK.
 `go run package@version` cannot run a module that has `replace` directives.

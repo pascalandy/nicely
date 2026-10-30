@@ -91,21 +91,31 @@ The first implementation is incomplete by design. The open lines start the next 
 2. For a command that needs a key, relay the grant hint to the human and wait.
 3. Run `just acceptance` on the real input until its independent checks pass.
 4. Ask an agent that did not write the round to review its pull request.
-5. Run the readiness review.
+5. Run the readiness review, and record it in `readiness.md`.
 6. Write each finding that a test can prove as an open line.
-7. Stop as "Done when" in `AGENTS.md` says.
+7. Stop as "Done when" in `AGENTS.md` says. Its `just finish` fails until the loop is done.
 8. Otherwise, open the next pull request from the open lines and the other findings. When the previous pull request is not merged, base it on that branch.
 
+A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
+It never replaces "Done when", and it never ends the rounds early.
 The release receipt and the human items of `qa.md` come after the merge, as "Release" in `AGENTS.md` says.
 
 For a command that replaces a user file or replays paid work, run `create-formal-verification-skill`.
-Use ncly-video-convert's publication verification skill as the example.
 
 ## Readiness review
 
 Run this review at the end of each round, and when the user asks for it. The checks of the contract apply in all cases, and `just check` runs them.
 
-Review the extension against "What a great extension does" and against the facts of the intake. Write each finding with these six parts:
+Review the extension against "What a great extension does" and against the facts of the intake.
+Write the review in `readiness.md`, which starts with these two lines:
+
+```
+Commit: <the full SHA of the reviewed commit>
+Verdict: <Ready, Ready with stated limits, or Needs work>
+```
+
+Then commit `readiness.md` alone. `just finish` accepts the verdict while only `readiness.md` differs from that commit.
+Write each finding with these six parts:
 
 - **Evidence**: the file and the line, the scenario, or the output that shows the problem
 - **Command**: the command that the finding affects
@@ -116,8 +126,13 @@ Review the extension against "What a great extension does" and against the facts
 
 End the review with one verdict:
 
-- **Ready**: no finding has the severity `block`
-- **Ready with stated limits**: no finding blocks, and the user accepts each `warn` as a limit. Write each accepted limit in the "Limits" part of its command in `spec.md`, as a line with the state `limit`
-- **Needs work**: at least one finding blocks
+- **Ready**: no finding has the severity `block` or `warn`
+- **Ready with stated limits**: no finding blocks, and the user accepted each `warn` as a `limit` line
+- **Needs work**: at least one finding blocks, or a `warn` has no `limit` line that the user accepted
+
+Only the user accepts a limit. Ask the user, and wait for the answer.
+Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.
+Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
+A loss that you report but that the user did not accept is a `warn` finding, not a limit.
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.

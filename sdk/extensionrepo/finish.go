@@ -1,0 +1,127 @@
+package extensionrepo
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"regexp"
+	"slices"
+	"strings"
+)
+
+// finishRepository runs the finish gate of the loop of the nicely-extension
+// skill, which "Done when" of the template AGENTS.md runs (#405). just check
+// stays green for an incomplete round. This gate fails until the loop ends.
+// Then no line is open, the user accepted each limit, and a passing
+// readiness verdict names the commit under review.
+func finishRepository() int {
+	spec, err := os.ReadFile("spec.md")
+	if err != nil {
+		return report("finish", err)
+	}
+	problems := append(specProblems(string(spec)), readinessProblems()...)
+	for _, problem := range problems {
+		fmt.Fprintln(os.Stderr, problem)
+	}
+	if len(problems) != 0 {
+		return report("finish", errors.New("the loop of the nicely-extension skill is not done"))
+	}
+	fmt.Println("finish: no line is open, the user accepted each limit, and readiness.md holds a passing verdict for this commit")
+	return 0
+}
+
+// specProblems reports each open line under ## Open lines, and each line
+// under **Limits.** that is no table row with a spec ID, the state limit,
+// and the record of the user's acceptance.
+func specProblems(spec string) []string {
+	const freeLimit = "this limit has no spec ID, no state limit, and no acceptance. Fix: write each limit as a row of a table with the columns ID, State, Limit, and Accepted"
+	var problems []string
+	state, accepted := -1, -1
+	for _, l := range SpecLines(spec) {
+		switch l.Part {
+		case "Open lines":
+			if l.Kind == SpecRow || l.Kind == SpecBullet {
+				problems = append(problems, fmt.Sprintf("spec.md:%d: this line is open. Fix: prove it with a scenario in a round, or ask the user to accept it as a limit", l.Number))
+			}
+		case "Limits":
+			switch l.Kind {
+			case SpecLabel:
+				state, accepted = -1, -1
+				if l.Rest != "" && l.Rest != "None." {
+					problems = append(problems, fmt.Sprintf("spec.md:%d: %s", l.Number, freeLimit))
+				}
+			case SpecHeader:
+				state, accepted = slices.Index(l.Cells, "State"), slices.Index(l.Cells, "Accepted")
+				if state < 0 || accepted < 0 {
+					problems = append(problems, fmt.Sprintf("spec.md:%d: the table of Limits has no State or Accepted column. Fix: give it the columns ID, State, Limit, and Accepted", l.Number))
+				}
+			case SpecRow:
+				switch {
+				case l.ID == "":
+					problems = append(problems, fmt.Sprintf("spec.md:%d: this limit has no spec ID. Fix: start its row with an ID in backticks", l.Number))
+				case state < 0 || accepted < 0 || state >= len(l.Cells) || accepted >= len(l.Cells):
+					problems = append(problems, fmt.Sprintf("spec.md:%d: the limit `%s` has no State or Accepted cell. Fix: give its table the columns ID, State, Limit, and Accepted", l.Number, l.ID))
+				case strings.Trim(l.Cells[state], "`") != "limit":
+					problems = append(problems, fmt.Sprintf("spec.md:%d: the limit `%s` has the state %q. Fix: give it the state `limit`", l.Number, l.ID, l.Cells[state]))
+				case l.Cells[accepted] == "":
+					problems = append(problems, fmt.Sprintf("spec.md:%d: no record says that the user accepted the limit `%s`. Fix: ask the user, then record who accepted it, when, and where", l.Number, l.ID))
+				}
+			case SpecBullet, SpecText:
+				problems = append(problems, fmt.Sprintf("spec.md:%d: %s", l.Number, freeLimit))
+			}
+		}
+	}
+	return problems
+}
+
+var (
+	readinessCommit  = regexp.MustCompile(`(?m)^Commit: ([0-9a-f]{7,40})\s*$`)
+	readinessVerdict = regexp.MustCompile(`(?m)^Verdict: (.+?)\s*$`)
+)
+
+// readinessProblems reports a readiness.md without a passing verdict, or
+// whose commit is not the code of the working tree. Only readiness.md may
+// differ from that commit, so the review can be committed after it.
+func readinessProblems() []string {
+	const fix = "Fix: run the readiness review of the nicely-extension skill, then record it in readiness.md with the lines Commit: <sha> and Verdict: <verdict>"
+	data, err := os.ReadFile("readiness.md")
+	if errors.Is(err, os.ErrNotExist) {
+		return []string{"readiness.md: no readiness verdict is recorded. " + fix}
+	} else if err != nil {
+		return []string{"readiness.md: " + err.Error()}
+	}
+	commit, verdict := readinessCommit.FindSubmatch(data), readinessVerdict.FindSubmatch(data)
+	if commit == nil || verdict == nil {
+		return []string{"readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>. " + fix}
+	}
+	var problems []string
+	switch v := string(verdict[1]); v {
+	case "Ready", "Ready with stated limits":
+	case "Needs work":
+		problems = append(problems, "readiness.md: the verdict is Needs work. Fix: start the next round from its findings")
+	default:
+		problems = append(problems, fmt.Sprintf("readiness.md: the verdict %q is not Ready, Ready with stated limits, or Needs work. %s", v, fix))
+	}
+	sha := string(commit[1])
+	if _, err := updateOutput("git", "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
+		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", sha, fix))
+	}
+	changed, err := updateOutput("git", "diff", "--name-only", sha, "--")
+	if err != nil {
+		return append(problems, "readiness.md: "+err.Error())
+	}
+	added, err := updateOutput("git", "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return append(problems, "readiness.md: "+err.Error())
+	}
+	var files []string
+	for _, file := range strings.Split(string(changed)+string(added), "\n") {
+		if file != "" && file != "readiness.md" && !slices.Contains(files, file) {
+			files = append(files, file)
+		}
+	}
+	if len(files) != 0 {
+		problems = append(problems, fmt.Sprintf("readiness.md: the review is of %s, and these files changed since: %s. Fix: run the readiness review again on this commit", sha, strings.Join(files, ", ")))
+	}
+	return problems
+}

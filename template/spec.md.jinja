@@ -4,7 +4,8 @@
 
 Each line of Failures and Acceptance has the state `proven`: a test claims it, and the test kit requires that claim.
 A line that no test proves yet has the state `open`, and waits under `## Open lines`.
-A line that the user accepted as a limit has the state `limit`, under **Limits.** of its command.
+A line that the user accepted as a limit has the state `limit`, in a table under **Limits.** of its command.
+`just finish` fails while a line is open, or while a limit has no record of the user's acceptance.
 
 This file is a form filled for the example command, `ncly {{ example_command }}`.
 It inspects a file until you replace it.
@@ -18,7 +19,7 @@ Fill: write every line of a command in its first pull request, from the generic 
 
 Fill: the failure of an input that exists but that the wrapped program cannot read, with a `{{ slug | upper | replace("-", "_") }}_` code and exit 2. A dry run, when the command has one, gives the same failure.
 
-Fill: each limit that the readiness review accepted, with its spec ID. A limit never contradicts a line of Failures or of Acceptance.
+Fill: each limit that the user accepted, as a row of a table under **Limits.**, with the columns ID, State, Limit, and Accepted. A limit never contradicts a line of Failures or of Acceptance.
 
 ## ncly {{ example_command }}
 

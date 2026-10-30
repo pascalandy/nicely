@@ -11,6 +11,10 @@ default:
 check:
     go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo check
 
+# Fail until the loop is done: no open line, accepted limits, and a passing readiness verdict for this commit
+finish:
+    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo finish
+
 # Check the committed SHA in a detached scratch worktree, then sign that exact SHA
 signoff:
     go run ./internal/export signoff

@@ -64,7 +64,8 @@ The paragraphs above state the rules marked "Prose only".
 | Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
 | The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
 | Each round ends with an independent review and the readiness review | Prose only |
-| The rounds stop at "Done when", or after 5 rounds with a report of each open line | Prose only |
+| At the exit, no open line, accepted limits, and a passing readiness verdict for this commit | [Finish gate][finish] |
+| Stop at "Done when" or after 5 rounds, and deliver only after that | Prose only |
 
 [calls]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/calls.go
 [links]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/links.go
@@ -74,6 +75,7 @@ The paragraphs above state the rules marked "Prose only".
 [refuses]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/paired.go
 [signal]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/signal.go
 [spec]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/spec.go
+[finish]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/finish.go
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
 [release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
 [template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh
@@ -96,6 +98,7 @@ Signoff also needs Git and `gh` with the `gh-signoff` extension.
 After Copier creates the repository, run `go mod tidy` once, which writes `go.sum` for the recipes. Then commit the repository with Git, since `just update` needs a clean Git tree. Run `lefthook install` once per clone, so `just check` runs before each push. GitHub runs it again for each push to `main` and each pull request.
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
+- `just finish`: the exit of the loop. It fails on an open line, an unaccepted limit, or no passing verdict in `readiness.md` for this commit
 - `just signoff`: checks the committed SHA in a detached scratch worktree, writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
@@ -116,18 +119,19 @@ The updater keeps your dependencies and reconciles Nicely's replacements in `go.
 On a Copier conflict, resolve each file and mark it with `git add`.
 Remove each `.rej` file, then run the printed bootstrap command with `--continue`.
 This finishes dependency updates and runs `just check`.
-"Update an extension" in `extension-repository.md` of the contract holds the recovery rules.
+`update-an-extension.md` of the contract holds the recovery rules.
 
 ## Done when
 
-The rounds of the skill in `.agents/skills/nicely-extension/` stop when all of these hold:
+The rounds of the skill stop when all of these hold:
 
-- No line of `spec.md` is `open`
-- The readiness verdict is Ready, or Ready with stated limits
+- `just finish` passes
 - `just check` and `just acceptance` pass, and the hosted checks pass
 
 After 5 rounds, stop anyway, and report each open line to the user.
 For a command that needs a key, relay the grant hint to the human and wait.
+A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
+It never replaces "Done when". When the previous pull request is not merged, the next round stacks on its branch.
 
 ## Release
 
