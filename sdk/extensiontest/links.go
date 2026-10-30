@@ -214,8 +214,28 @@ func (k *kit) versionLink() string {
 		return ".copier-answers.yml: " + err.Error()
 	case goErr != nil:
 		return "go.mod: " + goErr.Error()
-	case answers.Commit != pinned:
+	case !sameNicely(answers.Commit, pinned):
 		return fmt.Sprintf(".copier-answers.yml: the template comes from Nicely %q, and go.mod pins Nicely %s. Fix: run just update %s", answers.Commit, pinned, pinned)
 	}
 	return ""
+}
+
+var (
+	// describedCommit holds the commit of a _commit that git describe gives
+	// for a development build, such as v0.24.0-3-g8355631.
+	describedCommit = regexp.MustCompile(`^v.+-[0-9]+-g([0-9a-f]+)$`)
+	// pseudoCommit holds the commit of a pseudo-version, such as
+	// v0.24.1-0.20261030091907-8355631969d4.
+	pseudoCommit = regexp.MustCompile(`[.-][0-9]{14}-([0-9a-f]{12})$`)
+)
+
+// sameNicely reports whether _commit and the go.mod pin name one Nicely
+// version. Both name one tag, or one commit of a development build. go.mod
+// pins that commit as a pseudo-version (#405).
+func sameNicely(commit, pinned string) bool {
+	described, pseudo := describedCommit.FindStringSubmatch(commit), pseudoCommit.FindStringSubmatch(pinned)
+	if described == nil || pseudo == nil {
+		return commit == pinned
+	}
+	return strings.HasPrefix(pseudo[1], described[1]) || strings.HasPrefix(described[1], pseudo[1])
 }

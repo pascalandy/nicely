@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Sourced by template-test.sh to prove the Copier inputs: domains that resemble Go
-# imports still build, and Copier refuses each invalid input for its own reason.
+# imports still build, Copier refuses each invalid input for its own reason, and
+# a development build pins a commit that Go accepts.
 
 fct_test_import_domains() {
 	local template_src="${1}" scratch="${2}" root="${3}" valid_domain copier
@@ -43,4 +44,21 @@ fct_test_refused_inputs() {
 		fi
 		grep -qF 'Pass only domain, name, and module' "${scratch}/refusal.out" || fct_fail "Copier refuses ${derived_key} for another reason: $(cat "${scratch}/refusal.out")"
 	done
+}
+
+fct_test_development_build() {
+	local template_src="${1}" scratch="${2}" src="${2}/development" repo="${2}/ncly-development" commit pin copier
+	shift 2
+	copier=("$@")
+	# A development build of ncly gives a commit after a tag as VERSION (#405).
+	git clone -q "${template_src}" "${src}"
+	git -C "${src}" commit -q --allow-empty -m 'development build'
+	commit="$(git -C "${src}" rev-parse --short=12 HEAD)"
+	"${copier[@]}" copy --quiet --vcs-ref "${commit}" --defaults --data domain=probe --data module=example.com/ncly-probe "${src}" "${repo}"
+	grep -qE "^_commit: v[0-9.]+-[0-9]+-g${commit:0:7}[0-9a-f]*$" "${repo}/.copier-answers.yml" ||
+		fct_fail "Copier gives no git describe of ${commit}: $(grep '^_commit:' "${repo}/.copier-answers.yml")"
+	# Go refuses the describe form. go mod tidy turns the commit into a pseudo-version.
+	pin="$(sed -n 's/^require github.com\/pascalandy\/nicely //p' "${repo}/go.mod")"
+	[[ "${pin}" =~ ^[0-9a-f]{7,}$ && "${commit}" == "${pin:0:12}"* ]] ||
+		fct_fail "the go.mod of a development build pins ${pin}, not the commit ${commit}"
 }

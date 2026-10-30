@@ -4,7 +4,9 @@ go 1.27.0
 
 tool github.com/pascalandy/nicely/cmd/ncly
 
-require github.com/pascalandy/nicely {{ _copier_answers._commit }}
+{# A development build gives a _commit such as v0.24.0-3-g8355631, which Go
+refuses. Its commit is a version that go mod tidy turns into a pseudo-version. -#}
+require github.com/pascalandy/nicely {{ _copier_answers._commit | regex_replace('^v.+-[0-9]+-g([0-9a-f]+)$', '\\1') }}
 
 // Lip Gloss v2.0.6 runs `tmux info` as its package loads, with no time limit:
 // https://github.com/charmbracelet/lipgloss/issues/749. Nicely's go.mod

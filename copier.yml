@@ -8,7 +8,8 @@
 #     --data domain=notes --data module=github.com/me/ncly-notes \
 #     gh:pascalandy/nicely ncly-notes
 #
-# VERSION is the release tag that ncly --version prints.
+# VERSION is the release tag that ncly --version prints. For a development
+# build, which prints a pseudo-version, VERSION is the commit of that pseudo-version.
 #
 # The template has no tasks, no migrations, and no Jinja extension, so
 # Copier needs no --trust. scripts/template-test.sh renders it in just check.

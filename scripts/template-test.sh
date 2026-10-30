@@ -157,6 +157,7 @@ fct_main() {
 	fct_test_import_domains "${template_src}" "${scratch}" "${root}" "${copier[@]}"
 	fct_test_release_url "${template_src}" "${scratch}" "${copier[@]}"
 	fct_test_refused_inputs "${template_src}" "${scratch}" "${copier[@]}"
+	fct_test_development_build "${template_src}" "${scratch}" "${copier[@]}"
 }
 
 fct_main

@@ -236,3 +236,26 @@ func TestClaimsReadEachIDOfASpecLine(t *testing.T) {
 		t.Errorf("claims() = %+v\nwant %+v", got, want)
 	}
 }
+
+// TestSameNicelyMatchesATagOrADevelopmentBuild compares the _commit of
+// .copier-answers.yml with the Nicely version that go.mod pins. A development
+// build gives git describe and a pseudo-version of one commit (#405).
+func TestSameNicelyMatchesATagOrADevelopmentBuild(t *testing.T) {
+	for _, c := range []struct {
+		commit, pinned string
+		want           bool
+	}{
+		{"v0.24.0", "v0.24.0", true},
+		{"v0.23.0", "v0.24.0", false},
+		{"v0.23.4-1-g8355631", "v0.23.5-0.20261030091907-8355631969d4", true},
+		{"v0.23.4-1-g8355631969d4abc", "v0.23.5-0.20261030091907-8355631969d4", true},
+		{"v0.23.4-1-g1234567", "v0.23.5-0.20261030091907-8355631969d4", false},
+		{"v0.24.0-rc.1-2-g8355631", "v0.24.0-rc.1.0.20261030091907-8355631969d4", true},
+		{"v0.23.4-1-g8355631", "v0.23.4", false},
+		{"v0.23.4", "v0.23.5-0.20261030091907-8355631969d4", false},
+	} {
+		if got := sameNicely(c.commit, c.pinned); got != c.want {
+			t.Errorf("sameNicely(%q, %q) = %v, want %v", c.commit, c.pinned, got, c.want)
+		}
+	}
+}

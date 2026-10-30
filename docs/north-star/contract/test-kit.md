@@ -76,7 +76,7 @@ Select inputs and possible outputs with `protect` before each refusal group.
 - A failed report on stdout is checked as one complete object, including its envelope and declared result fields
 - Each line of Failures and of Acceptance in `spec.md` starts with its own spec ID, and a test claims each ID, as [Spec IDs](#spec-ids) says. Each claim names an ID of `spec.md`
 - The skill names no `ncly <root>` command that the manifest lacks. Core's commands and commands outside that root stay free to mention, including sibling extensions
-- When the repository holds `.copier-answers.yml`, its `_commit`, the Nicely version of the template, equals the one in `go.mod`. The failure says to run `just update <version>`
+- When the repository holds `.copier-answers.yml`, its `_commit`, the Nicely version of the template, equals the one in `go.mod`. For a development build, both name one commit. The failure says to run `just update <version>`
 
 The skill check matches literal `ncly <root> ...` text and parses no shell or Markdown.
 Each failure names the file, the missing link, and its fix.
