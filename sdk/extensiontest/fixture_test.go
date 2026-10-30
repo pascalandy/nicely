@@ -40,7 +40,7 @@ func goTest(t *testing.T, fixture, path string, edits ...edit) (string, error) {
 			t.Fatal(err)
 		}
 	}
-	return command(dir, path, "go", "test", "-count=1", "./...")
+	return command(dir, path, "go", "test", "-count=1", "-v", "./...")
 }
 
 // command runs a program in dir with path as PATH, and returns its output.

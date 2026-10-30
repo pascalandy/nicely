@@ -141,7 +141,10 @@ func TestEachCheckFailsAndNamesItsFix(t *testing.T) {
 			name:    "a host answer must match the root schema",
 			fixture: "standalone-named",
 			edits:   []edit{{"manifest.toml", `file = { type = "string" }`, `file = { type = "integer" }`}},
-			want:    []string{"`ncly video convert clip.mov --json`: the answer on stdout breaks the schema that manifest.toml declares for `ncly video convert`"},
+			want: []string{
+				"`ncly video convert clip.mov --json`: the answer on stdout breaks the schema that manifest.toml declares for `ncly video convert`",
+				"manifest.toml: example `ncly video convert clip.mov --json`: the answer on stdout breaks the schema",
+			},
 		},
 		{
 			name:    "a direct foreground exec cannot skip the answer check",

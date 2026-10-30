@@ -91,6 +91,24 @@ Nicely's runner registers these checks for `agent` and `transcript`, for success
 Its `exits` command checks successful and failed calls, including `exits 0` for successes.
 `Coverage.ScenarioCommands` takes the registered host's absolute path and supplies `signal`, `survives`, `protect`, and `refuses` to other scenario runners.
 
+## Manifest examples
+
+The kit runs every manifest example in its own scratch configuration, before the scenarios.
+It adds `--dry-run` when the example's command supports that mode, including examples declared on a parent command.
+Without that mode, it runs only commands whose `effects` explicitly declare `paid = false`.
+A missing effects declaration permits no assumption.
+Each skipped example prints its reason, including commands outside the extension's manifest.
+
+Examples run as argument lists, without a shell, with single quotes, double quotes, and backslash escapes supported.
+The kit forces JSON and non-interactive mode, checks each answer through `Coverage.Observe`, and requires exit 0.
+Neither an example nor its setup calls can replace a scenario for command coverage.
+
+An optional `testdata/examples.txtar` supplies setup commands and input files for every example.
+Its setup uses the scenario commands, including `fake` and `grant`, with the same fake programs and sentinel keys.
+Fixtures supply files such as `notes.md` and `task.md`, but cannot supply missing arguments or flags.
+Each example gets a fresh copy, so a previous example cannot affect its result.
+Other runners call `Coverage.RunExamples` with that fixture and their scenario setup.
+
 ## Spec IDs
 
 The kit reads each part of `spec.md` named `Failures` or `Acceptance`. A part starts at a heading, or at a line that starts with a bold label, such as `**Failures.**`. It ends at the next one. Each row of a table and each bullet of these parts is one promise, and starts with its spec ID in backticks:

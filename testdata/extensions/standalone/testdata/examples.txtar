@@ -1,0 +1,6 @@
+# Use the same fake tally-tool and sentinel grant as the scenarios.
+fake tally-tool
+grant example
+
+-- bin/tally-tool.fake --
+stdout 3

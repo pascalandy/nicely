@@ -5,12 +5,12 @@ domain = "agent"
 [[commands]]
 path = "agent"
 summary = "agent.summary"
-examples = ["ncly agent run \"Review this branch\" --tools --dry-run", "ncly doctor agent"]
+examples = ["ncly agent run \"Review this branch\" --tools --model MODEL_ID --dry-run", "ncly doctor agent"]
 
 [[commands]]
 path = "agent run"
 summary = "agent.run.summary"
-examples = ["ncly agent run \"Review this branch\" --tools --effort high --dry-run", "ncly agent run --task-file task.md --tools --run-id review-1 --json"]
+examples = ["ncly agent run \"Review this branch\" --tools --model MODEL_ID --effort high --dry-run", "ncly agent run --task-file task.md --tools --model MODEL_ID --run-id review-1 --json"]
 effects = { user_writes = true, network = true, paid = true }
 modes = { dry_run = true, recorded = true }
 config = ["agent.model", "agent.effort", "agent.max_depth"]

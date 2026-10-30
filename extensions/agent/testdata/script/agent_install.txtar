@@ -24,7 +24,7 @@ exec ncly --help
 stdout '^  agent:  Run trusted tasks through Codex$'
 exec ncly agent --help
 stdout '^COMMANDS\n  run:  Run one trusted task through Codex$'
-stdout '^  \$ ncly agent run "Review this branch" --tools --dry-run$'
+stdout '^  \$ ncly agent run "Review this branch" --tools --model MODEL_ID --dry-run$'
 exec ncly agent run --help
 stdout '^  ncly agent run \[task\] \[flags\]$'
 stdout '^      --timeout <duration>  Stop the call and Codex after this duration, 5m by default$'

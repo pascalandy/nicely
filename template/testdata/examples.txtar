@@ -1,0 +1,10 @@
+# Use the scenarios' Python wrapper with the manifest's sample input.
+chmod 755 bin/python3
+
+-- notes.md --
+# Notes
+First line
+Last line
+-- bin/python3 --
+#!/bin/sh
+exec /usr/bin/python3 "$@"

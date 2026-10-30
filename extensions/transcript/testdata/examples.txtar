@@ -1,0 +1,11 @@
+# Use the scenarios' offline engine transport and program wrappers.
+chmod 755 bin/uv
+chmod 755 bin/python3
+onlyncly transcript-external
+
+-- bin/uv --
+#!/bin/sh
+exec "$UV" "$@"
+-- bin/python3 --
+#!/bin/sh
+exec "$PYTHON3" "$@"

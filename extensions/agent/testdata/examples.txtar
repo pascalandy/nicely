@@ -1,0 +1,15 @@
+# The version probe uses the scenarios' Codex fake. Every task invocation fails.
+# No model setting hides a missing --model in an example.
+chmod 755 bin/codex
+onlyncly agent-external
+
+-- task.md --
+Review this branch
+-- bin/codex --
+#!/bin/sh
+if [ "$1" = --version ]; then
+  echo 'codex-cli 0.163.0'
+  exit 0
+fi
+echo 'An example must not start a Codex task' >&2
+exit 1

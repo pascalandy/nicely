@@ -11,6 +11,7 @@ examples = ["ncly standalone tally --json", "ncly standalone fetch --json"]
 path = "standalone tally"
 summary = "standalone.tally.summary"
 examples = ["ncly standalone tally", "ncly standalone tally --json"]
+effects = {}
 requires = { bins = ["tally-tool"] }
 
 [commands.result.schema]

@@ -1,9 +1,10 @@
 // Package extensiontest is the test kit of an extension repository, as Test
 // kit in contract.md defines. One test of the repository calls Run. Run
 // checks the links between the manifest, the skill, the scenarios, the
-// spec, and the Nicely versions. It then installs the real ncly-<slug> and
-// the ncly of go tool ncly in scratch folders, and runs the scenarios of
-// testdata/script/. Coverage requires a checked JSON answer or a completed success with a declared text result.
+// spec, and the Nicely versions. It installs the real ncly-<slug> and
+// the ncly of go tool ncly in scratch folders.
+// It runs manifest examples there, then the scenarios of testdata/script/.
+// Coverage requires a checked JSON answer or a completed success with a declared text result.
 //
 // A scenario runs the extension through the commands that the kit adds, so
 // that the kit checks each answer against the schema of its command:
@@ -72,6 +73,13 @@ func Run(t *testing.T, e extension.Extension) {
 		t.Error(problem)
 	}
 	k.build(t)
+	examples := *k
+	examples.Coverage = k.fresh()
+	examples.RunExamples(t, filepath.Join(k.root, "testdata", "examples.txtar"), testscript.Params{
+		RequireUniqueNames: true,
+		Setup:              examples.setup,
+		Cmds:               examples.commands(),
+	})
 	// testscript starts parallel subtests. Cleanup runs after all scenarios finish.
 	t.Cleanup(func() {
 		for _, problem := range k.Missing() {

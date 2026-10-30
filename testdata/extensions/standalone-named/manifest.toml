@@ -7,6 +7,7 @@ name = "convert"
 path = "video convert"
 summary = "video-convert.summary"
 examples = ["ncly video convert clip.mov --json"]
+effects = {}
 requires = { keys = ["example"] }
 
 [[commands.args]]
