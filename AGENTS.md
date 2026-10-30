@@ -29,6 +29,7 @@ Run `lefthook install` once per clone.
 | How is a release made? | [release-nicely](.agents/skills/release-nicely/SKILL.md) | Your merge ships an item or fixes a released behavior | The release steps change |
 | Accept a UAT? | [docs/qa/](docs/qa/README.md) | A UAT is assigned | A UAT ends |
 | Where does a new rule go? | The file whose question it answers | Before you write a rule | Never in this file |
+| Where does a new check go? | [D067](docs/north-star/decisions/D067-share-verification-rules.md) | Before you add a check | The placement rule changes |
 
 ## Work on a card
 

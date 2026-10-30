@@ -23,7 +23,7 @@ Each check fails first on one named past mistake.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| COR-103-T1 | Video-convert error cases and still images | agent | - | todo |
+| COR-103-T1 | Video-convert error cases and still images | agent | - | done |
 | COR-103-T2 | Declared codes with scopes | agent | - | done |
 | COR-103-T3 | Count executed calls | agent | - | done |
 | COR-103-T4 | Run manifest examples | agent | COR-103-T3 | done |
@@ -35,7 +35,7 @@ Each check fails first on one named past mistake.
 | COR-103-T10 | Release with a receipt | agent | COR-103-T7, COR-103-T9 | done |
 | COR-103-T11 | macOS job in the template | agent | - | done |
 | COR-103-T12 | Author path from the published tag | agent | - | done |
-| COR-103-T13 | Rules and prose | agent | COR-103-T4, COR-103-T5, COR-103-T6, COR-103-T8, COR-103-T10, COR-103-T11, COR-103-T12 | todo |
+| COR-103-T13 | Rules and prose | agent | COR-103-T4, COR-103-T5, COR-103-T6, COR-103-T8, COR-103-T10, COR-103-T11, COR-103-T12 | done |
 | COR-103-T14 | Video-convert rollout | agent | COR-103-T1, COR-103-T13 | todo |
 | COR-103-T15 | Video-convert publication model | agent | COR-103-T14 | todo |
 

@@ -26,8 +26,8 @@ Fill: one sentence that a user would say, without a command, a flag, or a hint.
 | Result | `wc -c` gives the `size_bytes` of the answer | `just acceptance` |
 | Fidelity | The answer keeps the properties that [spec.md](spec.md#acceptance) names in `## Acceptance` | `just acceptance`, which claims the spec ID of each property |
 | Determinism | Runs on one host give the same answer | `just acceptance`, which runs the command twice |
-| Errors | Each line of Failures and each refusal of `## Acceptance` in [spec.md](spec.md) gives its code | The test that claims its spec ID, which the test kit requires. The replay of [Error cases](#error-cases) on the host |
-| Uninstall | The steps of [Uninstall](#uninstall) | `just acceptance`, on its scratch install |
+| Errors | The failures and refusals of [spec.md](spec.md) | [Error scenarios](#error-cases), through `just check` |
+| Uninstall | The installed extension no longer appears in describe | The release receipt |
 
 Fill: for each family, what a tool other than the extension measures on the output.
 
@@ -35,27 +35,22 @@ Fill: in Covered by, the test that proves the criterion. When no test can, write
 
 ## Error cases
 
-Run each case as a run, and as a dry run when the command has one. A dry run gives the code of the run for each case of the shared preparation. The line of [spec.md](spec.md) that the spec ID names holds the expected code. `exit-codes.md` of the contract, in the folder that `just contract` prints, gives the exit code of each code.
+The scenarios own error stimuli and expected answers:
 
-| Case | spec.md | Expected, in addition to the code |
-|---|---|---|
-| A missing path, a symbolic link to one, or `--timeout soon` | `bad-input` | The message names the path or the value |
-| A symbolic link to the input | None | The answer for the file that the link names |
-| A `--timeout` that expires, such as `1s` on a long run | `worker-fails` | The wrapped program stops |
-| Ctrl-C during the run | `interrupted` | The wrapped program stops |
-| SIGTERM during the run | `terminated` | The wrapped program stops |
-| An image, such as a PNG | `not-text` | The message names the file |
+- [inspect.txtar](testdata/script/inspect.txtar) covers command failures and signals
+- [refusal.txtar](testdata/script/refusal.txtar) covers the refusal from `## Acceptance`
 
-Fill: for a command that writes, the cases of its output, such as an existing output without `--force`, and a read-only output folder. After each case, the output does not change.
+Fill: replace these links with the scenarios of your commands.
 
-Fill: a row for each refusal of `## Acceptance` in [spec.md](spec.md#acceptance).
+## Human items
 
-## Uninstall
+- The human gives the verdict, records reservations, and closes the UAT
+- The human decides the domain's accepted inputs, names, and limits
+- The human checks perception on a real screen when the changed behavior needs that check
+- The human handles permission prompts, secrets, grants, and fixture locks
+- The human sets Economy budgets; the release receipt holds the measurements
 
-1. After the last run, run `just uninstall` in the clone.
-2. Run `ncly describe {{ root }} --json`. It answers `NOT_FOUND`, exit 2.
-
-Removal keeps the keys and the grants, as [Release and install](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md#release-and-install) says.
+Fill: name each screen or permission prompt that this extension needs.
 
 ## Known limits
 

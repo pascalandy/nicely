@@ -43,6 +43,14 @@ fct_repository() {
 	fct_revision v0.0.1
 	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${slug}" "$@" "${src}" "${repo}"
 
+	# The reading order must send an author to the real-input acceptance criteria.
+	awk '
+		/^## Read, in this order$/ { reading = 1; next }
+		reading && /^## / { reading = 0 }
+		reading && /^[0-9]+\. / && /## Acceptance/ { found = 1 }
+		END { exit !found }
+	' "${repo}/AGENTS.md" || fct_fail 'AGENTS.md reading order must name ## Acceptance'
+
 	# The author's go.mod points at this checkout, so the rendered repository tests the SDK and ncly of this change.
 	go -C "${repo}" mod edit -replace "github.com/pascalandy/nicely=${root}"
 	# The rendered go.mod repeats the replace of Lip Gloss of Nicely's go.mod, or drops it with Nicely's.

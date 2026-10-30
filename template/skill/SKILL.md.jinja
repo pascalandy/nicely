@@ -12,4 +12,4 @@ Use `ncly {{ example_command }}` to learn the size and the line count of one fil
 - Inspect each file of a folder in its own call
 - On `PREREQ_MISSING`, relay `hint` to the human, who installs Python 3.9 or later
 - On `{{ slug | upper | replace("-", "_") }}_NOT_TEXT`, the file is no text, such as an image: do not count its lines
-- On failure, stdout is empty and the error object ends stderr. Read the code there
+- With `--json`, a command failure leaves stdout empty. Read the error object from the last line of stderr

@@ -48,7 +48,16 @@ A card that changes the steps or the end state of a feature updates its file fir
 just verify cleanup "$run"
 ```
 
-`cleanup` removes `$run/scratch/` and `$run/build/`, and keeps `$run/evidence/`. It refuses a folder that `start` did not create. When the run prepared the `auth` feature, it first logs the fake key out of the real keychain with `ncly auth logout`, then checks with `ncly auth status` that the keychain answers without the key, with `AUTH_MISSING`, both in `$run/evidence/cleanup.txt`. Its stderr says `logged the fake key of verifynicely out of the keychain` only when the logout removed a key, and `found no fake key` otherwise. When the key may remain, it keeps the scratch folder and exits 1, so a second cleanup can try again. Run it after a failed run too, so no scratch folder and no fake key stay. Done when it lists the evidence files and `$run/scratch` is gone.
+`cleanup` makes scratch and build files writable, including Go's module cache, before removal.
+It keeps `$run/evidence/` and refuses a folder that `start` did not create.
+When the run prepared `auth`, cleanup first removes its fake key and checks that the keychain reports `AUTH_MISSING`.
+Both calls remain in `$run/evidence/cleanup.txt`.
+Its stderr says `logged the fake key of verifynicely out of the keychain` only after removal.
+Otherwise, stderr says `found no fake key`.
+When the key may remain, cleanup keeps scratch and exits 1.
+Run cleanup again once the keychain answers.
+Run cleanup after a failed drive too.
+Done when cleanup lists the evidence files and both `$run/scratch` and `$run/build` are gone.
 
 ```bash
 just verify prune --keep 5

@@ -9,26 +9,65 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 ## Read, in this order
 
 1. `vision.md`: the job of the extension, what it wraps, and what it refuses
-2. `spec.md`: what proves the success of each command, why each effect exists, and its failures
+2. `spec.md`, including `## Acceptance`: each command's success criteria, effects, and failures
 3. `qa.md`: how a user accepts the extension, with the UAT protocol of Nicely
 4. `manifest.toml`: the machine facts of each command, which `ncly describe {{ root }} --json` shows once the extension is installed
 5. The contract, at the Nicely version that `go.mod` pins. `just contract` prints its folder. Start with "What a great extension does" in its `extensions.md`, and open only the parts that it links
 
 ## Change a command
 
-1. `spec.md`: its section, titled `## ncly <path>`, at the extension root or beneath it. Start each line of its Failures, and of `## Acceptance`, with a spec ID, as "Spec IDs" in `test-kit.md` of the contract says
-2. `manifest.toml`: its declaration, with its effects, programs, keys, and result schema
-3. `locales/en.toml`: its text, each entry with a description
-4. Add a placeholder handler that compiles, and register it in `extension.go`
-5. `testdata/script/`: its scenarios, which fail for the missing behavior. `test-kit.md` in the contract lists their commands. Use `protect` and `refuses` to pair each preparation refusal in a dry run and a run. Use `signal INT|TERM <marker> <command>...` for signal outcomes. Use `survives` for files that must remain after a signal. Claim each spec ID with a line `# spec: <id>` above its commands. `refusal.txtar` models a refusal of `## Acceptance`
-6. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more
-7. `skill/SKILL.md`: when to use the command, and when not to. For a command with a dry run, tell the agent to dry-run the call first
+1. Write the command's spec before its implementation.
+2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.
+3. Write a scenario that fails for the missing behavior.
+4. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more.
+5. Teach when to use the command in `skill/SKILL.md`.
 
-`extension.Check` must pass before a scenario can fail for the missing behavior. Steps 1 through 4 prepare that check.
+Give each command one bounded job beneath the extension root.
+Never relay arbitrary arguments to a wrapped program.
+The skill teaches when to use the command, rather than its implementation.
+For a command with a dry run, tell the agent to dry-run the call first.
+
+In `acceptance.sh`, judge the result with a tool other than the extension.
+Use the real input and criteria of `## Acceptance`.
+For a paid command, run only its dry run.
 
 A wrapped script goes in `worker/`. To take in a script, or to review the extension when the user asks, use the skill in `.agents/skills/nicely-extension/`.
 
 `sdk/wrap` keeps 1 MB of stdout, and answers `RUNTIME` once a program writes more. A program that prints its progress on stdout, such as an encoder, can pass that limit in a long run. When the decoder reads no stdout, set `DiscardStdout: true` in `wrap.Program`. When it reads stdout, set an `OutputLimit` that the longest run cannot pass. Prove it with a scenario whose stub prints more than 1 MB on stdout, then exits 0.
+
+## Rule index
+
+The linked checks enforce these rules.
+The paragraphs above state the rules marked "Prose only".
+`test-kit.md` in the pinned contract gives scenario syntax and spec IDs.
+
+| Rule | Enforced by |
+|---|---|
+| Each running command executes in a scenario | [Kit executed calls][calls] |
+| Call only through `ncly`, `ncly-{{ slug }}`, `exits`, `signal`, or `refuses` | [Kit call forms][links] |
+| Each manifest example runs | [Kit examples][examples] |
+| Declare each own error and warning code, with its commands and modes | [`extension.Check`][declarations] |
+| Observe each declared code in its scope, or supply an `untested` reason with an issue | [Kit code coverage][codes] |
+| A dry run and run refuse the same preparation failure on the same input | [Kit `refuses`][refuses] |
+| A signal case checks the exit, answer, and surviving files | [Kit `signal`][signal] |
+| Template and SDK versions move together through `just update` | [Kit version link][links] |
+| The skill names only declared commands | [Kit skill links][links] |
+| Sign off through `just signoff` and release through `just release vX.Y.Z` | [Signoff receipt][signoff], [release receipt][release] |
+| A copied recipe holds no script | [Core template test][template-test] |
+| `acceptance.sh` judges with another tool | Prose only; [release runs acceptance][release] |
+| One bounded job, no arbitrary argument relay; the skill teaches when | Prose only |
+| Spec first; a scenario fails before the handler body exists | Prose only |
+
+[calls]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/calls.go
+[links]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/links.go
+[examples]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/examples.go
+[declarations]: https://github.com/pascalandy/nicely/blob/main/sdk/extension/extension.go
+[codes]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/codes.go
+[refuses]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/paired.go
+[signal]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/signal.go
+[signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
+[release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
+[template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh
 
 ## Remove the example
 
@@ -72,13 +111,10 @@ This finishes dependency updates and runs `just check`.
 
 ## Done when
 
-`just check` passes, and `just acceptance` passes on the real input of `## Acceptance`. For a paid command, its dry run is enough. For a command that needs a key, relay the grant hint to the human and wait.
+`just check` and `just acceptance` pass.
+For a command that needs a key, relay the grant hint to the human and wait.
 
 ## Release
-
-A user installs a fixed version from its tag, with the commands of `README.md`.
-A release is one Git tag `vX.Y.Z` of Semantic Versioning, such as `v0.1.0`.
-"Release and install" in the contract's `extensions.md` holds these rules.
 
 1. Commit every change
 2. Push that commit to a review branch
@@ -88,7 +124,4 @@ A release is one Git tag `vX.Y.Z` of Semantic Versioning, such as `v0.1.0`.
 6. Run `just release vX.Y.Z`, with an optional fixture path
 7. Read the printed receipt for acceptance, the published install, Economy reservations, hosted checks, and uninstall
 
-`just release` requires the successful signoff receipt for the pushed SHA.
-It runs acceptance, pushes an annotated tag with that receipt, and executes the README install block in scratch folders.
-It requires the tagged SHA and proves uninstall with `NOT_FOUND`.
-A failed published install keeps the tag. Read the receipt before choosing a new version.
+For release recovery, read "Release and install" in the pinned contract's `extensions.md`.

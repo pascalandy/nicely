@@ -30,9 +30,7 @@ Write each fact that nobody can give as an open question in `spec.md`.
 
 ## Choice of operations
 
-- Give each command one bounded operation beneath the extension root. Never relay arbitrary arguments to the script
 - A named root can take arguments and run, such as `ncly video convert <file>`
-- Give a script that does several jobs one command per job, and only for the jobs that the user needs
 - Put the script in `worker/` when the extension can embed it. `Call.Worker` gives its path, and `sdk/wrap` runs it
 - Use `sdk/wrap` for one program per call. Use `sdk/runner` for several programs, or for a timeout that can exit 75 safely
 - Declare each effect, program, and key in `manifest.toml`. When you cannot tell whether an effect occurs, declare it
@@ -50,10 +48,15 @@ Write each fact that nobody can give as an open question in `spec.md`.
 
 ## Verification
 
-1. Follow "Change a command" in `AGENTS.md`. Give each line of Failures and of Acceptance in the command's spec a spec ID, and a test that claims it
-2. Run `just check`. Its test kit installs the extension into scratch folders and runs the scenarios
-3. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. Then run `just acceptance` with the real input. For a paid command, run only its dry run
-4. For a command that needs a key, relay the grant hint to the human and wait. Never grant a key yourself
+1. Follow "Change a command" and the rule index in `AGENTS.md`.
+2. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`.
+3. For a paid command, limit `acceptance.sh` to the dry run.
+4. Run `just check` until every check passes.
+5. For a command that needs a key, relay the grant hint to the human and wait.
+6. Run `just acceptance` on the real input until its independent checks pass.
+
+For a command that replaces a user file or replays paid work, run `create-formal-verification-skill`.
+Use ncly-video-convert's publication verification skill as the example.
 
 ## Readiness review
 

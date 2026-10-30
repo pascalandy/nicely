@@ -1,6 +1,8 @@
 # agent
 
-`agent` is the first-party extension that runs one trusted task through Codex. A user installs it from a checkout with `just install`, which puts `ncly` in `~/.local/bin/` and `ncly-agent` with its manifest, catalogs, and skill in the `extensions` folder of Nicely's data folder. The user then finds `agent` in `ncly --help`, reads its skill, checks Codex with `ncly doctor agent`, checks a task with `ncly agent run --tools --dry-run`, which shows the invocation of Codex and starts no task, then runs it, and finds its record and its answer in the state folder. This feature never starts a real Codex: `just verify prepare "$run" agent` puts a counted stub `codex` first in the wrapper's `PATH`, which answers every task with `OK from the stub`.
+`agent` runs one trusted task through Codex and saves its record and answer.
+This recipe installs the extension in the scratch home.
+The recipe uses a counted Codex stub that answers `OK from the stub`, without a real task or paid request.
 
 ## Sub-features
 
@@ -46,6 +48,7 @@ In `just verify step "$run" agent <args>`, `agent` names this feature, and `<arg
 - **Dry run as text.** Run `just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --dry-run`. Exit 0. stdout starts with `Would run Codex 0.163.0 with this command, and give it the task on its input:`, then the invocation on one line, then `model: test-model`, `effort: medium`, `folder:` and the folder of the checkout, `environment: NCLY_AGENT_DEPTH=1`, and `pending  agent.login`.
 - **No record.** Run `ls "$run/scratch/home/.local/state/nicely/runs"`. It fails, because a dry run records nothing. Report its output beside the quote.
 - **Without --tools.** Run `just verify step "$run" agent agent run 'Review this branch' --model test-model --dry-run --json`. Exit 78, stdout is empty, and stderr holds the code `CAPABILITY_UNSUPPORTED` and the message `Codex cannot run a task with its tools turned off.`
+- **Without --model.** Run `just verify step "$run" agent agent run 'Review this branch' --tools --dry-run --json`. Exit 2, stdout is empty, and stderr's final JSON object has `USAGE_INVALID`. This call adds no line to `evidence/codex-calls.txt`.
 - **Depth limit.** Run `NCLY_AGENT_DEPTH=2 just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --dry-run --json`. Exit 2, stdout is empty, and stderr holds the code `AGENT_DEPTH_LIMIT` and the message `This call already runs inside 2 agents, and max_depth in [agent] allows 2.` This call adds no line to `evidence/codex-calls.txt`.
 - **One level deeper.** Run `NCLY_AGENT_DEPTH=1 just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --dry-run --json`. Exit 0, and `environment` is `{"NCLY_AGENT_DEPTH":"2"}`.
 - **Run.** Run `just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --run-id verify-run --json`. Exit 0, and stdout is one answer with `"answer":"OK from the stub"`, `"harness":"codex"`, `"model":"test-model"`, `"run_id":"verify-run"`, and `duration_ms`.
@@ -55,7 +58,7 @@ In `just verify step "$run" agent <args>`, `agent` names this feature, and `<arg
 - **Timeout.** Run `CODEX_STUB_WAIT=30 just verify step "$run" agent agent run 'Review this branch' --tools --model test-model --run-id verify-timeout --timeout 2s --json`. Exit 1 after about 2 seconds, stdout is empty, and stderr holds the code `RUNTIME`, `"run_id":"verify-timeout"`, the message `Codex did not finish within 2s for verify-timeout, so its result is unknown.`, and the hint `ncly run view verify-timeout`.
 - **Stopped run.** Run `just verify step "$run" agent run view verify-timeout --json`. Exit 0, the run has `"status":"unknown"` and `"active":false`, and its step `codex` has `"status":"unknown"`, `"finished_at":null`, no artifact, and the error `RUNTIME` of Timeout.
 - **No second task.** Run the call of Timeout again, without `CODEX_STUB_WAIT`. Exit 1, and stderr holds the code `RESUME_UNSAFE` and `"run_id":"verify-timeout"`, because Codex may have done paid work.
-- **Calls.** After the cleanup, run `just verify quote "$run" codex-calls`, then `just verify quote "$run" codex-task`. In `codex-calls.txt`, each line is `codex --version`, one per `ncly doctor agent` call and one per `ncly agent run` call before Run other than Without --tools and Depth limit, which stop before the probe, then one probe and one `codex exec` line for Run, nothing for Same ID and Reuse, one probe and one `codex exec` line for Timeout, and nothing for No second task. `codex-task.txt` holds those two lines, which end with `--output-last-message`, a file of the run's temporary folder, and `-`, and `evidence/codex-input.txt` holds `Review this branch` twice.
+- **Calls.** After cleanup, run `just verify quote "$run" codex-calls`, then `just verify quote "$run" codex-task`. Each doctor call adds one version probe. Before Run, each `agent run` adds one probe except Without --tools, Without --model, and Depth limit. Run and Timeout each add one probe and one task. Same ID, Reuse, and No second task add nothing. The two task lines end with `--output-last-message`, the temporary answer path, and `-`. `evidence/codex-input.txt` holds `Review this branch` twice.
 
 ## Gotchas
 

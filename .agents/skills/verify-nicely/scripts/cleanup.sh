@@ -39,7 +39,7 @@ logout_fake_key() {
 }
 
 cleanup() {
-	local run
+	local run folder
 	run="$(run_folder "${1:-}")"
 	# The auth feature leaves its fake key in the real keychain, after a failed
 	# run too. The scratch folder stays until the key is gone, so that a later
@@ -47,6 +47,10 @@ cleanup() {
 	if [[ -f "$run/auth-prepared" && -d "$run/scratch" ]]; then
 		logout_fake_key "$run" || die "kept the scratch folder of $run: run cleanup again once the keychain answers"
 	fi
+	# Go can put read-only module folders under the scratch home.
+	for folder in "$run/scratch" "$run/build"; do
+		if [[ -d "$folder" ]]; then chmod -R u+w "$folder"; fi
+	done
 	rm -rf "$run/scratch" "$run/build"
 	[[ ! -e "$run/scratch" && ! -e "$run/build" ]] || die "could not remove the scratch folder of $run"
 	log "removed the scratch folder; the evidence stays in $run/evidence"
