@@ -106,7 +106,7 @@ fct_main() {
 	done
 	export PATH="${tool_path}/usr/bin:/bin:/usr/sbin:/sbin"
 	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
-	unset JUST_JUSTFILE JUST_WORKING_DIRECTORY JUST_UNSTABLE NCLY_JSON
+	unset JUST_JUSTFILE JUST_WORKING_DIRECTORY JUST_UNSTABLE NCLY_JSON NCLY_CONFIG
 	export GOWORK=off GOFLAGS='' GOENV=off GOPROXY=https://proxy.golang.org GONOPROXY=none NCLY_NO_INPUT=1
 	scratch="$(mktemp -d "${TMPDIR:-/tmp}/ncly-author-path.XXXXXXXX")"
 	printf 'author-path: evidence %s\n' "${scratch}"
