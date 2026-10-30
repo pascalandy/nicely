@@ -105,7 +105,7 @@ Post the report as a comment of the issue, in this order:
 
 Only Pascal closes the issue.
 
-Collect declared-code reservations from `go test -count=1 -v ./...` in the extension repository at the tested commit.
+Collect declared-code reservations from plain `just check` in the extension repository at the tested commit.
 Keep the kit's `untested` lines with the UAT evidence.
 Copy every line into Reservations, even when all scenarios pass.
 Write `No declared-code reservations` when the kit lists none.

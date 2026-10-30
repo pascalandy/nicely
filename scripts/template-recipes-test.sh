@@ -21,11 +21,17 @@ fct_test_files() {
 	done
 }
 
-# fct_test_example_notices requires skip reasons from plain just check in the rendered repository $1.
+# fct_test_example_notices requires notices from plain just check in the rendered repository $1, whose slug is $3.
 fct_test_example_notices() {
 	local repo="${1}" scratch="${2}" status=0 line examples
 	local skipped='skipped: command is outside this manifest, so its paid effects are unknown'
+	local code reason='Requires a controlled runtime; https://example.com/issues/1'
+	code="$(printf '%s_WARNING' "${3}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
 	cp "${repo}/manifest.toml" "${scratch}/examples-manifest.toml"
+	{
+		printf 'warnings = [{ code = "%s", untested = "%s" }]\n' "${code}" "${reason}"
+		cat "${scratch}/examples-manifest.toml"
+	} >"${repo}/manifest.toml"
 	# The template's command offers a dry run, so an example of a core command gives the skip.
 	examples="$(grep -m1 '^examples = \[' "${repo}/manifest.toml")"
 	fct_edit "${repo}/manifest.toml" "${examples}" "${examples%]}, \"ncly describe\"]"
@@ -35,6 +41,10 @@ fct_test_example_notices() {
 	fi
 	cat "${scratch}/examples-check.out"
 	cat "${scratch}/examples-check.err" >&2
+	if ! grep -qF "warning ${code} untested" "${scratch}/examples-check.err" ||
+		! grep -qF "${reason}" "${scratch}/examples-check.err"; then
+		fct_fail 'plain just check hides the declared-code reservation on stderr'
+	fi
 	if ! (cd "${repo}" && go run ./internal/export test -json) >"${scratch}/examples-test.jsonl" 2>"${scratch}/examples-test.err"; then
 		cat "${scratch}/examples-test.err" >&2
 		fct_fail 'the JSON test wrapper fails'

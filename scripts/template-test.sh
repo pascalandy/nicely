@@ -101,7 +101,7 @@ fct_repository() {
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
-	fct_test_example_notices "${repo}" "${scratch}"
+	fct_test_example_notices "${repo}" "${scratch}" "${slug}"
 	export XDG_CONFIG_HOME="${scratch}/config" XDG_STATE_HOME="${scratch}/state" XDG_DATA_HOME="${data}" NCLY_NO_INPUT=1
 	(cd "${repo}" && just install)
 	for file in "ncly-${slug}" "ncly-${slug}.toml" "ncly-${slug}.locales/en.toml" "ncly-${slug}.skill/SKILL.md"; do

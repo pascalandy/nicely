@@ -112,8 +112,8 @@ The check leaves runtime prefix admission unchanged.
 
 An `untested` declaration defers its code coverage and gives a reason with an issue URL.
 The reviewer approves each deferral.
-After all scenarios finish, the kit logs each deferral as a reservation, including its declaration position and reason.
-Run `go test -count=1 -v ./...` to collect these lines for the [UAT report](../../qa/protocol.md#report).
+After all scenarios finish, the kit prints each deferral through `extensionrepo.Notice`, including its declaration position and reason.
+The template's plain `just check` prints these reservations for the [UAT report](../../qa/protocol.md#report).
 Other runners use `Coverage.Reservations` after their scenarios.
 Each missing observation names its declaration position, kind, code, command, mode, and fix.
 
