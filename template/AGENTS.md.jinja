@@ -40,45 +40,7 @@ A wrapped script goes in `worker/`.
 
 ## Rule index
 
-The linked checks enforce these rules.
-The paragraphs above state the rules marked "Prose only".
-`test-kit.md` in the pinned contract gives scenario syntax and spec IDs.
-
-| Rule | Enforced by |
-|---|---|
-| Each running command executes in a scenario | [Kit executed calls][calls] |
-| Call only through `ncly`, `ncly-{{ slug }}`, `exits`, `signal`, or `refuses` | [Kit call forms][links] |
-| Each manifest example runs | [Kit examples][examples] |
-| Declare each own error and warning code, with its commands and modes | [`extension.Check`][declarations] |
-| Observe each declared code in its scope, or supply an `untested` reason with an issue | [Kit code coverage][codes] |
-| A dry run and run refuse the same preparation failure on the same input | [Kit `refuses`][refuses] |
-| A signal case checks the exit, answer, and surviving files | [Kit `signal`][signal] |
-| Template and SDK versions move together through `just update` | [Kit version link][links] |
-| The skill names only declared commands | [Kit skill links][links] |
-| Sign off through `just signoff` and release through `just release vX.Y.Z` | [Signoff receipt][signoff], [release receipt][release] |
-| A copied recipe holds no script | [Core template test][template-test] |
-| `acceptance.sh` judges with another tool | Prose only; [release runs acceptance][release] |
-| A test claims each line of Failures and Acceptance in `spec.md` | [Kit spec IDs][spec] |
-| One bounded job, no arbitrary argument relay; the skill teaches when | Prose only |
-| Spec first; a scenario fails before the handler body exists | Prose only |
-| Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
-| The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
-| Each round ends with an independent review and the readiness review | Prose only |
-| At the exit, filled forms, no open line, accepted limits, and a passing readiness verdict for this commit, by a named reviewer, from its findings | [Finish gate][finish] |
-| Stop at "Done when" or after 5 rounds, and deliver only after that | Prose only |
-
-[calls]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/calls.go
-[links]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/links.go
-[examples]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/examples.go
-[declarations]: https://github.com/pascalandy/nicely/blob/main/sdk/extension/extension.go
-[codes]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/codes.go
-[refuses]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/paired.go
-[signal]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/signal.go
-[spec]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/spec.go
-[finish]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/finish.go
-[signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
-[release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
-[template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh
+`AGENTS/rule-index.md` names the check that enforces each rule of this file.
 
 ## Remove the example
 

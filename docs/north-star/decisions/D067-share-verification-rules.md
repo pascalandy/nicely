@@ -30,7 +30,7 @@ Human UAT holds authority, perception, and consent.
 - For each release, pass the [published-tag author path](../../../.agents/skills/release-nicely/scripts/author-path.sh)
 - Before a UAT closes, turn each finding into a scenario, an acceptance check, or a known limit
 - Fix each failure at the highest shared owner that can prevent it
-- Add the correction's rule and enforcer to the [template rule index](../../../template/AGENTS.md.jinja#rule-index)
+- Add the correction's rule and enforcer to the [template rule index](../../../template/AGENTS/rule-index.md.jinja)
 
 The template index owns the extension rules.
 Reviewers approve each `untested` reason and its linked issue before merge.

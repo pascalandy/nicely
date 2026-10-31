@@ -16,6 +16,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `qa.md` | How a user accepts the extension: what its UAT adds to the UAT protocol of Nicely, with its error cases and its removal. Each criterion names the test that covers it, or why none can |
 | `acceptance.sh` | The run of the command on the real input of `## Acceptance`, which checks each property and each refusal that it lists |
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
+| `AGENTS/rule-index.md` | The check that enforces each rule of `AGENTS.md` |
 | `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
 | `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
