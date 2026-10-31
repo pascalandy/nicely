@@ -45,6 +45,7 @@ Each part is one file, in reading order.
     - [Wrapped programs](contract/wrap.md)
     - [Test kit](contract/test-kit.md)
       - [Manifest examples](contract/manifest-examples.md)
+      - [Scenario commands](contract/scenario-commands.md)
       - [Spec IDs](contract/spec-ids.md)
       - [Generic cases](contract/generic-cases.md)
   - [Extension repository](contract/extension-repository.md)
