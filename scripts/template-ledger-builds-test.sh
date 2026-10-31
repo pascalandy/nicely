@@ -7,15 +7,17 @@
 # shellcheck disable=SC2016,SC2034,SC2154
 
 fct_test_ledger_builds() {
-	local base forged limit=$'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
+	local base forged kept head2 head3 i limit=$'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
 	git -C "${finish}" checkout -q readiness.md spec.md
 	base="$(git -C "${finish}" rev-parse HEAD)"
-	# After a limit that the user accepted, or a review of the form of #409,
-	# a second build starts with a history of its own.
+	# After a limit that the user accepted, or a review of the form of #409, a
+	# round with the Finish pass ends the build, and the next build starts.
 	for forged in ledger legacy; do
 		if [[ "${forged}" == ledger ]]; then
-			fct_readiness "${head}" 'Ready with stated limits' "${advise}${declined}"$'\n\n'"${warn}"$'\n- **State**: `limit`\n- **Spec**: `long-lines`' 'agent B'
+			kept="${advise}${declined}"$'\n\n'"${warn}"$'\n- **State**: `limit`\n- **Spec**: `long-lines`'
+			fct_readiness "${head}" 'Ready with stated limits' "${kept}" 'agent B'
 		else
+			kept="${valid}"
 			printf 'Commit: %s\nReviewer: agent B\nVerdict: Ready with stated limits\n\n## Findings\n\n### Long lines are cut\n\n- **Severity**: `warn`\n- **Limit**: `long-lines`\n' "${head}" >"${finish}/readiness.md"
 		fi
 		git -C "${finish}" add readiness.md
@@ -25,8 +27,8 @@ fct_test_ledger_builds() {
 		fct_steps "${finish}"
 		printf 'Handler of the build after the limit.\n' >>"${finish}/README.md"
 		git -C "${finish}" commit -qam 'handler of the build after the limit'
-		ledger_earlier=""
-		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" 'Ready with stated limits' 'None.' 'agent B'
+		ledger_earlier="${round1} ${round2} ${head}:pass"
+		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" 'Ready with stated limits' "${kept}" 'agent B'
 		fct_finish 0
 		ledger_earlier="${round1} ${round2}"
 		git -C "${finish}" reset -q --hard "${base}"
@@ -53,39 +55,58 @@ fct_test_ledger_builds() {
 	mv "${scratch}/readiness.md" "${finish}/readiness.md"
 	fct_finish 0
 
-	# A new build, such as of another command, starts at its own intake,
-	# after a review with a passing verdict. The findings of the build before
-	# it are no history of the new build.
+	# A new build, such as of another command, starts at its own intake after
+	# a round with the Finish pass. The ledger keeps the findings of each build.
 	git -C "${finish}" checkout -q readiness.md
 	fct_steps "${finish}"
 	printf 'Handler of the next build.\n' >>"${finish}/README.md"
 	git -C "${finish}" commit -qam 'handler of the next build'
-	ledger_earlier=""
-	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${advise}${declined}" 'agent B'
+	head2="$(git -C "${finish}" rev-parse HEAD)" ledger_earlier="${round1} ${round2} ${head}:pass"
+	fct_readiness "${head2}" Ready "${valid}" 'agent B'
 	fct_finish 0
-
-	# A review that needs work ends no build, even when its verdict line says
-	# Ready. A finding without an ID keeps its title in later reviews.
-	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" 'Needs work' "${warn/R2-F1 /}"
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review of the next build'
+	base="$(git -C "${finish}" rev-parse HEAD)"
+	# Ten builds that each end with a review that passes still pass.
+	for i in 3 4 5 6 7 8 9 10; do
+		ledger_earlier="${ledger_earlier} $(git -C "${finish}" log --format=%H -n 1 HEAD~1):pass"
+		fct_steps "${finish}"
+		printf 'Handler of build %s.\n' "${i}" >>"${finish}/README.md"
+		git -C "${finish}" commit -qam "handler of build ${i}"
+		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${valid}" 'agent B'
+		git -C "${finish}" add readiness.md
+		git -C "${finish}" commit -qm "readiness review of build ${i}"
+	done
+	fct_finish 0
+	git -C "${finish}" reset -q --hard "${base}"
+
+	# Only a review that passes ends a build: a verdict line that says Ready,
+	# a state with no commit, or a review that drops a finding ends none.
+	fct_steps "${finish}"
+	printf 'Handler of a build that needs work.\n' >>"${finish}/README.md"
+	git -C "${finish}" commit -qam 'handler of a build that needs work'
+	head3="$(git -C "${finish}" rev-parse HEAD)" ledger_earlier="${round1} ${round2} ${head}:pass ${head2}:pass"
+	fct_readiness "${head3}" 'Needs work' "${valid}"$'\n\n### Blank lines are dropped\n\n- **Severity**: `block`' 'agent B'
+	git -C "${finish}" add readiness.md
+	git -C "${finish}" commit -qm 'readiness review of the build that needs work'
 	base="$(git -C "${finish}" rev-parse HEAD)"
 	for forged in verdict state none; do
 		case "${forged}" in
 		verdict) fct_edit "${finish}/readiness.md" 'Verdict: Needs work' 'Verdict: Ready' ;;
 		state)
 			fct_edit "${finish}/readiness.md" 'Verdict: Needs work' 'Verdict: Ready'
-			fct_edit "${finish}/readiness.md" '- **Severity**: `warn`' $'- **Severity**: `warn`\n- **State**: `fixed`'
+			fct_edit "${finish}/readiness.md" '- **Severity**: `block`' $'- **Severity**: `block`\n- **State**: `fixed`'
 			;;
-		none) fct_readiness "$(git -C "${finish}" rev-parse HEAD~1)" Ready 'None.' 'agent B' ;;
+		none) fct_readiness "${head3}" Ready 'None.' 'agent B' ;;
 		esac
 		git -C "${finish}" commit -qam "a review that ends the build: ${forged}"
 		fct_steps "${finish}"
-		printf 'Handler of a third build.\n' >>"${finish}/README.md"
-		git -C "${finish}" commit -qam 'handler of a third build'
-		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready 'None.' 'agent B'
+		printf 'Handler of the build after it.\n' >>"${finish}/README.md"
+		git -C "${finish}" commit -qam 'handler of the build after it'
+		ledger_earlier="${round1} ${round2} ${head}:pass ${head2}:pass ${head3}:pass"
+		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${valid}"$'\n\n### R5-F1 Blank lines are dropped\n\n- **Severity**: `block`\n- **State**: `fixed`\n- **Commit**: '"${head3}"$'\n- **Spec**: `bad-input`' 'agent B'
 		fct_finish 1
-		fct_finish_said 'readiness.md: the finding titled "Long lines are cut" of the review in'
+		fct_finish_said 'round 5 says pass, but its review in'
 		git -C "${finish}" reset -q --hard "${base}"
 	done
 }

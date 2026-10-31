@@ -8,13 +8,16 @@ import (
 	"strings"
 )
 
-// A review is one readiness.md committed in the history of the build.
+// A review is one readiness.md committed in the history of HEAD.
 type review struct {
 	revision, commit, text string
+	rounds                 []round
 }
 
-func committedReviews(revisions string) []review {
-	log, err := exec.Command("git", "log", "--format=%H", revisions, "--", "readiness.md").Output()
+// committedReviews returns each readiness.md committed in HEAD, the newest
+// first. The ledger is cumulative, so each one stays its history (#417).
+func committedReviews() []review {
+	log, err := exec.Command("git", "log", "--format=%H", "HEAD", "--", "readiness.md").Output()
 	if err != nil {
 		return nil
 	}
@@ -28,6 +31,7 @@ func committedReviews(revisions string) []review {
 		if m := readinessCommit.FindStringSubmatch(readinessHeader(r.text)); m != nil {
 			r.commit, _ = ledgerCommit(m[1])
 		}
+		r.rounds, _, _ = ledgerTables(r.text)
 		reviews = append(reviews, r)
 	}
 	return reviews
@@ -38,78 +42,63 @@ func readinessHeader(readiness string) string {
 	return strings.Join(lines[:min(3, len(lines))], "\n")
 }
 
-// buildStart returns the newest readiness.md committed at or before the
-// intake that ended the build before this one, or "". A review that needs
-// work never ends a build, so moving the intake hides no history (#417).
-func buildStart(intake string) string {
-	return endOfBuild(intake, 8)
-}
-
-// endOfBuild finds the review that ended a build at or before intake. Such a
-// review passes as just finish would pass it. Its verdict and its states
-// follow from its findings. Its ledger keeps the history of its own build.
-// Its limits come from the spec.md of the intake, when only **Limits.**
-// differs. So a limit accepted after the review counts. A review without a
-// ledger, of an older template, needs a passing verdict only. depth bounds
-// the builds that it reads.
-func endOfBuild(intake string, depth int) string {
-	if depth == 0 {
-		return ""
-	}
-	later, _ := exec.Command("git", "show", intake+":spec.md").Output()
-	for _, r := range committedReviews(intake) {
-		v := readinessVerdict.FindStringSubmatch(readinessHeader(r.text))
-		if v == nil || v[1] != "Ready" && v[1] != "Ready with stated limits" {
+// passProblems checks each round before the last whose Finish is pass. Such a
+// round ends a build, so its newest committed review must pass. Its verdict
+// and its states follow from its findings and from the limits of spec.md. It
+// keeps each finding of the reviews before it. A review without a ledger, of
+// a template before it, needs a passing verdict only.
+func passProblems(rounds []round, reviews []review, spec string, limits []limit) []string {
+	var problems []string
+	for i, r := range rounds[:max(0, len(rounds)-1)] {
+		if len(r.cells) != len(roundColumns) || strings.Trim(r.cells[5], "`") != "pass" {
 			continue
 		}
-		spec, _ := exec.Command("git", "show", r.revision+":spec.md").Output()
-		if sameOutsideLimits(string(spec), string(later)) {
-			spec = later
+		head, _ := ledgerCommit(r.cells[1])
+		at := slices.IndexFunc(reviews, func(v review) bool { return v.commit == head })
+		if at < 0 {
+			continue
 		}
-		open, limits := specProblems(string(spec))
-		findings, unread := readinessFindings(r.text)
-		problems := append(append(open, unread...), verdictProblems(v[1], findings, limits)...)
-		if rounds, order, _ := ledgerTables(r.text); len(rounds) != 0 {
-			problems = append(problems, stateProblems(findings, len(rounds), string(spec), limits)...)
-			since := ""
-			if step, found := order["Intake"]; found {
-				if commit, ok := ledgerCommit(step.cells[1]); ok {
-					since = endOfBuild(commit, depth-1)
-				}
-			}
-			problems = append(problems, historyAt(findings, rounds, since, r.revision+"^")...)
+		v := readinessVerdict.FindStringSubmatch(readinessHeader(reviews[at].text))
+		findings, unread := readinessFindings(reviews[at].text)
+		failed := v == nil || len(unread) != 0
+		if !failed {
+			failed = len(verdictProblems(v[1], findings, limits)) != 0
 		}
-		if len(problems) == 0 {
-			return r.revision
+		if !failed && len(reviews[at].rounds) != 0 {
+			failed = len(stateProblems(findings, len(reviews[at].rounds), spec, limits)) != 0 ||
+				len(findingHistory(findings, reviews[at+1:], map[string]bool{})) != 0
+		}
+		if failed {
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: round %d says pass, but its review in %.12s does not pass. Fix: write the result that just finish gave for that round", r.line, i+1, reviews[at].revision))
 		}
 	}
-	return ""
+	return problems
 }
 
-// historyProblems compares the ledger with each review of the build. A
-// finding keeps its ID, or its title when it had no ID, in each later review,
-// and its severity never goes down. Each round keeps its row, and each
-// round matches one committed review, so no loss and no round leaves it.
-func historyProblems(findings []finding, rounds []round, since string) []string {
-	return historyAt(findings, rounds, since, "HEAD")
+// historyProblems compares the ledger with each committed review. Each round
+// keeps its row, and each round matches one committed review, so no loss and
+// no round leaves the ledger.
+func historyProblems(findings []finding, rounds []round, reviews []review) []string {
+	var problems []string
+	reported := map[string]bool{}
+	for _, r := range reviews {
+		problems = append(problems, roundHistory(rounds, r, reported)...)
+	}
+	problems = append(problems, findingHistory(findings, reviews, reported)...)
+	return append(problems, reviewedRounds(rounds, reviews)...)
 }
 
-// historyAt compares the ledger with the reviews of the build up to head.
-func historyAt(findings []finding, rounds []round, since, head string) []string {
+// findingHistory requires each finding of the reviews in findings. A finding
+// keeps its ID, or its title when it had no ID, and its severity never goes
+// down.
+func findingHistory(findings []finding, reviews []review, reported map[string]bool) []string {
 	current := map[string]finding{}
 	for _, f := range findings {
 		current[f.id] = f
 		current["title "+f.title] = f
 	}
 	var problems []string
-	reported := map[string]bool{}
-	revisions := head
-	if since != "" {
-		revisions = since + ".." + head
-	}
-	reviews := committedReviews(revisions)
 	for _, r := range reviews {
-		problems = append(problems, roundHistory(rounds, r.text, r.revision, reported)...)
 		earlier, _ := readinessFindings(r.text)
 		for _, e := range earlier {
 			key, name := e.id, e.id
@@ -128,12 +117,12 @@ func historyAt(findings []finding, rounds []round, since, head string) []string 
 			}
 		}
 	}
-	return append(problems, reviewedRounds(rounds, reviews)...)
+	return problems
 }
 
-// reviewedRounds matches the rounds with the committed reviews of the build.
-// Each review names the head of a round, and each round before the last has
-// a committed review of its head.
+// reviewedRounds matches the rounds with the committed reviews. Each review
+// with a ledger names the head of a round, and each round before the last
+// has a committed review of its head.
 func reviewedRounds(rounds []round, reviews []review) []string {
 	var heads, reviewed []string
 	for _, r := range rounds {
@@ -145,10 +134,10 @@ func reviewedRounds(rounds []round, reviews []review) []string {
 	}
 	var problems []string
 	for _, r := range reviews {
-		reviewed = append(reviewed, r.commit)
-		if r.commit != "" && !slices.Contains(heads, r.commit) && !slices.Contains(reviewed[:len(reviewed)-1], r.commit) {
+		if r.commit != "" && len(r.rounds) != 0 && !slices.Contains(heads, r.commit) && !slices.Contains(reviewed, r.commit) {
 			problems = append(problems, fmt.Sprintf("readiness.md: the review of %.12s, committed in %.12s, has no round under ## Rounds. Fix: keep one row for each round, with the head that its review names", r.commit, r.revision))
 		}
+		reviewed = append(reviewed, r.commit)
 	}
 	for i, head := range heads[:max(0, len(heads)-1)] {
 		if head != "" && !slices.Contains(reviewed, head) {
@@ -160,10 +149,9 @@ func reviewedRounds(rounds []round, reviews []review) []string {
 
 // roundHistory requires each round of an earlier committed ledger in the
 // current one, with the same cells. Only a Finish that was pending changes.
-func roundHistory(rounds []round, old, revision string, reported map[string]bool) []string {
+func roundHistory(rounds []round, r review, reported map[string]bool) []string {
 	var problems []string
-	earlier, _, _ := ledgerTables(old)
-	for i, e := range earlier {
+	for i, e := range r.rounds {
 		key := "round " + strconv.Itoa(i+1)
 		if reported[key] || len(e.cells) != len(roundColumns) {
 			continue
@@ -173,7 +161,7 @@ func roundHistory(rounds []round, old, revision string, reported map[string]bool
 			(strings.Trim(e.cells[5], "`") == "pending" || rounds[i].cells[5] == e.cells[5])
 		if !kept {
 			reported[key] = true
-			problems = append(problems, fmt.Sprintf("readiness.md: %s of the ledger in %.12s is missing or changed. Fix: keep the row of each earlier round as it was, and add one row for this round", key, revision))
+			problems = append(problems, fmt.Sprintf("readiness.md: %s of the ledger in %.12s is missing or changed. Fix: keep the row of each earlier round as it was, and add one row for this round", key, r.revision))
 		}
 	}
 	return problems

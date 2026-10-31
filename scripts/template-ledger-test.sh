@@ -7,14 +7,14 @@
 # shellcheck disable=SC2016,SC2034
 
 fct_test_ledger() {
-	local finish="${2}/ledger" scratch="${2}" file intake round1 review1 round2 review2 head stray valid ledger_earlier=""
+	local finish="${2}/ledger" scratch="${2}" file first intake round1 review1 round2 review2 head stray valid ledger_earlier=""
 	local advise=$'### R1-F1 The count could name the longest line\n\n- **Severity**: `advise`'
 	local declined=$'\n- **State**: `declined`\n- **Reason**: the answer stays small'
 	local warn=$'### R2-F1 Long lines are cut\n\n- **Severity**: `warn`'
 	local lowered=$'### R2-F1 Long lines are cut\n\n- **Severity**: `advise`'
 	cp -R "${1}" "${finish}"
 	fct_steps "${finish}"
-	intake="$(fct_step "${finish}" intake)"
+	intake="$(fct_step "${finish}" intake)" first="$(git -C "${finish}" rev-list --max-parents=0 HEAD)"
 	for file in vision.md spec.md qa.md; do
 		grep -v '^Fill:' "${finish}/${file}" >"${scratch}/form.md"
 		mv "${scratch}/form.md" "${finish}/${file}"
@@ -100,7 +100,7 @@ fct_test_ledger() {
 	fct_finish 1
 	fct_finish_said 'round 3 has no committed review of its head'
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
-	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |" "| 3 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |"$'\n**Earlier build.**\n'"| 4 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |"
+	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${first}..${head} | agent B | \`pending\` |" "| 3 | ${head} | agent A | ${first}..${head} | agent B | \`pending\` |"$'\n**Earlier build.**\n'"| 4 | ${head} | agent A | ${first}..${head} | agent B | \`pending\` |"
 	fct_finish 1
 	fct_finish_said 'this line of ## Rounds is no row of its table'
 	# Each of the first four steps of round 1 has its own commit.
@@ -114,15 +114,26 @@ fct_test_ledger() {
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
 	ledger_earlier="${round1} ${round2}"
 	fct_finish 1
-	fct_finish_said 'readiness.md: the ledger holds 6 rounds, and a build has at most 5'
+	fct_finish_said 'readiness.md: build 1 of the ledger holds 6 rounds, and a build has at most 5'
 	fct_finish_said 'this build used its 5 rounds. Stop, and report each open line and each open finding to the user'
+	# A build that ended keeps its limit, and only a review that passes ends a build.
+	ledger_earlier="${round1} ${round2} ${head} ${head} ${head} ${head}:pass"
+	fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'readiness.md: build 1 of the ledger holds 6 rounds, and a build has at most 5'
+	fct_finish_said 'the intake of this build comes before the end of the build before it'
+	ledger_earlier="${round1} ${round2}:pass"
+	fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'round 2 says pass, but its review in'
+	ledger_earlier="${round1} ${round2}"
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
 	stray="$(git -C "${finish}" commit-tree -m stray "${head}^{tree}")"
-	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |" "| 3 | ${head} | agent A | ${stray}..${head} | agent B | \`pending\` |"
+	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${first}..${head} | agent B | \`pending\` |" "| 3 | ${head} | agent A | ${stray}..${head} | agent B | \`pending\` |"
 	fct_finish 1
 	fct_finish_said "the commit \"${stray}\" is not an ancestor of HEAD"
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
-	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |" "| 3 | ${round2} | agent A | ${intake}..${head} | agent B | \`pending\` |"
+	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${first}..${head} | agent B | \`pending\` |" "| 3 | ${round2} | agent A | ${first}..${head} | agent B | \`pending\` |"
 	fct_finish 1
 	fct_finish_said "the last round names the head ${round2}, and the line Commit: names ${head}"
 	# Round 1 commits its first scenario before its handler.

@@ -90,7 +90,8 @@ Finish holds the result of `just finish` for each earlier round, and `pending` f
 Keep the row of each earlier round as it was. Only its Finish changes, from `pending` to its result.
 Commit `readiness.md` at the end of each round, so each round has a committed review of its head.
 A build has at most 5 rounds.
-A new build, such as of another command, starts at a new intake, after a review with a passing verdict.
-After `just update` from a template without a ledger, commit a review in this form before the next intake.
+A round whose Finish is `pass` ends a build. A new build, such as of another command, starts at a new intake after it.
+The round numbers go on, and the ledger keeps each finding of each build.
+After `just update` from a template without a ledger, keep each finding of the older reviews, with an ID and a state.
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.

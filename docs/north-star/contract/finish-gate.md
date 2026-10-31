@@ -18,18 +18,21 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 
 ## The ledger
 
-`readiness.md` also holds the ledger of the build of a command, from the intake to "Done when" (#417).
+`readiness.md` also holds the ledger of the repository (#417).
+A build of a command goes from its intake to "Done when".
+The ledger keeps each round and each finding of each build.
 The reviewer of each round updates it, and commits `readiness.md` alone.
 
 Under `## Rounds`, a table has the columns Round, Head, Change review, Change commits, Readiness review, and Finish.
-Each row is one round, numbered from 1.
+Each row is one round, numbered from 1. The numbers go on from one build to the next.
 Head is the full SHA of the reviewed commit.
 Change commits names the commits that the change review covered, as `<first>..<last>`.
 The readiness review covers Head.
 When one pass did both reviews, both cells name the same reviewer.
 Finish is `pass` or `fail` for an earlier round, and `pending` for the last round, whose result is this run.
+A round before the last whose Finish is `pass` ends a build. The next round starts the next build.
 
-Under `## Order of round 1`, a table with the columns Step and Commit names the commit of each step: Intake, Spec, Scenario, and Handler.
+Under `## Order of round 1`, a table with the columns Step and Commit names the commit of each step of the current build: Intake, Spec, Scenario, and Handler.
 
 Each finding under `## Findings` starts its heading with a stable ID, such as `### R2-F3`.
 `R2` is the round that first reported it, and the ID stays in later rounds.
@@ -48,7 +51,9 @@ A finding of the last round can have no state yet.
 
 - No round under `## Rounds`, or a row without its six cells, its number, a full Head, or both reviewers
 - A line under `## Rounds` or `## Order of round 1` that is no row of its table, such as a label that would hide rows
-- More than 5 rounds. The message tells the agent to stop and to report to the user
+- A build of more than 5 rounds, also a build that ended. The message tells the agent to stop and to report to the user
+- A round with the Finish `pass` whose newest committed review does not pass. That review needs a passing verdict that follows from its findings, valid states, and each finding of the reviews before it
+- An Intake that is not after the Head of the round that ended the build before
 - A commit of a round or of a fixed finding that is not HEAD or an ancestor of HEAD
 - A last round whose Head is not the `Commit:` of `readiness.md`
 - A step of round 1 that is missing, out of order, or in the commit of the step before it
@@ -59,12 +64,9 @@ A finding of the last round can have no state yet.
 - A committed review whose `Commit:` is the Head of no round, or a round before the last without a committed review of its Head
 - A round of an earlier committed ledger that is missing or changed. Only a Finish that was `pending` changes
 
-The history of a build starts after the last committed `readiness.md` that passes, at or before its Intake commit.
-Such a review passes as `just finish` would pass it: its verdict, its states, and the history of its own build.
-Its limits come from the `spec.md` of the Intake when that file differs only under **Limits.**, so a limit accepted after the review counts.
-A review without a ledger, from a template before the ledger, needs a passing verdict only.
+The history is every committed `readiness.md` of HEAD, so a moved Intake hides no finding and resets no round.
+Finish checks a review that ends a build with the limits of the current `spec.md`. A finding with the state `limit` keeps its limit row, so the check holds after a limit that the user accepted later.
+A review without a ledger, from a template before the ledger, needs a passing verdict only to end a build.
 Its form of #409, a line `- **Limit**:` with a spec ID, reads as the state `limit`.
-So an earlier build that ended is no history of this one.
-A review that needs work never ends a build, so a moved Intake hides no finding and resets no round.
 
 At 5 rounds, a failing `just finish` also tells the agent to stop and to report each open line and each open finding.

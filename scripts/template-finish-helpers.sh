@@ -55,18 +55,22 @@ fct_step() {
 }
 
 # fct_ledger prints the ledger of the repository $1 for the rounds that
-# reviewed the heads $2, in order. The newest commits of fct_steps give the
-# order of round 1, and its handler is in the first head (#417).
+# reviewed the heads $2, in order. A head written <sha>:pass gives its round
+# the Finish pass, which ends its build. The newest commits of fct_steps give
+# the order of round 1 of the last build, and its handler is in the first
+# head of that build (#417).
 fct_ledger() {
-	local heads intake i finish_cell
+	local heads first i head finish_cell handler=""
 	read -r -a heads <<<"${2}"
-	intake="$(fct_step "${1}" intake)"
+	first="$(git -C "${1}" rev-list --max-parents=0 HEAD)"
 	printf '\n## Rounds\n\n| Round | Head | Change review | Change commits | Readiness review | Finish |\n|---|---|---|---|---|---|\n'
 	for ((i = 0; i < ${#heads[@]}; i++)); do
-		finish_cell='`fail`'
+		head="${heads[i]%%:*}" finish_cell='`fail`'
+		[[ -n "${handler}" ]] || handler="${head}"
+		[[ "${heads[i]}" != *:pass ]] || finish_cell='`pass`' handler=""
 		[[ "$((i + 1))" != "${#heads[@]}" ]] || finish_cell='`pending`'
-		printf '| %s | %s | agent A | %s..%s | agent B | %s |\n' "$((i + 1))" "${heads[i]}" "${intake}" "${heads[i]}" "${finish_cell}"
+		printf '| %s | %s | agent A | %s..%s | agent B | %s |\n' "$((i + 1))" "${head}" "${first}" "${head}" "${finish_cell}"
 	done
 	printf '\n## Order of round 1\n\n| Step | Commit |\n|---|---|\n'
-	printf '| %s | %s |\n' Intake "${intake}" Spec "$(fct_step "${1}" spec)" Scenario "$(fct_step "${1}" scenario)" Handler "${heads[0]:-}"
+	printf '| %s | %s |\n' Intake "$(fct_step "${1}" intake)" Spec "$(fct_step "${1}" spec)" Scenario "$(fct_step "${1}" scenario)" Handler "${handler}"
 }

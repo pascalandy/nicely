@@ -122,7 +122,7 @@ func readinessFindings(readiness string) ([]finding, []string) {
 					f.why = value
 				case "Limit":
 					// The form of #409 named an accepted limit in its own bullet.
-					f.state, f.spec = cmp.Or(f.state, "limit"), value
+					f.state, f.spec = cmp.Or(f.state, "limit"), cmp.Or(f.spec, value)
 				}
 			}
 		case current < 0:

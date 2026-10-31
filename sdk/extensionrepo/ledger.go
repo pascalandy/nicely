@@ -39,10 +39,6 @@ func ledgerProblems(readiness, reviewed string, findings []finding, spec string,
 	if len(rounds) == 0 {
 		return append(problems, "readiness.md: it holds no round under ## Rounds. "+fix)
 	}
-	if len(rounds) > maxRounds {
-		problems = append(problems, fmt.Sprintf("readiness.md: the ledger holds %d rounds, and a build has at most %d. "+
-			"Fix: stop, and report each open line and each open finding to the user. Do not start another round", len(rounds), maxRounds))
-	}
 	for i, r := range rounds {
 		problems = append(problems, roundProblems(r, i+1, i == len(rounds)-1)...)
 	}
@@ -52,15 +48,33 @@ func ledgerProblems(readiness, reviewed string, findings []finding, spec string,
 				"Fix: name the reviewed commit in both", last.line, last.cells[1], reviewed))
 		}
 	}
-	problems = append(problems, orderProblems(order)...)
-	problems = append(problems, stateProblems(findings, len(rounds), spec, limits)...)
-	since := ""
-	if intake, found := order["Intake"]; found {
-		if commit, ok := ledgerCommit(intake.cells[1]); ok {
-			since = buildStart(commit)
+	sizes, ended := builds(rounds)
+	for b, size := range sizes {
+		if size > maxRounds {
+			problems = append(problems, fmt.Sprintf("readiness.md: build %d of the ledger holds %d rounds, and a build has at most %d. "+
+				"Fix: stop, and report each open line and each open finding to the user. Do not start another round", b+1, size, maxRounds))
 		}
 	}
-	return append(problems, historyProblems(findings, rounds, since)...)
+	reviews := committedReviews()
+	problems = append(problems, orderProblems(order, ended)...)
+	problems = append(problems, stateProblems(findings, len(rounds), spec, limits)...)
+	problems = append(problems, passProblems(rounds, reviews, spec, limits)...)
+	return append(problems, historyProblems(findings, rounds, reviews)...)
+}
+
+// builds splits the rounds into builds. A round before the last whose Finish
+// is pass ends a build, and the next round starts the next one. It returns
+// the number of rounds of each build, and the head of the last round of the
+// build before the current one, or "".
+func builds(rounds []round) ([]int, string) {
+	sizes, ended := []int{0}, ""
+	for i, r := range rounds {
+		sizes[len(sizes)-1]++
+		if i < len(rounds)-1 && len(r.cells) == len(roundColumns) && strings.Trim(r.cells[5], "`") == "pass" {
+			sizes, ended = append(sizes, 0), r.cells[1]
+		}
+	}
+	return sizes, ended
 }
 
 // ledgerTables reads the tables of ## Rounds and ## Order of round 1. Each
@@ -135,7 +149,7 @@ func roundProblems(r round, number int, last bool) []string {
 // orderProblems checks that round 1 recorded the intake, the spec, the
 // first scenario, and the handler, each in a commit after the one before.
 // The scenario precedes the handler, so it could fail first.
-func orderProblems(order map[string]round) []string {
+func orderProblems(order map[string]round, ended string) []string {
 	const fix = "Fix: give readiness.md a table under ## Order of round 1 with the columns Step and Commit, and the rows Intake, Spec, Scenario, and Handler"
 	var problems []string
 	previous := ""
@@ -150,6 +164,8 @@ func orderProblems(order map[string]round) []string {
 		switch {
 		case !ok:
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: the commit of the step %s is not an ancestor of HEAD. %s", r.line, step, fix))
+		case step == "Intake" && ended != "" && ancestor(commit, strings.Trim(ended, "`")):
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: the intake of this build comes before the end of the build before it, at %s. Fix: record the intake of this build in a new commit", r.line, ended))
 		case previous != "" && !ancestor(previous, commit):
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: the step %s comes before the step that precedes it in round 1. Fix: do the steps of round 1 in the order of the skill", r.line, step))
 		case step == "Handler" && commit == previous:
@@ -178,12 +194,13 @@ func ancestor(commit, of string) bool {
 	return exec.Command("git", "merge-base", "--is-ancestor", commit, of).Run() == nil
 }
 
-// ledgerRounds counts the rounds of the ledger, for the note of finish.
+// ledgerRounds counts the rounds of the current build, for the note of finish.
 func ledgerRounds() int {
 	data, err := os.ReadFile("readiness.md")
 	if err != nil {
 		return 0
 	}
 	rounds, _, _ := ledgerTables(string(data))
-	return len(rounds)
+	sizes, _ := builds(rounds)
+	return sizes[len(sizes)-1]
 }
