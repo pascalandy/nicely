@@ -36,7 +36,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
 - `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. `just finish` fails on each of these:
-  - A line that starts with `Fill:` in `vision.md`, `spec.md`, or `qa.md`
+  - A line of `vision.md`, `spec.md`, or `qa.md` that starts with `Fill:` after its indent, also in fenced code
   - A line under `## Open lines`
   - A line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance
   - A `readiness.md` without the lines `Commit: <sha>` and `Reviewer: <who>`, or without the verdict `Ready` or `Ready with stated limits`

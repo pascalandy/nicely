@@ -34,8 +34,9 @@ func finishRepository() int {
 	return 0
 }
 
-// formProblems reports each line that starts with "Fill:" in the forms that
-// the template writes. Round 1 of the skill replaces each one (#408).
+// formProblems reports each line that starts with "Fill:" after its indent
+// in the forms that the template writes. Round 1 of the skill replaces each
+// one (#408, #412).
 func formProblems() ([]string, error) {
 	var problems []string
 	for _, form := range []string{"vision.md", "spec.md", "qa.md"} {
@@ -44,7 +45,7 @@ func formProblems() ([]string, error) {
 			return nil, err
 		}
 		for i, line := range strings.Split(string(data), "\n") {
-			if strings.HasPrefix(line, "Fill:") {
+			if strings.HasPrefix(strings.TrimSpace(line), "Fill:") {
 				problems = append(problems, fmt.Sprintf("%s:%d: this line of the form is not filled. Fix: write what it asks for the commands of this extension, then delete it", form, i+1))
 			}
 		}

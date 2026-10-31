@@ -66,6 +66,11 @@ fct_test_finish() {
 		grep -v '^Fill:' "${finish}/${file}" >"${scratch}/form.md"
 		mv "${scratch}/form.md" "${finish}/${file}"
 	done
+	# An indented Fill: line is not filled either (#412).
+	printf '  Fill: an indented line.\n' >>"${finish}/vision.md"
+	fct_finish 1
+	fct_finish_said "vision.md:$(grep -c '' "${finish}/vision.md"): ${unfilled}"
+	fct_edit "${finish}/vision.md" '  Fill: an indented line.' ''
 
 	fct_edit "${finish}/spec.md" 'None.' $'| ID | Command | Part | Case | Code |\n|---|---|---|---|---|\n| `large-file` | inspect | Failures | A file over 1 GB | `RUNTIME` |'
 	fct_finish 1
