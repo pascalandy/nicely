@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -49,6 +50,7 @@ func releaseSigned(sha string) (signoffReceipt, error) {
 	if err != nil {
 		return signoffReceipt{}, err
 	}
+	unfinished := false
 	for _, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -72,9 +74,16 @@ func releaseSigned(sha string) (signoffReceipt, error) {
 		for _, check := range r.Checks {
 			valid = valid && check.Exit == 0 && len(check.Command) != 0
 		}
-		if valid {
+		// A receipt of an extension repository holds just finish too, so a
+		// receipt with only just check never releases (#416).
+		finished := slices.ContainsFunc(r.Checks, func(c signoffCheck) bool { return len(c.Command) != 0 && c.Command[len(c.Command)-1] == "finish" })
+		if valid && finished {
 			return r, nil
 		}
+		unfinished = unfinished || valid
+	}
+	if unfinished {
+		return signoffReceipt{}, fmt.Errorf("the receipt for %s holds no successful just finish; run just signoff for this pushed SHA, which runs just finish first", sha)
 	}
 	return signoffReceipt{}, fmt.Errorf("no successful receipt for %s; run just signoff for this pushed SHA", sha)
 }
