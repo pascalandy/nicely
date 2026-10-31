@@ -14,8 +14,10 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
+// scriptFiles holds the selections of one scenario.
+// protect lasts until the next protect call, and next until the next signal call.
 type scriptFiles struct {
-	protect, survives []string
+	protect, next, survives []string
 }
 
 // ScenarioCommands supplies signal, refuses, protect, and survives to a testscript runner.
@@ -48,7 +50,7 @@ func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.Tes
 			if survives {
 				state(ts).survives = paths
 			} else {
-				state(ts).protect = paths
+				state(ts).protect, state(ts).next = paths, paths
 			}
 		}
 	}
@@ -56,8 +58,10 @@ func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.Tes
 		"protect": selectFiles(false), "survives": selectFiles(true),
 		"signal": func(ts *testscript.TestScript, neg bool, args []string) {
 			files := state(ts)
+			next := files.next
+			files.next = nil
 			defer func() { files.survives = nil }()
-			c.signal(ts, neg, args, files.survives, host)
+			c.signal(ts, neg, args, files.survives, next, host)
 		},
 		"refuses": func(ts *testscript.TestScript, neg bool, args []string) {
 			c.refuses(ts, neg, args, state(ts).protect, host)

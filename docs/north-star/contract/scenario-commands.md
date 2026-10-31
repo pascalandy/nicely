@@ -12,7 +12,7 @@ A scenario uses the commands of [testscript](https://pkg.go.dev/github.com/rogpe
 | `exits <code> <command> <arg>...` | Runs a command, these two included, and checks its exact exit code |
 | `signal INT\|TERM <marker> <command> <arg>...` | Waits for a new marker, signals the host, and checks its exit and answer |
 | `survives <file>...` | Requires these finished files at the next signal's marker and unchanged after its exit |
-| `protect <path>...` | Selects files, folders, or absent paths that subsequent `refuses` calls must keep unchanged |
+| `protect <path>...` | Selects files, folders, or absent paths that the next `signal` call and subsequent `refuses` calls must keep unchanged |
 | `refuses <code> <command> <arg>...` | Requires the same refusal code and exit in a dry run and a run |
 | `grant <service>` | Grants the key of a declared service to the extension at its scratch path |
 | `fake <name>` | Puts the fake child in `$WORK/bin`, first in `PATH`, under the name `name` |
@@ -43,3 +43,13 @@ Each call must preserve the protected paths, including absent paths and each fol
 The comparison records symbolic links without following them.
 Nicely's cache stays unprotected unless a scenario selects its path.
 Select inputs and possible outputs with `protect` before each refusal group.
+
+A `protect` selection applies to each later `refuses` call, until the next `protect` call replaces it.
+It also applies to the next `signal` call, and that call ends it for `signal`.
+Give a new `protect` call before each `signal` call that must keep paths.
+`signal` compares the protected paths before the host starts and after it exits, except its marker.
+So an interrupted run must keep its input, leave an absent output absent, and keep an old output.
+
+To prove that a command never writes through a link, make its output a symbolic link to its input.
+Protect both paths, then call `refuses`.
+A write through the link changes the input, and a replacement of the link changes the link.
