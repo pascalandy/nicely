@@ -97,28 +97,6 @@ func ledgerTables(readiness string) ([]round, map[string]round, []string) {
 	return rounds, order, problems
 }
 
-// buildStart returns the newest readiness.md committed at or before the
-// intake with a passing verdict, which ended the build before this one. A
-// review that needs work never ends a build, so moving the intake hides no
-// history. It returns "" when no build ended before.
-func buildStart(intake string) string {
-	log, err := exec.Command("git", "log", "--format=%H", intake, "--", "readiness.md").Output()
-	if err != nil {
-		return ""
-	}
-	for _, revision := range strings.Fields(string(log)) {
-		old, err := exec.Command("git", "show", revision+":readiness.md").Output()
-		if err != nil {
-			continue
-		}
-		header := strings.SplitN(strings.TrimPrefix(string(old), "\ufeff"), "\n", 4)
-		if v := readinessVerdict.FindStringSubmatch(strings.Join(header[:min(3, len(header))], "\n")); v != nil && (v[1] == "Ready" || v[1] == "Ready with stated limits") {
-			return revision
-		}
-	}
-	return ""
-}
-
 // roundProblems checks one row of ## Rounds, the round number of its place.
 func roundProblems(r round, number int, last bool) []string {
 	at := fmt.Sprintf("readiness.md:%d: ", r.line)

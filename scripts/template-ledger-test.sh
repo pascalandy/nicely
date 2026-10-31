@@ -2,8 +2,9 @@
 # Sourced by template-test.sh to prove the ledger of readiness.md, which
 # just finish reads (#417), and the forms of readiness.md of #416. It works on
 # a copy of the rendered repository, so the other tests keep their state.
-# Markdown backticks in the fixture text are literal.
-# shellcheck disable=SC2016
+# Markdown backticks in the fixture text are literal, and fct_readiness reads
+# ledger_earlier.
+# shellcheck disable=SC2016,SC2034
 
 fct_test_ledger() {
 	local finish="${2}/ledger" scratch="${2}" file intake round1 review1 round2 review2 head stray valid ledger_earlier=""
@@ -65,6 +66,15 @@ fct_test_ledger() {
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review of round 3'
 	fct_finish 0
+	# The user accepts a limit with no new round: after the review, only the
+	# rows under **Limits.** of spec.md change.
+	fct_edit "${finish}/spec.md" '**Limits.** None.' $'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
+	fct_readiness "${head}" 'Ready with stated limits' "${advise}${declined}"$'\n\n'"${warn}"$'\n- **State**: `limit`\n- **Spec**: `long-lines`' 'agent B'
+	fct_finish 0
+	fct_edit "${finish}/spec.md" '| `bad-input` | The file is missing or is no regular file, or `--timeout` is no duration | `USAGE_INVALID` |' '| `bad-input` | The file is missing | `USAGE_INVALID` |'
+	fct_finish 1
+	fct_finish_said 'and these files changed since: spec.md'
+	git -C "${finish}" checkout -q spec.md readiness.md
 
 	# Moving the intake after a review that needs work hides no finding and resets no round.
 	ledger_earlier=""
@@ -82,6 +92,13 @@ fct_test_ledger() {
 	ledger_earlier="${round1} ${round2}"
 	fct_finish 1
 	fct_finish_said 'readiness.md: round 1 of the ledger in'
+	fct_finish_said "readiness.md: the review of ${round1:0:12}, committed in ${review1:0:12}, has no round under ## Rounds"
+	# Each round before the last has a committed review of its head.
+	ledger_earlier="${round1} ${round2} ${review2}"
+	fct_readiness "${head}" Ready "${valid}" 'agent B'
+	ledger_earlier="${round1} ${round2}"
+	fct_finish 1
+	fct_finish_said 'round 3 has no committed review of its head'
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_edit "${finish}/readiness.md" "| 3 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |" "| 3 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |"$'\n**Earlier build.**\n'"| 4 | ${head} | agent A | ${intake}..${head} | agent B | \`pending\` |"
 	fct_finish 1
@@ -117,35 +134,5 @@ fct_test_ledger() {
 	fct_finish 1
 	fct_finish_said 'readiness.md: it holds no round under ## Rounds'
 
-	# The word severity in prose, or a table of severities, fails with its cause (#416).
-	fct_readiness "${head}" Ready "${advise}"$'\n- **Evidence**: I kept the severity low'"${declined}"$'\n\n| Finding | Grade |\n|---|---|\n| R1-F1 | advise |' 'agent B'
-	fct_finish 1
-	fct_finish_said 'this line names the word severity outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word severity'
-	fct_finish_said 'this table names the severity advise'
-	# A warn in prose beside an advise, or in a table of a part after ## Findings, fails (#416).
-	fct_readiness "${head}" Ready "${valid}"$'\n\nThis is a warn.\n\n## Notes\n\n| Long lines kept | `warn` |' 'agent B'
-	fct_finish 1
-	fct_finish_said 'this line names the severity warn outside the line - **Severity**: of a finding'
-	fct_finish_said 'this table names the severity warn'
-	# Finish reads the header in the first three lines, after a byte order mark (#416).
-	fct_readiness "${head}" Ready "${valid}" 'agent B'
-	printf '# Readiness review\n' | cat - "${finish}/readiness.md" >"${scratch}/readiness.md"
-	mv "${scratch}/readiness.md" "${finish}/readiness.md"
-	fct_finish 1
-	fct_finish_said 'readiness.md: its first three lines hold no line Commit: <sha> or Verdict: <verdict>'
-	git -C "${finish}" checkout -q readiness.md
-	printf '\357\273\277' | cat - "${finish}/readiness.md" >"${scratch}/readiness.md"
-	mv "${scratch}/readiness.md" "${finish}/readiness.md"
-	fct_finish 0
-
-	# A new build, such as of another command, starts at its own intake,
-	# after a review with a passing verdict. The findings of the build before
-	# it are no history of the new build.
-	git -C "${finish}" checkout -q readiness.md
-	fct_steps "${finish}"
-	printf 'Handler of the next build.\n' >>"${finish}/README.md"
-	git -C "${finish}" commit -qam 'handler of the next build'
-	ledger_earlier=""
-	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${advise}${declined}" 'agent B'
-	fct_finish 0
+	fct_test_ledger_builds
 }

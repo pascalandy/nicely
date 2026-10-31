@@ -57,6 +57,7 @@ End the review with one verdict. The verdict follows from the findings, and `jus
 
 Only the user accepts a limit. Ask the user, and wait for the answer.
 Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.
+This change starts no round: the reviewer gives the finding the state `limit` in the review of the same commit.
 Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
 A loss that you report but that the user did not accept is a `warn` finding, not a limit.
 
@@ -86,6 +87,7 @@ Change commits names the commits that the change review covered. The readiness r
 When one pass did both reviews, name the same reviewer in both cells.
 Finish holds the result of `just finish` for each earlier round, and `pending` for this round.
 Keep the row of each earlier round as it was. Only its Finish changes, from `pending` to its result.
+Commit `readiness.md` at the end of each round, so each round has a committed review of its head.
 A build has at most 5 rounds.
 A new build, such as of another command, starts at a new intake, after a review with a passing verdict.
 

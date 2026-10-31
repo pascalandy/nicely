@@ -10,7 +10,7 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - A line under `## Open lines`
 - A line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance
 - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`. A byte order mark before them is ignored
-- A reviewed commit that differs from the working tree outside `readiness.md`
+- A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round
 - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
 - A severity after the first three lines, outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose. Under `## Findings`, the word severity fails too. The message names the word or the table that caused it
 - `Ready` with a `block` or `warn` finding that is not `fixed`, or with a limit in `spec.md`
@@ -55,10 +55,12 @@ A finding of the last round can have no state yet.
 - A finding without an ID, a finding of an earlier round without a state, or a state without its parts
 - A finding with the state `open`, even when `## Open lines` holds `None.`
 - A `warn` or `block` finding with the state `declined`
-- A finding of an earlier committed `readiness.md` that is missing, or whose severity went down
+- A finding of an earlier committed `readiness.md` that is missing, or whose severity went down. A finding without an ID keeps its title
+- A committed review whose `Commit:` is the Head of no round, or a round before the last without a committed review of its Head
 - A round of an earlier committed ledger that is missing or changed. Only a Finish that was `pending` changes
 
-The history of a build starts after the last committed `readiness.md` with a passing verdict at or before its Intake commit.
+The history of a build starts after the last committed `readiness.md` that passes, at or before its Intake commit.
+Such a review has a passing verdict that follows from its findings and from the `spec.md` of its commit.
 So an earlier build that ended is no history of this one.
 A review that needs work never ends a build, so a moved Intake hides no finding and resets no round.
 

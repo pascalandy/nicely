@@ -138,6 +138,8 @@ fct_main() {
 	source "${root}/scripts/template-finish-test.sh"
 	# shellcheck source=scripts/template-ledger-test.sh
 	source "${root}/scripts/template-ledger-test.sh"
+	# shellcheck source=scripts/template-ledger-builds-test.sh
+	source "${root}/scripts/template-ledger-builds-test.sh"
 	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
 	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
 	# just update runs the Copier that the template pins, and so does this test.

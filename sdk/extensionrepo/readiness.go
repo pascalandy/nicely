@@ -12,8 +12,8 @@ import (
 // bullets - **State**:, - **Spec**:, - **Commit**:, and - **Reason**: give
 // its state in the ledger (#417).
 type finding struct {
-	line                                   int
-	id, severity, state, spec, commit, why string
+	line                                          int
+	id, title, severity, state, spec, commit, why string
 }
 
 var (
@@ -89,9 +89,9 @@ func readinessFindings(readiness string) ([]finding, []string) {
 					part, seen = i+1, true
 				}
 			case level == 3 && part > 0:
-				f := finding{line: i + 1}
+				f := finding{line: i + 1, title: heading[2]}
 				if id := readinessID.FindStringSubmatch(heading[2]); id != nil {
-					f.id = id[1]
+					f.id, f.title = id[1], strings.TrimSpace(heading[2][len(id[0]):])
 				}
 				findings = append(findings, f)
 				current = len(findings) - 1

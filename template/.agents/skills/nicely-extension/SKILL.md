@@ -113,6 +113,7 @@ At the limit of 5 rounds, stop. Do not start round 6.
 Report to the user each open line of `spec.md`, and each finding that the ledger records as `open`, with its ID.
 Then wait for the user.
 An answer that lets you choose, such as "decide yourself", accepts no limit and starts no round.
+The user can accept each open finding as a limit. That needs no new round, as `readiness-review.md` says.
 
 ### Review, stop, and delivery
 

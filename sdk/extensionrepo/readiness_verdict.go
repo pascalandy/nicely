@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"slices"
 	"strings"
 )
@@ -14,8 +15,7 @@ import (
 // (#409, #417). Only readiness.md may differ from that commit, so the review
 // can be committed after it. Then the ledger of the build must hold.
 func readinessProblems(spec string, limits []limit) []string {
-	const fix = "Fix: ask an agent that did not write the code to run the readiness review of the nicely-extension skill, then start readiness.md with the lines Commit: <sha>, Reviewer: <who>, and Verdict: <verdict>"
-	const verdictFix = "Fix: write the verdict that the findings and the limits give, as the readiness review of the nicely-extension skill says"
+	const fix = readinessFix
 	data, err := os.ReadFile("readiness.md")
 	if errors.Is(err, os.ErrNotExist) {
 		return []string{"readiness.md: no readiness verdict is recorded. " + fix}
@@ -36,10 +36,45 @@ func readinessProblems(spec string, limits []limit) []string {
 	if !readinessReviewer.MatchString(header) {
 		problems = append(problems, "readiness.md: it names no reviewer. "+fix)
 	}
+	problems = append(problems, verdictProblems(verdict[1], findings, limits)...)
+	sha, err := updateOutput("git", "rev-parse", "--verify", "--quiet", commit[1]+"^{commit}")
+	if err != nil {
+		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", commit[1], fix))
+	}
+	changed, err := updateOutput("git", "diff", "--name-only", commit[1], "--")
+	if err != nil {
+		return append(problems, "readiness.md: "+err.Error())
+	}
+	added, err := updateOutput("git", "ls-files", "--others", "--exclude-standard")
+	if err != nil {
+		return append(problems, "readiness.md: "+err.Error())
+	}
+	var files []string
+	for _, file := range strings.Split(string(changed)+string(added), "\n") {
+		if file != "" && file != "readiness.md" && !slices.Contains(files, file) && (file != "spec.md" || !limitsOnly(commit[1])) {
+			files = append(files, file)
+		}
+	}
+	if len(files) != 0 {
+		problems = append(problems, fmt.Sprintf("readiness.md: the review is of %s, and these files changed since: %s. Fix: run the readiness review again on this commit", commit[1], strings.Join(files, ", ")))
+	}
+	return append(problems, ledgerProblems(readiness, strings.TrimSpace(string(sha)), findings, spec, limits)...)
+}
+
+const (
+	readinessFix = "Fix: ask an agent that did not write the code to run the readiness review of the nicely-extension skill, then start readiness.md with the lines Commit: <sha>, Reviewer: <who>, and Verdict: <verdict>"
+	verdictFix   = "Fix: write the verdict that the findings and the limits give, as the readiness review of the nicely-extension skill says"
+)
+
+// verdictProblems reports a verdict that does not follow from the findings,
+// their states, and the limits of spec.md (#409, #417). Finish also runs it
+// on an earlier review that would end a build.
+func verdictProblems(verdict string, findings []finding, limits []limit) []string {
+	var problems []string
 	accepted := func(f finding) bool {
 		return f.state == "limit" && slices.ContainsFunc(limits, func(l limit) bool { return l.id == f.spec && l.accepted })
 	}
-	switch v := verdict[1]; v {
+	switch v := verdict; v {
 	case "Ready":
 		for _, f := range findings {
 			if (f.severity == "block" || f.severity == "warn") && f.state != "fixed" {
@@ -62,28 +97,32 @@ func readinessProblems(spec string, limits []limit) []string {
 	case "Needs work":
 		problems = append(problems, "readiness.md: the verdict is Needs work. Fix: start the next round from its findings")
 	default:
-		problems = append(problems, fmt.Sprintf("readiness.md: the verdict %q is not Ready, Ready with stated limits, or Needs work. %s", v, fix))
+		problems = append(problems, fmt.Sprintf("readiness.md: the verdict %q is not Ready, Ready with stated limits, or Needs work. %s", v, readinessFix))
 	}
-	sha, err := updateOutput("git", "rev-parse", "--verify", "--quiet", commit[1]+"^{commit}")
+	return problems
+}
+
+// limitsOnly reports whether spec.md differs from its version in commit only
+// under **Limits.**. So the user accepts a limit after a review, and no new
+// round starts for it (#417).
+func limitsOnly(commit string) bool {
+	old, err := exec.Command("git", "show", commit+":spec.md").Output()
 	if err != nil {
-		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", commit[1], fix))
+		return false
 	}
-	changed, err := updateOutput("git", "diff", "--name-only", commit[1], "--")
+	current, err := os.ReadFile("spec.md")
 	if err != nil {
-		return append(problems, "readiness.md: "+err.Error())
+		return false
 	}
-	added, err := updateOutput("git", "ls-files", "--others", "--exclude-standard")
-	if err != nil {
-		return append(problems, "readiness.md: "+err.Error())
-	}
-	var files []string
-	for _, file := range strings.Split(string(changed)+string(added), "\n") {
-		if file != "" && file != "readiness.md" && !slices.Contains(files, file) {
-			files = append(files, file)
+	outside := func(spec string) []string {
+		lines := strings.Split(spec, "\n")
+		var kept []string
+		for _, l := range SpecLines(spec) {
+			if l.Part != "Limits" {
+				kept = append(kept, lines[l.Number-1])
+			}
 		}
+		return kept
 	}
-	if len(files) != 0 {
-		problems = append(problems, fmt.Sprintf("readiness.md: the review is of %s, and these files changed since: %s. Fix: run the readiness review again on this commit", commit[1], strings.Join(files, ", ")))
-	}
-	return append(problems, ledgerProblems(readiness, strings.TrimSpace(string(sha)), findings, spec, limits)...)
+	return slices.Equal(outside(string(old)), outside(string(current)))
 }

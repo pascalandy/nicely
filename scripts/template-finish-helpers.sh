@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Shared calls of the proof of just finish in template-finish-test.sh.
 # shellcheck disable=SC2154 # fct_test_finish sets finish and scratch for these helpers.
+# Markdown backticks in the fixture text are literal.
+# shellcheck disable=SC2016
 
 # fct_finish runs just finish in the copy, and requires the exit code $1.
 fct_finish() {
