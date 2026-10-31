@@ -1,6 +1,6 @@
 # D016 Run checks locally and on GitHub, and release by hand
 
-Decided 2026-10-05. Changed 2026-10-29 by [#373](https://github.com/pascalandy/nicely/issues/373), and confirmed by Pascal in [#381](https://github.com/pascalandy/nicely/issues/381). Checks run through `just`, Lefthook, and `just signoff`, whose `signoff` status the ruleset of `main` requires. GitHub Actions runs `just check` again for each push to `main` and each pull request. That check is advisory: the ruleset does not require it. External pull requests go through the maintainer's agent and `just signoff`. A release runs only when an agent starts the release workflow.
+Decided 2026-10-05. Changed 2026-10-29 by [#373](https://github.com/pascalandy/nicely/issues/373), and confirmed by Pascal in [#381](https://github.com/pascalandy/nicely/issues/381). Changed 2026-10-30 by [#413](https://github.com/pascalandy/nicely/issues/413). Checks run through `just`, Lefthook, and `just signoff`, whose `signoff` status the ruleset of `main` requires. GitHub Actions runs `just check` again for each push to `main` and each pull request. That check is advisory: the ruleset does not require it. External pull requests go through the maintainer's agent and `just signoff`. A release runs only when an agent starts the release workflow.
 
 **Why.** Local checks are faster, and `just signoff` proves the exact commit that reaches `main`. A push can skip the pre-push hook of Lefthook, so a second run on a clean runner shows a broken `main`. Nicely is public, so standard GitHub runners run that check for free.
 
@@ -11,6 +11,7 @@ It replaces caller `GOFLAGS` with a blank value, which also masks a `GOFLAGS` th
 It disables `GOWORK`, which can select external workspace modules.
 Other persisted Go settings, such as `GOPRIVATE`, stay.
 It runs that worktree's `just check` once, including its dependencies.
+In an extension repository, it runs `just finish` first, so it signs no commit before the loop of the skill is done.
 A failed check, a changed HEAD, or a changed tracked file prevents signoff.
 Uncommitted changes in the caller cannot fix the checked commit.
 After the checks pass, `gh signoff --commit <sha>` signs only the frozen SHA.
@@ -19,7 +20,7 @@ Success prints `Signed off on <sha>` with the full SHA.
 Each run prints the path of its JSON receipt under Nicely's cache folder, in `signoff/`.
 That folder must be outside the repository.
 The receipt records the SHA, host OS, tool versions, and each invoked gate's exit code.
-The current gate is `just check`.
+The gates are `just check`, and `just finish` before it in an extension repository.
 The receipt exists before signoff and then records the exit code of `gh signoff`.
 The run also keeps its check log, including failures.
 The scratch worktree goes when the program returns.

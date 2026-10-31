@@ -26,7 +26,13 @@ func run(e extension.Extension, args []string) int {
 		return Test(args[1:])
 	}
 	if len(args) == 1 && args[0] == "signoff" {
-		return report("signoff", signoff())
+		recipes := []string{"check"}
+		if len(e.Manifest) != 0 {
+			// An extension repository signs no commit before the loop of its
+			// skill is done (#413). Core has no just finish.
+			recipes = []string{"finish", "check"}
+		}
+		return report("signoff", signoff(recipes))
 	}
 	if len(args) > 0 && args[0] == "update" {
 		return update(args[1:])

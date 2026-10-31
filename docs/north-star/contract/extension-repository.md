@@ -47,7 +47,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
   - A severity under `## Findings` outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose
   - `Ready` with a `block` or `warn` finding, or with a limit in `spec.md`
   - `Ready with stated limits` with a `block` finding, or with a `warn` whose **Limit** names no accepted limit
-- `just signoff` checks the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines
+- `just signoff` runs `just finish` and `just check` on the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines
 - `just release <tag> [fixture]` publishes the signed SHA and proves the README install, as [Release and install](extensions.md#release-and-install) defines
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last
 - `just uninstall` removes the install of the slug from that folder, the executable first. With nothing installed, it says so and exits 0

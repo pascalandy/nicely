@@ -61,7 +61,7 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
 - `just finish`: the exit of the loop. `extension-repository.md` in the pinned contract lists what it checks
-- `just signoff`: checks the committed SHA in a detached scratch worktree, writes a receipt outside the repository, and signs that exact SHA
+- `just signoff`: runs `just finish` and `just check` on the committed SHA in a detached scratch worktree. Then it writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
 - `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would, in scratch folders. It works on a copy of the fixture, or on an input that it makes
@@ -93,7 +93,7 @@ The rounds of the skill stop when all of these hold:
 After 5 rounds, stop anyway, and report each open line to the user.
 For a command that needs a key, relay the grant hint to the human and wait.
 A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
-It never replaces "Done when". When the previous pull request is not merged, a new pull request stacks on its branch.
+It never replaces "Done when". `just signoff` runs `just finish` first, so a merge or a release waits until `just finish` passes. When the previous pull request is not merged, a new pull request stacks on its branch.
 
 ## Release
 

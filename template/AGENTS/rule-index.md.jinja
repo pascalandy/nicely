@@ -23,9 +23,9 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | Spec first; a scenario fails before the handler body exists | Prose only |
 | Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
 | The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
-| Each round ends with an independent review and the readiness review | Prose only |
+| Each round ends with an independent review and the readiness review | [Signoff][signoff] runs the [finish gate][finish], which needs a readiness review of the signed commit by a named reviewer |
 | At the exit, filled forms, no open line, accepted limits, and a passing readiness verdict for this commit, by a named reviewer, from its findings | [Finish gate][finish] |
-| Stop at "Done when" or after 5 rounds, and deliver only after that | Prose only |
+| Stop at "Done when" or after 5 rounds, and deliver only after that | [Signoff][signoff] runs the [finish gate][finish], and [release][release] needs that signoff |
 
 [calls]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/calls.go
 [links]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/links.go

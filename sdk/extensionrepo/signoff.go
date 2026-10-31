@@ -16,7 +16,8 @@ import (
 )
 
 // signoff checks one frozen commit, without the caller's uncommitted files or task environment.
-func signoff() error {
+// It runs each just recipe of recipes in order, and stops at the first failure.
+func signoff(recipes []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	env := signoffEnv()
@@ -65,19 +66,24 @@ func signoff() error {
 		return err
 	}
 	defer func() { _ = log.Close() }()
-	if _, err := fmt.Fprintf(log, "SHA %s\n$ just check\n", sha); err != nil {
+	if _, err := fmt.Fprintf(log, "SHA %s\n", sha); err != nil {
 		return err
 	}
-	check := []string{"just", "--justfile", filepath.Join(worktree, "justfile"), "--working-directory", worktree, "check"}
-	cmd := signoffCommand(ctx, env, worktree, check[0], check[1:]...)
-	cmd.Stdout, cmd.Stderr = io.MultiWriter(os.Stdout, log), io.MultiWriter(os.Stderr, log)
-	err = cmd.Run()
-	receipt.Checks = append(receipt.Checks, signoffCheck{Command: check, Exit: signoffExit(err)})
-	if writeErr := receipt.write(run); writeErr != nil {
-		return writeErr
-	}
-	if err != nil {
-		return fmt.Errorf("check of %s failed: %w", sha, err)
+	for _, recipe := range recipes {
+		if _, err := fmt.Fprintf(log, "$ just %s\n", recipe); err != nil {
+			return err
+		}
+		check := []string{"just", "--justfile", filepath.Join(worktree, "justfile"), "--working-directory", worktree, recipe}
+		cmd := signoffCommand(ctx, env, worktree, check[0], check[1:]...)
+		cmd.Stdout, cmd.Stderr = io.MultiWriter(os.Stdout, log), io.MultiWriter(os.Stderr, log)
+		err := cmd.Run()
+		receipt.Checks = append(receipt.Checks, signoffCheck{Command: check, Exit: signoffExit(err)})
+		if writeErr := receipt.write(run); writeErr != nil {
+			return writeErr
+		}
+		if err != nil {
+			return fmt.Errorf("%s of %s failed: %w", recipe, sha, err)
+		}
 	}
 	if err := signoffUnchanged(ctx, env, worktree, sha); err != nil {
 		return err
@@ -86,7 +92,7 @@ func signoff() error {
 		return err
 	}
 	args := []string{"gh", "signoff", "--commit", sha}
-	cmd = signoffCommand(ctx, env, worktree, args[0], args[1:]...)
+	cmd := signoffCommand(ctx, env, worktree, args[0], args[1:]...)
 	// Only this program prints the landing receipt line, after gh succeeds.
 	cmd.Stdout, cmd.Stderr = log, io.MultiWriter(os.Stderr, log)
 	err = cmd.Run()
