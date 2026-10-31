@@ -1,7 +1,9 @@
 package extensiontest_test
 
 import (
+	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -40,14 +42,59 @@ const copyRefusal = `echo '{"ok":false,"contract_version":1,"retry_safe":true,"e
 exit 2
 `
 
-func copyFixture(t *testing.T, host, script string) (string, error) {
+// A copyCase is one scenario of standalone copy, with its shell host. Its
+// problem is a text of its failure, or "" for a scenario that passes.
+type copyCase struct{ name, host, script, problem string }
+
+// runCopyCases runs each case as its own scenario in one copy of the
+// standalone fixture, so the cases share one build and one go test.
+func runCopyCases(t *testing.T, cases []copyCase) {
 	t.Helper()
 	ext := "$XDG_DATA_HOME/nicely/extensions/ncly-standalone"
 	setup := "mkdir out\nrm " + ext + "\ncp host.sh " + ext + "\nchmod 755 " + ext + "\n"
-	return goTest(t, "standalone", os.Getenv("PATH"),
-		edit{"manifest.toml", "[programs.tally-tool]", copyCommand},
-		edit{"extension.go", `"standalone fetch": fetch,`, "\"standalone fetch\": fetch,\n\t\t\"standalone copy\":  tally,"},
-		edit{file: "testdata/script/copy.txtar", new: setup + script + "\n-- notes.md --\nFirst line\nLast line\n-- host.sh --\n" + host})
+	edits := []edit{
+		{"manifest.toml", "[programs.tally-tool]", copyCommand},
+		{"extension.go", `"standalone fetch": fetch,`, "\"standalone fetch\": fetch,\n\t\t\"standalone copy\":  tally,"},
+	}
+	for i, c := range cases {
+		edits = append(edits, edit{file: fmt.Sprintf("testdata/script/copy%02d.txtar", i), new: setup + c.script + "\n-- notes.md --\nFirst line\nLast line\n-- host.sh --\n" + c.host})
+	}
+	out, _ := goTest(t, "standalone", os.Getenv("PATH"), edits...)
+	for i, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			status, log := scenarioResult(out, fmt.Sprintf("copy%02d", i))
+			switch {
+			case status == "":
+				t.Fatalf("no result for the scenario of %q\n%s", c.name, out)
+			case c.problem == "" && status != "PASS":
+				t.Fatalf("valid scenario failed\n%s", log)
+			case c.problem != "" && (status != "FAIL" || !strings.Contains(log, c.problem)):
+				t.Fatalf("want %q, got %s\n%s", c.problem, status, log)
+			}
+		})
+	}
+}
+
+// scenarioResult returns PASS or FAIL for the scenario name in the output of
+// go test -v, and its log. Go prints that log under the lines === RUN,
+// === CONT, or === NAME of the scenario, and its result at the end.
+func scenarioResult(out, name string) (string, string) {
+	result := regexp.MustCompile(`(?m)^\s*--- (PASS|FAIL): \S*/` + name + ` \(`).FindStringSubmatch(out)
+	if result == nil {
+		return "", ""
+	}
+	var log strings.Builder
+	mine := false
+	for _, line := range strings.Split(out, "\n") {
+		if header := strings.TrimSpace(line); strings.HasPrefix(header, "=== ") || strings.HasPrefix(header, "--- ") {
+			mine = strings.HasPrefix(header, "=== ") && strings.HasSuffix(header, "/"+name)
+			continue
+		}
+		if mine {
+			log.WriteString(line + "\n")
+		}
+	}
+	return result[1], log.String()
 }
 
 // signalCopyHost copies its input to a temporary file, writes the marker, and waits.
@@ -70,7 +117,7 @@ func TestProtectSignal(t *testing.T) {
 	call := "signal TERM started ncly-standalone copy notes.md out/notes.txt\n"
 	again := "rm started\n" + call
 	old := "cp notes.md out/notes.txt\n"
-	cases := []struct{ name, host, script, problem string }{
+	runCopyCases(t, []copyCase{
 		{"clean interruption", clean, "protect notes.md out\n" + call, ""},
 		{"marker in a protected folder", clean, "protect notes.md .\n" + call, ""},
 		{"temporary file left", signalCopyHost(":"), "protect notes.md out\n" + call, "signal: TERM changed protected paths"},
@@ -79,19 +126,7 @@ func TestProtectSignal(t *testing.T) {
 		{"input changed", signalCopyHost(`rm -f "$tmp"; echo more >> "$input"`), "protect notes.md\n" + call, "signal: TERM changed protected paths"},
 		{"selection ends after one signal", signalCopyHost(`rm -f "$tmp"; [ -z "$DIRTY" ] || echo partial > "$output"`), "protect notes.md out\n" + call + "env DIRTY=1\n" + again, ""},
 		{"new selection for each signal", signalCopyHost(`rm -f "$tmp"; [ -z "$DIRTY" ] || echo partial > "$output"`), "protect notes.md out\n" + call + "env DIRTY=1\nprotect notes.md out\n" + again, "signal: TERM changed protected paths"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			out, err := copyFixture(t, c.host, c.script)
-			if c.problem == "" {
-				if err != nil {
-					t.Fatalf("valid signal scenario failed: %v\n%s", err, out)
-				}
-			} else if err == nil || !strings.Contains(out, c.problem) {
-				t.Fatalf("want %q, got %v\n%s", c.problem, err, out)
-			}
-		})
-	}
+	})
 }
 
 // linkHost refuses an output that is a link. Before the refusal, the run part runs write.
@@ -110,7 +145,7 @@ input=$1 output=$2
 func TestProtectLink(t *testing.T) {
 	ext := "$XDG_DATA_HOME/nicely/extensions/ncly-standalone"
 	refusal := "symlink out/notes.txt -> ../notes.md\nprotect notes.md out/notes.txt\nrefuses USAGE_INVALID ncly-standalone copy notes.md out/notes.txt\n"
-	cases := []struct{ name, host, script, problem string }{
+	runCopyCases(t, []copyCase{
 		{"refusal keeps the link", linkHost(":"), refusal, ""},
 		{"write through the link", linkHost(`echo copy >> "$output"`), refusal, "run changed protected paths"},
 		{"truncate through the link", linkHost(`: > "$output"`), refusal, "run changed protected paths"},
@@ -118,17 +153,5 @@ func TestProtectLink(t *testing.T) {
 		{"selection stays after a signal", linkHost(`echo copy >> "$output"`), "symlink out/notes.txt -> ../notes.md\nprotect notes.md out/notes.txt\ncp signal.sh " + ext + "\n" +
 			"signal TERM started ncly-standalone copy notes.md out/other.txt\ncp host.sh " + ext + "\nrefuses USAGE_INVALID ncly-standalone copy notes.md out/notes.txt\n" +
 			"-- signal.sh --\n" + signalCopyHost(`rm -f "$tmp"`), "run changed protected paths"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			out, err := copyFixture(t, c.host, c.script)
-			if c.problem == "" {
-				if err != nil {
-					t.Fatalf("valid link scenario failed: %v\n%s", err, out)
-				}
-			} else if err == nil || !strings.Contains(out, c.problem) {
-				t.Fatalf("want %q, got %v\n%s", c.problem, err, out)
-			}
-		})
-	}
+	})
 }

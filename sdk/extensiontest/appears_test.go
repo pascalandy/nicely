@@ -31,7 +31,7 @@ rm -f "$tmp"
 func TestAppears(t *testing.T) {
 	safe := appearsHost("", safeCommit)
 	call := "appears started out/notes.txt ncly-standalone copy notes.md out/notes.txt\n"
-	cases := []struct{ name, host, script, problem string }{
+	runCopyCases(t, []copyCase{
 		{"keeps the new file", safe, "protect notes.md out\n" + call + "stderr '\"code\":\"USAGE_INVALID\"'\n", ""},
 		{"through ncly", safe, "appears started out/notes.txt ncly standalone copy notes.md out/notes.txt\n", ""},
 		{"rename over the new file", appearsHost("", "mv -f \"$tmp\" \"$output\"\n"+copyRefusal), call, "the run replaced out/notes.txt"},
@@ -48,17 +48,5 @@ func TestAppears(t *testing.T) {
 		{"force", safe, "appears started out/notes.txt ncly-standalone copy notes.md out/notes.txt --force\n", "remove --force"},
 		{"answer schema", appearsHost("", "rm -f \"$tmp\"\n"+strings.Replace(copyRefusal, `"ok":false`, `"ok":"false"`, 1)), call, "breaks the schema"},
 		{"path bypass", safe, "appears started out/notes.txt $XDG_DATA_HOME/nicely/extensions/ncly-standalone copy notes.md out/notes.txt\n", "use the registered command"},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			out, err := copyFixture(t, c.host, c.script)
-			if c.problem == "" {
-				if err != nil {
-					t.Fatalf("valid appears scenario failed: %v\n%s", err, out)
-				}
-			} else if err == nil || !strings.Contains(out, c.problem) {
-				t.Fatalf("want %q, got %v\n%s", c.problem, err, out)
-			}
-		})
-	}
+	})
 }
