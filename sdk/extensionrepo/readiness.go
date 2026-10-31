@@ -33,14 +33,11 @@ var (
 // readinessFindings reads the findings of readiness.md, outside fenced code.
 // It reports each finding that finish cannot grade, so a finding in another
 // form never passes as no finding. Under ## Findings, it also reports each
-// severity outside the line - **Severity**: of a finding, in fenced code too.
+// line that names a severity, except the line - **Severity**: of a finding.
 func readinessFindings(readiness string) ([]finding, []string) {
 	const fix = "Fix: give each finding its own ### heading under ## Findings, with one line - **Severity**: `block`, `warn`, or `advise`"
 	var findings []finding
 	var problems []string
-	hidden := func(line int) {
-		problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names a severity outside the line - **Severity**: of a finding. %s", line, fix))
-	}
 	part, current, fence, opened, none, stray, seen := 0, -1, "", 0, false, false, false
 	closeFindings := func() {
 		if part > 0 && len(findings) == 0 && !none {
@@ -50,12 +47,14 @@ func readinessFindings(readiness string) ([]finding, []string) {
 	}
 	for i, text := range strings.Split(readiness, "\n") {
 		trimmed := strings.TrimSpace(text)
+		m := readinessPart.FindStringSubmatch(text)
+		if part > 0 && readinessSeverity.MatchString(text) && (fence != "" || m == nil || m[1] != "Severity") {
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names a severity outside the line - **Severity**: of a finding. %s", i+1, fix))
+		}
 		switch {
 		case fence != "":
 			if strings.HasPrefix(trimmed, fence) && strings.Trim(trimmed, fence[:1]) == "" {
 				fence = ""
-			} else if part > 0 && readinessSeverity.MatchString(text) {
-				hidden(i + 1)
 			}
 			continue
 		case strings.HasPrefix(trimmed, "```"), strings.HasPrefix(trimmed, "~~~"):
@@ -76,13 +75,10 @@ func readinessFindings(readiness string) ([]finding, []string) {
 			continue
 		}
 		none = none || part > 0 && current < 0 && trimmed == "None."
-		m := readinessPart.FindStringSubmatch(text)
 		if m == nil {
 			if part > 0 && current < 0 && trimmed != "" && trimmed != "None." && !stray {
 				stray = true
 				problems = append(problems, fmt.Sprintf("readiness.md:%d: this text of ## Findings is outside every ### finding. %s", i+1, fix))
-			} else if current >= 0 && readinessSeverity.MatchString(text) {
-				hidden(i + 1)
 			}
 			continue
 		}

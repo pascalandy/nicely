@@ -14,7 +14,7 @@ fct_test_finish() {
 	local unfilled='this line of the form is not filled'
 	local warn=$'### Large files are slow\n\n- **Severity**: `warn`'
 	local advise=$'### The count could name the longest line\n\n- **Severity**: `advise`'
-	local hidden=$'### The count could name the longest line\n\n- **Severity**: `advise`\n\n| Output keeps GPS | `warn` |\n| Output keeps the serial number | block |\n\n```\n### Output keeps the place\n\n- **Severity**: `warn`\n```\n\n### Output keeps the name\n\n- Severity: warn\n- **Severity**: `advise`\n\n### Output keeps the date\n\nSeverity: warn.\n\n- **Severity**: `advise`'
+	local hidden=$'### The count could name the longest line\n\n- **Severity**: `advise`\n\n| Output keeps GPS | `warn` |\n| Output keeps the serial number | block |\n\n```\n### Output keeps the place\n\n- **Severity**: `warn`\n```\n\n### Output keeps the name\n\n- Severity: warn\n- **Severity**: `advise`\n\n### Output keeps the date\n\nSeverity: warn.\n\n- **Severity**: `advise`\n\n### Severity: warn\n\n- **Severity**: `advise`\n- **Limit**: `block`'
 	local unread=$'- **Severity**: `warn`\n\n### No severity\n\n### Two severities\n\n- **Severity**: `advise`\n- **Severity**: `warn`\n\n### Unknown severity\n\n- **Severity**: minor\n\n### A fenced heading\n\n````\n# a comment\n```\n````\n\n- **Severity**: `block`\n\n### An open fence\n\n```\n- **Severity**: `advise`'
 	cp -R "${1}" "${finish}"
 	[[ "$(just --justfile "${finish}/justfile" --show finish | sed '/^#/d')" == $'finish:\n    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo finish' ]] ||
@@ -118,7 +118,7 @@ fct_test_finish() {
 	# A severity outside the line - **Severity**: of a finding fails it, even after a valid finding (#413).
 	fct_readiness "${sha}" 'Ready with stated limits' "${hidden}"
 	fct_finish 1
-	for number in 13 14 19 24 29; do
+	for number in 13 14 19 24 29 33 36; do
 		fct_finish_said "readiness.md:${number}: this line names a severity outside the line - **Severity**: of a finding"
 	done
 
