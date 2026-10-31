@@ -113,6 +113,14 @@ fct_test_finish() {
 	fct_finish 1
 	fct_finish_said 'readiness.md:9: this warn names no limit that the user accepted'
 
+	# Finish refuses a verdict or a commit that it does not know.
+	fct_readiness "${sha}" 'Ready with limits' 'None.'
+	fct_finish 1
+	fct_finish_said 'readiness.md: the verdict "Ready with limits" is not Ready, Ready with stated limits, or Needs work'
+	fct_readiness 0123456789abcdef0123456789abcdef01234567 'Ready with stated limits' 'None.'
+	fct_finish 1
+	fct_finish_said 'readiness.md: Git knows no commit 0123456789abcdef0123456789abcdef01234567'
+
 	# A finding that finish cannot grade fails it.
 	fct_readiness "${sha}" 'Ready with stated limits' ''
 	fct_finish 1
@@ -140,6 +148,9 @@ fct_test_finish() {
 
 	# A change after the review needs a new review.
 	printf 'A change after the review.\n' >>"${finish}/README.md"
+	fct_finish 1
+	fct_finish_said "readiness.md: the review is of ${sha}, and these files changed since: README.md"
+	git -C "${finish}" commit -qam 'a commit after the review'
 	fct_finish 1
 	fct_finish_said "readiness.md: the review is of ${sha}, and these files changed since: README.md"
 }
