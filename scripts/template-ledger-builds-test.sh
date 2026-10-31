@@ -7,7 +7,7 @@
 # shellcheck disable=SC2016,SC2034,SC2154
 
 fct_test_ledger_builds() {
-	local base forged kept head2 head3 i limit=$'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
+	local base passed forged kept head2 head3 i limit=$'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
 	git -C "${finish}" checkout -q readiness.md spec.md
 	base="$(git -C "${finish}" rev-parse HEAD)"
 	# After a limit that the user accepted, or a review of the form of #409, a
@@ -66,7 +66,7 @@ fct_test_ledger_builds() {
 	fct_finish 0
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review of the next build'
-	base="$(git -C "${finish}" rev-parse HEAD)"
+	base="$(git -C "${finish}" rev-parse HEAD)" passed="${base}"
 	# Ten builds that each end with a review that passes still pass.
 	for i in 3 4 5 6 7 8 9 10; do
 		ledger_earlier="${ledger_earlier} $(git -C "${finish}" log --format=%H -n 1 HEAD~1):pass"
@@ -106,7 +106,38 @@ fct_test_ledger_builds() {
 		ledger_earlier="${round1} ${round2} ${head}:pass ${head2}:pass ${head3}:pass"
 		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${valid}"$'\n\n### R5-F1 Blank lines are dropped\n\n- **Severity**: `block`\n- **State**: `fixed`\n- **Commit**: '"${head3}"$'\n- **Spec**: `bad-input`' 'agent B'
 		fct_finish 1
-		fct_finish_said 'round 5 says pass, but its review in'
+		fct_finish_said 'round 5 says pass, but just finish fails on its review in'
 		git -C "${finish}" reset -q --hard "${base}"
+	done
+
+	git -C "${finish}" reset -q --hard "${passed}"
+	# A review that ended a build passes as just finish read it then. A limit
+	# that a later build accepts changes nothing for it, and an open line of
+	# its time keeps it from ending the build.
+	for forged in limit open; do
+		if [[ "${forged}" == limit ]]; then
+			fct_edit "${finish}/spec.md" '**Limits.** None.' "${limit}"
+			git -C "${finish}" commit -qam 'a later build accepts the limit long-lines'
+		else
+			fct_edit "${finish}/spec.md" 'None.' $'| ID | Command | Part | Case | Code |\n|---|---|---|---|---|\n| `slow` | inspect | Failures | A file that the program reads slowly | `RUNTIME` |'
+			git -C "${finish}" commit -qam 'an open line'
+			head3="$(git -C "${finish}" rev-parse HEAD)" ledger_earlier="${round1} ${round2} ${head}:pass ${head2}:pass"
+			fct_readiness "${head3}" Ready "${valid}" 'agent B'
+			git -C "${finish}" add readiness.md
+			git -C "${finish}" commit -qm 'a review that misses the open line'
+			ledger_earlier="${ledger_earlier} ${head3}:pass"
+		fi
+		fct_steps "${finish}"
+		printf 'Handler of the build after it.\n' >>"${finish}/README.md"
+		git -C "${finish}" commit -qam 'handler of the build after it'
+		[[ "${forged}" == open ]] || ledger_earlier="${round1} ${round2} ${head}:pass ${head2}:pass"
+		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" 'Ready with stated limits' "${valid}" 'agent B'
+		if [[ "${forged}" == limit ]]; then
+			fct_finish 0
+		else
+			fct_finish 1
+			fct_finish_said 'round 5 says pass, but just finish fails on its review in'
+		fi
+		git -C "${finish}" reset -q --hard "${passed}"
 	done
 }

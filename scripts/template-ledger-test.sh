@@ -125,7 +125,7 @@ fct_test_ledger() {
 	ledger_earlier="${round1} ${round2}:pass"
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 1
-	fct_finish_said 'round 2 says pass, but its review in'
+	fct_finish_said 'round 2 says pass, but just finish fails on its review in'
 	ledger_earlier="${round1} ${round2}"
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
 	stray="$(git -C "${finish}" commit-tree -m stray "${head}^{tree}")"

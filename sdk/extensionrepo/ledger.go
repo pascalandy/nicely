@@ -58,7 +58,7 @@ func ledgerProblems(readiness, reviewed string, findings []finding, spec string,
 	reviews := committedReviews()
 	problems = append(problems, orderProblems(order, ended)...)
 	problems = append(problems, stateProblems(findings, len(rounds), spec, limits)...)
-	problems = append(problems, passProblems(rounds, reviews, spec, limits)...)
+	problems = append(problems, passProblems(rounds, reviews)...)
 	return append(problems, historyProblems(findings, rounds, reviews)...)
 }
 
@@ -178,6 +178,15 @@ func orderProblems(order map[string]round, ended string) []string {
 	return problems
 }
 
+// A resolved commit of the ledger. One run of finish resolves each cell once,
+// because the history repeats the same commits.
+type resolved struct {
+	sha string
+	ok  bool
+}
+
+var resolvedCommits = map[string]resolved{}
+
 // ledgerCommit resolves a commit of the ledger. It returns its full SHA, and
 // whether it is HEAD or an ancestor of HEAD.
 func ledgerCommit(cell string) (string, bool) {
@@ -185,9 +194,14 @@ func ledgerCommit(cell string) (string, bool) {
 	if m == nil {
 		return "", false
 	}
+	if r, found := resolvedCommits[m[1]]; found {
+		return r.sha, r.ok
+	}
 	out, err := exec.Command("git", "rev-parse", "--verify", "--quiet", m[1]+"^{commit}").Output()
 	sha := strings.TrimSpace(string(out))
-	return sha, err == nil && ancestor(sha, "HEAD")
+	r := resolved{sha, err == nil && ancestor(sha, "HEAD")}
+	resolvedCommits[m[1]] = r
+	return r.sha, r.ok
 }
 
 func ancestor(commit, of string) bool {

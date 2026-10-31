@@ -3,15 +3,21 @@ package extensionrepo
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 )
 
+// unfilled finds a line of a form that starts with Fill: after its indent.
+var unfilled = regexp.MustCompile(`(?m)^[ \t]*Fill:`)
+
 // A review is one readiness.md committed in the history of HEAD.
 type review struct {
 	revision, commit, text string
 	rounds                 []round
+	findings               []finding
+	unread                 []string
 }
 
 // committedReviews returns each readiness.md committed in HEAD, the newest
@@ -32,6 +38,7 @@ func committedReviews() []review {
 			r.commit, _ = ledgerCommit(m[1])
 		}
 		r.rounds, _, _ = ledgerTables(r.text)
+		r.findings, r.unread = readinessFindings(r.text)
 		reviews = append(reviews, r)
 	}
 	return reviews
@@ -43,11 +50,9 @@ func readinessHeader(readiness string) string {
 }
 
 // passProblems checks each round before the last whose Finish is pass. Such a
-// round ends a build, so its newest committed review must pass. Its verdict
-// and its states follow from its findings and from the limits of spec.md. It
-// keeps each finding of the reviews before it. A review without a ledger, of
-// a template before it, needs a passing verdict only.
-func passProblems(rounds []round, reviews []review, spec string, limits []limit) []string {
+// round ends a build, so just finish passed at its head. Its newest committed
+// review must pass as just finish read it then.
+func passProblems(rounds []round, reviews []review) []string {
 	var problems []string
 	for i, r := range rounds[:max(0, len(rounds)-1)] {
 		if len(r.cells) != len(roundColumns) || strings.Trim(r.cells[5], "`") != "pass" {
@@ -55,24 +60,66 @@ func passProblems(rounds []round, reviews []review, spec string, limits []limit)
 		}
 		head, _ := ledgerCommit(r.cells[1])
 		at := slices.IndexFunc(reviews, func(v review) bool { return v.commit == head })
-		if at < 0 {
-			continue
+		next := ""
+		if len(rounds[i+1].cells) == len(roundColumns) {
+			next, _ = ledgerCommit(rounds[i+1].cells[1])
 		}
-		v := readinessVerdict.FindStringSubmatch(readinessHeader(reviews[at].text))
-		findings, unread := readinessFindings(reviews[at].text)
-		failed := v == nil || len(unread) != 0
-		if !failed {
-			failed = len(verdictProblems(v[1], findings, limits)) != 0
-		}
-		if !failed && len(reviews[at].rounds) != 0 {
-			failed = len(stateProblems(findings, len(reviews[at].rounds), spec, limits)) != 0 ||
-				len(findingHistory(findings, reviews[at+1:], map[string]bool{})) != 0
-		}
-		if failed {
-			problems = append(problems, fmt.Sprintf("readiness.md:%d: round %d says pass, but its review in %.12s does not pass. Fix: write the result that just finish gave for that round", r.line, i+1, reviews[at].revision))
+		if at >= 0 && !passedAt(reviews, at, head, next) {
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: round %d says pass, but just finish fails on its review in %.12s. "+
+				"Fix: write the result that just finish gave for that round", r.line, i+1, reviews[at].revision))
 		}
 	}
 	return problems
+}
+
+// passedAt reports whether just finish passed on the review reviews[at] of
+// head, as the repository stood when the review was committed. The forms
+// hold no Fill: line and no open line, and only readiness.md and **Limits.**
+// of spec.md differ from head. A later spec.md before the next round can
+// stand in when only **Limits.** differs, so a limit committed after the
+// review counts. The verdict and the states follow from the findings, which
+// keep each finding of the reviews before. A review without a ledger, of a
+// template before it, needs no state and no history.
+func passedAt(reviews []review, at int, head, next string) bool {
+	r := reviews[at]
+	show := func(commit, file string) (string, bool) {
+		data, err := exec.Command("git", "show", commit+":"+file).Output()
+		return string(data), err == nil && !unfilled.MatchString(string(data))
+	}
+	for _, form := range []string{"vision.md", "qa.md"} {
+		if _, ok := show(r.revision, form); !ok {
+			return false
+		}
+	}
+	changed, err := exec.Command("git", "diff", "--name-only", head, r.revision, "--").Output()
+	if err != nil || slices.ContainsFunc(strings.Fields(string(changed)), func(f string) bool { return f != "readiness.md" && f != "spec.md" }) {
+		return false
+	}
+	v := readinessVerdict.FindStringSubmatch(readinessHeader(r.text))
+	if v == nil || len(r.unread) != 0 {
+		return false
+	}
+	reviewed, _ := show(head, "spec.md")
+	candidates := []string{r.revision}
+	if next != "" {
+		later, _ := exec.Command("git", "log", "--format=%H", r.revision+".."+next, "--", "spec.md").Output()
+		candidates = append(candidates, strings.Fields(string(later))...)
+	}
+	for _, commit := range candidates {
+		spec, ok := show(commit, "spec.md")
+		if !ok || !sameOutsideLimits(reviewed, spec) {
+			continue
+		}
+		open, limits := specProblems(spec)
+		if len(open) != 0 || len(verdictProblems(v[1], r.findings, limits)) != 0 {
+			continue
+		}
+		if len(r.rounds) == 0 || len(stateProblems(r.findings, len(r.rounds), spec, limits)) == 0 &&
+			len(findingHistory(r.findings, reviews[at+1:], map[string]bool{})) == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // historyProblems compares the ledger with each committed review. Each round
@@ -99,8 +146,7 @@ func findingHistory(findings []finding, reviews []review, reported map[string]bo
 	}
 	var problems []string
 	for _, r := range reviews {
-		earlier, _ := readinessFindings(r.text)
-		for _, e := range earlier {
+		for _, e := range r.findings {
 			key, name := e.id, e.id
 			if key == "" {
 				key, name = "title "+e.title, "titled "+strconv.Quote(e.title)

@@ -52,7 +52,7 @@ A finding of the last round can have no state yet.
 - No round under `## Rounds`, or a row without its six cells, its number, a full Head, or both reviewers
 - A line under `## Rounds` or `## Order of round 1` that is no row of its table, such as a label that would hide rows
 - A build of more than 5 rounds, also a build that ended. The message tells the agent to stop and to report to the user
-- A round with the Finish `pass` whose newest committed review does not pass. That review needs a passing verdict that follows from its findings, valid states, and each finding of the reviews before it
+- A round with the Finish `pass` whose newest committed review would fail `just finish` as the repository stood then. Its forms hold no `Fill:` line and no open line, and only `readiness.md` and **Limits.** of `spec.md` differ from its Head. Its verdict and states follow from its findings, which keep each finding of the reviews before it
 - An Intake that is not after the Head of the round that ended the build before
 - A commit of a round or of a fixed finding that is not HEAD or an ancestor of HEAD
 - A last round whose Head is not the `Commit:` of `readiness.md`
@@ -65,7 +65,8 @@ A finding of the last round can have no state yet.
 - A round of an earlier committed ledger that is missing or changed. Only a Finish that was `pending` changes
 
 The history is every committed `readiness.md` of HEAD, so a moved Intake hides no finding and resets no round.
-Finish checks a review that ends a build with the limits of the current `spec.md`. A finding with the state `limit` keeps its limit row, so the check holds after a limit that the user accepted later.
+Finish checks a review that ends a build with the `spec.md` of its own commit. A later `spec.md` before the next round stands in when only **Limits.** differs, so a limit committed after the review counts.
+A limit or a spec ID that a later build changes does not change that check.
 A review without a ledger, from a template before the ledger, needs a passing verdict only to end a build.
 Its form of #409, a line `- **Limit**:` with a spec ID, reads as the state `limit`.
 
