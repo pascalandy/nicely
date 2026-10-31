@@ -26,7 +26,7 @@ fct_finish_said() {
 # fct_readiness writes readiness.md for the commit $1, with the verdict $2, the
 # findings $3 under ## Findings, and the reviewer $4. An empty $3 leaves out
 # ## Findings, and an empty $4 leaves out the line Reviewer:. The ledger
-# holds $5 rounds, or 1, and its last round reviewed $1.
+# holds $5 rounds, or 1, from the intake $6, and its last round reviewed $1.
 fct_readiness() {
 	local reviewer="${4-an agent that wrote none of the code}"
 	{
@@ -34,16 +34,17 @@ fct_readiness() {
 		[[ -z "${reviewer}" ]] || printf 'Reviewer: %s\n' "${reviewer}"
 		printf 'Verdict: %s\n\n# Readiness review\n' "${2}"
 		[[ -z "${3}" ]] || printf '\n## Findings\n\n%s\n' "${3}"
-		fct_ledger "${finish}" "${1}" "${5:-1}"
+		fct_ledger "${finish}" "${1}" "${5:-1}" "${6:-}"
 	} >"${finish}/readiness.md"
 }
 
 # fct_ledger prints the ledger of a build of $3 rounds in the repository $1,
-# whose last round reviewed $2. Earlier rounds name the first commit, and
-# round 1 commits its handler in $2 (#417).
+# whose last round reviewed $2. The build starts at the intake $4, or at the
+# first commit. Earlier rounds name that intake, and round 1 commits its
+# handler in $2 (#417).
 fct_ledger() {
-	local first i
-	first="$(git -C "${1}" rev-list --max-parents=0 HEAD)"
+	local first="${4}" i
+	[[ -n "${first}" ]] || first="$(git -C "${1}" rev-list --max-parents=0 HEAD)"
 	printf '\n## Rounds\n\n| Round | Head | Change review | Change commits | Readiness review | Finish |\n|---|---|---|---|---|---|\n'
 	for ((i = 1; i < ${3}; i++)); do
 		printf '| %s | %s | agent A | %s..%s | agent B | `fail` |\n' "${i}" "${first}" "${first}" "${first}"

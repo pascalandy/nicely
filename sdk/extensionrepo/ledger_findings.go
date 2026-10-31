@@ -66,11 +66,16 @@ func stateProblems(findings []finding, n int, spec string, limits []limit) []str
 	return problems
 }
 
-// historyProblems compares the findings with each committed readiness.md of
-// this branch. A finding keeps its ID in each later review, and its severity
-// never goes down, so no loss leaves the ledger.
-func historyProblems(findings []finding) []string {
-	revisions, err := exec.Command("git", "log", "--format=%H", "HEAD", "--", "readiness.md").Output()
+// historyProblems compares the findings with each readiness.md committed
+// after since, the intake of the build, or in all of HEAD without it. A
+// finding keeps its ID in each later review, and its severity never goes
+// down, so no loss leaves the ledger.
+func historyProblems(findings []finding, since string) []string {
+	revisions := "HEAD"
+	if since != "" {
+		revisions = since + "..HEAD"
+	}
+	log, err := exec.Command("git", "log", "--format=%H", revisions, "--", "readiness.md").Output()
 	if err != nil {
 		return []string{"readiness.md: git log: " + err.Error()}
 	}
@@ -80,7 +85,7 @@ func historyProblems(findings []finding) []string {
 	}
 	var problems []string
 	reported := map[string]bool{}
-	for _, revision := range strings.Fields(string(revisions)) {
+	for _, revision := range strings.Fields(string(log)) {
 		old, err := exec.Command("git", "show", revision+":readiness.md").Output()
 		if err != nil {
 			continue

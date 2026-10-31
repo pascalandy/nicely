@@ -66,7 +66,13 @@ func ledgerProblems(readiness, reviewed string, findings []finding, spec string,
 	}
 	problems = append(problems, orderProblems(order)...)
 	problems = append(problems, stateProblems(findings, len(rounds), spec, limits)...)
-	return append(problems, historyProblems(findings)...)
+	// The build starts at its intake, so the reviews of an earlier build,
+	// such as of another command, are no history of this one.
+	since := ""
+	if intake, found := order["Intake"]; found {
+		since, _ = ledgerCommit(intake.cells[1])
+	}
+	return append(problems, historyProblems(findings, since)...)
 }
 
 // roundProblems checks one row of ## Rounds, the round number of its place.

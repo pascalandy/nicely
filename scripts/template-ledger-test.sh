@@ -105,4 +105,15 @@ fct_test_ledger() {
 	printf '\357\273\277' | cat - "${finish}/readiness.md" >"${scratch}/readiness.md"
 	mv "${scratch}/readiness.md" "${finish}/readiness.md"
 	fct_finish 0
+
+	# A new build, such as of another command, starts at its own intake.
+	# The findings of the build before it are no history of the new build.
+	git -C "${finish}" checkout -q readiness.md
+	printf 'Intake of the next build.\n' >>"${finish}/README.md"
+	git -C "${finish}" commit -qam 'intake of the next build'
+	first="$(git -C "${finish}" rev-parse HEAD)"
+	printf 'Handler of the next build.\n' >>"${finish}/README.md"
+	git -C "${finish}" commit -qam 'handler of the next build'
+	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${advise}${declined}" 'agent B' 1 "${first}"
+	fct_finish 0
 }

@@ -54,6 +54,6 @@ A finding of the last round can have no state yet.
 - A finding without an ID, a finding of an earlier round without a state, or a state without its parts
 - A finding with the state `open`, even when `## Open lines` holds `None.`
 - A `warn` or `block` finding with the state `declined`
-- A finding of an earlier committed `readiness.md` that is missing, or whose severity went down
+- A finding of an earlier committed `readiness.md` that is missing, or whose severity went down. Finish reads the commits after the Intake commit of the build, so an earlier build is no history of this one
 
 At 5 rounds, a failing `just finish` also tells the agent to stop and to report each open line and each open finding.
