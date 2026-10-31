@@ -46,6 +46,10 @@ The fixture extension repository in `testdata/extensions/standalone/` proves eac
 
 The kit proves the declared cases. Whether a claimed test proves its line, and whether a command has a hidden effect, stay judgments for the author and the reviewer.
 
+`acceptance.sh` checks the primary output with a reader that is not the wrapped program.
+A check that reads only a header or the file type is not sufficient.
+The check compares the content that this reader gives with an independent reference, such as a file of expected text that the author writes.
+
 Other scenario runners use `NewCoverage`, `Coverage.Observe`, and `Coverage.Missing` for the same answer and coverage checks.
 `Observe` receives completed calls, including their exit code and both streams, without changing process execution or output.
 Nicely's runner registers these checks for `agent` and `transcript`, for successful and failed calls.
