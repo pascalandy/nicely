@@ -103,7 +103,7 @@ It never replaces "Done when". `just signoff` runs `just finish` first, so a mer
 3. Run `just signoff` for that pushed commit
 4. Make sure that "Done when" holds for this commit
 5. Merge that exact signed SHA into the default branch
-6. Run `just release vX.Y.Z`, with an optional fixture path
+6. Run `just release vX.Y.Z`, with an optional fixture path. It runs `just acceptance`, then `just finish` again on that commit, before it makes the tag
 7. Read the printed receipt for acceptance, the published install, Economy reservations, hosted checks, and uninstall
 
 For release recovery, read "Release and install" in the pinned contract's `extensions.md`.

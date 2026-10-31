@@ -12,7 +12,10 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`. A byte order mark before them is ignored
 - A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round
 - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
-- A severity after the first three lines, outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose. Under `## Findings`, the word severity fails too. The message names the word or the table that caused it
+- A severity after the first three lines, outside the line `- **Severity**:` of a finding, in a form that grades. Such a form is code, such as `` `warn` ``, also in fenced code, or a cell of a table that holds only a severity. Under `## Findings`, the word severity fails too. The message names the word or the table that caused it
+
+Finish reads a severity only in the line `- **Severity**:` of a finding.
+The plain words block, warn, and advise pass in a title, in evidence, and in prose, such as `### R1-F1 Large inputs block the terminal` (#419).
 - `Ready` with a `block` or `warn` finding that is not `fixed`, or with a limit in `spec.md`
 - `Ready with stated limits` with a `block` finding that is not `fixed`, or with a `warn` that is neither `fixed` nor an accepted `limit`
 
@@ -33,6 +36,14 @@ Finish is `pass` or `fail` for an earlier round, and `pending` for the last roun
 A round before the last whose Finish is `pass` ends a build. The next round starts the next build.
 
 Under `## Order of round 1`, a table with the columns Step and Commit names the commit of each step of the current build: Intake, Spec, Scenario, and Handler.
+
+Under `## First failing run`, three lines record the run of the first scenario of the current build at its commit, before the handler (#420):
+
+- `- **Command**:` the command that ran the scenario
+- `- **Exit**:` its exit status, which is not 0
+- `- **Assertion**:` the assertion of the scenario that failed
+
+The reviewer refuses a failure that is only a compile error, because it does not prove the missing behavior.
 
 Each finding under `## Findings` starts its heading with a stable ID, such as `### R2-F3`.
 `R2` is the round that first reported it, and the ID stays in later rounds.
@@ -57,8 +68,10 @@ A finding of the last round can have no state yet.
 - A commit of a round or of a fixed finding that is not HEAD or an ancestor of HEAD
 - A last round whose Head is not the `Commit:` of `readiness.md`
 - A step of round 1 that is missing, out of order, or in the commit of the step before it
+- No part `## First failing run`, or one without its command, without an exit status other than 0, or without its assertion
 - A finding without an ID, a finding of an earlier round without a state, or a state without its parts
 - A finding with the state `open`, even when `## Open lines` holds `None.`
+- A finding with the state `open` whose ID no line under `## Open lines` of `spec.md` names. So `spec.md` and the ledger agree on the open work (#420)
 - A `warn` or `block` finding with the state `declined`
 - A finding of an earlier committed `readiness.md` that is missing, or whose severity went down. A finding without an ID keeps its title
 - A committed review whose `Commit:` is the Head of no round, or a round before the last without a committed review of its Head

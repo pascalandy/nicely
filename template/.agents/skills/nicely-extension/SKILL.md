@@ -45,6 +45,12 @@ The lines of Failures and Acceptance in `spec.md` are the acceptance criteria of
 3. Give each line a spec ID and a state, as the opening of `spec.md` says: `open`, `proven`, or `limit`.
 
 A case that cannot occur for the command needs no line.
+A case name is not a test. Each case of the Output group that applies gets a test file in `acceptance.sh`, as "Acceptance test files" of `test-kit.md` in the contract says.
+
+## Test files
+
+The tests of the extension use files that the tests make, such as a text file that a scenario or `acceptance.sh` writes.
+Do not search the home folder of the user for sample files. Never copy a file of the user into a test.
 
 ## Rounds
 
@@ -57,16 +63,17 @@ Each round ends with the independent review, the readiness review, and `just fin
 
 Do these steps in this order. Commit each of the first four steps on its own:
 
-1. Record the intake facts under `## Intake` in `vision.md`, with the source and the version of each fact. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives stays an open line of `spec.md`.
+1. Record the intake facts under `## Intake` in `vision.md`, as "Evidence of the intake" in `intake.md` says. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives stays an open line of `spec.md`.
 2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`.
-3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails.
+3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails. Run it at that commit, and keep the command, its exit status, and the assertion that failed. A compile error is no such failure. When the scenario cannot run without the command, commit a handler that does no work in this step. Then the run reaches the assertion.
 4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
 5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
 6. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`.
-7. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. For a paid command, limit it to the dry run.
+7. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`, with a test file for each generic case of the Output group that applies. For a paid command, limit it to the dry run.
 8. End the round.
 
 Give the commits of steps 1 to 4 to the reviewer, who records them under `## Order of round 1` in the ledger.
+Give the reviewer the record of the run of step 3 too. The reviewer checks it, and records it under `## First failing run`.
 The first round is incomplete by design. The open lines start the next round.
 
 ### Each next round
@@ -84,10 +91,17 @@ The first round is incomplete by design. The open lines start the next round.
 3. Run `just acceptance` on the real input until its independent checks pass.
 4. Ask an agent that did not write the round to review the changes of the round. Give it the commits of the round.
 5. Ask an agent that did not write the code to run the readiness review. It records the review and the ledger in `readiness.md`. One independent pass can do both reviews.
-6. Write each finding that a test can prove as an open line.
+6. Write each finding that a test can prove as an open line, which names the finding by its ID. Each finding that the ledger records as `open` keeps its line under `## Open lines`, so `spec.md` and the ledger agree.
 7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
 8. When `just finish` fails after round 5, stop, as "Round limit" says.
 9. Otherwise, start the next round from the open lines and the open findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
+
+### Reach "Done when" in 5 rounds
+
+- Round 1 includes a test file for each generic case that applies
+- Ask the first reviewer to test families of cases, such as all the declarations that change the meaning, not one counterexample
+- Fix a root cause, such as a parser or a conversion rule, before the next review
+- Keep the last rounds for verification, not for one patch per warning
 
 ### Round limit
 

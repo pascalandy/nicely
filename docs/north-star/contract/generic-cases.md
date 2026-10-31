@@ -8,6 +8,8 @@ Each case that can occur becomes one line, with its spec ID, as [Spec IDs](spec-
 The line states the outcome of the case, such as a refusal with its code.
 The safe outcome below is the default. Another outcome is a limit, and only the user can accept it.
 A case that cannot occur for the command needs no line.
+A case name is not a test. For each case of the Output group that applies to the command, `just acceptance` checks a test file of the extension's own domain.
+The test makes that file, and an independent reader proves the safe outcome on it, as [Test kit](test-kit.md#acceptance-test-files) says.
 An error that names the input gives its path or its item, so an agent knows which call failed.
 
 | Group | Case | Example | Safe outcome |
@@ -25,8 +27,8 @@ An error that names the input gives its path or its item, so an agent knows whic
 | Output | Appears during the run, without `--force` | Another process writes `notes.txt` after the check and before the write | The command never replaces that file. It publishes with a create that fails on an existing file, such as a hard link. When the file system cannot create the output without a replace, the command fails. It never uses a check and then a rename that replaces |
 | Output | Temporary file | A link `notes.txt.tmp` to `notes.md`, made before the run | The command creates its temporary file with exclusive create, and with a name that no other process can predict. It never writes through a link at that path |
 | Output | Keeps private data of the input | `notes.md` starts with the line `author: Ana Lima`, and `notes.txt` keeps that name | The command removes the private data, or the user accepts a limit |
-| Output | Keeps data that a reader needs | `notes.md` starts with a header that declares its text encoding and names its author | The command keeps the data that the reader needs to show the content correctly, and removes the private text. Otherwise, the user accepts a limit |
-| Output | Loses data that changes the meaning | `notes.md` declares the encoding `latin-1`, and `notes.txt` keeps its bytes without that line | The output keeps the declaration, such as a text encoding or a unit, or the command applies it to the content |
+| Output | Keeps data that a reader needs | `notes.md` starts with a valid header that a reader needs, with the line `encoding: latin-1`, and that header also holds the line `author: Ana Lima` | The command keeps the data that the reader needs to show the content correctly, and removes the private text. The test proves both: `Ana Lima` is not in the output, and a reader still shows the content correctly. Otherwise, the user accepts a limit |
+| Output | Loses data that changes the meaning | `notes.md` declares the encoding `latin-1`, and `notes.txt` keeps its bytes without that line | The output keeps the declaration, such as a text encoding or a unit, or the command applies it to the content. The intake lists each declaration that changes how a reader shows the content, not only the file types. The test file uses a value that is not the default, and the independent reference applies that declaration before it compares the content |
 | Interruption | SIGINT or SIGTERM during the work | Ctrl-C while `inspect` counts the lines of a large file | Exit 130 or 143, with an answer that names the input. No partial output remains, the old output stays, and no child process remains |
 | Interruption | Timeout | `inspect --timeout 1ms` on a large file | The timeout outcome, with an answer that names the input, even when the check of the program uses up the deadline. No partial output remains |
 | File name | Spaces | `my notes.md` | The command passes the name as one path, unchanged |

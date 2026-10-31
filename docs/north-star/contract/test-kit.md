@@ -50,6 +50,16 @@ The kit proves the declared cases. Whether a claimed test proves its line, and w
 A check that reads only a header or the file type is not sufficient.
 The check compares the content that this reader gives with an independent reference, such as a file of expected text that the author writes.
 
+### Acceptance test files
+
+Each case of the Output group of [Generic cases](generic-cases.md) that applies to the command needs a test file (#420).
+`acceptance.sh` makes that file in the extension's own domain, and proves the safe outcome on it. Two cases need more:
+
+- **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The check proves both results: the private text is not in the output, and the output still shows the content correctly
+- **Loses data that changes the meaning.** The test file gives each declaration that changes how a reader shows the content a value that is not the default. The independent reference applies that declaration before it compares the content, so a lost declaration fails the check
+
+The tests make each file that they use. They never copy a file of the user, and the author never searches the home folder of the user for sample files.
+
 Other scenario runners use `NewCoverage`, `Coverage.Observe`, and `Coverage.Missing` for the same answer and coverage checks.
 `Observe` receives completed calls, including their exit code and both streams, without changing process execution or output.
 Nicely's runner registers these checks for `agent` and `transcript`, for successful and failed calls.

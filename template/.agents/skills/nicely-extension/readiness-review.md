@@ -36,18 +36,25 @@ Write each part of a finding as a bullet that starts with its bold name, such as
 - **Owner**: who can fix it, the author of the extension or the author of the script
 - **Fix**: the smallest change that removes the problem
 
-Name a severity only in the bullet **Severity** of its finding.
-After the first three lines, `just finish` fails on the words block, warn, or advise anywhere else.
-Examples are a table, fenced code, and prose.
+Name a severity only in the bullet **Severity** of its finding. `just finish` reads no other line as a grade.
+After the first three lines, it fails on a severity in code, such as `` `warn` ``, on a severity alone in a cell of a table, and on the word severity under `## Findings`.
+The plain words pass in a title, in evidence, and in prose, such as `### R1-F1 Large inputs block the terminal`.
 
 A loss that a user can see is `warn` or `block`, never `advise`.
 Examples are data that the output keeps or changes, and a promise of `spec.md` that does not hold.
 When in doubt between `warn` and `advise`, use `warn`.
+A broken promise of `spec.md` or of the help text is at least `warn` at its first review. This applies also when no data is lost.
+Grade it so in the round that first reports it. These examples set the grade:
+
+- **A message that names a wrong cause.** `inspect` answers that `notes.md` is missing, but the file exists and is not readable. At least `warn`, because the agent fixes the wrong thing
+- **A dry run that predicts a result that the run does not give.** The dry run says that the output is `notes.txt`, and the run writes `notes.md.txt`. At least `warn`. `block` when the run replaces a file that the dry run said it keeps
+- **An output whose meaning changes.** `notes.txt` drops the line `encoding: latin-1` and keeps the bytes, so a reader shows other letters. At least `warn`. `block` when `spec.md` promises the same text
 Never lower the severity of a finding in a later round.
 
 A `warn` or `block` finding closes only as `fixed` or `limit`. Only an `advise` can be `declined`.
 A change of `spec.md` that narrows a promise to close a `warn` or `block` finding is a `limit`. Only the user can accept it.
 `None.` under `## Open lines` does not close a finding that the ledger records as `open`.
+Each finding with the state `open` keeps a line under `## Open lines` of `spec.md` that names its ID. `just finish` fails without it.
 
 End the review with one verdict. The verdict follows from the findings, and `just finish` checks it:
 
@@ -61,6 +68,15 @@ This change starts no round: the reviewer gives the finding the state `limit` in
 Commit the limit in `spec.md`, then commit `readiness.md` alone.
 Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
 A loss that you report but that the user did not accept is a `warn` finding, not a limit.
+
+## Round 1
+
+In round 1, review the order of the work, not only the code:
+
+- The intake commit comes before the spec commit. The intake gives, for each fact, its source, its version, and the part that the author read, and the result of each experiment apart. A link alone is not evidence of a read
+- The record of the first failing run gives the command, its exit status, and the assertion that failed at the scenario commit. Run the command again at that commit when in doubt. Refuse a failure that is only a compile error, because it does not prove the missing behavior
+- Each case of the Output group of `generic-cases.md` that applies has a test file that the tests make, and an independent check. A case name alone is not a test
+- Test families of cases, such as all the declarations that change the meaning, not one counterexample
 
 ## Ledger
 
@@ -82,6 +98,12 @@ After the findings, keep the ledger of the build. Add one row for this round, an
 | Spec | <sha> |
 | Scenario | <sha> |
 | Handler | <sha> |
+
+## First failing run
+
+- **Command**: <the command that ran the first scenario at its commit>
+- **Exit**: <its exit status, which is not 0>
+- **Assertion**: <the assertion of the scenario that failed>
 ```
 
 Change commits names the commits that the change review covered. The readiness review covers Head.
