@@ -29,7 +29,9 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | At the limit, stop and report; an answer that lets the agent choose starts no round | Prose only |
 | A pull request for review, a stop report, and the delivery are three acts; deliver only after "Done when" | [Signoff][signoff] runs the [finish gate][finish], and [release][release] needs a receipt with `just finish` |
 | The ledger names the head, the reviewers, the commits that each review covered, and the result of `just finish` of each round | [Ledger][ledger] |
-| Each finding keeps its ID and its highest severity, and gets a state each round; a `warn` or `block` closes only as `fixed` or `limit` | [Ledger findings][ledger-findings] |
+| Each finding keeps its ID and its highest severity, and gets a state each round; a `warn` or `block` closes only as `fixed` or `limit` | [Ledger findings][ledger-findings], [ledger history][ledger-history] |
+| Each round keeps its row and has a committed review; a build ends only at a review that passes | [Ledger history][ledger-history] |
+| Accepting a limit starts no round; after a review, only **Limits.** of `spec.md` changes | [Finish gate][finish-verdict] |
 | A change of `spec.md` that narrows a promise to close a `warn` or `block` is a limit that only the user accepts | Prose only |
 | A command that replaces a user file proves its invariants with `protect`, `refuses`, `signal`, and `appears` | [Kit `refuses`][refuses], [kit `signal`][signal], [kit `appears`][appears] |
 
@@ -46,6 +48,8 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 [finish]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/finish.go
 [ledger]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger.go
 [ledger-findings]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_findings.go
+[ledger-history]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_history.go
+[finish-verdict]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness_verdict.go
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
 [release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
 [template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh
