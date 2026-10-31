@@ -57,6 +57,7 @@ func ledgerProblems(readiness, reviewed string, findings []finding, spec string,
 	}
 	reviews := committedReviews()
 	problems = append(problems, orderProblems(order, ended)...)
+	problems = append(problems, firstRunProblems(readiness)...)
 	problems = append(problems, stateProblems(findings, len(rounds), spec, limits)...)
 	problems = append(problems, passProblems(rounds, reviews)...)
 	return append(problems, historyProblems(findings, rounds, reviews)...)

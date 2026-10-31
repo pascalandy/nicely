@@ -58,9 +58,12 @@ fct_step() {
 # reviewed the heads $2, in order. A head written <sha>:pass gives its round
 # the Finish pass, which ends its build. The newest commits of fct_steps give
 # the order of round 1 of the last build, and its handler is in the first
-# head of that build (#417).
+# head of that build (#417). ledger_run holds the part ## First failing run.
+# Unset, it records a run that failed on an assertion. Empty, it leaves the
+# part out (#420).
 fct_ledger() {
 	local heads first i head finish_cell handler=""
+	local run=$'- **Command**: `go test ./... -run TestExtension/inspect`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'` of testdata/script/inspect.txtar found no match'
 	read -r -a heads <<<"${2}"
 	first="$(git -C "${1}" rev-list --max-parents=0 HEAD)"
 	printf '\n## Rounds\n\n| Round | Head | Change review | Change commits | Readiness review | Finish |\n|---|---|---|---|---|---|\n'
@@ -73,4 +76,5 @@ fct_ledger() {
 	done
 	printf '\n## Order of round 1\n\n| Step | Commit |\n|---|---|\n'
 	printf '| %s | %s |\n' Intake "$(fct_step "${1}" intake)" Spec "$(fct_step "${1}" spec)" Scenario "$(fct_step "${1}" scenario)" Handler "${handler}"
+	[[ -z "${ledger_run-${run}}" ]] || printf '\n## First failing run\n\n%s\n' "${ledger_run-${run}}"
 }

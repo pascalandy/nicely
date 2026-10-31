@@ -6,6 +6,9 @@
 # ledger_earlier.
 # shellcheck disable=SC2016,SC2034
 
+# shellcheck source=scripts/template-ledger-run-test.sh
+source "${BASH_SOURCE[0]%/*}/template-ledger-run-test.sh"
+
 fct_test_ledger() {
 	local finish="${2}/ledger" scratch="${2}" file first intake round1 review1 round2 review2 head stray valid ledger_earlier=""
 	local advise=$'### R1-F1 The count could name the longest line\n\n- **Severity**: `advise`'
@@ -145,5 +148,6 @@ fct_test_ledger() {
 	fct_finish 1
 	fct_finish_said 'readiness.md: it holds no round under ## Rounds'
 
+	fct_test_ledger_run
 	fct_test_ledger_builds
 }
