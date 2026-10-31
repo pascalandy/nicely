@@ -47,13 +47,19 @@ A finding of the last round can have no state yet.
 `just finish` fails on each of these:
 
 - No round under `## Rounds`, or a row without its six cells, its number, a full Head, or both reviewers
+- A line under `## Rounds` or `## Order of round 1` that is no row of its table, such as a label that would hide rows
 - More than 5 rounds. The message tells the agent to stop and to report to the user
 - A commit of a round or of a fixed finding that is not HEAD or an ancestor of HEAD
 - A last round whose Head is not the `Commit:` of `readiness.md`
-- A step of round 1 that is missing or out of order, or a handler in the commit of the first scenario
+- A step of round 1 that is missing, out of order, or in the commit of the step before it
 - A finding without an ID, a finding of an earlier round without a state, or a state without its parts
 - A finding with the state `open`, even when `## Open lines` holds `None.`
 - A `warn` or `block` finding with the state `declined`
-- A finding of an earlier committed `readiness.md` that is missing, or whose severity went down. Finish reads the commits after the Intake commit of the build, so an earlier build is no history of this one
+- A finding of an earlier committed `readiness.md` that is missing, or whose severity went down
+- A round of an earlier committed ledger that is missing or changed. Only a Finish that was `pending` changes
+
+The history of a build starts after the last committed `readiness.md` with a passing verdict at or before its Intake commit.
+So an earlier build that ended is no history of this one.
+A review that needs work never ends a build, so a moved Intake hides no finding and resets no round.
 
 At 5 rounds, a failing `just finish` also tells the agent to stop and to report each open line and each open finding.

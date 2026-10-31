@@ -83,6 +83,15 @@ answer stderr RUNTIME
 stderr '"message":"bash did not finish its work on input\.md within 1 ms, so it was stopped\.'
 ! exists worker.path
 
+# A version probe that reaches its own limit of 10 s within a longer timeout is
+# PREREQ_MISSING with exit 78, before work
+env STUB=probe-hang
+exits 78 ncly hello count input.md --timeout 15s --json
+answer stderr PREREQ_MISSING
+stderr '"message":"bash --version did not print its version in time\."'
+gone probe.pid
+! exists worker.path
+
 # A version probe that fails is PREREQ_MISSING with exit 78, before work
 env STUB=probe-fail
 exits 78 ncly hello count input.md --timeout 1s --json

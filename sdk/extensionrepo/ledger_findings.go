@@ -66,11 +66,11 @@ func stateProblems(findings []finding, n int, spec string, limits []limit) []str
 	return problems
 }
 
-// historyProblems compares the findings with each readiness.md committed
-// after since, the intake of the build, or in all of HEAD without it. A
-// finding keeps its ID in each later review, and its severity never goes
-// down, so no loss leaves the ledger.
-func historyProblems(findings []finding, since string) []string {
+// historyProblems compares the ledger with each readiness.md committed after
+// since, the end of the build before, or in all of HEAD without it. A finding
+// keeps its ID in each later review, and its severity never goes down. Each
+// round keeps its row, so no loss and no round leaves the ledger.
+func historyProblems(findings []finding, rounds []round, since string) []string {
 	revisions := "HEAD"
 	if since != "" {
 		revisions = since + "..HEAD"
@@ -90,6 +90,7 @@ func historyProblems(findings []finding, since string) []string {
 		if err != nil {
 			continue
 		}
+		problems = append(problems, roundHistory(rounds, strings.TrimPrefix(string(old), "\ufeff"), revision, reported)...)
 		earlier, _ := readinessFindings(strings.TrimPrefix(string(old), "\ufeff"))
 		for _, e := range earlier {
 			now, kept := current[e.id]
@@ -102,6 +103,27 @@ func historyProblems(findings []finding, since string) []string {
 				reported[e.id] = true
 				problems = append(problems, fmt.Sprintf("readiness.md:%d: the finding %s had the severity %s in %.12s, and now has %s. Fix: keep its highest severity. A warn or block closes only as fixed or limit", now.line, e.id, e.severity, revision, now.severity))
 			}
+		}
+	}
+	return problems
+}
+
+// roundHistory requires each round of an earlier committed ledger in the
+// current one, with the same cells. Only a Finish that was pending changes.
+func roundHistory(rounds []round, old, revision string, reported map[string]bool) []string {
+	var problems []string
+	earlier, _, _ := ledgerTables(old)
+	for i, e := range earlier {
+		key := "round " + strconv.Itoa(i+1)
+		if reported[key] || len(e.cells) != len(roundColumns) {
+			continue
+		}
+		kept := i < len(rounds) && len(rounds[i].cells) == len(roundColumns) &&
+			slices.Equal(rounds[i].cells[:5], e.cells[:5]) &&
+			(strings.Trim(e.cells[5], "`") == "pending" || rounds[i].cells[5] == e.cells[5])
+		if !kept {
+			reported[key] = true
+			problems = append(problems, fmt.Sprintf("readiness.md: %s of the ledger in %.12s is missing or changed. Fix: keep the row of each earlier round as it was, and add one row for this round", key, revision))
 		}
 	}
 	return problems

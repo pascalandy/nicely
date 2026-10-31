@@ -25,6 +25,7 @@ SCRIPT
 	[[ ! -e "${scratch}/signed-sha" ]] || fct_fail 'just signoff called gh signoff before just finish passed'
 
 	cp -R "${repo}" "${ready}"
+	fct_steps "${ready}"
 	for file in vision.md spec.md qa.md; do
 		grep -v '^Fill:' "${ready}/${file}" >"${scratch}/form.md"
 		mv "${scratch}/form.md" "${ready}/${file}"

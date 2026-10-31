@@ -85,6 +85,8 @@ After the findings, keep the ledger of the build. Add one row for this round, an
 Change commits names the commits that the change review covered. The readiness review covers Head.
 When one pass did both reviews, name the same reviewer in both cells.
 Finish holds the result of `just finish` for each earlier round, and `pending` for this round.
+Keep the row of each earlier round as it was. Only its Finish changes, from `pending` to its result.
 A build has at most 5 rounds.
+A new build, such as of another command, starts at a new intake, after a review with a passing verdict.
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.

@@ -35,19 +35,7 @@ type round struct {
 func ledgerProblems(readiness, reviewed string, findings []finding, spec string, limits []limit) []string {
 	const fix = "Fix: give readiness.md a table under ## Rounds with the columns " +
 		"Round, Head, Change review, Change commits, Readiness review, and Finish, one row for each round"
-	var problems []string
-	var rounds []round
-	order := map[string]round{}
-	for _, l := range SpecLines(readiness) {
-		switch {
-		case l.Part == "Rounds" && l.Kind == SpecHeader && !slices.Equal(l.Cells, roundColumns):
-			problems = append(problems, fmt.Sprintf("readiness.md:%d: the table of ## Rounds has other columns. %s", l.Number, fix))
-		case l.Part == "Rounds" && l.Kind == SpecRow:
-			rounds = append(rounds, round{l.Number, l.Cells})
-		case l.Part == "Order of round 1" && l.Kind == SpecRow && len(l.Cells) == 2:
-			order[l.Cells[0]] = round{l.Number, l.Cells}
-		}
-	}
+	rounds, order, problems := ledgerTables(readiness)
 	if len(rounds) == 0 {
 		return append(problems, "readiness.md: it holds no round under ## Rounds. "+fix)
 	}
@@ -66,13 +54,69 @@ func ledgerProblems(readiness, reviewed string, findings []finding, spec string,
 	}
 	problems = append(problems, orderProblems(order)...)
 	problems = append(problems, stateProblems(findings, len(rounds), spec, limits)...)
-	// The build starts at its intake, so the reviews of an earlier build,
-	// such as of another command, are no history of this one.
 	since := ""
 	if intake, found := order["Intake"]; found {
-		since, _ = ledgerCommit(intake.cells[1])
+		if commit, ok := ledgerCommit(intake.cells[1]); ok {
+			since = buildStart(commit)
+		}
 	}
-	return append(problems, historyProblems(findings, since)...)
+	return append(problems, historyProblems(findings, rounds, since)...)
+}
+
+// ledgerTables reads the tables of ## Rounds and ## Order of round 1. Each
+// part ends at the next heading of level 1 or 2. Any other line in it fails,
+// so no row hides behind a label or a heading.
+func ledgerTables(readiness string) ([]round, map[string]round, []string) {
+	const fix = "Fix: give readiness.md a table under ## Rounds with the columns " +
+		"Round, Head, Change review, Change commits, Readiness review, and Finish, one row for each round"
+	var problems []string
+	var rounds []round
+	order := map[string]round{}
+	lines, part := strings.Split(readiness, "\n"), ""
+	for _, l := range SpecLines(readiness) {
+		if h := readinessHeading.FindStringSubmatch(lines[l.Number-1]); h != nil && len(h[1]) <= 2 {
+			part = h[2]
+			continue
+		}
+		if part != "Rounds" && part != "Order of round 1" {
+			continue
+		}
+		switch {
+		case l.Kind == SpecBlank || l.Kind == SpecSeparator:
+		case l.Kind == SpecHeader && part == "Rounds" && !slices.Equal(l.Cells, roundColumns):
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: the table of ## Rounds has other columns. %s", l.Number, fix))
+		case l.Kind == SpecHeader:
+		case l.Kind == SpecRow && part == "Rounds":
+			rounds = append(rounds, round{l.Number, l.Cells})
+		case l.Kind == SpecRow && len(l.Cells) == 2:
+			order[l.Cells[0]] = round{l.Number, l.Cells}
+		default:
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: this line of ## %s is no row of its table. Fix: keep only the table in this part", l.Number, part))
+		}
+	}
+	return rounds, order, problems
+}
+
+// buildStart returns the newest readiness.md committed at or before the
+// intake with a passing verdict, which ended the build before this one. A
+// review that needs work never ends a build, so moving the intake hides no
+// history. It returns "" when no build ended before.
+func buildStart(intake string) string {
+	log, err := exec.Command("git", "log", "--format=%H", intake, "--", "readiness.md").Output()
+	if err != nil {
+		return ""
+	}
+	for _, revision := range strings.Fields(string(log)) {
+		old, err := exec.Command("git", "show", revision+":readiness.md").Output()
+		if err != nil {
+			continue
+		}
+		header := strings.SplitN(strings.TrimPrefix(string(old), "\ufeff"), "\n", 4)
+		if v := readinessVerdict.FindStringSubmatch(strings.Join(header[:min(3, len(header))], "\n")); v != nil && (v[1] == "Ready" || v[1] == "Ready with stated limits") {
+			return revision
+		}
+	}
+	return ""
 }
 
 // roundProblems checks one row of ## Rounds, the round number of its place.
@@ -132,6 +176,8 @@ func orderProblems(order map[string]round) []string {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: the step %s comes before the step that precedes it in round 1. Fix: do the steps of round 1 in the order of the skill", r.line, step))
 		case step == "Handler" && commit == previous:
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: the handler and the first scenario are in one commit, so the scenario never failed first. Fix: commit the failing scenario before the handler", r.line))
+		case commit == previous:
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: the step %s is in the commit of the step before it. Fix: commit each of the first four steps of round 1 on its own", r.line, step))
 		}
 		previous = commit
 	}
@@ -160,11 +206,6 @@ func ledgerRounds() int {
 	if err != nil {
 		return 0
 	}
-	n := 0
-	for _, l := range SpecLines(string(data)) {
-		if l.Part == "Rounds" && l.Kind == SpecRow {
-			n++
-		}
-	}
-	return n
+	rounds, _, _ := ledgerTables(string(data))
+	return len(rounds)
 }
