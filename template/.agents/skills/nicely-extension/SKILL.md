@@ -131,6 +131,9 @@ Write each part of a finding as a bullet that starts with its bold name, such as
 - **Owner**: who can fix it, the author of the extension or the author of the script
 - **Fix**: the smallest change that removes the problem
 
+Name a severity only in the bullet **Severity** of its finding.
+`just finish` fails on a severity in a table, in fenced code, or in prose under `## Findings`.
+
 A loss that a user can see is `warn` or `block`, never `advise`.
 Examples are data that the output keeps or changes, and a promise of `spec.md` that does not hold.
 When in doubt between `warn` and `advise`, use `warn`.

@@ -43,6 +43,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
   - A `readiness.md` without the lines `Commit: <sha>` and `Reviewer: <who>`, or without the verdict `Ready` or `Ready with stated limits`
   - A reviewed commit that differs from the working tree outside `readiness.md`
   - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
+  - A severity under `## Findings` outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose
   - `Ready` with a `block` or `warn` finding, or with a limit in `spec.md`
   - `Ready with stated limits` with a `block` finding, or with a `warn` whose **Limit** names no accepted limit
 - `just signoff` checks the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines

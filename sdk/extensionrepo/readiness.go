@@ -24,15 +24,23 @@ var (
 	readinessVerdict  = regexp.MustCompile(`(?m)^Verdict: (.+?)\s*$`)
 	readinessHeading  = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*$`)
 	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
+	// readinessSeverity finds a severity in a form that finish cannot grade.
+	// Such a form is the word severity, a severity in code, or a severity
+	// cell of a table (#413).
+	readinessSeverity = regexp.MustCompile(`(?i)\bseverity\b|` + "`(?:block|warn|advise)`" + `|\|\s*(?:block|warn|advise)\s*(?:\||$)`)
 )
 
 // readinessFindings reads the findings of readiness.md, outside fenced code.
 // It reports each finding that finish cannot grade, so a finding in another
-// form never passes as no finding.
+// form never passes as no finding. Under ## Findings, it also reports each
+// severity outside the line - **Severity**: of a finding, in fenced code too.
 func readinessFindings(readiness string) ([]finding, []string) {
 	const fix = "Fix: give each finding its own ### heading under ## Findings, with one line - **Severity**: `block`, `warn`, or `advise`"
 	var findings []finding
 	var problems []string
+	hidden := func(line int) {
+		problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names a severity outside the line - **Severity**: of a finding. %s", line, fix))
+	}
 	part, current, fence, opened, none, stray, seen := 0, -1, "", 0, false, false, false
 	closeFindings := func() {
 		if part > 0 && len(findings) == 0 && !none {
@@ -46,6 +54,8 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		case fence != "":
 			if strings.HasPrefix(trimmed, fence) && strings.Trim(trimmed, fence[:1]) == "" {
 				fence = ""
+			} else if part > 0 && readinessSeverity.MatchString(text) {
+				hidden(i + 1)
 			}
 			continue
 		case strings.HasPrefix(trimmed, "```"), strings.HasPrefix(trimmed, "~~~"):
@@ -71,6 +81,8 @@ func readinessFindings(readiness string) ([]finding, []string) {
 			if part > 0 && current < 0 && trimmed != "" && trimmed != "None." && !stray {
 				stray = true
 				problems = append(problems, fmt.Sprintf("readiness.md:%d: this text of ## Findings is outside every ### finding. %s", i+1, fix))
+			} else if current >= 0 && readinessSeverity.MatchString(text) {
+				hidden(i + 1)
 			}
 			continue
 		}
