@@ -47,8 +47,11 @@ func readinessFindings(readiness string) ([]finding, []string) {
 	}
 	for i, text := range strings.Split(readiness, "\n") {
 		trimmed := strings.TrimSpace(text)
-		m := readinessPart.FindStringSubmatch(text)
-		if part > 0 && readinessSeverity.MatchString(text) && (fence != "" || m == nil || m[1] != "Severity") {
+		m, heading := readinessPart.FindStringSubmatch(text), readinessHeading.FindStringSubmatch(text)
+		// A heading of level 1 or 2 closes ## Findings, so it is no line of a finding.
+		section := fence == "" && heading != nil && len(heading[1]) <= 2
+		bullet := fence == "" && m != nil && m[1] == "Severity"
+		if part > 0 && !section && !bullet && readinessSeverity.MatchString(text) {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names a severity outside the line - **Severity**: of a finding. %s", i+1, fix))
 		}
 		switch {
@@ -61,11 +64,11 @@ func readinessFindings(readiness string) ([]finding, []string) {
 			fence, opened = trimmed[:len(trimmed)-len(strings.TrimLeft(trimmed, trimmed[:1]))], i+1
 			continue
 		}
-		if m := readinessHeading.FindStringSubmatch(text); m != nil {
-			switch level := len(m[1]); {
+		if heading != nil {
+			switch level := len(heading[1]); {
 			case level <= 2:
 				closeFindings()
-				if level == 2 && m[2] == "Findings" {
+				if level == 2 && heading[2] == "Findings" {
 					part, seen = i+1, true
 				}
 			case level == 3 && part > 0:

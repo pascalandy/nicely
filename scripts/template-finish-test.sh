@@ -130,7 +130,7 @@ fct_test_finish() {
 	fct_finish 1
 	fct_finish_said 'readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>'
 
-	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **Limit**: `large-file`\n\n'"${advise}"
+	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **Limit**: `large-file`\n\n'"${advise}"$'\n\n## Severity assessment\n\nEach finding names its severity.'
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review'
 	fct_finish 0
