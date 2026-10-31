@@ -10,10 +10,10 @@ import (
 
 // readinessProblems reports a readiness.md without a reviewer or a passing
 // verdict, or whose commit is not the code of the working tree. The verdict
-// must follow from the findings and from the limits of spec.md (#409). Only
-// readiness.md may differ from that commit, so the review can be committed
-// after it.
-func readinessProblems(limits []limit) []string {
+// must follow from the findings, their states, and the limits of spec.md
+// (#409, #417). Only readiness.md may differ from that commit, so the review
+// can be committed after it. Then the ledger of the build must hold.
+func readinessProblems(spec string, limits []limit) []string {
 	const fix = "Fix: ask an agent that did not write the code to run the readiness review of the nicely-extension skill, then start readiness.md with the lines Commit: <sha>, Reviewer: <who>, and Verdict: <verdict>"
 	const verdictFix = "Fix: write the verdict that the findings and the limits give, as the readiness review of the nicely-extension skill says"
 	data, err := os.ReadFile("readiness.md")
@@ -24,21 +24,26 @@ func readinessProblems(limits []limit) []string {
 	}
 	// readiness.md starts with the lines Commit:, Reviewer:, and Verdict:,
 	// as the skill says. So finish never reads them in fenced code (#413).
-	lines := strings.SplitN(string(data), "\n", 4)
+	// An editor can write a byte order mark before them (#416).
+	readiness := strings.TrimPrefix(string(data), "\ufeff")
+	lines := strings.SplitN(readiness, "\n", 4)
 	header := strings.Join(lines[:min(3, len(lines))], "\n")
 	commit, verdict := readinessCommit.FindStringSubmatch(header), readinessVerdict.FindStringSubmatch(header)
 	if commit == nil || verdict == nil {
-		return []string{"readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>. " + fix}
+		return []string{"readiness.md: its first three lines hold no line Commit: <sha> or Verdict: <verdict>. " + fix}
 	}
-	findings, problems := readinessFindings(string(data))
+	findings, problems := readinessFindings(readiness)
 	if !readinessReviewer.MatchString(header) {
 		problems = append(problems, "readiness.md: it names no reviewer. "+fix)
+	}
+	accepted := func(f finding) bool {
+		return f.state == "limit" && slices.ContainsFunc(limits, func(l limit) bool { return l.id == f.spec && l.accepted })
 	}
 	switch v := verdict[1]; v {
 	case "Ready":
 		for _, f := range findings {
-			if f.severity == "block" || f.severity == "warn" {
-				problems = append(problems, fmt.Sprintf("readiness.md:%d: the verdict is Ready, but this finding has the severity %s. %s", f.line, f.severity, verdictFix))
+			if (f.severity == "block" || f.severity == "warn") && f.state != "fixed" {
+				problems = append(problems, fmt.Sprintf("readiness.md:%d: the verdict is Ready, but this finding has the severity %s and is not fixed. %s", f.line, f.severity, verdictFix))
 			}
 		}
 		for _, l := range limits {
@@ -47,10 +52,11 @@ func readinessProblems(limits []limit) []string {
 	case "Ready with stated limits":
 		for _, f := range findings {
 			switch {
+			case f.state == "fixed":
 			case f.severity == "block":
-				problems = append(problems, fmt.Sprintf("readiness.md:%d: the verdict is Ready with stated limits, but this finding has the severity block. %s", f.line, verdictFix))
-			case f.severity == "warn" && !slices.ContainsFunc(limits, func(l limit) bool { return l.id == f.limit && l.accepted }):
-				problems = append(problems, fmt.Sprintf("readiness.md:%d: this warn names no limit that the user accepted in spec.md. Fix: name the spec ID of its accepted limit in a line - **Limit**: `<id>`, or write the verdict Needs work", f.line))
+				problems = append(problems, fmt.Sprintf("readiness.md:%d: the verdict is Ready with stated limits, but this finding has the severity block and is not fixed. %s", f.line, verdictFix))
+			case f.severity == "warn" && !accepted(f):
+				problems = append(problems, fmt.Sprintf("readiness.md:%d: this warn names no limit that the user accepted in spec.md. Fix: give it the state `limit` and the spec ID of its accepted limit in a line - **Spec**: `<id>`, or write the verdict Needs work", f.line))
 			}
 		}
 	case "Needs work":
@@ -58,11 +64,11 @@ func readinessProblems(limits []limit) []string {
 	default:
 		problems = append(problems, fmt.Sprintf("readiness.md: the verdict %q is not Ready, Ready with stated limits, or Needs work. %s", v, fix))
 	}
-	sha := commit[1]
-	if _, err := updateOutput("git", "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
-		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", sha, fix))
+	sha, err := updateOutput("git", "rev-parse", "--verify", "--quiet", commit[1]+"^{commit}")
+	if err != nil {
+		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", commit[1], fix))
 	}
-	changed, err := updateOutput("git", "diff", "--name-only", sha, "--")
+	changed, err := updateOutput("git", "diff", "--name-only", commit[1], "--")
 	if err != nil {
 		return append(problems, "readiness.md: "+err.Error())
 	}
@@ -77,7 +83,7 @@ func readinessProblems(limits []limit) []string {
 		}
 	}
 	if len(files) != 0 {
-		problems = append(problems, fmt.Sprintf("readiness.md: the review is of %s, and these files changed since: %s. Fix: run the readiness review again on this commit", sha, strings.Join(files, ", ")))
+		problems = append(problems, fmt.Sprintf("readiness.md: the review is of %s, and these files changed since: %s. Fix: run the readiness review again on this commit", commit[1], strings.Join(files, ", ")))
 	}
-	return problems
+	return append(problems, ledgerProblems(readiness, strings.TrimSpace(string(sha)), findings, spec, limits)...)
 }

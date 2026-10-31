@@ -16,14 +16,17 @@ import (
 func finishRepository() int {
 	problems, spec := formProblems()
 	specs, limits := specProblems(spec)
-	problems = append(append(problems, specs...), readinessProblems(limits)...)
+	problems = append(append(problems, specs...), readinessProblems(spec, limits)...)
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)
 	}
 	if len(problems) != 0 {
+		if ledgerRounds() >= maxRounds {
+			fmt.Fprintf(os.Stderr, "finish: this build used its %d rounds. Stop, and report each open line and each open finding to the user. An answer that lets you choose starts no round\n", maxRounds)
+		}
 		return report("finish", errors.New("the loop of the nicely-extension skill is not done"))
 	}
-	fmt.Println("finish: no line is open, the user accepted each limit, and readiness.md holds a passing verdict for this commit")
+	fmt.Println("finish: no line or finding is open, the user accepted each limit, and readiness.md holds a passing verdict and ledger for this commit")
 	return 0
 }
 

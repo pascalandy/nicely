@@ -71,6 +71,7 @@ fct_repository() {
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
 	fct_test_finish "${repo}" "${scratch}"
+	fct_test_ledger "${repo}" "${scratch}"
 	fct_test_example_notices "${repo}" "${scratch}" "${slug}"
 	export XDG_CONFIG_HOME="${scratch}/config" XDG_STATE_HOME="${scratch}/state" XDG_DATA_HOME="${data}" NCLY_NO_INPUT=1
 	(cd "${repo}" && just install)
@@ -135,6 +136,8 @@ fct_main() {
 	source "${root}/scripts/template-signoff-test.sh"
 	# shellcheck source=scripts/template-finish-test.sh
 	source "${root}/scripts/template-finish-test.sh"
+	# shellcheck source=scripts/template-ledger-test.sh
+	source "${root}/scripts/template-ledger-test.sh"
 	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
 	while IFS= read -r variable; do unset "${variable}"; done < <(git rev-parse --local-env-vars)
 	# just update runs the Copier that the template pins, and so does this test.

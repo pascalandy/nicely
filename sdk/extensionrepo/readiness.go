@@ -7,13 +7,13 @@ import (
 	"strings"
 )
 
-// A finding is a ### heading under ## Findings of readiness.md. Its bullet
-// - **Severity**: grades it. For a warn, its bullet - **Limit**: names the
-// spec ID of the limit that the user accepted for it (#409).
+// A finding is a ### heading under ## Findings of readiness.md, which starts
+// with its ID, such as R2-F3. Its bullet - **Severity**: grades it. Its
+// bullets - **State**:, - **Spec**:, - **Commit**:, and - **Reason**: give
+// its state in the ledger (#417).
 type finding struct {
-	line     int
-	severity string
-	limit    string
+	line                                   int
+	id, severity, state, spec, commit, why string
 }
 
 var (
@@ -21,12 +21,29 @@ var (
 	readinessReviewer = regexp.MustCompile(`(?m)^Reviewer:[ \t]*\S`)
 	readinessVerdict  = regexp.MustCompile(`(?m)^Verdict: (.+?)\s*$`)
 	readinessHeading  = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*$`)
-	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
-	// readinessSeverity finds a severity in a form that finish cannot grade.
-	// Such a form is the word severity, a severity in code, or a severity
-	// cell of a table (#413).
-	readinessSeverity = regexp.MustCompile(`(?i)\bseverity\b|` + "`(?:block|warn|advise)`" + `|\|\s*(?:block|warn|advise)\s*(?:\||$)`)
+	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|State|Spec|Commit|Reason)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
+	readinessID       = regexp.MustCompile(`^(R([1-9][0-9]*)-F[1-9][0-9]*)\b`)
+	// readinessSeverity finds a severity in a form that finish cannot grade,
+	// such as prose, code, or a table, anywhere after the header (#413, #416).
+	readinessSeverity = regexp.MustCompile(`(?i)\b(block|warn|advise)\b`)
+	// readinessWord finds the word severity under ## Findings (#413).
+	readinessWord = regexp.MustCompile(`(?i)\bseverity\b`)
 )
+
+// severityCause names why a line that names a severity fails finish, so the
+// reviewer sees the word or the table that caused it (#416).
+func severityCause(text, fence string) string {
+	const fix = "Fix: grade each finding only in its line - **Severity**:, and rephrase this line without "
+	switch m := readinessSeverity.FindString(text); {
+	case fence != "":
+		return fmt.Sprintf("this fenced code names the severity %s. %sthe word %s", strings.ToLower(m), fix, strings.ToLower(m))
+	case strings.HasPrefix(strings.TrimSpace(text), "|") && m != "":
+		return fmt.Sprintf("this table names the severity %s. Fix: remove the table, because each finding gives its severity in its line - **Severity**:", strings.ToLower(m))
+	case m != "":
+		return fmt.Sprintf("this line names the severity %s outside the line - **Severity**: of a finding. %sthe word %s", strings.ToLower(m), fix, strings.ToLower(m))
+	}
+	return "this line names the word severity outside the line - **Severity**: of a finding. " + fix + "the word severity"
+}
 
 // readinessFindings reads the findings of readiness.md, outside fenced code.
 // It reports each finding that finish cannot grade, so a finding in another
@@ -48,9 +65,11 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		m, heading := readinessPart.FindStringSubmatch(text), readinessHeading.FindStringSubmatch(text)
 		// A heading of level 1 or 2 closes ## Findings, so it is no line of a finding.
 		section := fence == "" && heading != nil && len(heading[1]) <= 2
-		bullet := fence == "" && m != nil && m[1] == "Severity"
-		if part > 0 && !section && !bullet && readinessSeverity.MatchString(text) {
-			problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names a severity outside the line - **Severity**: of a finding. %s", i+1, fix))
+		bullet := part > 0 && fence == "" && m != nil && m[1] == "Severity"
+		// The first three lines are the header. A severity elsewhere fails,
+		// also under another part after ## Findings (#416).
+		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || part > 0 && !section && readinessWord.MatchString(text)) {
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
 		}
 		switch {
 		case fence != "":
@@ -70,7 +89,11 @@ func readinessFindings(readiness string) ([]finding, []string) {
 					part, seen = i+1, true
 				}
 			case level == 3 && part > 0:
-				findings = append(findings, finding{line: i + 1})
+				f := finding{line: i + 1}
+				if id := readinessID.FindStringSubmatch(heading[2]); id != nil {
+					f.id = id[1]
+				}
+				findings = append(findings, f)
 				current = len(findings) - 1
 			}
 			continue
@@ -85,9 +108,18 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		}
 		value := strings.Trim(strings.TrimSuffix(m[2], "."), "`")
 		switch {
-		case m[1] == "Limit":
+		case m[1] != "Severity":
 			if current >= 0 {
-				findings[current].limit = value
+				switch f := &findings[current]; m[1] {
+				case "State":
+					f.state = value
+				case "Spec":
+					f.spec = value
+				case "Commit":
+					f.commit = value
+				case "Reason":
+					f.why = value
+				}
 			}
 		case current < 0:
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: this severity has no finding of its own. %s", i+1, fix))
