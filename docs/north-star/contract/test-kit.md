@@ -29,7 +29,7 @@ A scratch `HOME` does not hide the OS keychain. `ncly` reads it only when the va
 - `extension.Check`, and a skill named after the slug, which every external extension ships, as [Extensions](extensions.md) defines
 - Each answer of a call through `ncly` or `ncly-<slug>`, for a success and for a failure. Its schema is the one that `contract.AnswerSchema` builds from the command's declaration
 - No scenario runs `ncly` or `ncly-<slug>` through `exec` in the foreground, by name or by path, which would skip the answer check. The kit splits each line into words as testscript does, so quotes and comments hide no call. A background call, which ends with `&`, keeps `exec`, and the kit does not check its answer
-- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, or `refuses` after its answer passes validation
+- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, `appears`, or `refuses` after its answer passes validation
 - A command whose declared result kind is `text` counts a completed success, since that kind has no JSON answer
 - Coverage runs after all scenarios finish. Comments, assertions, skipped conditions, help, and shell or background `exec` calls earn no coverage
 - Human text earns no coverage for a command with a structured result
@@ -52,7 +52,7 @@ Nicely's runner registers these checks for `agent` and `transcript`, for success
 It checks declared codes for `hello`, whose signal commands run in the background.
 Its path-qualified direct calls pass the same answer check.
 Its `exits` command checks successful and failed calls, including `exits 0` for successes.
-`Coverage.ScenarioCommands` takes the registered host's absolute path and supplies `signal`, `survives`, `protect`, and `refuses` to other scenario runners.
+`Coverage.ScenarioCommands` takes the registered host's absolute path and supplies `signal`, `survives`, `appears`, `protect`, and `refuses` to other scenario runners.
 
 ## Manifest examples
 
