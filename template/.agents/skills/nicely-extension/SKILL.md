@@ -26,7 +26,7 @@ Get these facts before you write code. Read the source of the script, and ask it
 - How long it runs, what it starts in the background, and whether it can ask a question
 - Its exit codes, and what a repeat of the same call does
 
-Write each fact that nobody can give as an open question in `spec.md`.
+Write each fact that nobody can give as an open line of `spec.md`.
 
 ## Intake of a program
 
@@ -34,7 +34,7 @@ A third-party program, such as an encoder, has no author to ask.
 Get the facts of the script intake from its documentation and its manual page.
 Also read its exit codes, its limits, and its known failure modes, such as the open issues of its tracker.
 Do not run a command that writes or bills to learn its behavior.
-Write each fact that the documentation does not give as an open question in `spec.md`.
+Write each fact that the documentation does not give as an open line of `spec.md`.
 
 ## Choice of operations
 
@@ -66,23 +66,30 @@ A case that cannot occur for the command needs no line.
 
 ## Rounds
 
+A build of a command starts at the intake and ends at "Done when" in `AGENTS.md`.
+It has at most 5 rounds, and the ledger in `readiness.md` counts them.
 A round is new commits on the open pull request, or a new pull request.
 Each round ends with the independent review, the readiness review, and `just finish`.
 
 ### Round 1
 
-1. Implement the main path of the command, with "Change a command" in `AGENTS.md`.
-2. Write every line of the command in `spec.md`. Each line that has no test stays `open`, under `## Open lines`.
-3. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
-4. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`.
-5. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. For a paid command, limit it to the dry run.
-6. End the round.
+Do these steps in this order. Commit each of the first four steps on its own:
 
-The first implementation is incomplete by design. The open lines start the next round.
+1. Record the intake facts under `## Intake` in `vision.md`, with the source and the version of each fact. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives stays an open line of `spec.md`.
+2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`.
+3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails.
+4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
+5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
+6. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`.
+7. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`. For a paid command, limit it to the dry run.
+8. End the round.
+
+Give the commits of steps 1 to 4 to the reviewer, who records them under `## Order of round 1` in the ledger.
+The first round is incomplete by design. The open lines start the next round.
 
 ### Each next round
 
-1. Select open lines.
+1. Select open lines, and the findings that the ledger records as `open`.
 2. Move each line from `## Open lines` into Failures or Acceptance.
 3. For each line, write a scenario with the claim `# spec: <id>`. It fails first, for the missing behavior.
 4. Change the handler until the scenario passes. The line is then `proven`.
@@ -93,60 +100,48 @@ The first implementation is incomplete by design. The open lines start the next 
 1. Run `just check` until every check passes.
 2. For a command that needs a key, relay the grant hint to the human and wait.
 3. Run `just acceptance` on the real input until its independent checks pass.
-4. Ask an agent that did not write the round to review the changes of the round.
-5. Ask an agent that did not write the code to run the readiness review and record it in `readiness.md`.
+4. Ask an agent that did not write the round to review the changes of the round. Give it the commits of the round.
+5. Ask an agent that did not write the code to run the readiness review. It records the review and the ledger in `readiness.md`. One independent pass can do both reviews.
 6. Write each finding that a test can prove as an open line.
 7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
-8. Otherwise, start the next round from the open lines and the other findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
+8. When `just finish` fails after round 5, stop, as "Round limit" says.
+9. Otherwise, start the next round from the open lines and the open findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
 
-A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
+### Round limit
+
+At the limit of 5 rounds, stop. Do not start round 6.
+Report to the user each open line of `spec.md`, and each finding that the ledger records as `open`, with its ID.
+Then wait for the user.
+An answer that lets you choose, such as "decide yourself", accepts no limit and starts no round.
+The user can accept each open finding as a limit. That needs no new round, as `readiness-review.md` says.
+
+### Review, stop, and delivery
+
+These are three different acts:
+
+- A pull request opens for review. It can open in round 1, before the loop is done
+- A stop report goes to the user at the round limit. It delivers nothing
+- The delivery, such as a merge or a release, starts only after `just finish` passes on the head
+
+A delivery skill or a merge gate, such as a "full stop" or "full send" request, is a delivery.
 It never replaces "Done when", and it never ends the rounds early.
 The release receipt and the human items of `qa.md` come after the merge, as "Release" in `AGENTS.md` says.
 
-For a command that replaces a user file or replays paid work, run `create-formal-verification-skill`.
+### Commands that replace a file
+
+For a command that replaces a user file, prove these invariants with the commands of `scenario-commands.md` in the contract:
+
+- The input stays unchanged: `protect` the input before each `refuses`, `signal`, and `appears` call
+- A failure leaves no partial output and keeps the old output: `protect` the output path, absent or old, before each of these calls
+- The command never writes through a link: give an output that is a link to the input, `protect` both, and refuse the call with `refuses`
+- Without `--force`, the command never replaces a file that appears during the run: `appears` creates that file, and the call keeps it
+
+A `protect` before a `signal` or an `appears` call covers that one call.
+For `appears`, the stub of the wrapped program writes the marker, then waits until the file exists.
+
+For a command that replays paid work, run `create-formal-verification-skill`.
 
 ## Readiness review
 
-An agent that did not write the code runs this review at the end of each round, and when the user asks for it.
-The author of the round never writes it. The checks of the contract apply in all cases, and `just check` runs them.
-
-Review the extension against "What a great extension does" and against the facts of the intake.
-Write the review in `readiness.md`, which starts with these three lines:
-
-```
-Commit: <the full SHA of the reviewed commit>
-Reviewer: <the agent that wrote this review, which wrote none of the code>
-Verdict: <Ready, Ready with stated limits, or Needs work>
-```
-
-Then commit `readiness.md` alone. `just finish` accepts the verdict while only `readiness.md` differs from that commit.
-Put the findings under `## Findings`. Give each finding its own `###` heading, or write `None.` when the review finds none.
-Write each part of a finding as a bullet that starts with its bold name, such as ``- **Severity**: `warn` ``:
-
-- **Evidence**: the file and the line, the scenario, or the output that shows the problem
-- **Command**: the command that the finding affects
-- **Consequence**: what goes wrong for a user or an agent
-- **Severity**: `block` when the command breaks the contract, `warn` when the adapter works around a loss, or `advise` for a better practice
-- **Limit**: for a `warn` that the user accepted, the spec ID of its row under **Limits.**
-- **Owner**: who can fix it, the author of the extension or the author of the script
-- **Fix**: the smallest change that removes the problem
-
-Name a severity only in the bullet **Severity** of its finding.
-`just finish` fails on a severity in a table, in fenced code, or in prose under `## Findings`.
-
-A loss that a user can see is `warn` or `block`, never `advise`.
-Examples are data that the output keeps or changes, and a promise of `spec.md` that does not hold.
-When in doubt between `warn` and `advise`, use `warn`.
-
-End the review with one verdict. The verdict follows from the findings, and `just finish` checks it:
-
-- **Ready**: no finding has the severity `block` or `warn`, and `spec.md` states no limit
-- **Ready with stated limits**: no finding blocks, and each `warn` names in **Limit** a limit that the user accepted
-- **Needs work**: at least one finding blocks, or a `warn` names no limit that the user accepted
-
-Only the user accepts a limit. Ask the user, and wait for the answer.
-Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.
-Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
-A loss that you report but that the user did not accept is a `warn` finding, not a limit.
-
-Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.
+An agent that did not write the code runs the readiness review at the end of each round, and when the user asks for it.
+Read [readiness-review.md](readiness-review.md) for the review and the form of `readiness.md`.

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Shared calls of the proof of just finish in template-finish-test.sh.
 # shellcheck disable=SC2154 # fct_test_finish sets finish and scratch for these helpers.
+# Markdown backticks in the fixture text are literal.
+# shellcheck disable=SC2016
 
 # fct_finish runs just finish in the copy, and requires the exit code $1.
 fct_finish() {
@@ -25,7 +27,8 @@ fct_finish_said() {
 
 # fct_readiness writes readiness.md for the commit $1, with the verdict $2, the
 # findings $3 under ## Findings, and the reviewer $4. An empty $3 leaves out
-# ## Findings, and an empty $4 leaves out the line Reviewer:.
+# ## Findings, and an empty $4 leaves out the line Reviewer:. The rounds of the
+# ledger reviewed the heads of ledger_earlier, then $1.
 fct_readiness() {
 	local reviewer="${4-an agent that wrote none of the code}"
 	{
@@ -33,5 +36,41 @@ fct_readiness() {
 		[[ -z "${reviewer}" ]] || printf 'Reviewer: %s\n' "${reviewer}"
 		printf 'Verdict: %s\n\n# Readiness review\n' "${2}"
 		[[ -z "${3}" ]] || printf '\n## Findings\n\n%s\n' "${3}"
+		fct_ledger "${finish}" "${ledger_earlier:-} ${1}"
 	} >"${finish}/readiness.md"
+}
+
+# fct_steps commits the first three steps of round 1 in the repository $1,
+# as empty commits, so the ledger can name their order (#417).
+fct_steps() {
+	local step
+	for step in intake spec scenario; do
+		git -C "${1}" commit -q --allow-empty -m "step: ${step}"
+	done
+}
+
+# fct_step prints the newest commit of the step $2 in the repository $1.
+fct_step() {
+	git -C "${1}" log --format=%H -n 1 -F --grep="step: ${2}" HEAD
+}
+
+# fct_ledger prints the ledger of the repository $1 for the rounds that
+# reviewed the heads $2, in order. A head written <sha>:pass gives its round
+# the Finish pass, which ends its build. The newest commits of fct_steps give
+# the order of round 1 of the last build, and its handler is in the first
+# head of that build (#417).
+fct_ledger() {
+	local heads first i head finish_cell handler=""
+	read -r -a heads <<<"${2}"
+	first="$(git -C "${1}" rev-list --max-parents=0 HEAD)"
+	printf '\n## Rounds\n\n| Round | Head | Change review | Change commits | Readiness review | Finish |\n|---|---|---|---|---|---|\n'
+	for ((i = 0; i < ${#heads[@]}; i++)); do
+		head="${heads[i]%%:*}" finish_cell='`fail`'
+		[[ -n "${handler}" ]] || handler="${head}"
+		[[ "${heads[i]}" != *:pass ]] || finish_cell='`pass`' handler=""
+		[[ "$((i + 1))" != "${#heads[@]}" ]] || finish_cell='`pending`'
+		printf '| %s | %s | agent A | %s..%s | agent B | %s |\n' "$((i + 1))" "${head}" "${first}" "${head}" "${finish_cell}"
+	done
+	printf '\n## Order of round 1\n\n| Step | Commit |\n|---|---|\n'
+	printf '| %s | %s |\n' Intake "$(fct_step "${1}" intake)" Spec "$(fct_step "${1}" spec)" Scenario "$(fct_step "${1}" scenario)" Handler "${handler}"
 }

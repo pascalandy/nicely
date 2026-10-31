@@ -1,21 +1,20 @@
 package extensionrepo
 
 import (
-	"errors"
+	"cmp"
 	"fmt"
-	"os"
 	"regexp"
 	"slices"
 	"strings"
 )
 
-// A finding is a ### heading under ## Findings of readiness.md. Its bullet
-// - **Severity**: grades it. For a warn, its bullet - **Limit**: names the
-// spec ID of the limit that the user accepted for it (#409).
+// A finding is a ### heading under ## Findings of readiness.md, which starts
+// with its ID, such as R2-F3. Its bullet - **Severity**: grades it. Its
+// bullets - **State**:, - **Spec**:, - **Commit**:, and - **Reason**: give
+// its state in the ledger (#417).
 type finding struct {
-	line     int
-	severity string
-	limit    string
+	line                                          int
+	id, title, severity, state, spec, commit, why string
 }
 
 var (
@@ -23,12 +22,29 @@ var (
 	readinessReviewer = regexp.MustCompile(`(?m)^Reviewer:[ \t]*\S`)
 	readinessVerdict  = regexp.MustCompile(`(?m)^Verdict: (.+?)\s*$`)
 	readinessHeading  = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*$`)
-	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
-	// readinessSeverity finds a severity in a form that finish cannot grade.
-	// Such a form is the word severity, a severity in code, or a severity
-	// cell of a table (#413).
-	readinessSeverity = regexp.MustCompile(`(?i)\bseverity\b|` + "`(?:block|warn|advise)`" + `|\|\s*(?:block|warn|advise)\s*(?:\||$)`)
+	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|State|Spec|Commit|Reason|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
+	readinessID       = regexp.MustCompile(`^(R([1-9][0-9]*)-F[1-9][0-9]*)\b`)
+	// readinessSeverity finds a severity in a form that finish cannot grade,
+	// such as prose, code, or a table, anywhere after the header (#413, #416).
+	readinessSeverity = regexp.MustCompile(`(?i)\b(block|warn|advise)\b`)
+	// readinessWord finds the word severity under ## Findings (#413).
+	readinessWord = regexp.MustCompile(`(?i)\bseverity\b`)
 )
+
+// severityCause names why a line that names a severity fails finish, so the
+// reviewer sees the word or the table that caused it (#416).
+func severityCause(text, fence string) string {
+	const fix = "Fix: grade each finding only in its line - **Severity**:, and rephrase this line without "
+	switch m := readinessSeverity.FindString(text); {
+	case fence != "":
+		return fmt.Sprintf("this fenced code names the severity %s. %sthe word %s", strings.ToLower(m), fix, strings.ToLower(m))
+	case strings.HasPrefix(strings.TrimSpace(text), "|") && m != "":
+		return fmt.Sprintf("this table names the severity %s. Fix: remove the table, because each finding gives its severity in its line - **Severity**:", strings.ToLower(m))
+	case m != "":
+		return fmt.Sprintf("this line names the severity %s outside the line - **Severity**: of a finding. %sthe word %s", strings.ToLower(m), fix, strings.ToLower(m))
+	}
+	return "this line names the word severity outside the line - **Severity**: of a finding. " + fix + "the word severity"
+}
 
 // readinessFindings reads the findings of readiness.md, outside fenced code.
 // It reports each finding that finish cannot grade, so a finding in another
@@ -50,9 +66,11 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		m, heading := readinessPart.FindStringSubmatch(text), readinessHeading.FindStringSubmatch(text)
 		// A heading of level 1 or 2 closes ## Findings, so it is no line of a finding.
 		section := fence == "" && heading != nil && len(heading[1]) <= 2
-		bullet := fence == "" && m != nil && m[1] == "Severity"
-		if part > 0 && !section && !bullet && readinessSeverity.MatchString(text) {
-			problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names a severity outside the line - **Severity**: of a finding. %s", i+1, fix))
+		bullet := part > 0 && fence == "" && m != nil && m[1] == "Severity"
+		// The first three lines are the header. A severity elsewhere fails,
+		// also under another part after ## Findings (#416).
+		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || part > 0 && !section && readinessWord.MatchString(text)) {
+			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
 		}
 		switch {
 		case fence != "":
@@ -72,7 +90,11 @@ func readinessFindings(readiness string) ([]finding, []string) {
 					part, seen = i+1, true
 				}
 			case level == 3 && part > 0:
-				findings = append(findings, finding{line: i + 1})
+				f := finding{line: i + 1, title: heading[2]}
+				if id := readinessID.FindStringSubmatch(heading[2]); id != nil {
+					f.id, f.title = id[1], strings.TrimSpace(heading[2][len(id[0]):])
+				}
+				findings = append(findings, f)
 				current = len(findings) - 1
 			}
 			continue
@@ -87,9 +109,21 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		}
 		value := strings.Trim(strings.TrimSuffix(m[2], "."), "`")
 		switch {
-		case m[1] == "Limit":
+		case m[1] != "Severity":
 			if current >= 0 {
-				findings[current].limit = value
+				switch f := &findings[current]; m[1] {
+				case "State":
+					f.state = value
+				case "Spec":
+					f.spec = value
+				case "Commit":
+					f.commit = value
+				case "Reason":
+					f.why = value
+				case "Limit":
+					// The form of #409 named an accepted limit in its own bullet.
+					f.state, f.spec = cmp.Or(f.state, "limit"), cmp.Or(f.spec, value)
+				}
 			}
 		case current < 0:
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: this severity has no finding of its own. %s", i+1, fix))
@@ -115,78 +149,4 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		}
 	}
 	return findings, problems
-}
-
-// readinessProblems reports a readiness.md without a reviewer or a passing
-// verdict, or whose commit is not the code of the working tree. The verdict
-// must follow from the findings and from the limits of spec.md (#409). Only
-// readiness.md may differ from that commit, so the review can be committed
-// after it.
-func readinessProblems(limits []limit) []string {
-	const fix = "Fix: ask an agent that did not write the code to run the readiness review of the nicely-extension skill, then start readiness.md with the lines Commit: <sha>, Reviewer: <who>, and Verdict: <verdict>"
-	const verdictFix = "Fix: write the verdict that the findings and the limits give, as the readiness review of the nicely-extension skill says"
-	data, err := os.ReadFile("readiness.md")
-	if errors.Is(err, os.ErrNotExist) {
-		return []string{"readiness.md: no readiness verdict is recorded. " + fix}
-	} else if err != nil {
-		return []string{"readiness.md: " + err.Error()}
-	}
-	// readiness.md starts with the lines Commit:, Reviewer:, and Verdict:,
-	// as the skill says. So finish never reads them in fenced code (#413).
-	lines := strings.SplitN(string(data), "\n", 4)
-	header := strings.Join(lines[:min(3, len(lines))], "\n")
-	commit, verdict := readinessCommit.FindStringSubmatch(header), readinessVerdict.FindStringSubmatch(header)
-	if commit == nil || verdict == nil {
-		return []string{"readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>. " + fix}
-	}
-	findings, problems := readinessFindings(string(data))
-	if !readinessReviewer.MatchString(header) {
-		problems = append(problems, "readiness.md: it names no reviewer. "+fix)
-	}
-	switch v := verdict[1]; v {
-	case "Ready":
-		for _, f := range findings {
-			if f.severity == "block" || f.severity == "warn" {
-				problems = append(problems, fmt.Sprintf("readiness.md:%d: the verdict is Ready, but this finding has the severity %s. %s", f.line, f.severity, verdictFix))
-			}
-		}
-		for _, l := range limits {
-			problems = append(problems, fmt.Sprintf("spec.md:%d: the verdict is Ready, but spec.md states the limit `%s`. %s", l.line, l.id, verdictFix))
-		}
-	case "Ready with stated limits":
-		for _, f := range findings {
-			switch {
-			case f.severity == "block":
-				problems = append(problems, fmt.Sprintf("readiness.md:%d: the verdict is Ready with stated limits, but this finding has the severity block. %s", f.line, verdictFix))
-			case f.severity == "warn" && !slices.ContainsFunc(limits, func(l limit) bool { return l.id == f.limit && l.accepted }):
-				problems = append(problems, fmt.Sprintf("readiness.md:%d: this warn names no limit that the user accepted in spec.md. Fix: name the spec ID of its accepted limit in a line - **Limit**: `<id>`, or write the verdict Needs work", f.line))
-			}
-		}
-	case "Needs work":
-		problems = append(problems, "readiness.md: the verdict is Needs work. Fix: start the next round from its findings")
-	default:
-		problems = append(problems, fmt.Sprintf("readiness.md: the verdict %q is not Ready, Ready with stated limits, or Needs work. %s", v, fix))
-	}
-	sha := commit[1]
-	if _, err := updateOutput("git", "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
-		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", sha, fix))
-	}
-	changed, err := updateOutput("git", "diff", "--name-only", sha, "--")
-	if err != nil {
-		return append(problems, "readiness.md: "+err.Error())
-	}
-	added, err := updateOutput("git", "ls-files", "--others", "--exclude-standard")
-	if err != nil {
-		return append(problems, "readiness.md: "+err.Error())
-	}
-	var files []string
-	for _, file := range strings.Split(string(changed)+string(added), "\n") {
-		if file != "" && file != "readiness.md" && !slices.Contains(files, file) {
-			files = append(files, file)
-		}
-	}
-	if len(files) != 0 {
-		problems = append(problems, fmt.Sprintf("readiness.md: the review is of %s, and these files changed since: %s. Fix: run the readiness review again on this commit", sha, strings.Join(files, ", ")))
-	}
-	return problems
 }

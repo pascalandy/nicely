@@ -69,7 +69,11 @@ fi
 [[ "$status" == 0 ]] || die "ncly ${command[*]} exited $status"
 grep -qF '"ok":true' "$scratch/answer" || die 'the answer holds no "ok":true'
 
-# Fill: check each property of ## Acceptance with a tool other than the extension.
+# Fill: check each property of ## Acceptance on the primary output, with a reader
+# that is not the wrapped program. Compare the content that this reader gives
+# with an independent reference. A check of only a header or of the file type is
+# not sufficient. Here, wc and awk read the input again, and the answer must
+# match their counts.
 # spec: size
 grep -qE "\"size_bytes\":$(wc -c <"$input" | tr -d ' ')[,}]" "$scratch/answer" || die "the size differs from wc -c"
 # spec: lines

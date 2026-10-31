@@ -25,12 +25,13 @@ SCRIPT
 	[[ ! -e "${scratch}/signed-sha" ]] || fct_fail 'just signoff called gh signoff before just finish passed'
 
 	cp -R "${repo}" "${ready}"
+	fct_steps "${ready}"
 	for file in vision.md spec.md qa.md; do
 		grep -v '^Fill:' "${ready}/${file}" >"${scratch}/form.md"
 		mv "${scratch}/form.md" "${ready}/${file}"
 	done
 	git -C "${ready}" commit -qam 'fill the forms'
-	printf 'Commit: %s\nReviewer: an agent that wrote none of the code\nVerdict: Ready\n\n## Findings\n\nNone.\n' "$(git -C "${ready}" rev-parse HEAD)" >"${ready}/readiness.md"
+	finish="${ready}" fct_readiness "$(git -C "${ready}" rev-parse HEAD)" Ready None.
 	git -C "${ready}" add readiness.md
 	git -C "${ready}" commit -qm 'readiness review'
 	sha="$(git -C "${ready}" rev-parse HEAD)"

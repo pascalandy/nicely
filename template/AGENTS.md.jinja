@@ -17,20 +17,19 @@ Read `extension-identity.md` in the pinned contract for the slug and command own
 ## Change a command
 
 Build each command with the skill in `.agents/skills/nicely-extension/`, from the first command.
-It runs these steps in rounds:
-
-1. Write the command's spec before its implementation.
-2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.
-3. Write a scenario that fails for the missing behavior.
-4. Write the handler body, on `sdk/wrap` for one program, or on `sdk/runner` for more.
-5. Teach when to use the command in `skill/SKILL.md`.
+Its rounds give the order of the work, from the intake to "Done when".
+Write the handler body on `sdk/wrap` for one program, or on `sdk/runner` for more.
+Declare the command in the manifest and the catalog, so `extension.Check` passes.
+Teach when to use the command in `skill/SKILL.md`.
 
 Give each command one bounded job beneath the extension root.
 Never relay arbitrary arguments to a wrapped program.
 The skill teaches when to use the command, rather than its implementation.
 For a command with a dry run, tell the agent to dry-run the call first.
 
-In `acceptance.sh`, judge the result with a tool other than the extension.
+In `acceptance.sh`, judge the primary output with a reader that is not the wrapped program.
+A check that reads only a header or the file type is not sufficient.
+Compare the content that this reader gives with an independent reference.
 Use the real input and criteria of `## Acceptance`.
 For a paid command, run only its dry run.
 
@@ -60,7 +59,7 @@ Signoff also needs Git and `gh` with the `gh-signoff` extension.
 After Copier creates the repository, run `go mod tidy` once, which writes `go.sum` for the recipes. Then commit the repository with Git, since `just update` needs a clean Git tree. Run `lefthook install` once per clone, so `just check` runs before each push. GitHub runs it again for each push to `main` and each pull request.
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
-- `just finish`: the exit of the loop. `extension-repository.md` in the pinned contract lists what it checks
+- `just finish`: the exit of the loop. `finish-gate.md` in the pinned contract lists what it checks
 - `just signoff`: runs `just finish` and `just check` on the committed SHA in a detached scratch worktree. Then it writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
@@ -90,7 +89,9 @@ The rounds of the skill stop when all of these hold:
 - `just finish` passes
 - `just check` and `just acceptance` pass, and the hosted checks pass
 
-After 5 rounds, stop anyway, and report each open line to the user.
+A build has at most 5 rounds, and `just finish` fails after 5.
+At that limit, stop, and report each open line and each open finding to the user, as the skill says.
+An answer that lets you choose, such as "decide yourself", accepts no limit and starts no round.
 For a command that needs a key, relay the grant hint to the human and wait.
 A delivery skill or a merge gate, such as a "full stop" or "full send" request, runs after "Done when" holds.
 It never replaces "Done when". `just signoff` runs `just finish` first, so a merge or a release waits until `just finish` passes. When the previous pull request is not merged, a new pull request stacks on its branch.

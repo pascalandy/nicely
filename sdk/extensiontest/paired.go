@@ -14,11 +14,13 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
+// scriptFiles holds the selections of one scenario.
+// protect lasts until the next protect call, and next until the next signal or appears call.
 type scriptFiles struct {
-	protect, survives []string
+	protect, next, survives []string
 }
 
-// ScenarioCommands supplies signal, refuses, protect, and survives to a testscript runner.
+// ScenarioCommands supplies signal, appears, refuses, protect, and survives to a testscript runner.
 // host is the registered ncly's absolute path, independent of the scenario's PATH.
 func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.TestScript, bool, []string) {
 	var mu sync.Mutex
@@ -48,7 +50,7 @@ func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.Tes
 			if survives {
 				state(ts).survives = paths
 			} else {
-				state(ts).protect = paths
+				state(ts).protect, state(ts).next = paths, paths
 			}
 		}
 	}
@@ -56,8 +58,16 @@ func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.Tes
 		"protect": selectFiles(false), "survives": selectFiles(true),
 		"signal": func(ts *testscript.TestScript, neg bool, args []string) {
 			files := state(ts)
+			next := files.next
+			files.next = nil
 			defer func() { files.survives = nil }()
-			c.signal(ts, neg, args, files.survives, host)
+			c.signal(ts, neg, args, files.survives, next, host)
+		},
+		"appears": func(ts *testscript.TestScript, neg bool, args []string) {
+			files := state(ts)
+			next := files.next
+			files.next = nil
+			c.appears(ts, neg, args, next, host)
 		},
 		"refuses": func(ts *testscript.TestScript, neg bool, args []string) {
 			c.refuses(ts, neg, args, state(ts).protect, host)
@@ -85,16 +95,16 @@ func (c *Coverage) pairedCall(ts *testscript.TestScript, program string, args []
 		ts.Fatalf("%s: expected a runnable command of %s", program, c.manifest.Slug())
 	}
 	if on, given := call.line.Switch("json"); given && !on {
-		ts.Fatalf("%s: signal and refuses require JSON", program)
+		ts.Fatalf("%s: signal, appears, and refuses require JSON", program)
 	}
 	if on, given := call.line.Switch("no-input"); given && !on {
-		ts.Fatalf("%s: signal and refuses require non-interactive mode", program)
+		ts.Fatalf("%s: signal, appears, and refuses require non-interactive mode", program)
 	}
 	if on, _ := call.line.Switch("help"); on {
-		ts.Fatalf("%s: signal and refuses cannot check help", program)
+		ts.Fatalf("%s: signal, appears, and refuses cannot check help", program)
 	}
 	if on, _ := call.line.Switch("version"); on {
-		ts.Fatalf("%s: signal and refuses cannot check version", program)
+		ts.Fatalf("%s: signal, appears, and refuses cannot check version", program)
 	}
 	return path, words, call
 }

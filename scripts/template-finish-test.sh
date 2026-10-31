@@ -9,14 +9,15 @@
 source "${BASH_SOURCE[0]%/*}/template-finish-helpers.sh"
 
 fct_test_finish() {
-	local finish="${2}/finish" scratch="${2}" sha file number
+	local finish="${2}/finish" scratch="${2}" sha file number ledger_earlier=""
 	local free='this limit has no spec ID, no state limit, and no acceptance'
 	local unfilled='this line of the form is not filled'
-	local warn=$'### Large files are slow\n\n- **Severity**: `warn`'
-	local advise=$'### The count could name the longest line\n\n- **Severity**: `advise`'
-	local hidden=$'### The count could name the longest line\n\n- **Severity**: `advise`\n\n| Output keeps GPS | `warn` |\n| Output keeps the serial number | block |\n\n```\n### Output keeps the place\n\n- **Severity**: `warn`\n```\n\n### Output keeps the name\n\n- Severity: warn\n- **Severity**: `advise`\n\n### Output keeps the date\n\nSeverity: warn.\n\n- **Severity**: `advise`\n\n### Severity: warn\n\n- **Severity**: `advise`\n- **Limit**: `block`'
+	local warn=$'### R1-F1 Large files are slow\n\n- **Severity**: `warn`'
+	local advise=$'### R1-F2 The count could name the longest line\n\n- **Severity**: `advise`'
+	local hidden=$'### R1-F2 The count could name the longest line\n\n- **Severity**: `advise`\n\n| Output keeps the author | `warn` |\n| Output keeps the serial number | block |\n\n```\n### Output keeps the place\n\n- **Severity**: `warn`\n```\n\n### R1-F3 Output keeps the name\n\n- Severity: warn\n- **Severity**: `advise`\n\n### R1-F4 Output keeps the date\n\nSeverity: warn.\n\n- **Severity**: `advise`\n\n### Severity: warn\n\n- **Severity**: `advise`\n- **Spec**: `block`'
 	local unread=$'- **Severity**: `warn`\n\n### No severity\n\n### Two severities\n\n- **Severity**: `advise`\n- **Severity**: `warn`\n\n### Unknown severity\n\n- **Severity**: minor\n\n### A fenced heading\n\n````\n# a comment\n```\n````\n\n- **Severity**: `block`\n\n### An open fence\n\n```\n- **Severity**: `advise`'
 	cp -R "${1}" "${finish}"
+	fct_steps "${finish}"
 	[[ "$(just --justfile "${finish}/justfile" --show finish | sed '/^#/d')" == $'finish:\n    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo finish' ]] ||
 		fct_fail 'just finish must call the SDK program in one line'
 
@@ -61,8 +62,9 @@ fct_test_finish() {
 	fct_readiness "${sha}" Ready "${advise}"
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'independent readiness review'
+	ledger_earlier="${sha}"
 	fct_finish 0
-	fct_finish_said 'finish: no line is open'
+	fct_finish_said 'finish: no line or finding is open'
 
 	fct_edit "${finish}/spec.md" '**Limits.** None.' $'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `large-file` | `open` | A file over 1 GB takes more than 30 s to count | The user, 2026-10-30, https://example.com/pull/1 |'
 	fct_finish 1
@@ -84,7 +86,7 @@ fct_test_finish() {
 	fct_finish 1
 	fct_finish_said 'readiness.md:9: this warn names no limit that the user accepted'
 	fct_finish_said 'readiness.md:13: the verdict is Ready with stated limits, but this finding has the severity block'
-	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **Limit**: `small-file`'
+	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **State**: `limit`\n- **Spec**: `small-file`'
 	fct_finish 1
 	fct_finish_said 'readiness.md:9: this warn names no limit that the user accepted'
 
@@ -118,8 +120,11 @@ fct_test_finish() {
 	# A severity outside the line - **Severity**: of a finding fails it, even after a valid finding (#413).
 	fct_readiness "${sha}" 'Ready with stated limits' "${hidden}"
 	fct_finish 1
-	for number in 13 14 19 24 29 33 36; do
-		fct_finish_said "readiness.md:${number}: this line names a severity outside the line - **Severity**: of a finding"
+	fct_finish_said 'readiness.md:13: this table names the severity warn'
+	fct_finish_said 'readiness.md:14: this table names the severity block'
+	fct_finish_said 'readiness.md:19: this fenced code names the severity warn'
+	for number in 24 29 33 36; do
+		fct_finish_said "readiness.md:${number}: this line names the severity"
 	done
 
 	# Finish reads Commit:, Reviewer:, and Verdict: only in the first lines, never in fenced code (#413).
@@ -128,13 +133,13 @@ fct_test_finish() {
 	fct_finish_said 'readiness.md: it names no reviewer'
 	fct_readiness '' 'Ready with stated limits' $'```\nCommit: '"${sha}"$'\n```\n\nNone.'
 	fct_finish 1
-	fct_finish_said 'readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>'
+	fct_finish_said 'readiness.md: its first three lines hold no line Commit: <sha> or Verdict: <verdict>'
 
-	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **Limit**: `large-file`\n\n'"${advise}"$'\n\n## Severity assessment\n\nEach finding names its severity.'
+	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **State**: `limit`\n- **Spec**: `large-file`\n\n'"${advise}"$'\n- **State**: `declined`\n- **Reason**: the answer stays small\n\n## Severity assessment\n\nEach finding names its severity.'
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review'
 	fct_finish 0
-	fct_finish_said 'finish: no line is open'
+	fct_finish_said 'finish: no line or finding is open'
 
 	# A change after the review needs a new review.
 	printf 'A change after the review.\n' >>"${finish}/README.md"

@@ -7,7 +7,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | File | Holds |
 |---|---|
 | `README.md` | What the extension adds, and the commands that install a release |
-| `vision.md` | The job of the extension in one sentence, the source and revision of each program that it wraps, and what it refuses |
+| `vision.md` | The job of the extension in one sentence, the source and revision of each wrapped program, its intake facts, and what it refuses |
 | `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the limits that the user accepted. Then `## Acceptance`: the real input, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses. Then `## Open lines`: the lines that no test proves yet. Each line of Failures and of Acceptance starts with its spec ID, as [Test kit](test-kit.md#spec-ids) says |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
@@ -18,7 +18,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `AGENTS/rule-index.md` | The check that enforces each rule of `AGENTS.md` |
 | `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
-| `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings |
+| `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings. Then the ledger of the build, as [Finish gate](finish-gate.md#the-ledger) defines |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 | `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu, plus macOS for public repositories, for each push to `main` and each pull request |
 
@@ -36,17 +36,7 @@ Public repositories also run the same steps on `macos-15`, and both runners are 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has nine recipes:
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
-- `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. `just finish` fails on each of these:
-  - A missing `vision.md`, `spec.md`, or `qa.md`
-  - A line of `vision.md`, `spec.md`, or `qa.md` that starts with `Fill:` after its indent, also in fenced code
-  - A line under `## Open lines`
-  - A line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance
-  - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`
-  - A reviewed commit that differs from the working tree outside `readiness.md`
-  - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
-  - A severity under `## Findings` outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose
-  - `Ready` with a `block` or `warn` finding, or with a limit in `spec.md`
-  - `Ready with stated limits` with a `block` finding, or with a `warn` whose **Limit** names no accepted limit
+- `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. [Finish gate](finish-gate.md) lists what it checks
 - `just signoff` runs `just finish` and `just check` on the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines
 - `just release <tag> [fixture]` publishes the signed SHA and proves the README install, as [Release and install](extensions.md#release-and-install) defines
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last

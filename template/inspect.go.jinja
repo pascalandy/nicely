@@ -16,9 +16,11 @@ import (
 // inspect gives the size and the line count of a file. python3 runs the
 // worker inspect.py through sdk/wrap, which answers each failure that Wrapped
 // programs in the contract lists. The handler checks its input before the
-// worker starts. It never maps an exit other than 0, or output that it cannot
-// read, to a success. It also refuses a file that the worker accepts but
-// whose lines mean nothing, as testdata/script/refusal.txtar shows.
+// worker starts. The file is the input of sdk/wrap, so each failure that
+// sdk/wrap answers, a timeout or a signal included, names it. The handler
+// never maps an exit other than 0, or output that it cannot read, to a
+// success. It also refuses a file that the worker accepts but whose lines
+// mean nothing, as testdata/script/refusal.txtar shows.
 func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	file := call.Args[0]
@@ -39,7 +41,7 @@ func inspect(ctx context.Context, call extension.Call) contract.Outcome {
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
-	program := wrap.Program{Name: "python3", Args: []string{worker, file}, Timeout: timeout}
+	program := wrap.Program{Name: "python3", Args: []string{worker, file}, Timeout: timeout, Input: file}
 	return wrap.Run(ctx, call, program, func(end wrap.Ended) contract.Outcome {
 		var answer struct {
 			Size  *int64 `json:"size_bytes"`

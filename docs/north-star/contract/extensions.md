@@ -23,6 +23,7 @@ An author outside Nicely keeps an extension in a Git repository of its own, whic
 An author releases a version with `just release vX.Y.Z [fixture]`.
 The SDK requires a clean HEAD equal to the fetched default branch of `origin`.
 A successful signoff receipt must name that SHA, with exit 0 for every check and signoff.
+Its checks must hold `just finish`, so a receipt with only `just check` never releases.
 Release runs `just acceptance [fixture]`, then creates and pushes an annotated tag whose message holds that signoff receipt.
 It executes the fenced `sh` block under `## Install` in `README.md`, with `TAG` replaced by the new tag.
 The install uses scratch HOME and XDG folders, without the caller's keys or installed extensions.

@@ -37,16 +37,7 @@ SCRIPT
 	fct_release_receipt "${repo}" "${scratch}"
 	sha="$(git -C "${repo}" rev-parse HEAD)"
 	receipt="${scratch}/release-cache/nicely/signoff/test-${sha}/receipt.json"
-	cp "${receipt}" "${scratch}/valid-signoff.json"
-	for previous in '.checks[0].exit = 1' '.signoff.exit = 1' '.sha = "previous"' 'del(.checks[0].exit)' '.signoff.exit = null'; do
-		PATH="/usr/bin:${PATH}" jq "${previous}" "${scratch}/valid-signoff.json" >"${receipt}"
-		status=0
-		fct_release_attempt "${repo}" "${scratch}" v0.1.0 || status=$?
-		if [[ "${status}" == 0 ]] || ! grep -qF 'just signoff' "${scratch}/release.out"; then
-			fct_fail 'release accepts an unsuccessful receipt'
-		fi
-	done
-	cp "${scratch}/valid-signoff.json" "${receipt}"
+	fct_release_refused_receipts "${repo}" "${scratch}" "${receipt}"
 
 	printf '\nDirty change\n' >>"${repo}/README.md"
 	status=0
