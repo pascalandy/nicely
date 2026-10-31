@@ -7,7 +7,7 @@ source "${BASH_SOURCE[0]%/*}/template-release-helpers.sh"
 source "${BASH_SOURCE[0]%/*}/template-release-url-test.sh"
 
 fct_test_release() {
-	local repo="${1}" scratch="${2}" slug="${3}" extension_root="${4}" sha previous receipt dir status out_file out_bytes err_file err_bytes i examples command
+	local repo="${1}" scratch="${2}" slug="${3}" extension_root="${4}" sha previous receipt dir status out_file out_bytes err_file err_bytes i examples command file ledger_earlier=""
 	local remote="${2}/release-origin.git" fixture="${2}/release-fixture/input.md"
 	fct_has "${repo}/AGENTS.md" '## Release'
 	fct_has "${repo}/README.md" "ncly describe ${extension_root} --json"
@@ -55,6 +55,23 @@ SCRIPT
 	fi
 	[[ -z "$(git -C "${remote}" tag -l)" ]] || fct_fail 'acceptance refusal pushed a tag'
 
+	# A receipt that names just finish proves nothing about the repository.
+	# Release runs just finish again on the signed commit, before the tag (#419).
+	status=0
+	fct_release_attempt "${repo}" "${scratch}" v0.1.0 || status=$?
+	if [[ "${status}" == 0 ]] || ! grep -qF 'finish exited 1' "${scratch}/release.out"; then
+		fct_fail 'release trusts a receipt that names just finish, on a repository that just finish refuses'
+	fi
+	[[ -z "$(git -C "${remote}" tag -l)" ]] || fct_fail 'a release that just finish refuses pushed a tag'
+
+	# The releases below pass just finish: the forms are filled, and an independent review passes.
+	fct_steps "${repo}"
+	for file in vision.md spec.md qa.md; do
+		grep -v '^Fill:' "${repo}/${file}" >"${scratch}/form.md"
+		mv "${scratch}/form.md" "${repo}/${file}"
+	done
+	git -C "${repo}" add vision.md spec.md qa.md
+
 	# Economy selects modes even when the first example already sets them.
 	examples="$(grep -m1 '^examples = ' "${repo}/manifest.toml")"
 	command="$(sed -n 's/^examples = \["ncly \(.*\) notes.md".*$/\1/p' "${repo}/manifest.toml" | head -n 1)"
@@ -67,6 +84,7 @@ SCRIPT
 	printf '\nUnpushed change\n' >>"${repo}/README.md"
 	git -C "${repo}" add README.md
 	git -C "${repo}" commit -qm 'unpushed release input'
+	fct_release_review "${repo}"
 	fct_release_receipt "${repo}" "${scratch}"
 	status=0
 	fct_release_attempt "${repo}" "${scratch}" v0.1.0 || status=$?
@@ -81,10 +99,12 @@ SCRIPT
 	previous="$(git -C "${repo}" rev-parse HEAD)"
 
 	# D095: a new tag in prose cannot repair an install block pinned to the previous tag.
+	fct_steps "${repo}"
 	fct_edit "${repo}/README.md" "git clone --branch TAG https://example.com/ncly-${slug} ncly-${slug}" "git clone --branch v0.1.0 https://example.com/ncly-${slug} ncly-${slug}"
 	printf '\nThe current release is v0.1.1.\n' >>"${repo}/README.md"
 	git -C "${repo}" add README.md
 	git -C "${repo}" commit -qm 'pin the README install to the previous tag'
+	fct_release_review "${repo}"
 	git -C "${repo}" push -q origin HEAD:main
 	fct_release_receipt "${repo}" "${scratch}"
 	status=0
@@ -94,9 +114,11 @@ SCRIPT
 	fi
 	printf 'RED D095: previous-tag README rejected after publication, exit %s\n' "${status}"
 
+	fct_steps "${repo}"
 	fct_edit "${repo}/README.md" "git clone --branch v0.1.0 https://example.com/ncly-${slug} ncly-${slug}" "git clone --branch TAG https://example.com/ncly-${slug} ncly-${slug}"
 	git -C "${repo}" add README.md
 	git -C "${repo}" commit -qm 'install the selected release tag'
+	fct_release_review "${repo}"
 	git -C "${repo}" push -q origin HEAD:main
 	fct_release_receipt "${repo}" "${scratch}"
 	sha="$(git -C "${repo}" rev-parse HEAD)"

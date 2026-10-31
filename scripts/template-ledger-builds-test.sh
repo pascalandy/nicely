@@ -39,11 +39,15 @@ fct_test_ledger_builds() {
 	fct_finish 1
 	fct_finish_said 'this line names the word severity outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word severity'
 	fct_finish_said 'this table names the severity advise'
-	# A warn in prose beside an advise, or in a table of a part after ## Findings, fails (#416).
-	fct_readiness "${head}" Ready "${valid}"$'\n\nThis is a warn.\n\n## Notes\n\n| Long lines kept | `warn` |' 'agent B'
+	# A warn in code beside an advise, or in a table of a part after ## Findings, fails (#416).
+	fct_readiness "${head}" Ready "${valid}"$'\n\nThis is a `warn`.\n\n## Notes\n\n| Long lines kept | warn |' 'agent B'
 	fct_finish 1
-	fct_finish_said 'this line names the severity warn outside the line - **Severity**: of a finding'
+	fct_finish_said 'this line names the severity `warn` in code, outside the line - **Severity**: of a finding'
 	fct_finish_said 'this table names the severity warn'
+	# Finish reads a severity only in the line - **Severity**:, so the words
+	# block and warn pass in a title, in evidence, and in prose (#419).
+	fct_readiness "${head}" Ready "${valid}"$'\n- **Evidence**: the code block in README.md\n\nThe CLI does not warn when the input is empty.\n\n### R3-F1 Large inputs block the terminal\n\n- **Severity**: `advise`\n\n## Notes\n\nA long line can block a pager.' 'agent B'
+	fct_finish 0
 	# Finish reads the header in the first three lines, after a byte order mark (#416).
 	fct_readiness "${head}" Ready "${valid}" 'agent B'
 	printf '# Readiness review\n' | cat - "${finish}/readiness.md" >"${scratch}/readiness.md"

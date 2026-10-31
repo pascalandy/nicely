@@ -122,9 +122,9 @@ fct_test_finish() {
 	fct_finish 1
 	fct_finish_said 'readiness.md:13: this table names the severity warn'
 	fct_finish_said 'readiness.md:14: this table names the severity block'
-	fct_finish_said 'readiness.md:19: this fenced code names the severity warn'
+	fct_finish_said 'readiness.md:19: this fenced code names the severity `warn`'
 	for number in 24 29 33 36; do
-		fct_finish_said "readiness.md:${number}: this line names the severity"
+		fct_finish_said "readiness.md:${number}: this line names the"
 	done
 
 	# Finish reads Commit:, Reviewer:, and Verdict: only in the first lines, never in fenced code (#413).

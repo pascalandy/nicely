@@ -24,9 +24,12 @@ var (
 	readinessHeading  = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*$`)
 	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|State|Spec|Commit|Reason|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
 	readinessID       = regexp.MustCompile(`^(R([1-9][0-9]*)-F[1-9][0-9]*)\b`)
-	// readinessSeverity finds a severity in a form that finish cannot grade,
-	// such as prose, code, or a table, anywhere after the header (#413, #416).
-	readinessSeverity = regexp.MustCompile(`(?i)\b(block|warn|advise)\b`)
+	// readinessSeverity finds a severity in code, a form that finish cannot
+	// grade, anywhere after the header (#413, #416). The plain words pass, so
+	// a title or prose can say that a call blocks or warns (#419).
+	readinessSeverity = regexp.MustCompile("(?i)`(block|warn|advise)`")
+	// readinessCell finds a severity alone in a cell of a table (#416).
+	readinessCell = regexp.MustCompile("(?i)\\|\\s*`?(block|warn|advise)`?\\s*(?:\\||$)")
 	// readinessWord finds the word severity under ## Findings (#413).
 	readinessWord = regexp.MustCompile(`(?i)\bseverity\b`)
 )
@@ -34,16 +37,17 @@ var (
 // severityCause names why a line that names a severity fails finish, so the
 // reviewer sees the word or the table that caused it (#416).
 func severityCause(text, fence string) string {
-	const fix = "Fix: grade each finding only in its line - **Severity**:, and rephrase this line without "
-	switch m := readinessSeverity.FindString(text); {
-	case fence != "":
-		return fmt.Sprintf("this fenced code names the severity %s. %sthe word %s", strings.ToLower(m), fix, strings.ToLower(m))
-	case strings.HasPrefix(strings.TrimSpace(text), "|") && m != "":
-		return fmt.Sprintf("this table names the severity %s. Fix: remove the table, because each finding gives its severity in its line - **Severity**:", strings.ToLower(m))
-	case m != "":
-		return fmt.Sprintf("this line names the severity %s outside the line - **Severity**: of a finding. %sthe word %s", strings.ToLower(m), fix, strings.ToLower(m))
+	const fix = "Fix: grade each finding only in its line - **Severity**:, and write "
+	code, cell := readinessSeverity.FindStringSubmatch(text), readinessCell.FindStringSubmatch(text)
+	switch {
+	case cell != nil && strings.HasPrefix(strings.TrimSpace(text), "|"):
+		return fmt.Sprintf("this table names the severity %s. Fix: remove the table, because each finding gives its severity in its line - **Severity**:", strings.ToLower(cell[1]))
+	case code != nil && fence != "":
+		return fmt.Sprintf("this fenced code names the severity `%s`. %sthe word %s in other text without backticks", strings.ToLower(code[1]), fix, strings.ToLower(code[1]))
+	case code != nil:
+		return fmt.Sprintf("this line names the severity `%s` in code, outside the line - **Severity**: of a finding. %sthe word %s in other text without backticks", strings.ToLower(code[1]), fix, strings.ToLower(code[1]))
 	}
-	return "this line names the word severity outside the line - **Severity**: of a finding. " + fix + "the word severity"
+	return "this line names the word severity outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word severity"
 }
 
 // readinessFindings reads the findings of readiness.md, outside fenced code.
@@ -69,7 +73,8 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		bullet := part > 0 && fence == "" && m != nil && m[1] == "Severity"
 		// The first three lines are the header. A severity elsewhere fails,
 		// also under another part after ## Findings (#416).
-		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || part > 0 && !section && readinessWord.MatchString(text)) {
+		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || readinessCell.MatchString(text) && strings.HasPrefix(trimmed, "|") ||
+			part > 0 && !section && readinessWord.MatchString(text)) {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
 		}
 		switch {

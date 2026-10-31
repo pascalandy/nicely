@@ -75,7 +75,13 @@ func (r *releaseReceipt) publish(ctx context.Context, env []string, root string,
 	if err := r.require(ctx, env, root, "acceptance", acceptance...); err != nil {
 		return err
 	}
-	// Acceptance cannot change the source that the receipt signed.
+	// A receipt that names just finish proves nothing about the repository,
+	// because a hand can write it. So the gate runs again on the signed
+	// commit, before the tag (#419).
+	if err := r.require(ctx, env, root, "finish", "just", "finish"); err != nil {
+		return err
+	}
+	// Acceptance and finish cannot change the source that the receipt signed.
 	if err := releasePushed(ctx, env, root, r.SHA); err != nil {
 		return err
 	}

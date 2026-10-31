@@ -40,3 +40,17 @@ fct_release_refused_receipts() {
 	fi
 	cp "${scratch}/valid-signoff.json" "${receipt}"
 }
+
+# fct_release_review commits a readiness review of HEAD of the repository $1
+# that passes just finish, so the release that runs just finish again goes on
+# (#419). The round ends its build, so the next review starts at new steps of
+# fct_steps. The caller keeps the earlier rounds in ledger_earlier.
+fct_release_review() {
+	# shellcheck disable=SC2034 # fct_readiness writes readiness.md in finish.
+	local finish="${1}" head
+	head="$(git -C "${1}" rev-parse HEAD)"
+	fct_readiness "${head}" Ready None.
+	git -C "${1}" add readiness.md
+	git -C "${1}" commit -qm 'readiness review'
+	ledger_earlier="${ledger_earlier:+${ledger_earlier} }${head}:pass"
+}
