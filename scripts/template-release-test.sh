@@ -3,6 +3,8 @@
 
 # shellcheck source=scripts/template-release-helpers.sh
 source "${BASH_SOURCE[0]%/*}/template-release-helpers.sh"
+# shellcheck source=scripts/template-release-url-test.sh
+source "${BASH_SOURCE[0]%/*}/template-release-url-test.sh"
 
 fct_test_release() {
 	local repo="${1}" scratch="${2}" slug="${3}" extension_root="${4}" sha previous receipt dir status out_file out_bytes err_file err_bytes i examples command
@@ -115,16 +117,4 @@ SCRIPT
 	PATH="/usr/bin:${PATH}" jq -e --arg sha "${sha}" '.sha == $sha and .signoff.exit == 0 and ([.checks[].exit] | all(. == 0))' "${scratch}/tag-message.json" >/dev/null || fct_fail 'annotated tag lacks its successful signoff receipt'
 	[[ -z "$(git -C "${repo}" status --porcelain)" ]] || fct_fail 'release wrote into tracked files'
 	printf 'GREEN release receipt: correct README, Economy, and NOT_FOUND, exit 0\n'
-}
-
-# A Go module's /v2 suffix is not part of its published repository URL.
-fct_test_release_url() {
-	local template_src="${1}" scratch="${2}" copier
-	shift 2
-	copier=("$@")
-	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data domain=probe --data module=example.com/ncly-probe/v2 "${template_src}" "${scratch}/ncly-probe-v2"
-	fct_has "${scratch}/ncly-probe-v2/README.md" 'git clone --branch TAG https://example.com/ncly-probe ncly-probe'
-	if grep -qF 'example.com/ncly-probe/v2' "${scratch}/ncly-probe-v2/README.md"; then
-		fct_fail 'README.md gives the module path example.com/ncly-probe/v2 as a repository URL'
-	fi
 }
