@@ -14,15 +14,8 @@ import (
 // Then each form is filled, no line is open, the user accepted each limit,
 // and a passing readiness verdict names the commit under review.
 func finishRepository() int {
-	problems, err := formProblems()
-	if err != nil {
-		return report("finish", err)
-	}
-	spec, err := os.ReadFile("spec.md")
-	if err != nil {
-		return report("finish", err)
-	}
-	specs, limits := specProblems(string(spec))
+	problems, spec := formProblems()
+	specs, limits := specProblems(spec)
 	problems = append(append(problems, specs...), readinessProblems(limits)...)
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)
@@ -34,15 +27,24 @@ func finishRepository() int {
 	return 0
 }
 
-// formProblems reports each line that starts with "Fill:" after its indent
-// in the forms that the template writes. Round 1 of the skill replaces each
-// one (#408, #412).
-func formProblems() ([]string, error) {
+// formProblems reports each missing form of the template, and each line of
+// a form that starts with "Fill:" after its indent. Round 1 of the skill
+// replaces each such line (#408, #412). It also returns spec.md, or "" when
+// spec.md is missing, so finish goes on to its other checks.
+func formProblems() ([]string, string) {
 	var problems []string
+	var spec string
 	for _, form := range []string{"vision.md", "spec.md", "qa.md"} {
 		data, err := os.ReadFile(form)
-		if err != nil {
-			return nil, err
+		if errors.Is(err, os.ErrNotExist) {
+			problems = append(problems, form+": the form is missing. Fix: restore it from the Git history of the repository, then fill it")
+			continue
+		} else if err != nil {
+			problems = append(problems, form+": "+err.Error())
+			continue
+		}
+		if form == "spec.md" {
+			spec = string(data)
 		}
 		for i, line := range strings.Split(string(data), "\n") {
 			if strings.HasPrefix(strings.TrimSpace(line), "Fill:") {
@@ -50,7 +52,7 @@ func formProblems() ([]string, error) {
 			}
 		}
 	}
-	return problems, nil
+	return problems, spec
 }
 
 // A limit is a row with a spec ID under **Limits.** of spec.md. It is

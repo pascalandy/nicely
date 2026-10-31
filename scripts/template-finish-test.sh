@@ -158,4 +158,12 @@ fct_test_finish() {
 	git -C "${finish}" commit -qam 'a commit after the review'
 	fct_finish 1
 	fct_finish_said "readiness.md: the review is of ${sha}, and these files changed since: README.md"
+
+	# A missing form fails finish, which still reports the rest (#412).
+	git -C "${finish}" rm -q qa.md spec.md
+	fct_finish 1
+	fct_finish_said 'qa.md: the form is missing'
+	fct_finish_said 'spec.md: the form is missing'
+	fct_finish_said 'readiness.md:9: this warn names no limit that the user accepted'
+	fct_finish_said 'no such file or directory' absent
 }
