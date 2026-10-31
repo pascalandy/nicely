@@ -14,7 +14,7 @@ fct_test_finish() {
 	local unfilled='this line of the form is not filled'
 	local warn=$'### R1-F1 Large files are slow\n\n- **Severity**: `warn`'
 	local advise=$'### R1-F2 The count could name the longest line\n\n- **Severity**: `advise`'
-	local hidden=$'### R1-F2 The count could name the longest line\n\n- **Severity**: `advise`\n\n| Output keeps GPS | `warn` |\n| Output keeps the serial number | block |\n\n```\n### Output keeps the place\n\n- **Severity**: `warn`\n```\n\n### R1-F3 Output keeps the name\n\n- Severity: warn\n- **Severity**: `advise`\n\n### R1-F4 Output keeps the date\n\nSeverity: warn.\n\n- **Severity**: `advise`\n\n### Severity: warn\n\n- **Severity**: `advise`\n- **Spec**: `block`'
+	local hidden=$'### R1-F2 The count could name the longest line\n\n- **Severity**: `advise`\n\n| Output keeps the author | `warn` |\n| Output keeps the serial number | block |\n\n```\n### Output keeps the place\n\n- **Severity**: `warn`\n```\n\n### R1-F3 Output keeps the name\n\n- Severity: warn\n- **Severity**: `advise`\n\n### R1-F4 Output keeps the date\n\nSeverity: warn.\n\n- **Severity**: `advise`\n\n### Severity: warn\n\n- **Severity**: `advise`\n- **Spec**: `block`'
 	local unread=$'- **Severity**: `warn`\n\n### No severity\n\n### Two severities\n\n- **Severity**: `advise`\n- **Severity**: `warn`\n\n### Unknown severity\n\n- **Severity**: minor\n\n### A fenced heading\n\n````\n# a comment\n```\n````\n\n- **Severity**: `block`\n\n### An open fence\n\n```\n- **Severity**: `advise`'
 	cp -R "${1}" "${finish}"
 	[[ "$(just --justfile "${finish}/justfile" --show finish | sed '/^#/d')" == $'finish:\n    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo finish' ]] ||
