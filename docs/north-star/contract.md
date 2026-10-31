@@ -48,6 +48,7 @@ Each part is one file, in reading order.
       - [Spec IDs](contract/spec-ids.md)
       - [Generic cases](contract/generic-cases.md)
   - [Extension repository](contract/extension-repository.md)
+    - [Finish gate](contract/finish-gate.md)
     - [Update an extension](contract/update-an-extension.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)

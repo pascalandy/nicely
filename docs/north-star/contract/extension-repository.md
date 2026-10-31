@@ -36,17 +36,7 @@ Public repositories also run the same steps on `macos-15`, and both runners are 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has nine recipes:
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
-- `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. `just finish` fails on each of these:
-  - A missing `vision.md`, `spec.md`, or `qa.md`
-  - A line of `vision.md`, `spec.md`, or `qa.md` that starts with `Fill:` after its indent, also in fenced code
-  - A line under `## Open lines`
-  - A line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance
-  - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`
-  - A reviewed commit that differs from the working tree outside `readiness.md`
-  - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
-  - A severity under `## Findings` outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose
-  - `Ready` with a `block` or `warn` finding, or with a limit in `spec.md`
-  - `Ready with stated limits` with a `block` finding, or with a `warn` whose **Limit** names no accepted limit
+- `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. [Finish gate](finish-gate.md) lists what it checks
 - `just signoff` runs `just finish` and `just check` on the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines
 - `just release <tag> [fixture]` publishes the signed SHA and proves the README install, as [Release and install](extensions.md#release-and-install) defines
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last

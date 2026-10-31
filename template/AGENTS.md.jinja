@@ -60,7 +60,7 @@ Signoff also needs Git and `gh` with the `gh-signoff` extension.
 After Copier creates the repository, run `go mod tidy` once, which writes `go.sum` for the recipes. Then commit the repository with Git, since `just update` needs a clean Git tree. Run `lefthook install` once per clone, so `just check` runs before each push. GitHub runs it again for each push to `main` and each pull request.
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
-- `just finish`: the exit of the loop. `extension-repository.md` in the pinned contract lists what it checks
+- `just finish`: the exit of the loop. `finish-gate.md` in the pinned contract lists what it checks
 - `just signoff`: runs `just finish` and `just check` on the committed SHA in a detached scratch worktree. Then it writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
