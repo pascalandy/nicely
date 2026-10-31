@@ -131,6 +131,8 @@ fct_main() {
 	source "${root}/scripts/template-release-test.sh"
 	# shellcheck source=scripts/template-recipes-test.sh
 	source "${root}/scripts/template-recipes-test.sh"
+	# shellcheck source=scripts/template-signoff-test.sh
+	source "${root}/scripts/template-signoff-test.sh"
 	# shellcheck source=scripts/template-finish-test.sh
 	source "${root}/scripts/template-finish-test.sh"
 	# A Git hook or a caller can export GIT_DIR. The scratch repositories must see their own.
