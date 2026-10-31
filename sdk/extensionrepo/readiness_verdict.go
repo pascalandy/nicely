@@ -111,9 +111,12 @@ func limitsOnly(commit string) bool {
 		return false
 	}
 	current, err := os.ReadFile("spec.md")
-	if err != nil {
-		return false
-	}
+	return err == nil && sameOutsideLimits(string(old), string(current))
+}
+
+// sameOutsideLimits reports whether two texts of spec.md differ only under
+// **Limits.**.
+func sameOutsideLimits(a, b string) bool {
 	outside := func(spec string) []string {
 		lines := strings.Split(spec, "\n")
 		var kept []string
@@ -124,5 +127,5 @@ func limitsOnly(commit string) bool {
 		}
 		return kept
 	}
-	return slices.Equal(outside(string(old)), outside(string(current)))
+	return slices.Equal(outside(a), outside(b))
 }

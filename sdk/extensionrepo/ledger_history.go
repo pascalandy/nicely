@@ -13,16 +13,6 @@ type review struct {
 	revision, commit, text string
 }
 
-// buildReviews returns each readiness.md committed after since, the end of
-// the build before, or in all of HEAD without it, the newest first.
-func buildReviews(since string) []review {
-	revisions := "HEAD"
-	if since != "" {
-		revisions = since + "..HEAD"
-	}
-	return committedReviews(revisions)
-}
-
 func committedReviews(revisions string) []review {
 	log, err := exec.Command("git", "log", "--format=%H", revisions, "--", "readiness.md").Output()
 	if err != nil {
@@ -49,20 +39,47 @@ func readinessHeader(readiness string) string {
 }
 
 // buildStart returns the newest readiness.md committed at or before the
-// intake that ended the build before this one, or "". Such a review passes:
-// its verdict follows from its findings and from the spec.md of its commit.
-// A review that needs work never ends a build, so moving the intake hides no
-// history (#417).
+// intake that ended the build before this one, or "". A review that needs
+// work never ends a build, so moving the intake hides no history (#417).
 func buildStart(intake string) string {
+	return endOfBuild(intake, 8)
+}
+
+// endOfBuild finds the review that ended a build at or before intake. Such a
+// review passes as just finish would pass it. Its verdict and its states
+// follow from its findings. Its ledger keeps the history of its own build.
+// Its limits come from the spec.md of the intake, when only **Limits.**
+// differs. So a limit accepted after the review counts. A review without a
+// ledger, of an older template, needs a passing verdict only. depth bounds
+// the builds that it reads.
+func endOfBuild(intake string, depth int) string {
+	if depth == 0 {
+		return ""
+	}
+	later, _ := exec.Command("git", "show", intake+":spec.md").Output()
 	for _, r := range committedReviews(intake) {
 		v := readinessVerdict.FindStringSubmatch(readinessHeader(r.text))
 		if v == nil || v[1] != "Ready" && v[1] != "Ready with stated limits" {
 			continue
 		}
 		spec, _ := exec.Command("git", "show", r.revision+":spec.md").Output()
+		if sameOutsideLimits(string(spec), string(later)) {
+			spec = later
+		}
 		open, limits := specProblems(string(spec))
 		findings, unread := readinessFindings(r.text)
-		if len(open) == 0 && len(unread) == 0 && len(verdictProblems(v[1], findings, limits)) == 0 {
+		problems := append(append(open, unread...), verdictProblems(v[1], findings, limits)...)
+		if rounds, order, _ := ledgerTables(r.text); len(rounds) != 0 {
+			problems = append(problems, stateProblems(findings, len(rounds), string(spec), limits)...)
+			since := ""
+			if step, found := order["Intake"]; found {
+				if commit, ok := ledgerCommit(step.cells[1]); ok {
+					since = endOfBuild(commit, depth-1)
+				}
+			}
+			problems = append(problems, historyAt(findings, rounds, since, r.revision+"^")...)
+		}
+		if len(problems) == 0 {
 			return r.revision
 		}
 	}
@@ -74,6 +91,11 @@ func buildStart(intake string) string {
 // and its severity never goes down. Each round keeps its row, and each
 // round matches one committed review, so no loss and no round leaves it.
 func historyProblems(findings []finding, rounds []round, since string) []string {
+	return historyAt(findings, rounds, since, "HEAD")
+}
+
+// historyAt compares the ledger with the reviews of the build up to head.
+func historyAt(findings []finding, rounds []round, since, head string) []string {
 	current := map[string]finding{}
 	for _, f := range findings {
 		current[f.id] = f
@@ -81,7 +103,11 @@ func historyProblems(findings []finding, rounds []round, since string) []string 
 	}
 	var problems []string
 	reported := map[string]bool{}
-	reviews := buildReviews(since)
+	revisions := head
+	if since != "" {
+		revisions = since + ".." + head
+	}
+	reviews := committedReviews(revisions)
 	for _, r := range reviews {
 		problems = append(problems, roundHistory(rounds, r.text, r.revision, reported)...)
 		earlier, _ := readinessFindings(r.text)

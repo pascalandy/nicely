@@ -7,6 +7,31 @@
 # shellcheck disable=SC2016,SC2034,SC2154
 
 fct_test_ledger_builds() {
+	local base forged limit=$'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
+	git -C "${finish}" checkout -q readiness.md spec.md
+	base="$(git -C "${finish}" rev-parse HEAD)"
+	# After a limit that the user accepted, or a review of the form of #409,
+	# a second build starts with a history of its own.
+	for forged in ledger legacy; do
+		if [[ "${forged}" == ledger ]]; then
+			fct_readiness "${head}" 'Ready with stated limits' "${advise}${declined}"$'\n\n'"${warn}"$'\n- **State**: `limit`\n- **Spec**: `long-lines`' 'agent B'
+		else
+			printf 'Commit: %s\nReviewer: agent B\nVerdict: Ready with stated limits\n\n## Findings\n\n### Long lines are cut\n\n- **Severity**: `warn`\n- **Limit**: `long-lines`\n' "${head}" >"${finish}/readiness.md"
+		fi
+		git -C "${finish}" add readiness.md
+		git -C "${finish}" commit -qm "a review with an accepted limit: ${forged}"
+		fct_edit "${finish}/spec.md" '**Limits.** None.' "${limit}"
+		git -C "${finish}" commit -qam 'the user accepts the limit long-lines'
+		fct_steps "${finish}"
+		printf 'Handler of the build after the limit.\n' >>"${finish}/README.md"
+		git -C "${finish}" commit -qam 'handler of the build after the limit'
+		ledger_earlier=""
+		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" 'Ready with stated limits' 'None.' 'agent B'
+		fct_finish 0
+		ledger_earlier="${round1} ${round2}"
+		git -C "${finish}" reset -q --hard "${base}"
+	done
+
 	# The word severity in prose, or a table of severities, fails with its cause (#416).
 	fct_readiness "${head}" Ready "${advise}"$'\n- **Evidence**: I kept the severity low'"${declined}"$'\n\n| Finding | Grade |\n|---|---|\n| R1-F1 | advise |' 'agent B'
 	fct_finish 1
@@ -39,17 +64,28 @@ fct_test_ledger_builds() {
 	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready "${advise}${declined}" 'agent B'
 	fct_finish 0
 
-	# A review that needs work, committed again with the verdict Ready, ends no
-	# build. A finding without an ID keeps its title in later reviews.
+	# A review that needs work ends no build, even when its verdict line says
+	# Ready. A finding without an ID keeps its title in later reviews.
 	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" 'Needs work' "${warn/R2-F1 /}"
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review of the next build'
-	fct_edit "${finish}/readiness.md" 'Verdict: Needs work' 'Verdict: Ready'
-	git -C "${finish}" commit -qam 'the same review with the verdict Ready'
-	fct_steps "${finish}"
-	printf 'Handler of a third build.\n' >>"${finish}/README.md"
-	git -C "${finish}" commit -qam 'handler of a third build'
-	fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready 'None.' 'agent B'
-	fct_finish 1
-	fct_finish_said 'readiness.md: the finding titled "Long lines are cut" of the review in'
+	base="$(git -C "${finish}" rev-parse HEAD)"
+	for forged in verdict state none; do
+		case "${forged}" in
+		verdict) fct_edit "${finish}/readiness.md" 'Verdict: Needs work' 'Verdict: Ready' ;;
+		state)
+			fct_edit "${finish}/readiness.md" 'Verdict: Needs work' 'Verdict: Ready'
+			fct_edit "${finish}/readiness.md" '- **Severity**: `warn`' $'- **Severity**: `warn`\n- **State**: `fixed`'
+			;;
+		none) fct_readiness "$(git -C "${finish}" rev-parse HEAD~1)" Ready 'None.' 'agent B' ;;
+		esac
+		git -C "${finish}" commit -qam "a review that ends the build: ${forged}"
+		fct_steps "${finish}"
+		printf 'Handler of a third build.\n' >>"${finish}/README.md"
+		git -C "${finish}" commit -qam 'handler of a third build'
+		fct_readiness "$(git -C "${finish}" rev-parse HEAD)" Ready 'None.' 'agent B'
+		fct_finish 1
+		fct_finish_said 'readiness.md: the finding titled "Long lines are cut" of the review in'
+		git -C "${finish}" reset -q --hard "${base}"
+	done
 }

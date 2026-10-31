@@ -1,6 +1,7 @@
 package extensionrepo
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
 	"slices"
@@ -21,7 +22,7 @@ var (
 	readinessReviewer = regexp.MustCompile(`(?m)^Reviewer:[ \t]*\S`)
 	readinessVerdict  = regexp.MustCompile(`(?m)^Verdict: (.+?)\s*$`)
 	readinessHeading  = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*$`)
-	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|State|Spec|Commit|Reason)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
+	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|State|Spec|Commit|Reason|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
 	readinessID       = regexp.MustCompile(`^(R([1-9][0-9]*)-F[1-9][0-9]*)\b`)
 	// readinessSeverity finds a severity in a form that finish cannot grade,
 	// such as prose, code, or a table, anywhere after the header (#413, #416).
@@ -119,6 +120,9 @@ func readinessFindings(readiness string) ([]finding, []string) {
 					f.commit = value
 				case "Reason":
 					f.why = value
+				case "Limit":
+					// The form of #409 named an accepted limit in its own bullet.
+					f.state, f.spec = cmp.Or(f.state, "limit"), value
 				}
 			}
 		case current < 0:

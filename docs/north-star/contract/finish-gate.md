@@ -60,7 +60,10 @@ A finding of the last round can have no state yet.
 - A round of an earlier committed ledger that is missing or changed. Only a Finish that was `pending` changes
 
 The history of a build starts after the last committed `readiness.md` that passes, at or before its Intake commit.
-Such a review has a passing verdict that follows from its findings and from the `spec.md` of its commit.
+Such a review passes as `just finish` would pass it: its verdict, its states, and the history of its own build.
+Its limits come from the `spec.md` of the Intake when that file differs only under **Limits.**, so a limit accepted after the review counts.
+A review without a ledger, from a template before the ledger, needs a passing verdict only.
+Its form of #409, a line `- **Limit**:` with a spec ID, reads as the state `limit`.
 So an earlier build that ended is no history of this one.
 A review that needs work never ends a build, so a moved Intake hides no finding and resets no round.
 

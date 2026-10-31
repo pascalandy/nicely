@@ -14,7 +14,7 @@ Reviewer: <the agent that wrote this review, which wrote none of the code>
 Verdict: <Ready, Ready with stated limits, or Needs work>
 ```
 
-Then commit `readiness.md` alone. `just finish` accepts the verdict while only `readiness.md` differs from that commit.
+Then commit `readiness.md` alone. `just finish` accepts the verdict while only `readiness.md` and the part **Limits.** of `spec.md` differ from that commit.
 `finish-gate.md` in the contract lists each check of `just finish`.
 
 ## Findings
@@ -58,6 +58,7 @@ End the review with one verdict. The verdict follows from the findings, and `jus
 Only the user accepts a limit. Ask the user, and wait for the answer.
 Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.
 This change starts no round: the reviewer gives the finding the state `limit` in the review of the same commit.
+Commit the limit in `spec.md`, then commit `readiness.md` alone.
 Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
 A loss that you report but that the user did not accept is a `warn` finding, not a limit.
 
@@ -90,5 +91,6 @@ Keep the row of each earlier round as it was. Only its Finish changes, from `pen
 Commit `readiness.md` at the end of each round, so each round has a committed review of its head.
 A build has at most 5 rounds.
 A new build, such as of another command, starts at a new intake, after a review with a passing verdict.
+After `just update` from a template without a ledger, commit a review in this form before the next intake.
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.
