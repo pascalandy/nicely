@@ -124,7 +124,7 @@ func readinessFindings(readiness string) ([]finding, []string) {
 // readiness.md may differ from that commit, so the review can be committed
 // after it.
 func readinessProblems(limits []limit) []string {
-	const fix = "Fix: ask an agent that did not write the code to run the readiness review of the nicely-extension skill, then record it in readiness.md with the lines Commit: <sha>, Reviewer: <who>, and Verdict: <verdict>"
+	const fix = "Fix: ask an agent that did not write the code to run the readiness review of the nicely-extension skill, then start readiness.md with the lines Commit: <sha>, Reviewer: <who>, and Verdict: <verdict>"
 	const verdictFix = "Fix: write the verdict that the findings and the limits give, as the readiness review of the nicely-extension skill says"
 	data, err := os.ReadFile("readiness.md")
 	if errors.Is(err, os.ErrNotExist) {
@@ -132,15 +132,19 @@ func readinessProblems(limits []limit) []string {
 	} else if err != nil {
 		return []string{"readiness.md: " + err.Error()}
 	}
-	commit, verdict := readinessCommit.FindSubmatch(data), readinessVerdict.FindSubmatch(data)
+	// readiness.md starts with the lines Commit:, Reviewer:, and Verdict:,
+	// as the skill says. So finish never reads them in fenced code (#413).
+	lines := strings.SplitN(string(data), "\n", 4)
+	header := strings.Join(lines[:min(3, len(lines))], "\n")
+	commit, verdict := readinessCommit.FindStringSubmatch(header), readinessVerdict.FindStringSubmatch(header)
 	if commit == nil || verdict == nil {
 		return []string{"readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>. " + fix}
 	}
 	findings, problems := readinessFindings(string(data))
-	if !readinessReviewer.Match(data) {
+	if !readinessReviewer.MatchString(header) {
 		problems = append(problems, "readiness.md: it names no reviewer. "+fix)
 	}
-	switch v := string(verdict[1]); v {
+	switch v := verdict[1]; v {
 	case "Ready":
 		for _, f := range findings {
 			if f.severity == "block" || f.severity == "warn" {
@@ -164,7 +168,7 @@ func readinessProblems(limits []limit) []string {
 	default:
 		problems = append(problems, fmt.Sprintf("readiness.md: the verdict %q is not Ready, Ready with stated limits, or Needs work. %s", v, fix))
 	}
-	sha := string(commit[1])
+	sha := commit[1]
 	if _, err := updateOutput("git", "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
 		return append(problems, fmt.Sprintf("readiness.md: Git knows no commit %s. %s", sha, fix))
 	}

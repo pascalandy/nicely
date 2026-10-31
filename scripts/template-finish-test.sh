@@ -122,6 +122,14 @@ fct_test_finish() {
 		fct_finish_said "readiness.md:${number}: this line names a severity outside the line - **Severity**: of a finding"
 	done
 
+	# Finish reads Commit:, Reviewer:, and Verdict: only in the first lines, never in fenced code (#413).
+	fct_readiness "${sha}" 'Ready with stated limits' $'```\nReviewer: an agent that wrote none of the code\n```\n\nNone.' ''
+	fct_finish 1
+	fct_finish_said 'readiness.md: it names no reviewer'
+	fct_readiness '' 'Ready with stated limits' $'```\nCommit: '"${sha}"$'\n```\n\nNone.'
+	fct_finish 1
+	fct_finish_said 'readiness.md: it holds no line Commit: <sha> or Verdict: <verdict>'
+
 	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **Limit**: `large-file`\n\n'"${advise}"
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'readiness review'

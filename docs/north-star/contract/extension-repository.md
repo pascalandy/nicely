@@ -40,7 +40,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
   - A line of `vision.md`, `spec.md`, or `qa.md` that starts with `Fill:` after its indent, also in fenced code
   - A line under `## Open lines`
   - A line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance
-  - A `readiness.md` without the lines `Commit: <sha>` and `Reviewer: <who>`, or without the verdict `Ready` or `Ready with stated limits`
+  - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`
   - A reviewed commit that differs from the working tree outside `readiness.md`
   - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
   - A severity under `## Findings` outside the line `- **Severity**:` of a finding, such as in a table, in fenced code, or in prose
