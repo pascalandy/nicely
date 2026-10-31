@@ -1,5 +1,6 @@
 # The Go fixture's hello count runs its worker count.sh with bash, its declared program,
-# through sdk/wrap, as Wrapped programs defines. hello scan runs scan.sh the same way, but
+# through sdk/wrap, as Wrapped programs defines. wrap_stop.txtar covers the timeout, the
+# signals, and the version probe. hello scan runs scan.sh the same way, but
 # discards its stdout, which holds only progress. keyed relay passes a key to the program
 # keytool the same way. stub/bash stands in for bash: it answers the version probe, writes the
 # path of the worker and the mode of its folder, then does what STUB says, by default running
@@ -89,51 +90,6 @@ exits 1 ncly hello scan input.md --json
 answer stderr RUNTIME
 stderr '"message":"bash failed with exit 3\.'
 
-# At the timeout, the whole process tree stops, a child in its own process group included,
-# with exit 1, and the folder of the worker goes
-env STUB=hang
-exits 1 ncly hello count input.md --timeout 1s --json
-answer stderr RUNTIME
-stderr '"message":"bash did not finish within 1 s, so it was stopped\.'
-gone hang.pid
-gone child.pid
-exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
-
-# Ctrl-C stops the process tree too, with exit 130, and the folder of the worker goes
-rm hang.pid child.pid worker.path
-exec exitcode exit.txt ncly hello count input.md --json &
-waitfile hang.pid
-kill -INT
-wait
-grep '^130$' exit.txt
-! stdout .
-answer stderr INTERRUPTED
-gone hang.pid
-gone child.pid
-exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
-
-# A program that ignores Ctrl-C runs until the SIGKILL of core's cleanup, 4 seconds in the
-# test binary, and the folder of the worker is gone before that SIGKILL
-rm hang.pid child.pid worker.path
-env STUB=stubborn
-exec exitcode exit.txt ncly hello count input.md --json &
-waitfile stubborn.pid
-kill -INT
-wait
-grep '^130$' exit.txt
-answer stderr INTERRUPTED
-gone stubborn.pid
-exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
-
-# A version probe that does not finish in time is PREREQ_MISSING with exit 78, before work
-rm worker.path
-env STUB=probe-hang
-exits 78 ncly hello count input.md --timeout 1s --json
-answer stderr PREREQ_MISSING
-stderr '"message":"bash --version did not print its version in time\.","hint":"Check that bash --version prints a version and exits\."\}'
-gone probe.pid
-! exists worker.path
-
 # The program gets the variables of its caller, except each key that its command does not
 # pass: hello count passes none, even run directly with a key in its environment
 env STUB=env
@@ -193,10 +149,6 @@ DEEPGRAM_API_KEY c80d260f9714b7fa16564b76cb5fb1359ccc0a6284eb5cc4b152b3fdd6290ba
 -- stub/bash --
 #!/bin/sh
 if [ "$1" = --version ]; then
-  if [ "$STUB" = probe-hang ]; then
-    echo $$ > "$WORK/probe.pid"
-    exec /bin/sleep 30
-  fi
   echo 'GNU bash, version 5.2.0(1)-release'
   exit 0
 fi
@@ -222,19 +174,6 @@ noisy)
   ;;
 progress)
   /usr/bin/yes 'Encoding: task 1 of 1, 50.00 %' | /usr/bin/head -c 1100000
-  ;;
-hang)
-  pgroup /bin/sh -c 'echo $$ > "$WORK/child.tmp"; mv "$WORK/child.tmp" "$WORK/child.pid"; exec /bin/sleep 30' >/dev/null 2>&1 &
-  while [ ! -f "$WORK/child.pid" ]; do /bin/sleep 0.01; done
-  echo $$ > "$WORK/hang.tmp"
-  mv "$WORK/hang.tmp" "$WORK/hang.pid"
-  exec /bin/sleep 30
-  ;;
-stubborn)
-  trap '' INT TERM
-  echo $$ > "$WORK/stubborn.tmp"
-  mv "$WORK/stubborn.tmp" "$WORK/stubborn.pid"
-  exec /bin/sleep 30
   ;;
 env)
   { /usr/bin/env | /usr/bin/sed -n 's/^\([A-Za-z0-9_]*_API_KEY\)=.*/key \1/p'; echo "HELLO_PLAIN=$HELLO_PLAIN"; } > "$WORK/env.log"
