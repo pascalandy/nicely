@@ -14,12 +14,14 @@ A wrapped program runs through the program runner of [Programs that ncly runs](p
 
 | Case | Result |
 |---|---|
-| The program is missing or too old, or its version probe fails or times out | `PREREQ_MISSING` before any work, as [Required programs](../core-spec.md#required-programs) defines. The probe gets at most 10 seconds, within the command's timeout. `ProgramCheck.Failed` leaves a timeout to its caller, so `sdk/wrap` maps it |
+| The program is missing or too old, or its version probe fails or does not finish within 10 seconds | `PREREQ_MISSING` before any work, as [Required programs](../core-spec.md#required-programs) defines. The probe gets at most 10 seconds, within the command's timeout. `ProgramCheck.Failed` leaves a timeout to its caller, so `sdk/wrap` maps it |
 | The input is invalid | `USAGE_INVALID`, which the handler answers before it calls `sdk/wrap` |
 | The program exits with a code other than 0, or writes on stderr | The outcome that the handler maps for that exit, and `RUNTIME` for any other exit. No exit code of the program passes through unmapped, and its own 75 never makes a repeat safe |
 | The output is missing, malformed, or over the size limit | `RUNTIME`. A decoder never turns a failure into a success. Only stdout counts for the limit, and stderr keeps its first bytes. Discarded stdout never counts |
-| The command's timeout expires | The process tree stops, and `sdk/wrap` answers `RUNTIME` with exit 1. Exit 75 needs [Retry safety](retry-safety.md), which only the handler can show, so such a handler uses `sdk/runner` |
-| Ctrl-C or SIGTERM arrives | The runner signals the process tree, and the exit is 130 or 143 |
+| The command's timeout expires, also while the version probe runs | The process tree stops, and `sdk/wrap` answers `RUNTIME` with exit 1. Exit 75 needs [Retry safety](retry-safety.md), which only the handler can show, so such a handler uses `sdk/runner` |
+| Ctrl-C or SIGTERM arrives | The runner signals the process tree, and the exit is 130 or 143. With an input, the leading error, `INTERRUPTED` or `TERMINATED`, names it |
+
+The handler can give `sdk/wrap` its input, the item or path that the call works on. The message of each `RUNTIME` outcome that `sdk/wrap` makes then names that input. Without an input, the messages name only the program.
 
 A program that prints its progress on stdout, such as HandBrakeCLI, can pass the size limit in a long run. The program can succeed, but `sdk/wrap` still answers `RUNTIME`, and the decoder never runs. A handler whose decoder reads no stdout sets `DiscardStdout`. A handler that reads it sets an `OutputLimit` that its longest run cannot pass.
 

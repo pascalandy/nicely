@@ -583,7 +583,7 @@ description = "Message of RUNTIME when a program that a command runs through sdk
 other = "{{.Name}} could not start."
 
 ["wrap.timeout"]
-description = "Message of RUNTIME when a program that a command runs did not finish within the command's timeout, so ncly stopped it. {{.Name}} is the program, such as bash, and {{.Timeout}} the timeout, such as 10 s."
+description = "Message of RUNTIME when a program that a command runs did not finish within the command's timeout, its version probe included, so ncly stopped it. {{.Name}} is the program, such as bash, and {{.Timeout}} the timeout, such as 10 s."
 other = "{{.Name}} did not finish within {{.Timeout}}, so it was stopped."
 
 ["wrap.output_over"]
@@ -597,6 +597,34 @@ other = "{{.Name}} failed with exit {{.Exit}}."
 ["wrap.malformed"]
 description = "Message of RUNTIME when a program that a command runs gave output that the command cannot read, such as invalid JSON. {{.Name}} is the program, such as bash."
 other = "{{.Name}} gave output that this command cannot read."
+
+["wrap.start_failed_input"]
+description = "Message of RUNTIME when a program that a command runs through sdk/wrap could not start. {{.Name}} is the program, such as bash, and {{.Input}} the item or path of the call, such as notes.md."
+other = "{{.Name}} could not start for {{.Input}}."
+
+["wrap.timeout_input"]
+description = "Message of RUNTIME when a program that a command runs did not finish within the command's timeout, its version probe included, so ncly stopped it. {{.Name}} is the program, such as bash, {{.Input}} the item or path of the call, such as notes.md, and {{.Timeout}} the timeout, such as 10 s."
+other = "{{.Name}} did not finish its work on {{.Input}} within {{.Timeout}}, so it was stopped."
+
+["wrap.output_over_input"]
+description = "Message of RUNTIME when a program that a command runs wrote more on stdout than the command reads. {{.Name}} is the program, such as bash, {{.Input}} the item or path of the call, such as notes.md, and {{.Limit}} the limit, such as 1 MB."
+other = "{{.Name}} wrote more than {{.Limit}} of output for {{.Input}}."
+
+["wrap.failed_input"]
+description = "Message of RUNTIME when a program that a command runs exited with a code that the command does not expect. {{.Name}} is the program, such as bash, {{.Input}} the item or path of the call, such as notes.md, and {{.Exit}} its exit code."
+other = "{{.Name}} failed on {{.Input}} with exit {{.Exit}}."
+
+["wrap.malformed_input"]
+description = "Message of RUNTIME when a program that a command runs gave output that the command cannot read, such as invalid JSON. {{.Name}} is the program, such as bash, and {{.Input}} the item or path of the call, such as notes.md."
+other = "{{.Name}} gave output for {{.Input}} that this command cannot read."
+
+["wrap.interrupted"]
+description = "Error when Ctrl-C stopped a command while it ran a program through sdk/wrap. {{.Input}} is the item or path of the call, such as notes.md. Finished files stay on disk."
+other = "Stopped by Ctrl-C during the work on {{.Input}}. Finished work is kept."
+
+["wrap.terminated"]
+description = "Error when the SIGTERM signal stopped a command while it ran a program through sdk/wrap. {{.Input}} is the item or path of the call, such as notes.md. Finished files stay on disk."
+other = "Stopped by SIGTERM during the work on {{.Input}}. Finished work is kept."
 
 ["worker.missing"]
 description = "Message of RUNTIME when an extension's code asks for a worker, an embedded script, that the extension does not embed. Only its developer can fix it. {{.Name}} is the worker, such as count.sh."

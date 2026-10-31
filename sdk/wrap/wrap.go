@@ -9,7 +9,12 @@
 //
 // Pass Run the ctx of the handler, which only a signal ends, so that a
 // deadline of the caller never reads as a signal. Program.Timeout bounds
-// the program instead.
+// the program instead. A probe that uses up that deadline gives the
+// timeout, not PREREQ_MISSING, because the program is there.
+//
+// Set Program.Input to the item or path that the call works on. Each
+// RUNTIME message that Run makes then names it. The answer to a signal
+// names it too. The handler cannot add the input to these outcomes.
 package wrap
 
 import (
@@ -57,6 +62,11 @@ type Program struct {
 	// decoder reads no stdout, such as for an encoder that prints its
 	// progress there. The program still writes to a pipe, as without it.
 	DiscardStdout bool
+	// Input is the item or path that the call works on, such as the file
+	// that the handler checked. When set, the messages of the timeout, of a
+	// signal, and of each other RUNTIME outcome of Run and Ended name it.
+	// Empty keeps the messages without an input.
+	Input string
 }
 
 // Ended is how a program ended on its own, which the decoder of Run maps.
@@ -69,6 +79,7 @@ type Ended struct {
 	// Stderr holds what the program wrote on stderr, up to the limit.
 	Stderr  []byte
 	name    string
+	input   string
 	printer *i18n.Printer
 }
 
@@ -76,26 +87,29 @@ type Ended struct {
 // map, such as an exit other than 0. A decoder returns it for every exit
 // that it does not know, so no exit code of the program passes through.
 func (e Ended) Failed() contract.Outcome {
-	data := map[string]any{"Name": e.name, "Exit": e.Exit}
-	return runtime(e.printer.T("wrap.failed", data), e.printer)
+	data := map[string]any{"Name": e.name, "Exit": e.Exit, "Input": e.input}
+	return runtime(e.printer.T(named("wrap.failed", e.input), data), e.printer)
 }
 
 // Malformed returns the RUNTIME outcome of output that the decoder cannot
 // read, such as missing or invalid JSON. A decoder returns it, so it never
 // turns a failure into a success.
 func (e Ended) Malformed() contract.Outcome {
-	return runtime(e.printer.T("wrap.malformed", map[string]any{"Name": e.name}), e.printer)
+	data := map[string]any{"Name": e.name, "Input": e.input}
+	return runtime(e.printer.T(named("wrap.malformed", e.input), data), e.printer)
 }
 
 // Run checks the program, then runs it from the caller's folder, and
 // returns what decode makes of its end. A failure that the contract defines
 // never reaches decode. Run answers PREREQ_MISSING for a program that is
-// missing, too old, or whose probe fails or times out. It answers RUNTIME
-// for a timeout or a start that fails. Without DiscardStdout, stdout over
-// the limit gives RUNTIME too. A signal gives the outcome of that signal.
+// missing, too old, or whose probe fails or reaches ProbeLimit. It answers
+// RUNTIME for a timeout, also one during the probe, or a start that fails.
+// Without DiscardStdout, stdout over the limit gives RUNTIME too. A signal
+// gives the outcome of that signal.
 func Run(ctx context.Context, call extension.Call, p Program, decode func(Ended) contract.Outcome) contract.Outcome {
 	printer := call.Printer
-	data := map[string]any{"Name": p.Name, "Path": call.Path}
+	data := map[string]any{"Name": p.Name, "Path": call.Path, "Input": p.Input}
+	fail := func(id string) contract.Outcome { return runtime(printer.T(named(id, p.Input), data), printer) }
 	r, declared := call.Requirement(p.Name)
 	if !declared {
 		return runtime(printer.T("wrap.undeclared", data), printer)
@@ -121,9 +135,16 @@ func Run(ctx context.Context, call extension.Call, p Program, decode func(Ended)
 		defer cancel()
 		probe = min(probe, p.Timeout)
 	}
-	path, failed := check(ctx, printer, p.Name, r, env, probe)
-	if failed != nil {
-		return *failed
+	found, problem := check(ctx, printer, p.Name, r, env, probe)
+	switch {
+	case found.Signal != nil:
+		return stopped(found.Signal, p.Input, printer)
+	case found.Verdict == runner.ProgramTimedOut && p.Timeout > 0 && expired(work):
+		// The probe used up the deadline of Timeout, so the program is there.
+		data["Timeout"] = printer.Duration(p.Timeout)
+		return fail("wrap.timeout")
+	case problem != nil:
+		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
 	limit := cmp.Or(p.OutputLimit, OutputLimit)
 	stdout, stderr := runner.Capture{Limit: limit}, runner.Capture{Limit: limit}
@@ -131,26 +152,58 @@ func Run(ctx context.Context, call extension.Call, p Program, decode func(Ended)
 	if p.DiscardStdout {
 		out = io.Discard
 	}
-	result, err := runner.Run(work, runner.Program{Path: path, Args: p.Args, Env: env, Stdout: out, Stderr: &stderr})
+	result, err := runner.Run(work, runner.Program{Path: found.Path, Args: p.Args, Env: env, Stdout: out, Stderr: &stderr})
 	switch {
 	case ctx.Err() != nil:
-		return contract.Outcome{Signal: contract.StopSignal(runner.SignalOf(ctx))}
+		return stopped(runner.SignalOf(ctx), p.Input, printer)
 	case err != nil:
-		return runtime(printer.T("wrap.start_failed", data), printer)
+		return fail("wrap.start_failed")
 	case result.Signal != nil:
 		// Only the deadline of Timeout stops the program when no signal
 		// ended ctx, and the runner then stopped its whole process tree.
 		data["Timeout"] = printer.Duration(p.Timeout)
-		return runtime(printer.T("wrap.timeout", data), printer)
+		return fail("wrap.timeout")
 	case stdout.Over():
 		data["Limit"] = printer.Size(int64(limit))
-		return runtime(printer.T("wrap.output_over", data), printer)
+		return fail("wrap.output_over")
 	}
-	return decode(Ended{Exit: result.Exit, Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), name: p.Name, printer: printer})
+	return decode(Ended{Exit: result.Exit, Stdout: stdout.Bytes(), Stderr: stderr.Bytes(), name: p.Name, input: p.Input, printer: printer})
 }
 
 // runtime returns the RUNTIME outcome of a message, whose hint warns that
 // a repeat is not safe, because the program may have made its effects.
 func runtime(message string, printer *i18n.Printer) contract.Outcome {
 	return contract.Outcome{Errors: []contract.Problem{{Code: contract.Runtime, Message: message, Hint: printer.T("outcome.check_hint")}}}
+}
+
+// named returns the catalog ID of a message that names the input, or id
+// itself when the handler set no input.
+func named(id, input string) string {
+	if input == "" {
+		return id
+	}
+	return id + "_input"
+}
+
+// expired reports whether the deadline of ctx has passed. It reads the
+// clock, because ctx may end a moment after its deadline.
+func expired(ctx context.Context) bool {
+	deadline, ok := ctx.Deadline()
+	return ok && !time.Now().Before(deadline)
+}
+
+// stopped returns the outcome of a signal. With an input, its error names
+// that input, and Finish puts this error first, because its code leads.
+func stopped(sig os.Signal, input string, printer *i18n.Printer) contract.Outcome {
+	o := contract.Outcome{Signal: contract.StopSignal(sig)}
+	if input == "" {
+		return o
+	}
+	code, id := contract.Interrupted, "wrap.interrupted"
+	if o.Signal == contract.Terminate {
+		code, id = contract.Terminated, "wrap.terminated"
+	}
+	message := printer.T(id, map[string]any{"Input": input})
+	o.Errors = []contract.Problem{{Code: code, Message: message, Hint: printer.T("outcome.check_hint")}}
+	return o
 }

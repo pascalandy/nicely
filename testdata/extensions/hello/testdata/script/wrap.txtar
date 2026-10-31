@@ -53,37 +53,39 @@ answer stderr USAGE_INVALID
 ! exists worker.path
 
 # An exit other than 0, even the program's own 75, is RUNTIME with exit 1, and so is output
-# that the handler cannot read or that is over the limit of 1 MB
+# that the handler cannot read or that is over the limit of 1 MB. hello count sets the input
+# of sdk/wrap to its file, so each message names that file
 env STUB=fail
 exits 1 ncly hello count input.md --json
 ! stdout .
 answer stderr RUNTIME
-stderr '"message":"bash failed with exit 3\.","hint":"Check the results before you run anything again\."\}'
+stderr '"message":"bash failed on input\.md with exit 3\.","hint":"Check the results before you run anything again\."\}'
 exits 1 ncly --lang en-XA hello count input.md
-pseudo stderr bash
+pseudo stderr bash input.md
 env STUB=retry
 exits 1 ncly hello count input.md --json
 answer stderr RUNTIME
-stderr '"message":"bash failed with exit 75\.'
+stderr '"message":"bash failed on input\.md with exit 75\.'
 env STUB=garbled
 exits 1 ncly hello count input.md --json
 answer stderr RUNTIME
-stderr '"message":"bash gave output that this command cannot read\.'
+stderr '"message":"bash gave output for input\.md that this command cannot read\.'
 env STUB=noisy
 exits 1 ncly hello count input.md --json
 answer stderr RUNTIME
-stderr '"message":"bash wrote more than 1 MB of output\.'
+stderr '"message":"bash wrote more than 1 MB of output for input\.md\.'
 
 # A program that prints more than 1 MB of progress on stdout, as an encoder does in a long
 # run, then exits 0, succeeds for hello scan, which sets DiscardStdout. hello count keeps its
-# stdout, so the same progress still fails it. Discarded stdout keeps each exit mapped
+# stdout, so the same progress still fails it. Discarded stdout keeps each exit mapped.
+# hello scan sets no input, so its message names only the program
 env STUB=progress
 exec ncly hello scan input.md --json
 stdout '\A\{"ok":true,"contract_version":1,"file":"input\.md"\}\n\z'
 ! stderr .
 exits 1 ncly hello count input.md --json
 answer stderr RUNTIME
-stderr '"message":"bash wrote more than 1 MB of output\.'
+stderr '"message":"bash wrote more than 1 MB of output for input\.md\.'
 env STUB=fail
 exits 1 ncly hello scan input.md --json
 ! stdout .

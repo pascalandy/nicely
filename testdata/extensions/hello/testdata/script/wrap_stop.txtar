@@ -1,6 +1,7 @@
 # hello count runs its worker count.sh with bash through sdk/wrap, as wrap.txtar shows. This
 # scenario covers what stops the program: the timeout, Ctrl-C, and a version probe that does
-# not finish. stub/bash stands in for bash. It answers the version probe, writes the path of
+# not finish. hello count sets its file as the input of sdk/wrap, and hello scan sets none.
+# stub/bash stands in for bash. It answers the version probe, writes the path of
 # the worker, then does what STUB says.
 chmod 755 stub/bash
 env PATH=$WORK/stub:$PATH
@@ -11,12 +12,13 @@ env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env STUB=hang
 exits 1 ncly hello count input.md --timeout 1s --json
 answer stderr RUNTIME
-stderr '"message":"bash did not finish within 1 s, so it was stopped\.'
+stderr '"message":"bash did not finish its work on input\.md within 1 s, so it was stopped\.'
 gone hang.pid
 gone child.pid
 exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
 
-# Ctrl-C stops the process tree too, with exit 130, and the folder of the worker goes
+# Ctrl-C stops the process tree too, with exit 130, and the folder of the worker goes. The
+# answer names the input
 rm hang.pid child.pid worker.path
 exec exitcode exit.txt ncly hello count input.md --json &
 waitfile hang.pid
@@ -25,9 +27,33 @@ wait
 grep '^130$' exit.txt
 ! stdout .
 answer stderr INTERRUPTED
+stderr '"errors":\[\{"code":"INTERRUPTED","message":"Stopped by Ctrl-C during the work on input\.md\. Finished work is kept\.","hint":"Check the results before you run anything again\."\}\]'
 gone hang.pid
 gone child.pid
 exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
+
+# SIGTERM stops it the same way, with exit 143, and the answer names the input
+rm hang.pid child.pid worker.path
+exec exitcode exit.txt ncly hello count input.md --json &
+waitfile hang.pid
+term
+wait
+grep '^143$' exit.txt
+answer stderr TERMINATED
+stderr '"errors":\[\{"code":"TERMINATED","message":"Stopped by SIGTERM during the work on input\.md\. Finished work is kept\.'
+gone hang.pid
+gone child.pid
+
+# A command that sets no input keeps the message of the signal alone
+rm hang.pid child.pid
+exec exitcode exit.txt ncly hello scan input.md --json &
+waitfile hang.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+answer stderr INTERRUPTED
+stderr '"message":"Stopped by Ctrl-C\. Finished work is kept\."'
+gone hang.pid
 
 # A program that ignores Ctrl-C runs until the SIGKILL of core's cleanup, 4 seconds in the
 # test binary, and the folder of the worker is gone before that SIGKILL
@@ -42,13 +68,26 @@ answer stderr INTERRUPTED
 gone stubborn.pid
 exec /bin/sh -c 'test ! -e "$(cat worker.path)"'
 
-# A version probe that does not finish in time is PREREQ_MISSING with exit 78, before work
+# A version probe that uses up the timeout of the command gives the timeout, with exit 1,
+# before work. So does a timeout too short for any probe
 rm worker.path
 env STUB=probe-hang
+exits 1 ncly hello count input.md --timeout 1s --json
+answer stderr RUNTIME
+stderr '"message":"bash did not finish its work on input\.md within 1 s, so it was stopped\.'
+gone probe.pid
+! exists worker.path
+env STUB=
+exits 1 ncly hello count input.md --timeout 1ms --json
+answer stderr RUNTIME
+stderr '"message":"bash did not finish its work on input\.md within 1 ms, so it was stopped\.'
+! exists worker.path
+
+# A version probe that fails is PREREQ_MISSING with exit 78, before work
+env STUB=probe-fail
 exits 78 ncly hello count input.md --timeout 1s --json
 answer stderr PREREQ_MISSING
-stderr '"message":"bash --version did not print its version in time\.","hint":"Check that bash --version prints a version and exits\."\}'
-gone probe.pid
+stderr '"message":"bash --version exited with 2, so its version is unknown\."'
 ! exists worker.path
 
 -- input.md --
@@ -60,6 +99,7 @@ if [ "$1" = --version ]; then
     echo $$ > "$WORK/probe.pid"
     exec /bin/sleep 30
   fi
+  [ "$STUB" = probe-fail ] && exit 2
   echo 'GNU bash, version 5.2.0(1)-release'
   exit 0
 fi

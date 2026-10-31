@@ -14,7 +14,8 @@ import (
 
 // count counts the lines of a file with the worker count.sh, which bash
 // runs through sdk/wrap. It answers with the number that the worker prints
-// as JSON, and checks the file before the worker starts.
+// as JSON, and checks the file before the worker starts. The file is the
+// input of sdk/wrap, so each failure that sdk/wrap answers names it.
 func count(ctx context.Context, call extension.Call) contract.Outcome {
 	p := call.Printer
 	file := call.Args[0]
@@ -35,7 +36,7 @@ func count(ctx context.Context, call extension.Call) contract.Outcome {
 	if problem != nil {
 		return contract.Outcome{Errors: []contract.Problem{*problem}}
 	}
-	program := wrap.Program{Name: "bash", Args: []string{worker, file}, Timeout: timeout}
+	program := wrap.Program{Name: "bash", Args: []string{worker, file}, Timeout: timeout, Input: file}
 	return wrap.Run(ctx, call, program, func(end wrap.Ended) contract.Outcome {
 		var answer struct {
 			Lines *int `json:"lines"`
