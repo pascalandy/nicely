@@ -14,6 +14,15 @@ Fill: the source and the revision of each program or script that a command wraps
 
 - `worker/inspect.py`, which the extension template wrote
 
+## Intake
+
+Fill: each fact of the intake of each wrapped program, with its source and the version of that source. Give its effects, its exit codes, its resource use, and its known failures. A fact that no source gives is an open line of `spec.md`.
+
+- Effects: `worker/inspect.py` reads the file once, in chunks of 64 KiB, and writes nothing. Source: `worker/inspect.py` of the template, at the Nicely version that `go.mod` pins
+- Exit codes: 0 with one JSON object on stdout, and 2 for a wrong argument count. Source: the same file and version
+- Resource use: memory stays near one chunk, whatever the size of the file. Source: the same file and version
+- Known failures: Python raises an error and exits 1 on a file that it cannot open. Source: the same file and version
+
 ## Refuses
 
 Fill: what the extension will not do, and why.

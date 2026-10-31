@@ -7,7 +7,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | File | Holds |
 |---|---|
 | `README.md` | What the extension adds, and the commands that install a release |
-| `vision.md` | The job of the extension in one sentence, the source and revision of each program that it wraps, and what it refuses |
+| `vision.md` | The job of the extension in one sentence, the source and revision of each wrapped program, its intake facts, and what it refuses |
 | `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the limits that the user accepted. Then `## Acceptance`: the real input, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses. Then `## Open lines`: the lines that no test proves yet. Each line of Failures and of Acceptance starts with its spec ID, as [Test kit](test-kit.md#spec-ids) says |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
@@ -18,7 +18,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `AGENTS/rule-index.md` | The check that enforces each rule of `AGENTS.md` |
 | `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
-| `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings |
+| `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings. Then the ledger of the build, as [Finish gate](finish-gate.md#the-ledger) defines |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 | `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu, plus macOS for public repositories, for each push to `main` and each pull request |
 

@@ -17,15 +17,21 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | The skill names only declared commands | [Kit skill links][links] |
 | Sign off through `just signoff` and release through `just release vX.Y.Z` | [Signoff receipt][signoff], [release receipt][release] |
 | A copied recipe holds no script | [Core template test][template-test] |
-| `acceptance.sh` judges with another tool | Prose only; [release runs acceptance][release] |
+| `acceptance.sh` compares the primary output, from a reader that is not the wrapped program, with an independent reference | Prose only; [release runs acceptance][release] |
 | A test claims each line of Failures and Acceptance in `spec.md` | [Kit spec IDs][spec] |
 | One bounded job, no arbitrary argument relay; the skill teaches when | Prose only |
-| Spec first; a scenario fails before the handler body exists | Prose only |
+| Round 1 records the intake, then the spec, then a failing scenario, then the handler | [Finish gate][finish] checks their commits in the [ledger][ledger] |
 | Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
 | The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
 | Each round ends with an independent review and the readiness review | [Signoff][signoff] runs the [finish gate][finish], which needs a readiness review of the signed commit by a named reviewer |
 | At the exit, filled forms, no open line, accepted limits, and a passing readiness verdict for this commit, by a named reviewer, from its findings | [Finish gate][finish] |
-| Stop at "Done when" or after 5 rounds, and deliver only after that | [Signoff][signoff] runs the [finish gate][finish], and [release][release] needs that signoff |
+| A build has at most 5 rounds | The [ledger][ledger] counts them, and the [finish gate][finish] fails after 5 |
+| At the limit, stop and report; an answer that lets the agent choose starts no round | Prose only |
+| A pull request for review, a stop report, and the delivery are three acts; deliver only after "Done when" | [Signoff][signoff] runs the [finish gate][finish], and [release][release] needs a receipt with `just finish` |
+| The ledger names the head, the reviewers, the commits that each review covered, and the result of `just finish` of each round | [Ledger][ledger] |
+| Each finding keeps its ID and its highest severity, and gets a state each round; a `warn` or `block` closes only as `fixed` or `limit` | [Ledger findings][ledger-findings] |
+| A change of `spec.md` that narrows a promise to close a `warn` or `block` is a limit that only the user accepts | Prose only |
+| A command that replaces a user file proves its invariants with `protect`, `refuses`, `signal`, and `appears` | [Kit `refuses`][refuses], [kit `signal`][signal], [kit `appears`][appears] |
 
 [calls]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/calls.go
 [links]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/links.go
@@ -34,8 +40,12 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 [codes]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/codes.go
 [refuses]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/paired.go
 [signal]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/signal.go
+[appears]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/appears.go
 [spec]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/spec.go
+
 [finish]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/finish.go
+[ledger]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger.go
+[ledger-findings]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_findings.go
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
 [release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
 [template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh
