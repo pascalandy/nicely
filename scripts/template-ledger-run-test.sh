@@ -77,6 +77,9 @@ fct_test_ledger_run() {
 	# A longer fence holds a shorter one, and a value can end with a period.
 	ledger_run=$'````\n```\n````\n\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'.\n- **Command:** `just scenario inspect`\n- **Exit**: 1.\n- **Assertion**: `stdout \'"lines":3\'` found no match.' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 0
+	# The assertion copies a line of the scenario, so a severity in it grades nothing (#422).
+	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'` found no match, not `warn`' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 0
 
 	# The command is just scenario <name>, of a scenario of the Scenario commit, and the
 	# assertion holds a line of that scenario. So signoff can run it again (#422).

@@ -48,7 +48,7 @@ func matrixProblems(spec string, limits []limit) []string {
 				problems = append(problems, at+"names no spec ID of an input that passes. "+
 					"Fix: name in Accepted the line whose test gives an input that passes, so each refusal has its pair")
 			}
-			if len(refused) == 0 && strings.TrimSuffix(l.Cells[3], ".") != "None" {
+			if len(refused) == 0 && strings.Trim(l.Cells[3], "`*_.") != "None" {
 				problems = append(problems, at+"names no spec ID of a refused input, and not None. Fix: name in Refused the line whose test refuses an input, or write None")
 			}
 			for _, id := range append(accepted, refused...) {

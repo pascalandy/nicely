@@ -37,7 +37,7 @@ func readinessFindings(readiness string) ([]finding, []string) {
 	const fix = "Fix: give each finding its own ### heading under ## Findings, with one line - **Severity**: `block`, `warn`, or `advise`"
 	var findings []finding
 	var problems []string
-	part, current, fence, opened, none, stray, seen := 0, -1, "", 0, false, false, false
+	part, current, fence, opened, none, stray, seen, run := 0, -1, "", 0, false, false, false, false
 	// mentions holds the line of each finding ID outside ## Findings.
 	mentions := map[string]int{}
 	closeFindings := func() {
@@ -52,9 +52,15 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		// A heading of level 1 or 2 closes ## Findings, so it is no line of a finding.
 		section := fence == "" && heading != nil && len(heading[1]) <= 2
 		bullet := part > 0 && fence == "" && m != nil && m[1] == "Severity"
+		// The assertion of ## First failing run copies a line of the scenario, which can name a severity (#422).
+		if section {
+			run = heading[2] == "First failing run"
+		}
+		record := firstRun.FindStringSubmatch(text)
+		assertion := run && fence == "" && record != nil && record[1] == "Assertion"
 		// The first three lines are the header. A severity elsewhere fails,
 		// also under another part after ## Findings (#416).
-		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || severityCell(text) != "" || readinessGrade.MatchString(text) || readinessLevel.MatchString(text) ||
+		if i >= 3 && !bullet && !assertion && (readinessSeverity.MatchString(text) || severityCell(text) != "" || readinessGrade.MatchString(text) || readinessLevel.MatchString(text) ||
 			part > 0 && !section && readinessWord.MatchString(text)) {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
 		}

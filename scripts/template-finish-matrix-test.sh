@@ -8,10 +8,11 @@
 
 fct_test_finish_matrix() {
 	local row='| The input holds text | Input: Of the wrong type | `lines` | `not-text` |'
-	fct_edit "${finish}/spec.md" "${row}" '| The input holds text | Input: Of the wrong type | `lines` | None |'
+	fct_edit "${finish}/spec.md" "${row}" '| The input holds text | Input: Of the wrong type | `lines` | `None` |'
 	fct_finish 1
 	fct_finish_said 'the line `not-text` is in no family of ## Case matrix'
-	fct_edit "${finish}/spec.md" '| The input holds text | Input: Of the wrong type | `lines` | None |' '| The input holds text | Input: Of the wrong type | None | `not-text` |'
+	fct_finish_said 'names no spec ID of a refused input' absent
+	fct_edit "${finish}/spec.md" '| The input holds text | Input: Of the wrong type | `lines` | `None` |' '| The input holds text | Input: Of the wrong type | None | `not-text` |'
 	fct_finish 1
 	fct_finish_said 'the family "The input holds text" names no spec ID of an input that passes'
 	fct_edit "${finish}/spec.md" '| The input holds text | Input: Of the wrong type | None | `not-text` |' '| The input holds text | Input: Of the wrong type | `lines`, `utf-16` | `not-text` |'
