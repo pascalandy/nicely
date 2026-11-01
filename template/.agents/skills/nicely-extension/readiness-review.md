@@ -42,7 +42,7 @@ After the first three lines, it fails on each form that grades in another place:
 - A severity in code, such as `` `warn` ``
 - A cell of a table that holds only a severity
 - The word severity before a severity, such as "Severity: block"
-- A finding heading, such as `### R1-F2`, outside `## Findings`
+- A finding heading, such as `### R1-F2`, outside `## Findings`, or an ID outside it of no finding under it
 - The word severity under `## Findings`
 
 The plain words pass in a title, in evidence, and in prose, such as `### R1-F1 Large inputs block the terminal`.

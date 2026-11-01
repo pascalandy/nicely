@@ -12,8 +12,8 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`. A byte order mark before them is ignored
 - A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round
 - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
-- A severity after the first three lines, outside the line `- **Severity**:` of a finding, in a form that grades. Such a form is code, such as `` `warn` ``, also in fenced code, or a cell of a table that holds only a severity, with marks such as `**` around it. The word severity before a severity, such as "Severity: block", is a form that grades too. Under `## Findings`, the word severity fails alone. The message names the word or the table that caused it
-- A finding heading with an ID, such as `### R1-F2`, outside `## Findings`
+- A severity after the first three lines, outside the line `- **Severity**:` of a finding, in a form that grades. Such a form is code, such as `` `warn` ``, also in fenced code. A cell of a table that holds only a severity is such a form too, also with marks such as `**` around it. The word severity before a severity, such as "Severity: block", is a form that grades too. Under `## Findings`, the word severity fails alone. The message names the word or the table that caused it
+- A finding heading with an ID, such as `### R1-F2`, outside `## Findings`. Also a line outside `## Findings` that names the ID of no finding under it
 - `Ready` with a `block` or `warn` finding that is not `fixed`, or with a limit in `spec.md`
 - `Ready with stated limits` with a `block` finding that is not `fixed`, or with a `warn` that is neither `fixed` nor an accepted `limit`
 

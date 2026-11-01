@@ -33,4 +33,4 @@ The intake records what you read, not only where the facts are (#420):
 - Each declaration of the input that changes how a reader shows the content, not only the file types. `generic-cases.md` in the contract says why
 - Each fact that no source gives, as an open line of `spec.md`
 
-A link alone is not evidence of a read. Read the source first. Then run experiments only to confirm what you read.
+A link alone is not evidence of a read. Read the source first. Then run experiments only to confirm what you read, with a command that neither writes nor bills.
