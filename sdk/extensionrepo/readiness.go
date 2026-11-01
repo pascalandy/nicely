@@ -101,7 +101,10 @@ func readinessFindings(readiness string) ([]finding, []string) {
 			part > 0 && !section && readinessWord.MatchString(text)) {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
 		}
-		if i >= 3 && part == 0 && heading == nil {
+		// A heading of level 3 with an ID outside ## Findings has its own
+		// message below, so only other lines count as a mention.
+		idHeading := heading != nil && len(heading[1]) == 3 && readinessID.MatchString(heading[2])
+		if i >= 3 && (part == 0 || section) && !idHeading {
 			for _, id := range readinessMention.FindAllString(text, -1) {
 				if _, found := mentions[id]; !found {
 					mentions[id] = i + 1
