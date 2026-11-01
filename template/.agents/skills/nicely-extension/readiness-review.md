@@ -62,6 +62,7 @@ Grade it so in the round that first reports it. These examples set the grade:
 - **An output whose meaning changes.** `notes.txt` drops the line `encoding: latin-1` and keeps the bytes, so a reader shows other letters. At least `warn`. `block` when `spec.md` promises the same text
 
 Never lower the severity of a finding in a later round.
+Give a finding the state `fixed` only when its repair adds a pair of tests for its whole family, as `## Case matrix` lists it (#423).
 
 A `warn` or `block` finding closes only as `fixed` or `limit`. Only an `advise` can be `declined`.
 A change of `spec.md` that narrows a promise to close a `warn` or `block` finding is a `limit`. Only the user can accept it.
