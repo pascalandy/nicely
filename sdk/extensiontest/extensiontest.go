@@ -53,7 +53,6 @@ import (
 	"testing"
 
 	"github.com/pascalandy/nicely/sdk/extension"
-	"github.com/pascalandy/nicely/sdk/extensionrepo"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -83,16 +82,7 @@ func Run(t *testing.T, e extension.Extension) {
 		Cmds:               examples.commands(),
 	})
 	// testscript starts parallel subtests. Cleanup runs after all scenarios finish.
-	t.Cleanup(func() {
-		for _, reservation := range k.Reservations() {
-			if err := extensionrepo.Notice(reservation); err != nil {
-				t.Errorf("extensionrepo.Notice: %v", err)
-			}
-		}
-		for _, problem := range k.Missing() {
-			t.Error(problem)
-		}
-	})
+	t.Cleanup(func() { k.reportCoverage(t) })
 	if err := k.checkInstallOrder(t.TempDir()); err != nil {
 		t.Fatal(err)
 	}
