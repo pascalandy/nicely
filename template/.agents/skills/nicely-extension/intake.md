@@ -28,9 +28,10 @@ Write each fact that the documentation does not give as an open line of `spec.md
 
 The intake records what you read, not only where the facts are (#420):
 
-- For each fact: the source, its version or revision, and the part that you read. Such a part is a function of the script or a section of the manual page
+- For each settled fact: a link to the part of the source that you read, at a fixed revision. Such a part is a function of the script at a commit, or a section of the manual page of a version (#423)
+- Each fact that you did not read in a source, marked `inference`
 - The result of each experiment, apart from the documented facts, with its command and what it gave
 - Each declaration of the input that changes how a reader shows the content, not only the file types. `generic-cases.md` in the contract says why
-- Each fact that no source gives, as an open line of `spec.md`
+- Each fact that no source gives, as an open line of `spec.md` with its ID, before the spec commit
 
-A link alone is not evidence of a read. Read the source first. Then run experiments only to confirm what you read, with a command that neither writes nor bills.
+A link alone is not evidence of a read. A reviewer of round 1 refuses a fact that only cites a source. Read the source first. Then run experiments only to confirm what you read, with a command that neither writes nor bills.

@@ -93,6 +93,8 @@ First, before you review any repair, check `## Case matrix` of `spec.md` (#423):
 Then review the rest of round 1:
 
 - The intake commit comes before the spec commit. The intake gives, for each fact, its source, its version, and the part that the author read, and the result of each experiment apart. A link alone is not evidence of a read
+- Refuse a fact that only cites a source, such as a link or a file name, with no part read. Such a fact is marked `inference`, or it is a finding
+- Each unknown fact is an open line of `spec.md` with an ID, in the spec commit
 - The record of the first failing run gives the command, its exit status, and the assertion that failed at the scenario commit. The command is `just scenario <name>`. Run it again at that commit when in doubt, and `just signoff` runs it again too. Refuse a failure that is only a compile error, because it does not prove the missing behavior
 - Each case of the Output group of `generic-cases.md` that applies has a test file that the tests make, and an independent check. A case name alone is not a test
 - Test families of cases, such as all the declarations that change the meaning, not one counterexample
