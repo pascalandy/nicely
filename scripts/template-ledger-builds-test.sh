@@ -44,6 +44,12 @@ fct_test_ledger_builds() {
 	fct_finish 1
 	fct_finish_said 'this line names the severity `warn` in code, outside the line - **Severity**: of a finding'
 	fct_finish_said 'this table names the severity warn'
+	# A grade in prose, a finding outside ## Findings, or a severity with marks in a cell fails in any part (#420).
+	fct_readiness "${head}" Ready "${valid}"$'\n\n## Notes\n\n- Long lines are cut. Severity: block.\n\n## Other issues\n\n### R3-F9 Long lines are cut\n\n| R3-F9 | **Block.** |' 'agent B'
+	fct_finish 1
+	fct_finish_said 'this line grades with the severity block outside the line - **Severity**: of a finding'
+	fct_finish_said 'this finding is outside ## Findings, so finish cannot grade it'
+	fct_finish_said 'this table names the severity block'
 	# Finish reads a severity only in the line - **Severity**:, so the words
 	# block and warn pass in a title, in evidence, and in prose (#419).
 	fct_readiness "${head}" Ready "${valid}"$'\n- **Evidence**: the code block in README.md\n\nThe CLI does not warn when the input is empty.\n\n### R3-F1 Large inputs block the terminal\n\n- **Severity**: `advise`\n\n## Notes\n\nA long line can block a pager.' 'agent B'

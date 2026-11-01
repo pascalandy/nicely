@@ -30,5 +30,12 @@ fct_test_ledger_run() {
 	fct_finish 1
 	fct_finish_said 'names no command'
 	fct_finish_said 'the exit status "one" of the first run'
+	# A record of another commit, such as of an earlier build, or in fenced code, records no run of this build.
+	ledger_run=$'- **Commit**: '"${intake}"$'\n- **Command**: `go test ./...`\n- **Exit**: 1\n- **Assertion**: `stdout 3`' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said "names the commit \"${intake}\", which is not the Scenario commit of ## Order of round 1"
+	ledger_run=$'```\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `go test ./...`\n- **Exit**: 1\n- **Assertion**: `stdout 3`\n```' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'names no command'
 	git -C "${finish}" checkout -q readiness.md
 }

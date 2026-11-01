@@ -48,15 +48,9 @@ SCRIPT
 		fct_fail 'release accepts a dirty tree'
 	fi
 	git -C "${repo}" restore README.md
-	status=0
-	fct_release_attempt "${repo}" "${scratch}" v0.1.0 missing-fixture.md || status=$?
-	if [[ "${status}" == 0 ]] || ! grep -qF 'acceptance exited' "${scratch}/release.out"; then
-		fct_fail 'release accepts failed acceptance'
-	fi
-	[[ -z "$(git -C "${remote}" tag -l)" ]] || fct_fail 'acceptance refusal pushed a tag'
 
 	# A receipt that names just finish proves nothing about the repository.
-	# Release runs just finish again on the signed commit, before the tag (#419).
+	# Release runs just finish again on the signed commit, before acceptance and the tag (#419).
 	status=0
 	fct_release_attempt "${repo}" "${scratch}" v0.1.0 || status=$?
 	if [[ "${status}" == 0 ]] || ! grep -qF 'finish exited 1' "${scratch}/release.out"; then
@@ -92,6 +86,12 @@ SCRIPT
 		fct_fail 'release accepts an unpushed SHA'
 	fi
 	git -C "${repo}" push -q origin HEAD:main
+	status=0
+	fct_release_attempt "${repo}" "${scratch}" v0.1.0 missing-fixture.md || status=$?
+	if [[ "${status}" == 0 ]] || ! grep -qF 'acceptance exited' "${scratch}/release.out"; then
+		fct_fail 'release accepts failed acceptance'
+	fi
+	[[ -z "$(git -C "${remote}" tag -l)" ]] || fct_fail 'acceptance refusal pushed a tag'
 	fct_release_attempt "${repo}" "${scratch}" v0.1.0 || fct_fail 'first local release failed'
 	receipt="$(sed -n 's/^release: receipt in //p' "${scratch}/release.out")"
 	PATH="/usr/bin:${PATH}" jq -r '.economy[] | select(.command[1:3] != ["skill", "view"] and .command[1] != "describe" and .command[1] != "doctor") | "default Economy: \(.command | join(" ")), exit \(.exit)"' "${receipt}"
