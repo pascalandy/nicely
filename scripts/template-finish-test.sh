@@ -123,9 +123,10 @@ fct_test_finish() {
 	fct_finish_said 'readiness.md:13: this table names the severity warn'
 	fct_finish_said 'readiness.md:14: this table names the severity block'
 	fct_finish_said 'readiness.md:19: this fenced code names the severity `warn`'
-	for number in 24 29 33 36; do
-		fct_finish_said "readiness.md:${number}: this line "
+	for number in 24 29 33; do
+		fct_finish_said "readiness.md:${number}: this line grades with the severity warn"
 	done
+	fct_finish_said 'readiness.md:36: this line names the severity `block` in code'
 
 	# Finish reads Commit:, Reviewer:, and Verdict: only in the first lines, never in fenced code (#413).
 	fct_readiness "${sha}" 'Ready with stated limits' $'```\nReviewer: an agent that wrote none of the code\n```\n\nNone.' ''

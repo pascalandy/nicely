@@ -3,6 +3,7 @@ package extensionrepo
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -24,6 +25,8 @@ var (
 	readinessHeading  = regexp.MustCompile(`^(#{1,6})\s+(.+?)\s*$`)
 	readinessPart     = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Severity|State|Spec|Commit|Reason|Limit)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
 	readinessID       = regexp.MustCompile(`^(R([1-9][0-9]*)-F[1-9][0-9]*)\b`)
+	// readinessMention finds the ID of a finding anywhere in a line.
+	readinessMention = regexp.MustCompile(`\bR[1-9][0-9]*-F[1-9][0-9]*\b`)
 	// readinessSeverity finds a severity in code, a form that finish cannot
 	// grade, anywhere after the header (#413, #416). The plain words pass, so
 	// a title or prose can say that a call blocks or warns (#419).
@@ -78,6 +81,8 @@ func readinessFindings(readiness string) ([]finding, []string) {
 	var findings []finding
 	var problems []string
 	part, current, fence, opened, none, stray, seen := 0, -1, "", 0, false, false, false
+	// mentions holds the line of each finding ID outside ## Findings.
+	mentions := map[string]int{}
 	closeFindings := func() {
 		if part > 0 && len(findings) == 0 && !none {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: ## Findings holds no ### finding and no None. %s", part, fix))
@@ -95,6 +100,13 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || severityCell(text) != "" || readinessGrade.MatchString(text) ||
 			part > 0 && !section && readinessWord.MatchString(text)) {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
+		}
+		if i >= 3 && part == 0 && heading == nil {
+			for _, id := range readinessMention.FindAllString(text, -1) {
+				if _, found := mentions[id]; !found {
+					mentions[id] = i + 1
+				}
+			}
 		}
 		switch {
 		case fence != "":
@@ -173,6 +185,13 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		if f.severity == "" {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: this finding has no severity. %s", f.line, fix))
 		}
+		delete(mentions, f.id)
+	}
+	// An ID outside ## Findings names a finding that finish grades, so no
+	// finding hides in another part (#420).
+	ids := slices.SortedFunc(maps.Keys(mentions), func(a, b string) int { return mentions[a] - mentions[b] })
+	for _, id := range ids {
+		problems = append(problems, fmt.Sprintf("readiness.md:%d: this line names the finding %s, which has no ### heading under ## Findings. %s", mentions[id], id, fix))
 	}
 	return findings, problems
 }

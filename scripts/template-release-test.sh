@@ -57,6 +57,9 @@ SCRIPT
 		fct_fail 'release trusts a receipt that names just finish, on a repository that just finish refuses'
 	fi
 	[[ -z "$(git -C "${remote}" tag -l)" ]] || fct_fail 'a release that just finish refuses pushed a tag'
+	receipt="$(sed -n 's/^release: receipt in //p' "${scratch}/release.out")"
+	PATH="/usr/bin:${PATH}" jq -e '[.steps[].name] | index("finish") != null and index("acceptance") == null' "${receipt}" >/dev/null ||
+		fct_fail 'release ran acceptance before just finish refused the repository'
 
 	# The releases below pass just finish: the forms are filled, and an independent review passes.
 	fct_steps "${repo}"

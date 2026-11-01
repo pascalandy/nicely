@@ -22,13 +22,15 @@ func firstRunProblems(readiness string, order map[string]round) []string {
 		"in the lines - **Commit**:, - **Command**:, - **Exit**:, and - **Assertion**:"
 	parts, at, found, fence := map[string]string{}, 0, false, ""
 	for i, text := range strings.Split(readiness, "\n") {
-		if trimmed := strings.TrimSpace(text); fence != "" || strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
-			switch {
-			case fence == "":
-				fence = trimmed[:3]
-			case strings.HasPrefix(trimmed, fence):
+		// A fence closes with its own run of marks, alone on its line, as in readinessFindings.
+		switch trimmed := strings.TrimSpace(text); {
+		case fence != "":
+			if strings.HasPrefix(trimmed, fence) && strings.Trim(trimmed, fence[:1]) == "" {
 				fence = ""
 			}
+			continue
+		case strings.HasPrefix(trimmed, "```"), strings.HasPrefix(trimmed, "~~~"):
+			fence = trimmed[:len(trimmed)-len(strings.TrimLeft(trimmed, trimmed[:1]))]
 			continue
 		}
 		if h := readinessHeading.FindStringSubmatch(text); h != nil && len(h[1]) <= 2 {
@@ -40,7 +42,7 @@ func firstRunProblems(readiness string, order map[string]round) []string {
 			continue
 		}
 		if m := firstRun.FindStringSubmatch(text); at > 0 && m != nil {
-			parts[m[1]] = strings.Trim(m[2], "`")
+			parts[m[1]] = strings.Trim(strings.TrimSuffix(m[2], "."), "`")
 		}
 	}
 	if !found {

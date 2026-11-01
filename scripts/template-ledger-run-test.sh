@@ -37,5 +37,8 @@ fct_test_ledger_run() {
 	ledger_run=$'```\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `go test ./...`\n- **Exit**: 1\n- **Assertion**: `stdout 3`\n```' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 1
 	fct_finish_said 'names no command'
+	# A longer fence holds a shorter one, and a value can end with a period.
+	ledger_run=$'````\n```\n````\n\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'.\n- **Command:** `go test ./...`\n- **Exit**: 1.\n- **Assertion**: `stdout 3` found no match.' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 0
 	git -C "${finish}" checkout -q readiness.md
 }
