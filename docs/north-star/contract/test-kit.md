@@ -55,10 +55,12 @@ The check compares the content that this reader gives with an independent refere
 Each case of the Output group of [Generic cases](generic-cases.md) that applies to the command needs a test file (#420).
 `acceptance.sh` makes that file in the extension's own domain, and proves the safe outcome on it. Two cases need more:
 
-- **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The check proves both results: the private text is not in the output, and the output still shows the content correctly
+- **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The block uses a value that is not the default. The check proves both results with an independent reader: the private text is not in the output, and the output still shows the content correctly. A handler that keeps the raw block fails the check (#423)
 - **Loses data that changes the meaning.** Some declarations change how a reader shows the content. The test file gives each of them a value that is not the default. The independent reference applies that declaration before it compares the content, so a lost declaration fails the check
 
 The tests make each file that they use. They never copy a file of the user, and the author never searches the home folder of the user for sample files.
+The tests make the file of each case above before the first review.
+The tests and `just acceptance` need no root, no mount, and no system service.
 
 Other scenario runners use `NewCoverage`, `Coverage.Observe`, and `Coverage.Missing` for the same answer and coverage checks.
 `Observe` receives completed calls, including their exit code and both streams, without changing process execution or output.

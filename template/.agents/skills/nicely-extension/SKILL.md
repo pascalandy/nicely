@@ -44,6 +44,16 @@ A case name is not a test. Each case of the Output group that applies gets a tes
 ## Test files
 
 The tests of the extension use files that the tests make, such as a text file that a scenario or `acceptance.sh` writes.
+
+Before the first review, `acceptance.sh` makes a test file with a block that a reader needs, for each command that writes an output (#423):
+
+- The block uses a value that is not the default, such as `encoding: latin-1`, and it holds private text, such as `author: Ana Lima`
+- An independent reader proves both results: the private text is not in the output, and the output still shows the content correctly
+- Change the handler to keep the raw block, and check that `just acceptance` fails. Then undo that change
+
+The tests and `just acceptance` need no root, no mount, and no system service.
+Each experiment uses a new scratch folder, such as one that `mktemp -d` makes.
+Never delete files recursively inside `sh -c` or in a loop. A coding harness can stop such a command and wait for an approval that nobody gives.
 Do not search the home folder of the user for sample files. Never copy a file of the user into a test.
 
 ## Rounds
