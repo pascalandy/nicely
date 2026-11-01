@@ -54,7 +54,7 @@ func readinessFindings(readiness string) ([]finding, []string) {
 		bullet := part > 0 && fence == "" && m != nil && m[1] == "Severity"
 		// The first three lines are the header. A severity elsewhere fails,
 		// also under another part after ## Findings (#416).
-		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || severityCell(text) != "" || readinessGrade.MatchString(text) ||
+		if i >= 3 && !bullet && (readinessSeverity.MatchString(text) || severityCell(text) != "" || readinessGrade.MatchString(text) || readinessLevel.MatchString(text) ||
 			part > 0 && !section && readinessWord.MatchString(text)) {
 			problems = append(problems, fmt.Sprintf("readiness.md:%d: %s", i+1, severityCause(text, fence)))
 		}

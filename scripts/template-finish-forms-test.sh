@@ -39,4 +39,11 @@ fct_test_finish_forms() {
 		fct_finish_said "readiness.md:${number}: this line grades with the severity warn"
 	done
 	fct_finish_said 'readiness.md:36: this line names the severity `block` in code'
+
+	# A grade in a free form, such as in notes, fails too (#422).
+	fct_readiness "${sha}" 'Ready with stated limits' "${warn}"$'\n- **State**: `limit`\n- **Spec**: `large-file`\n\n'"${advise}"$'\n\n## Notes\n\n| R1-F1 | really a warn |\n\nGrade: block. The name in the output is a block for me.\n\nThis issue is warn-level and should block the release.'
+	fct_finish 1
+	fct_finish_said 'readiness.md:21: this table names the severity warn'
+	fct_finish_said 'readiness.md:23: this line grades with the severity block outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word grade'
+	fct_finish_said 'readiness.md:25: this line grades with the severity warn outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the form warn-level'
 }

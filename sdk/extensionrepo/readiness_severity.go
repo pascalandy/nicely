@@ -13,9 +13,13 @@ var (
 	// grade, anywhere after the header (#413, #416). The plain words pass, so
 	// a title or prose can say that a call blocks or warns (#419).
 	readinessSeverity = regexp.MustCompile("(?i)`(block|warn|advise)`")
-	// readinessGrade finds the word severity before a severity, a grade in
-	// prose such as "Severity: block", in any part (#420).
-	readinessGrade = regexp.MustCompile(`(?i)\bseverity\b[^a-z0-9]*\b(block|warn|advise)\b`)
+	// readinessGrade finds the word severity or grade before a severity, in
+	// any part. Only marks can stand between them, such as in "Severity:
+	// block" or "Grade: warn" (#420, #422).
+	readinessGrade = regexp.MustCompile(`(?i)\b(severity|grade[sd]?)\b[^a-z0-9]*\b(block|warn|advise)\b`)
+	// readinessLevel finds a severity before the word level, such as
+	// "warn-level" or "block level", in any part (#422).
+	readinessLevel = regexp.MustCompile(`(?i)\b(block|warn|advise)[- ]level\b`)
 	// readinessWord finds the word severity under ## Findings (#413).
 	readinessWord = regexp.MustCompile(`(?i)\bseverity\b`)
 )
@@ -24,7 +28,8 @@ var (
 // reviewer sees the word or the table that caused it (#416).
 func severityCause(text, fence string) string {
 	const fix = "Fix: grade each finding only in its line - **Severity**:, and write "
-	code, cell, grade := readinessSeverity.FindStringSubmatch(text), severityCell(text), readinessGrade.FindStringSubmatch(text)
+	code, cell := readinessSeverity.FindStringSubmatch(text), severityCell(text)
+	grade, level := readinessGrade.FindStringSubmatch(text), readinessLevel.FindStringSubmatch(text)
 	switch {
 	case cell != "":
 		return fmt.Sprintf("this table names the severity %s. Fix: remove the table, because each finding gives its severity in its line - **Severity**:", cell)
@@ -33,21 +38,28 @@ func severityCause(text, fence string) string {
 	case code != nil:
 		return fmt.Sprintf("this line names the severity `%s` in code, outside the line - **Severity**: of a finding. %sthe word %s in other text without backticks", strings.ToLower(code[1]), fix, strings.ToLower(code[1]))
 	case grade != nil:
-		return fmt.Sprintf("this line grades with the severity %s outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word severity", strings.ToLower(grade[1]))
+		return fmt.Sprintf("this line grades with the severity %s outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word %s", strings.ToLower(grade[2]), strings.ToLower(grade[1]))
+	case level != nil:
+		return fmt.Sprintf("this line grades with the severity %s outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the form %s", strings.ToLower(level[1]), level[0])
 	}
 	return "this line names the word severity outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word severity"
 }
 
-// severityCell returns the severity that a cell of a table row holds alone,
-// with only marks around it, such as `warn`, **block**, or (advise). It
-// returns "" for any other line (#416, #420).
+// severityCell returns the severity that ends a cell of a table row, with
+// only marks after it, such as `warn`, **block**, or really a warn. It
+// returns "" for any other line. So the cell "inputs block the terminal"
+// passes (#416, #420, #422).
 func severityCell(text string) string {
 	trimmed := strings.TrimSpace(text)
 	if !strings.HasPrefix(trimmed, "|") {
 		return ""
 	}
 	for _, cell := range strings.Split(trimmed, "|") {
-		if word := strings.ToLower(strings.Trim(cell, " \t`*_().:!")); severityRank[word] > 0 {
+		words := strings.Fields(strings.ToLower(cell))
+		if len(words) == 0 {
+			continue
+		}
+		if word := strings.Trim(words[len(words)-1], "`*_().:!"); severityRank[word] > 0 {
 			return word
 		}
 	}
