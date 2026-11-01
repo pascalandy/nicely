@@ -9,7 +9,8 @@ import (
 )
 
 // validate checks an answer against a schema of draft 2020-12, with a
-// loader that refuses every remote schema.
+// loader that refuses every remote schema. The URN keeps the working folder
+// out of the name of the schema, as in contract.compileSchema (#423).
 func validate(schema map[string]any, answer string) error {
 	raw, err := json.Marshal(schema)
 	if err != nil {
@@ -22,10 +23,10 @@ func validate(schema map[string]any, answer string) error {
 	compiler := jsonschema.NewCompiler()
 	compiler.DefaultDraft(jsonschema.Draft2020)
 	compiler.UseLoader(noRemote{})
-	if err := compiler.AddResource("answer.json", doc); err != nil {
+	if err := compiler.AddResource("urn:nicely:answer.json", doc); err != nil {
 		return err
 	}
-	compiled, err := compiler.Compile("answer.json")
+	compiled, err := compiler.Compile("urn:nicely:answer.json")
 	if err != nil {
 		return err
 	}

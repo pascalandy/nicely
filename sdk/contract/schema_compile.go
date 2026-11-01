@@ -8,6 +8,11 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
+// schemaURL names the schema that compileSchema checks. A relative name
+// would resolve against the working folder as a file URL, and a % in its
+// path stopped ncly at startup (#423).
+const schemaURL = "urn:nicely:schema.json"
+
 // compileSchema checks a schema against draft 2020-12, with a loader that
 // refuses every remote schema.
 func compileSchema(schema map[string]any) error {
@@ -22,10 +27,10 @@ func compileSchema(schema map[string]any) error {
 	c := jsonschema.NewCompiler()
 	c.DefaultDraft(jsonschema.Draft2020)
 	c.UseLoader(noRemote{})
-	if err := c.AddResource("schema.json", doc); err != nil {
+	if err := c.AddResource(schemaURL, doc); err != nil {
 		return err
 	}
-	_, err = c.Compile("schema.json")
+	_, err = c.Compile(schemaURL)
 	return err
 }
 

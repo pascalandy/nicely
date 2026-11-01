@@ -179,10 +179,10 @@ func compileAnswerSchema(t *testing.T, kind ResultKind, data map[string]any) *js
 	c := jsonschema.NewCompiler()
 	c.DefaultDraft(jsonschema.Draft2020)
 	c.UseLoader(noRemote{})
-	if err := c.AddResource("answer.json", doc); err != nil {
+	if err := c.AddResource(schemaURL, doc); err != nil {
 		t.Fatal(err)
 	}
-	schema, err := c.Compile("answer.json")
+	schema, err := c.Compile(schemaURL)
 	if err != nil {
 		t.Fatal(err)
 	}

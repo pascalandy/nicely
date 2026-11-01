@@ -20,3 +20,10 @@ stdout '\Ancly v\S+\n\z'
 # --help still wins over --version
 exec ncly --version --help
 stdout 'Curated CLI toolbox'
+
+# A percent sign in the path of the working folder changes nothing (#423)
+mkdir 'work 100%'
+cd 'work 100%'
+exec ncly --version
+stdout '\Ancly v\S+\n\z'
+! stderr .
