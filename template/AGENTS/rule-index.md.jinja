@@ -38,7 +38,7 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | The tests make their files; never search the home folder or copy a file of the user | Prose only |
 | Round 1 tests each generic case that applies, and the first review tests families of cases | Prose only |
 | Before the review of round 1, `## Case matrix` gives each family its tests, and each line of Failures and Acceptance a family | [Finish matrix][finish-matrix] |
-| Each refusal and each branch that classifies an input has a pair of tests | [Finish matrix][finish-matrix] needs a passing ID in each family; the reviewer checks the rest |
+| Each refusal and each branch that classifies an input has a pair of tests | [Finish matrix][finish-matrix] needs a spec ID in Accepted of each family; the reviewer checks that it passes |
 | The first reviewer checks that the matrix is complete and runs it, before any repair | Prose only |
 | A repair adds a pair of tests for its whole family | Prose only |
 | A root cause is fixed before the next review, and the last rounds verify | Prose only |
@@ -56,7 +56,7 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | A finding of the last round with no state is `open` | [Ledger findings][ledger-findings] |
 | A severity is read only in the line **Severity** of a finding; the plain words block, warn, and advise pass elsewhere | [Readiness findings][readiness] |
 | A finding heading stays under `## Findings`, and no other form grades | [Readiness findings][readiness] |
-| Finish finds a grade in code, at the end of a cell, after severity or grade, or before level | [Readiness findings][readiness] |
+| Finish finds a grade in code, in a cell, after severity or grade, or before `-level` | [Readiness findings][readiness] |
 | The reviewer moves each grade in another form, which the parser does not find, to the bullet **Severity** | Prose only |
 | A broken promise of `spec.md` or of the help text is at least `warn` at its first review | Prose only |
 | Each round keeps its row and has a committed review; a build ends only at a review that passes | [Ledger history][ledger-history] |

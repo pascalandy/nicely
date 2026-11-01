@@ -15,9 +15,10 @@ var firstRun = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Commit|Command|Exit|Assertio
 
 // firstRunProblems checks the record of the first failing run of the current
 // build. It needs the Scenario commit of ## Order of round 1, so a record of
-// an earlier build never stands in. It also needs the command just scenario
-// <name> of a scenario of that commit, an exit status that is not 0, and the
-// assertion that failed, which holds a line of that scenario. just signoff
+// an earlier build never stands in. It also needs three more lines. The
+// command is just scenario <name>, of a scenario of that commit. The exit
+// status is not 0. The assertion that failed holds a line of that scenario.
+// just signoff
 // runs the scenario again, and the reviewer judges whether the assertion
 // proves the missing behavior (#422).
 func firstRunProblems(readiness string, order map[string]round) []string {

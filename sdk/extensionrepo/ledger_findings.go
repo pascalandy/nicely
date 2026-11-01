@@ -47,7 +47,11 @@ func stateProblems(findings []finding, n int, spec string, limits []limit) []str
 				problems = append(problems, fmt.Sprintf("%sthe finding %s of round %d has no state. Fix: the reviewer of this round gives it the state open, fixed, limit, or declined", at, f.id, first))
 				continue
 			}
-			problems = append(problems, fmt.Sprintf("%sthe finding %s of this round has no state, so it is open, even if ## Open lines holds None. Fix: prove its spec ID in a round, or ask the user to accept it as a limit", at, f.id))
+			fix := "Fix: prove its spec ID in a round, or ask the user to accept it as a limit"
+			if f.severity == "advise" {
+				fix += ". The author can also decline an advise, with - **State**: `declined` and - **Reason**:"
+			}
+			problems = append(problems, fmt.Sprintf("%sthe finding %s of this round has no state, so it is open, even if ## Open lines holds None. %s", at, f.id, fix))
 			problems = append(problems, openLineProblems(f.id, open)...)
 		case "open":
 			problems = append(problems, fmt.Sprintf("%sthe finding %s is open, even if ## Open lines holds None. Fix: prove its spec ID in a round, or ask the user to accept it as a limit", at, f.id))
