@@ -8,9 +8,15 @@ import (
 )
 
 // ScenarioEnv names the scenario that a run of go test runs alone, for just
-// scenario and for the repeat of signoff. The test kit then skips its
-// coverage checks, which need every scenario.
+// scenario and for the repeat of signoff. When -run is ScenarioRun of that
+// name, the test kit skips its coverage checks, which need every scenario.
 const ScenarioEnv = "NCLY_TEST_SCENARIO"
+
+// ScenarioRun is the -run pattern of go test that selects only the scenario
+// testdata/script/<name>.txtar.
+func ScenarioRun(name string) string {
+	return "^TestExtension$/^" + name + "$"
+}
 
 // scenarioRecipe is the one command that ## First failing run can record:
 // just scenario <name>. Finish and signoff read the name of the scenario from
@@ -21,7 +27,7 @@ var scenarioRecipe = regexp.MustCompile(`^just scenario ([A-Za-z0-9][A-Za-z0-9_-
 // testdata/script/<name>.txtar. The test kit runs each scenario as a subtest
 // of TestExtension, as test-kit.md in the contract says.
 func scenarioArgs(name string) []string {
-	return []string{"-run", "^TestExtension$/^" + name + "$", "./..."}
+	return []string{"-run", ScenarioRun(name), "./..."}
 }
 
 // runScenario runs just scenario <name>, through Test.

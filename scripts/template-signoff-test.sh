@@ -34,6 +34,10 @@ SCRIPT
 	fct_signoff_refuses "${scratch}" "${scratch}/signoff-compile" 'just scenario first' 'before any line of the scenario, such as on a compile error'
 	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-passes" inspect
 	fct_signoff_refuses "${scratch}" "${scratch}/signoff-passes" 'just scenario first' 'passes at its Scenario commit'
+	# The run must fail on the line that the record names, not on another line of the scenario.
+	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-line" read
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-line" 'just scenario first' 'and ## First failing run names the assertion' \
+		"$(grep -m 1 '^refuses ' "${scratch}/signoff-line/testdata/script/first.txtar")"
 
 	fct_signoff_ready "${repo}" "${scratch}" "${ready}" read
 	fct_signoff_review "${ready}" 'just scenario first'
@@ -45,6 +49,16 @@ SCRIPT
 	fct_has "${scratch}/signoff.out" "Signed off on ${sha}"
 	grep -qF 'signoff: the first scenario fails again at' "${scratch}/signoff.out" || fct_fail 'just signoff did not run the first failing run again'
 	fct_has "${scratch}/signed-sha" "${sha}"
+
+	# just scenario runs one scenario, without the coverage of the others, and refuses a name of no scenario.
+	(cd "${ready}" && just scenario first) >"${scratch}/scenario.out" 2>&1 || {
+		cat "${scratch}/scenario.out" >&2
+		fct_fail 'just scenario first fails on a scenario that passes'
+	}
+	if (cd "${ready}" && just scenario ../first) >"${scratch}/scenario.out" 2>&1 || ! grep -qF '"../first" is no name of a scenario' "${scratch}/scenario.out"; then
+		cat "${scratch}/scenario.out" >&2
+		fct_fail 'just scenario accepts a path as the name of a scenario'
+	fi
 }
 
 # fct_signoff_ready copies the rendered repository $1 to $3, with the steps of
@@ -79,10 +93,11 @@ fct_signoff_ready() {
 }
 
 # fct_signoff_review commits the readiness review of the head of $1, whose
-# first failing run names the command $2.
+# first failing run names the command $2, and the assertion $3 or the line
+# stderr of the first scenario.
 fct_signoff_review() {
-	local expected
-	expected="$(grep -m 1 '^stderr ' "${1}/testdata/script/first.txtar")"
+	local expected="${3:-}"
+	[[ -n "${expected}" ]] || expected="$(grep -m 1 '^stderr ' "${1}/testdata/script/first.txtar")"
 	finish="${1}" ledger_run=$'- **Commit**: '"$(fct_step "${1}" scenario)"$'\n- **Command**: `'"${2}"$'`\n- **Exit**: 1\n- **Assertion**: `'"${expected}"'` found no match' \
 		fct_readiness "$(git -C "${1}" rev-parse HEAD)" Ready None.
 	git -C "${1}" add readiness.md
@@ -90,11 +105,11 @@ fct_signoff_review() {
 }
 
 # fct_signoff_refuses requires that just signoff of the repository $2, whose
-# first failing run names the command $3, fails with the text $4 and signs
-# nothing.
+# first failing run names the command $3 and the assertion $5, fails with the
+# text $4 and signs nothing.
 fct_signoff_refuses() {
 	local status=0
-	fct_signoff_review "${2}" "${3}"
+	fct_signoff_review "${2}" "${3}" "${5:-}"
 	fct_signoff "${2}" "${1}" || status=$?
 	if [[ "${status}" == 0 ]] || ! grep -qF -- "${4}" "${1}/signoff.out"; then
 		cat "${1}/signoff.out" >&2

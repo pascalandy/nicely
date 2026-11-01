@@ -32,6 +32,7 @@ A scratch `HOME` does not hide the OS keychain. `ncly` reads it only when the va
 - Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, `appears`, or `refuses` after its answer passes validation
 - A command whose declared result kind is `text` counts a completed success, since that kind has no JSON answer
 - Coverage runs after all scenarios finish. Comments, assertions, skipped conditions, help, and shell or background `exec` calls earn no coverage
+- `just scenario <name>` runs one scenario. It sets `NCLY_TEST_SCENARIO` to that name, and selects only that scenario with `-run`. The kit then skips coverage, which needs every scenario (#422)
 - Human text earns no coverage for a command with a structured result
 - A path-qualified Nicely call in `exits` is refused with the registered command spelling
 - A failed report on stdout is checked as one complete object, including its envelope and declared result fields

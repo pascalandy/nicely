@@ -1,6 +1,7 @@
 package extensiontest
 
 import (
+	"flag"
 	"os"
 	"testing"
 
@@ -12,8 +13,10 @@ import (
 // scenarios finish. A run of one scenario, such as just scenario, skips it,
 // because coverage needs every scenario (#422).
 func (k *kit) reportCoverage(t *testing.T) {
-	if os.Getenv(extensionrepo.ScenarioEnv) != "" {
-		return
+	if name := os.Getenv(extensionrepo.ScenarioEnv); name != "" {
+		if run := flag.Lookup("test.run"); run != nil && run.Value.String() == extensionrepo.ScenarioRun(name) {
+			return
+		}
 	}
 	for _, reservation := range k.Reservations() {
 		if err := extensionrepo.Notice(reservation); err != nil {
