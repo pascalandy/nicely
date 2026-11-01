@@ -40,9 +40,10 @@ Name a severity only in the bullet **Severity** of its finding. `just finish` re
 After the first three lines, it fails on each form that grades in another place:
 
 - A severity in code, such as `` `warn` ``
-- A cell of a table whose last word is a severity, such as `really a warn`
+- A cell of a table that holds only a severity
+- In a row with a finding ID, a cell that ends with a severity, such as `| R1-F1 | really a warn |`
 - The word severity or grade before a severity, such as "Severity: block" or "Grade: warn"
-- A severity before the word level, such as "warn-level"
+- A severity before `-level`, such as "warn-level"
 - A finding heading, such as `### R1-F2`, outside `## Findings`, or an ID outside it of no finding under it
 - The word severity under `## Findings`
 

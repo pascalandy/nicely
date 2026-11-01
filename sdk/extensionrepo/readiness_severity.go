@@ -17,9 +17,9 @@ var (
 	// any part. Only marks can stand between them, such as in "Severity:
 	// block" or "Grade: warn" (#420, #422).
 	readinessGrade = regexp.MustCompile(`(?i)\b(severity|grade[sd]?)\b[^a-z0-9]*\b(block|warn|advise)\b`)
-	// readinessLevel finds a severity before the word level, such as
-	// "warn-level" or "block level", in any part (#422).
-	readinessLevel = regexp.MustCompile(`(?i)\b(block|warn|advise)[- ]level\b`)
+	// readinessLevel finds a severity, a hyphen, and the word level, such as
+	// "warn-level", in any part (#422).
+	readinessLevel = regexp.MustCompile(`(?i)\b(block|warn|advise)-level\b`)
 	// readinessWord finds the word severity under ## Findings (#413).
 	readinessWord = regexp.MustCompile(`(?i)\bseverity\b`)
 )
@@ -45,18 +45,20 @@ func severityCause(text, fence string) string {
 	return "this line names the word severity outside the line - **Severity**: of a finding. Fix: grade each finding only in its line - **Severity**:, and rephrase this line without the word severity"
 }
 
-// severityCell returns the severity that ends a cell of a table row, with
-// only marks after it, such as `warn`, **block**, or really a warn. It
-// returns "" for any other line. So the cell "inputs block the terminal"
-// passes (#416, #420, #422).
+// severityCell returns the severity of a cell of a table row. Any row can
+// hold it alone, with only marks around it, such as `warn` or **block**. A
+// row that names a finding ID can also end a cell with it, such as
+// | R1-F1 | really a warn |. It returns "" for any other line. So the cell
+// "the header block" passes (#416, #420, #422).
 func severityCell(text string) string {
 	trimmed := strings.TrimSpace(text)
 	if !strings.HasPrefix(trimmed, "|") {
 		return ""
 	}
+	finding := readinessMention.MatchString(trimmed)
 	for _, cell := range strings.Split(trimmed, "|") {
-		words := strings.Fields(strings.ToLower(cell))
-		if len(words) == 0 {
+		words := strings.Fields(strings.ToLower(strings.Trim(cell, " \t`*_().:!")))
+		if len(words) == 0 || len(words) > 1 && !finding {
 			continue
 		}
 		if word := strings.Trim(words[len(words)-1], "`*_().:!"); severityRank[word] > 0 {
