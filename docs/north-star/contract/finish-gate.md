@@ -19,6 +19,8 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - `Ready` with a `block` or `warn` finding that is not `fixed`, or with a limit in `spec.md`
 - `Ready with stated limits` with a `block` finding that is not `fixed`, or with a `warn` that is neither `fixed` nor an accepted `limit`
 
+The check of `## Case matrix` reads the references only. It cannot prove that the matrix is complete or correct.
+
 Finish reads a severity only in the line `- **Severity**:` of a finding.
 The plain words block, warn, and advise pass in a title, in evidence, and in prose (#419).
 An example is the title `### R1-F1 Large inputs block the terminal`.

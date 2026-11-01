@@ -90,6 +90,7 @@ Before the review of round 1, `## Case matrix` of `spec.md` lists each family of
 - A repair of a finding adds a pair of tests for its whole family, not only a test of the reported example
 
 `just finish` fails when a family names no test, or when a line of Failures or Acceptance is in no family.
+It reads the references only. The first reviewer checks that the matrix is complete.
 
 ### Each next round
 

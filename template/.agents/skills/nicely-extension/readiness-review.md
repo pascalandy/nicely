@@ -91,6 +91,7 @@ First, before you review any repair, check `## Case matrix` of `spec.md` (#423):
 - Each generic case that applies, and each family that the intake found, has its row
 - Each refusal and each branch that classifies an input has a pair of tests: one input passes, and one input is refused
 - Run the tests of the matrix. A family that the matrix lacks is a finding
+- `just finish` checks only that each family names a test. It does not check that the matrix is complete, or that each test proves its family
 
 Then review the rest of round 1:
 
