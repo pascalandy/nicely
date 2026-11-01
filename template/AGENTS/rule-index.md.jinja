@@ -30,6 +30,10 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | Each case of the Output group that applies has a test file that the tests make, checked by an independent reader | Prose only |
 | The tests make their files; never search the home folder or copy a file of the user | Prose only |
 | Round 1 tests each generic case that applies, and the first review tests families of cases | Prose only |
+| Before the review of round 1, `## Case matrix` gives each family its tests, and each line of Failures and Acceptance a family | [Finish matrix][finish-matrix] |
+| Each refusal and each branch that classifies an input has a pair of tests | [Finish matrix][finish-matrix] needs a passing ID in each family; the reviewer checks the rest |
+| The first reviewer checks that the matrix is complete and runs it, before any repair | Prose only |
+| A repair adds a pair of tests for its whole family | Prose only |
 | A root cause is fixed before the next review, and the last rounds verify | Prose only |
 | Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
 | The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
@@ -68,6 +72,7 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 [ledger-run]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_run.go
 [ledger-findings]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_findings.go
 [ledger-history]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_history.go
+[finish-matrix]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/spec_matrix.go
 [finish-verdict]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness_verdict.go
 [readiness]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness.go
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go

@@ -16,6 +16,9 @@ import (
 func finishRepository() int {
 	problems, spec := formProblems()
 	specs, limits := specProblems(spec)
+	if spec != "" {
+		specs = append(specs, matrixProblems(spec, limits)...)
+	}
 	problems = append(append(problems, specs...), readinessProblems(spec, limits)...)
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)

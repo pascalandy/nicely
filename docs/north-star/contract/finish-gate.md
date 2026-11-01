@@ -9,6 +9,8 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - A line of `vision.md`, `spec.md`, or `qa.md` that starts with `Fill:` after its indent, also in fenced code
 - A line under `## Open lines`
 - A line under **Limits.** that is no table row with a spec ID, the state `limit`, and the user's acceptance
+- No table under `## Case matrix` of `spec.md` with the columns Family, Source, Accepted, and Refused (#423). Also a family that names no spec ID in Accepted, or a Refused cell with no spec ID and not `None`
+- A spec ID of `## Case matrix` that is no line of Failures or Acceptance and no accepted limit, so no test proves it. Also a line of Failures or Acceptance that no family names
 - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`. A byte order mark before them is ignored
 - A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round
 - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`

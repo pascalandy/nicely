@@ -55,6 +55,24 @@ Fill: the real input that proves the command, such as a fixture of the registry 
 
 Fill: each input that the wrapped program accepts but that the domain refuses, with its code. A scenario and `acceptance.sh` refuse each one.
 
+## Case matrix
+
+Before the review of round 1, this table lists each family of cases of each command, with the spec IDs of its tests (#423).
+A family comes from a generic case that applies, or from a family that the intake found.
+An example of such a family is each way that the input declares how to read it.
+Accepted names the lines whose tests give an input that passes. Refused names the lines whose tests refuse an input, or `None`.
+Each refusal and each branch that classifies an input has a pair: a test that passes, and a test that refuses.
+Each line of Failures and of Acceptance is in a family. `just finish` fails when a family has no test.
+
+| Family | Source | Accepted | Refused |
+|---|---|---|---|
+| The input is a regular file that exists | Input: Unreadable | `size`, `lines` | `bad-input` |
+| The input holds text | Input: Of the wrong type | `lines` | `not-text` |
+| `python3` runs the worker | Other: Missing program, and the intake | `size` | `no-python`, `worker-fails` |
+| A signal stops the run | Interruption | `size` | `interrupted`, `terminated` |
+
+Fill: one row for each family of cases of your commands, in place of the rows of `inspect`. A repair of a finding adds a pair of tests for its whole family, not only a test of the reported example.
+
 ## Open lines
 
 A round of the skill in `.agents/skills/nicely-extension/` moves an open line into Failures or Acceptance, with the scenario that claims it.

@@ -64,7 +64,7 @@ Each round ends with the independent review, the readiness review, and `just fin
 Do these steps in this order. Commit each of the first four steps on its own:
 
 1. Record the intake facts under `## Intake` in `vision.md`, as "Evidence of the intake" in `intake.md` says. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives stays an open line of `spec.md`.
-2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`.
+2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`. Write the table under `## Case matrix` too, as "Case matrix" says.
 3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails. Run it at that commit with `just scenario <name>`. Keep that command, its exit status, and the line of the scenario that failed. A compile error is no such failure. `just signoff` runs it again. When the scenario cannot run without the command, commit a handler that does no work in this step. Then the run reaches the assertion.
 4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
 5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
@@ -76,11 +76,22 @@ Give the commits of steps 1 to 4 to the reviewer, who records them under `## Ord
 Give the reviewer the record of the run of step 3 too. The reviewer checks it, and records it under `## First failing run`.
 The first round is incomplete by design. The open lines start the next round.
 
+### Case matrix
+
+Before the review of round 1, `## Case matrix` of `spec.md` lists each family of cases of each command (#423):
+
+- One row for each generic case that applies, and for each family that the intake found
+- A family groups the inputs that one rule reads, such as each way that the input declares how to read it
+- Each refusal and each branch that classifies an input has a pair of tests: one input passes, and one input is refused
+- A repair of a finding adds a pair of tests for its whole family, not only a test of the reported example
+
+`just finish` fails when a family names no test, or when a line of Failures or Acceptance is in no family.
+
 ### Each next round
 
 1. Select open lines, and the findings that the ledger records as `open`.
 2. Move each line from `## Open lines` into Failures or Acceptance.
-3. For each line, write a scenario with the claim `# spec: <id>`. It fails first, for the missing behavior.
+3. For each line, write a scenario with the claim `# spec: <id>`. It fails first, for the missing behavior. For a finding, test its whole family with a pair, as "Case matrix" says.
 4. Change the handler until the scenario passes. The line is then `proven`.
 5. End the round.
 
@@ -99,6 +110,7 @@ The first round is incomplete by design. The open lines start the next round.
 ### Reach "Done when" in 5 rounds
 
 - Round 1 includes a test file for each generic case that applies
+- Ask the first reviewer to check that `## Case matrix` is complete and to run it, before it reviews any repair
 - Ask the first reviewer to test families of cases, such as all the declarations that change the meaning, not one counterexample
 - Fix a root cause, such as a parser or a conversion rule, before the next review
 - Keep the last rounds for verification, not for one patch per warning

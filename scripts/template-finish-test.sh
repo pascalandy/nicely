@@ -9,6 +9,8 @@
 source "${BASH_SOURCE[0]%/*}/template-finish-helpers.sh"
 # shellcheck source=scripts/template-finish-forms-test.sh
 source "${BASH_SOURCE[0]%/*}/template-finish-forms-test.sh"
+# shellcheck source=scripts/template-finish-matrix-test.sh
+source "${BASH_SOURCE[0]%/*}/template-finish-matrix-test.sh"
 
 fct_test_finish() {
 	local finish="${2}/finish" scratch="${2}" sha file number ledger_earlier=""
@@ -114,6 +116,7 @@ fct_test_finish() {
 	git -C "${finish}" commit -qm 'readiness review'
 	fct_finish 0
 	fct_finish_said 'finish: no line or finding is open'
+	fct_test_finish_matrix
 
 	# A change after the review needs a new review.
 	printf 'A change after the review.\n' >>"${finish}/README.md"

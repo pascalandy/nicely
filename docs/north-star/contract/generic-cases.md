@@ -5,6 +5,8 @@ The spec of such a command starts its lines of Failures and Acceptance from this
 Then it adds the cases of the program that the command wraps.
 
 Each case that can occur becomes one line, with its spec ID, as [Spec IDs](spec-ids.md) defines.
+Before the first review, `## Case matrix` of the spec gives a row to each such case and to each family of the intake (#423).
+Each refusal in it has a pair of tests: one input passes, and one input is refused.
 The line states the outcome of the case, such as a refusal with its code.
 The safe outcome below is the default. Another outcome is a limit, and only the user can accept it.
 A case that cannot occur for the command needs no line.

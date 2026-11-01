@@ -83,7 +83,14 @@ A loss that you report but that the user did not accept is a `warn` finding, not
 
 ## Round 1
 
-In round 1, review the order of the work, not only the code:
+In round 1, review the order of the work, not only the code.
+First, before you review any repair, check `## Case matrix` of `spec.md` (#423):
+
+- Each generic case that applies, and each family that the intake found, has its row
+- Each refusal and each branch that classifies an input has a pair of tests: one input passes, and one input is refused
+- Run the tests of the matrix. A family that the matrix lacks is a finding
+
+Then review the rest of round 1:
 
 - The intake commit comes before the spec commit. The intake gives, for each fact, its source, its version, and the part that the author read, and the result of each experiment apart. A link alone is not evidence of a read
 - The record of the first failing run gives the command, its exit status, and the assertion that failed at the scenario commit. The command is `just scenario <name>`. Run it again at that commit when in doubt, and `just signoff` runs it again too. Refuse a failure that is only a compile error, because it does not prove the missing behavior
