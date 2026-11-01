@@ -40,6 +40,7 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | The ledger names the head, the reviewers, the commits that each review covered, and the result of `just finish` of each round | [Ledger][ledger] |
 | Each finding keeps its ID and its highest severity, and gets a state each round; a `warn` or `block` closes only as `fixed` or `limit` | [Ledger findings][ledger-findings], [ledger history][ledger-history] |
 | `## Open lines` of `spec.md` names each finding that the ledger records as `open`, by its ID | [Ledger findings][ledger-findings] |
+| A finding of the last round with no state is `open` | [Ledger findings][ledger-findings] |
 | A severity is read only in the line **Severity** of a finding; the plain words block, warn, and advise pass elsewhere | [Readiness findings][readiness] |
 | A finding heading stays under `## Findings`, and no other form grades | [Readiness findings][readiness] |
 | Finish finds a grade in code, at the end of a cell, after severity or grade, or before level | [Readiness findings][readiness] |

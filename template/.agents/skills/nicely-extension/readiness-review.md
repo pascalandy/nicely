@@ -29,7 +29,7 @@ Write each part of a finding as a bullet that starts with its bold name, such as
 - **Command**: the command that the finding affects
 - **Consequence**: what goes wrong for a user or an agent
 - **Severity**: `block` when the command breaks the contract, `warn` when the adapter works around a loss, or `advise` for a better practice
-- **State**: `open`, `fixed`, `limit`, or `declined`. A finding of this round can have no state yet
+- **State**: `open`, `fixed`, `limit`, or `declined`. A finding of this round can have no state yet, and then it is `open`
 - **Spec**: the spec ID of its line: the open line, the line that the test of the fix proves, or the accepted limit
 - **Commit**: for a `fixed` finding, the commit that fixed it
 - **Reason**: for a `declined` finding, the reason of the author
@@ -65,7 +65,7 @@ Never lower the severity of a finding in a later round.
 A `warn` or `block` finding closes only as `fixed` or `limit`. Only an `advise` can be `declined`.
 A change of `spec.md` that narrows a promise to close a `warn` or `block` finding is a `limit`. Only the user can accept it.
 `None.` under `## Open lines` does not close a finding that the ledger records as `open`.
-Each finding with the state `open` keeps a line under `## Open lines` of `spec.md` that names its ID. `just finish` fails without it.
+Each finding with the state `open` keeps a line under `## Open lines` of `spec.md` that names its ID. `just finish` fails without it. A finding of this round with no state is `open` too.
 
 End the review with one verdict. The verdict follows from the findings, and `just finish` checks it:
 

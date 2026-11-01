@@ -91,7 +91,7 @@ The first round is incomplete by design. The open lines start the next round.
 3. Run `just acceptance` on the real input until its independent checks pass.
 4. Ask an agent that did not write the round to review the changes of the round. Give it the commits of the round.
 5. Ask an agent that did not write the code to run the readiness review. It records the review and the ledger in `readiness.md`. One independent pass can do both reviews.
-6. Write each finding that a test can prove as an open line, which names the finding by its ID. Each finding that the ledger records as `open` keeps its line under `## Open lines`, so `spec.md` and the ledger agree.
+6. Write each finding that a test can prove as an open line, which names the finding by its ID. Each finding that the ledger records as `open` keeps its line under `## Open lines`, so `spec.md` and the ledger agree. A finding of this round with no state is `open` too.
 7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
 8. When `just finish` fails after round 5, stop, as "Round limit" says.
 9. Otherwise, start the next round from the open lines and the open findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.

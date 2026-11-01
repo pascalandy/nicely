@@ -59,7 +59,8 @@ fct_test_finish() {
 	fct_finish 1
 	fct_finish_said 'readiness.md: it names no reviewer'
 	fct_finish_said 'readiness.md:8: the verdict is Ready, but this finding has the severity warn'
-	fct_readiness "${sha}" Ready "${advise}"
+	# An advise of this round with no state is open, so the author declines it (#423).
+	fct_readiness "${sha}" Ready "${advise}"$'\n- **State**: `declined`\n- **Reason**: the answer stays small'
 	git -C "${finish}" add readiness.md
 	git -C "${finish}" commit -qm 'independent readiness review'
 	ledger_earlier="${sha}"

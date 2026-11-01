@@ -73,7 +73,7 @@ The reviewer of a later round gives each earlier finding one state, in a line `-
 | `limit` | The user accepted the loss | `- **Spec**:` with the ID of an accepted row under **Limits.** |
 | `declined` | The author does not fix it | `- **Reason**:` with the reason of the author. Only an `advise` can be declined |
 
-A finding of the last round can have no state yet.
+A finding of the last round can have no state yet. Then it is `open`, as the state `open` says below (#423).
 
 `just finish` fails on each of these:
 
@@ -87,8 +87,8 @@ A finding of the last round can have no state yet.
 - A step of round 1 that is missing, out of order, or in the commit of the step before it
 - No part `## First failing run` outside fenced code. Also a part without the Scenario commit, without its command, without an exit status other than 0, or without its assertion
 - A finding without an ID, a finding of an earlier round without a state, or a state without its parts
-- A finding with the state `open`, even when `## Open lines` holds `None.`
-- A finding with the state `open` whose ID no line under `## Open lines` of `spec.md` names. So `spec.md` and the ledger agree on the open work (#420)
+- A finding with the state `open`, or a finding of the last round with no state, even when `## Open lines` holds `None.`
+- A finding with the state `open`, or a finding of the last round with no state, whose ID no line under `## Open lines` of `spec.md` names. So `spec.md` and the ledger agree on the open work (#420, #423)
 - A `warn` or `block` finding with the state `declined`
 - A finding of an earlier committed `readiness.md` that is missing, or whose severity went down. A finding without an ID keeps its title
 - A committed review whose `Commit:` is the Head of no round, or a round before the last without a committed review of its Head

@@ -56,7 +56,7 @@ fct_test_ledger_builds() {
 	fct_finish_said 'this table names the severity block'
 	# Finish reads a severity only in the line - **Severity**:, so the words
 	# block and warn pass in a title, in evidence, and in prose (#419).
-	fct_readiness "${head}" Ready "${valid}"$'\n- **Evidence**: the code block in README.md\n\nThe CLI does not warn when the input is empty.\n\n### R3-F1 Large inputs block the terminal\n\n- **Severity**: `advise`\n\n## Notes\n\nA long line can block a pager. R3-F1 and R2-F1 name such a case.' 'agent B'
+	fct_readiness "${head}" Ready "${valid}"$'\n- **Evidence**: the code block in README.md\n\nThe CLI does not warn when the input is empty.\n\n### R3-F1 Large inputs block the terminal\n\n- **Severity**: `advise`\n- **State**: `declined`\n- **Reason**: a pager can block too\n\n## Notes\n\nA long line can block a pager. R3-F1 and R2-F1 name such a case.' 'agent B'
 	fct_finish 0
 	# Finish reads the header in the first three lines, after a byte order mark (#416).
 	fct_readiness "${head}" Ready "${valid}" 'agent B'

@@ -9,7 +9,7 @@ import (
 )
 
 // stateProblems checks the state of each finding in the build of n rounds.
-// A new finding of round n can have no state yet.
+// A new finding of round n can have no state yet, and then it is open (#423).
 func stateProblems(findings []finding, n int, spec string, limits []limit) []string {
 	var proven []string
 	for _, l := range SpecLines(spec) {
@@ -45,15 +45,13 @@ func stateProblems(findings []finding, n int, spec string, limits []limit) []str
 		case "":
 			if first < n {
 				problems = append(problems, fmt.Sprintf("%sthe finding %s of round %d has no state. Fix: the reviewer of this round gives it the state open, fixed, limit, or declined", at, f.id, first))
+				continue
 			}
+			problems = append(problems, fmt.Sprintf("%sthe finding %s of this round has no state, so it is open, even if ## Open lines holds None. Fix: prove its spec ID in a round, or ask the user to accept it as a limit", at, f.id))
+			problems = append(problems, openLineProblems(f.id, open)...)
 		case "open":
 			problems = append(problems, fmt.Sprintf("%sthe finding %s is open, even if ## Open lines holds None. Fix: prove its spec ID in a round, or ask the user to accept it as a limit", at, f.id))
-			// spec.md and the ledger give one state of the open work (#420).
-			named := regexp.MustCompile(`\b` + regexp.QuoteMeta(f.id) + `\b`)
-			if !slices.ContainsFunc(open, named.MatchString) {
-				problems = append(problems, fmt.Sprintf("spec.md: ## Open lines does not name the open finding %s of readiness.md. "+
-					"Fix: list it under ## Open lines by its ID, such as in the Case of its row, so spec.md and the ledger agree on the open work", f.id))
-			}
+			problems = append(problems, openLineProblems(f.id, open)...)
 		case "fixed":
 			if commit, ok := ledgerCommit(f.commit); !ok || commit == "" {
 				problems = append(problems, at+"this fixed finding names no commit of HEAD. Fix: name the commit that fixed it in a line - **Commit**: <sha>")
@@ -77,4 +75,16 @@ func stateProblems(findings []finding, n int, spec string, limits []limit) []str
 		}
 	}
 	return problems
+}
+
+// openLineProblems reports an open finding whose ID no line under ## Open
+// lines names. So spec.md and the ledger give one state of the open work
+// (#420).
+func openLineProblems(id string, open []string) []string {
+	named := regexp.MustCompile(`\b` + regexp.QuoteMeta(id) + `\b`)
+	if slices.ContainsFunc(open, named.MatchString) {
+		return nil
+	}
+	return []string{fmt.Sprintf("spec.md: ## Open lines does not name the open finding %s of readiness.md. "+
+		"Fix: list it under ## Open lines by its ID, such as in the Case of its row, so spec.md and the ledger agree on the open work", id)}
 }

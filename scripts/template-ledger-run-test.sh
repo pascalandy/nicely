@@ -2,8 +2,9 @@
 # Sourced by template-ledger-test.sh. fct_test_ledger calls fct_test_ledger_run
 # at the end of round 3, with its repository and its fixture variables. It
 # proves the record of the first failing run of round 1, and that ## Open
-# lines names each open finding (#420). Markdown backticks in the fixture
-# text are literal, and fct_readiness reads ledger_earlier and ledger_run.
+# lines names each open finding, also one of this round with no state (#420,
+# #423). Markdown backticks in the fixture text are literal, and
+# fct_readiness reads ledger_earlier and ledger_run.
 # shellcheck disable=SC2016,SC2034,SC2154
 
 fct_test_ledger_run() {
@@ -14,6 +15,16 @@ fct_test_ledger_run() {
 	fct_finish_said 'spec.md: ## Open lines does not name the open finding R2-F1 of readiness.md'
 	fct_edit "${finish}/spec.md" 'None.' $'| ID | Command | Part | Case | Code |\n|---|---|---|---|---|\n| `long-lines` | inspect | Failures | R2-F1: a line over 1 MB is cut | `RUNTIME` |'
 	fct_finish 1
+	fct_finish_said 'spec.md: ## Open lines does not name the open finding' absent
+	git -C "${finish}" checkout -q spec.md
+	# A finding of this round with no state is open, beside None. too (#423).
+	fct_readiness "${head}" 'Needs work' "${valid}"$'\n\n### R3-F1 Long lines are cut\n\n- **Severity**: `advise`' 'agent B'
+	fct_finish 1
+	fct_finish_said 'the finding R3-F1 of this round has no state, so it is open, even if ## Open lines holds None.'
+	fct_finish_said 'spec.md: ## Open lines does not name the open finding R3-F1 of readiness.md'
+	fct_edit "${finish}/spec.md" 'None.' $'| ID | Command | Part | Case | Code |\n|---|---|---|---|---|\n| `long-lines` | inspect | Failures | R3-F1: a line over 1 MB is cut | `RUNTIME` |'
+	fct_finish 1
+	fct_finish_said 'the finding R3-F1 of this round has no state, so it is open'
 	fct_finish_said 'spec.md: ## Open lines does not name the open finding' absent
 	git -C "${finish}" checkout -q spec.md
 
