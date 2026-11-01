@@ -45,13 +45,14 @@ fct_test_ledger_builds() {
 	fct_finish_said 'this line names the severity `warn` in code, outside the line - **Severity**: of a finding'
 	fct_finish_said 'this table names the severity warn'
 	# A grade in prose, a finding outside ## Findings, or a severity with marks in a cell fails in any part (#420).
-	fct_readiness "${head}" Ready "${valid}"$'\n\n## Notes\n\n- Long lines are cut. Severity: block.\n- R3-F8 Long lines are cut: block\n\n## R3-F7 Long lines are cut\n\n## Other issues\n\n### R3-F9 Long lines are cut\n\n| R3-F9 | **Block.** |\n\n#### R3-F6 Long lines are cut' 'agent B'
+	fct_readiness "${head}" Ready "${valid}"$'\n\n## R3-F7 Long lines are cut\n\n## Notes\n\n- Long lines are cut. Severity: block.\n- R3-F8 Long lines are cut: block\n\n```\n### R3-F5 Long lines are cut\n```\n\n## Other issues\n\n### R3-F9 Long lines are cut\n\n| R3-F9 | **Block.** |\n\n#### R3-F6 Long lines are cut' 'agent B'
 	fct_finish 1
 	fct_finish_said 'this line grades with the severity block outside the line - **Severity**: of a finding'
 	fct_finish_said 'this finding is outside ## Findings, so finish cannot grade it'
 	fct_finish_said 'this line names the finding R3-F8, which has no ### heading under ## Findings'
 	fct_finish_said 'this line names the finding R3-F7, which has no ### heading under ## Findings'
 	fct_finish_said 'this line names the finding R3-F6, which has no ### heading under ## Findings'
+	fct_finish_said 'this line names the finding R3-F5, which has no ### heading under ## Findings'
 	fct_finish_said 'this table names the severity block'
 	# Finish reads a severity only in the line - **Severity**:, so the words
 	# block and warn pass in a title, in evidence, and in prose (#419).
