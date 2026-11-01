@@ -56,11 +56,23 @@ Under `## Order of round 1`, a table with the columns Step and Commit names the 
 Under `## First failing run`, four lines record the run of the first scenario of the current build at its commit, before the handler (#420):
 
 - `- **Commit**:` the Scenario commit of `## Order of round 1`, so a record of an earlier build never stands in
-- `- **Command**:` the command that ran the scenario
+- `- **Command**:` `just scenario <name>`, of a scenario `testdata/script/<name>.txtar` that the Scenario commit holds (#422)
 - `- **Exit**:` its exit status, which is not 0
-- `- **Assertion**:` the assertion of the scenario that failed
+- `- **Assertion**:` the assertion of the scenario that failed. It holds the text of that line of the scenario
 
 The reviewer refuses a failure that is only a compile error, because it does not prove the missing behavior.
+
+### The first failing run again
+
+`just signoff` runs `just finish`, then the first failing run of `readiness.md` again (#422):
+
+1. It reads the name of the scenario from the command `just scenario <name>`. It never runs the text of the record as a command
+2. It checks out the Scenario commit in a new scratch worktree, outside the repository
+3. It runs that scenario alone with `go test`, as `just scenario` does
+4. The run must fail on a line of the scenario, and the recorded assertion must hold the text of that line
+
+Signoff signs nothing when the run passes, or fails before any line of the scenario, such as on a compile error.
+The receipt of signoff records the run under `first_run`.
 
 Each finding under `## Findings` starts its heading with a stable ID, such as `### R2-F3`.
 `R2` is the round that first reported it, and the ID stays in later rounds.
@@ -86,6 +98,7 @@ A finding of the last round can have no state yet. Then it is `open`, as the sta
 - A last round whose Head is not the `Commit:` of `readiness.md`
 - A step of round 1 that is missing, out of order, or in the commit of the step before it
 - No part `## First failing run` outside fenced code. Also a part without the Scenario commit, without its command, without an exit status other than 0, or without its assertion
+- A command of `## First failing run` that is not `just scenario <name>` of a scenario of the Scenario commit, or an assertion that holds no line of that scenario
 - A finding without an ID, a finding of an earlier round without a state, or a state without its parts
 - A finding with the state `open`, or a finding of the last round with no state, even when `## Open lines` holds `None.`
 - A finding with the state `open`, or a finding of the last round with no state, whose ID no line under `## Open lines` of `spec.md` names. So `spec.md` and the ledger agree on the open work (#420, #423)

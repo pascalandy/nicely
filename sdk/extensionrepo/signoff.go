@@ -84,6 +84,18 @@ func signoff(recipes []string) error {
 		if err != nil {
 			return fmt.Errorf("%s of %s failed: %w", recipe, sha, err)
 		}
+		if recipe == "finish" {
+			// The ledger that finish accepted names the first failing run, which must fail again (#422).
+			replay, err := replayFirstRun(ctx, env, root, worktree, run, log)
+			receipt.FirstRun = replay
+			if writeErr := receipt.write(run); writeErr != nil {
+				return writeErr
+			}
+			if err != nil {
+				return fmt.Errorf("the first failing run of %s: %w", sha, err)
+			}
+			fmt.Fprintf(os.Stderr, "signoff: the first scenario fails again at %s, on %q\n", replay.Commit, replay.Failed)
+		}
 	}
 	if err := signoffUnchanged(ctx, env, worktree, sha); err != nil {
 		return err
@@ -133,7 +145,7 @@ func signoffEnv() []string {
 			continue
 		}
 		switch name {
-		case "GOFLAGS", "GOWORK":
+		case "GOFLAGS", "GOWORK", ScenarioEnv:
 			continue
 		}
 		env = append(env, entry)

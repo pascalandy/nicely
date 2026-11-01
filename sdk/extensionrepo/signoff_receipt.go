@@ -17,11 +17,13 @@ type signoffCheck struct {
 }
 
 type signoffReceipt struct {
-	SHA     string            `json:"sha"`
-	OS      string            `json:"os"`
-	Tools   map[string]string `json:"tools"`
-	Checks  []signoffCheck    `json:"checks"`
-	Signoff *signoffCheck     `json:"signoff"`
+	SHA    string            `json:"sha"`
+	OS     string            `json:"os"`
+	Tools  map[string]string `json:"tools"`
+	Checks []signoffCheck    `json:"checks"`
+	// FirstRun is the repeat of the first failing run, after just finish.
+	FirstRun *signoffReplay `json:"first_run,omitempty"`
+	Signoff  *signoffCheck  `json:"signoff"`
 }
 
 func (r signoffReceipt) write(run string) error {

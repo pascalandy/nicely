@@ -86,7 +86,7 @@ A loss that you report but that the user did not accept is a `warn` finding, not
 In round 1, review the order of the work, not only the code:
 
 - The intake commit comes before the spec commit. The intake gives, for each fact, its source, its version, and the part that the author read, and the result of each experiment apart. A link alone is not evidence of a read
-- The record of the first failing run gives the command, its exit status, and the assertion that failed at the scenario commit. Run the command again at that commit when in doubt. Refuse a failure that is only a compile error, because it does not prove the missing behavior
+- The record of the first failing run gives the command, its exit status, and the assertion that failed at the scenario commit. The command is `just scenario <name>`. Run it again at that commit when in doubt, and `just signoff` runs it again too. Refuse a failure that is only a compile error, because it does not prove the missing behavior
 - Each case of the Output group of `generic-cases.md` that applies has a test file that the tests make, and an independent check. A case name alone is not a test
 - Test families of cases, such as all the declarations that change the meaning, not one counterexample
 
@@ -114,9 +114,9 @@ After the findings, keep the ledger of the build. Add one row for this round, an
 ## First failing run
 
 - **Commit**: <the Scenario commit of ## Order of round 1>
-- **Command**: <the command that ran the first scenario at its commit>
+- **Command**: just scenario <the name of the first scenario, which ran at its commit>
 - **Exit**: <its exit status, which is not 0>
-- **Assertion**: <the assertion of the scenario that failed>
+- **Assertion**: <the line of the scenario that failed, as the output of the run names it>
 ```
 
 Change commits names the commits that the change review covered. The readiness review covers Head.

@@ -15,6 +15,10 @@ check:
 finish:
     go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo finish
 
+# Run one scenario of testdata/script/ by its name, such as just scenario inspect
+scenario name:
+    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo scenario {{ quote(name) }}
+
 # Check the committed SHA in a detached scratch worktree, then sign that exact SHA
 signoff:
     go run ./internal/export signoff

@@ -63,7 +63,7 @@ fct_step() {
 # assertion. Empty, it leaves the part out (#420).
 fct_ledger() {
 	local heads first i head finish_cell handler="" run
-	run=$'- **Commit**: '"$(fct_step "${1}" scenario)"$'\n- **Command**: `go test ./... -run TestExtension/inspect`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'` of testdata/script/inspect.txtar found no match'
+	run=$'- **Commit**: '"$(fct_step "${1}" scenario)"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'` of testdata/script/inspect.txtar found no match'
 	read -r -a heads <<<"${2}"
 	first="$(git -C "${1}" rev-list --max-parents=0 HEAD)"
 	printf '\n## Rounds\n\n| Round | Head | Change review | Change commits | Readiness review | Finish |\n|---|---|---|---|---|---|\n'

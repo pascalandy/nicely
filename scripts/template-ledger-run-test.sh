@@ -3,7 +3,7 @@
 # at the end of round 3, with its repository and its fixture variables. It
 # proves the record of the first failing run of round 1, and that ## Open
 # lines names each open finding, also one of this round with no state (#420,
-# #423). Markdown backticks in the fixture text are literal, and
+# #422, #423). Markdown backticks in the fixture text are literal, and
 # fct_readiness reads ledger_earlier and ledger_run.
 # shellcheck disable=SC2016,SC2034,SC2154
 
@@ -59,7 +59,7 @@ fct_test_ledger_run() {
 	ledger_run='' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 1
 	fct_finish_said 'readiness.md: it holds no part ## First failing run'
-	ledger_run=$'- **Command**: `go test ./...`\n- **Exit**: 0\n- **Assertion**:' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	ledger_run=$'- **Command**: `just scenario inspect`\n- **Exit**: 0\n- **Assertion**:' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 1
 	fct_finish_said 'the first run of the scenario exited 0'
 	fct_finish_said 'names no assertion that failed'
@@ -68,14 +68,29 @@ fct_test_ledger_run() {
 	fct_finish_said 'names no command'
 	fct_finish_said 'the exit status "one" of the first run'
 	# A record of another commit, such as of an earlier build, or in fenced code, records no run of this build.
-	ledger_run=$'- **Commit**: '"${intake}"$'\n- **Command**: `go test ./...`\n- **Exit**: 1\n- **Assertion**: `stdout 3`' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	ledger_run=$'- **Commit**: '"${intake}"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: `stdout 3`' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 1
 	fct_finish_said "names the commit \"${intake}\", which is not the Scenario commit of ## Order of round 1"
-	ledger_run=$'```\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `go test ./...`\n- **Exit**: 1\n- **Assertion**: `stdout 3`\n```' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	ledger_run=$'```\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: `stdout 3`\n```' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 1
 	fct_finish_said 'names no command'
 	# A longer fence holds a shorter one, and a value can end with a period.
-	ledger_run=$'````\n```\n````\n\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'.\n- **Command:** `go test ./...`\n- **Exit**: 1.\n- **Assertion**: `stdout 3` found no match.' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	ledger_run=$'````\n```\n````\n\n- **Commit**: '"$(fct_step "${finish}" scenario)"$'.\n- **Command:** `just scenario inspect`\n- **Exit**: 1.\n- **Assertion**: `stdout \'"lines":3\'` found no match.' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 0
+
+	# The command is just scenario <name>, of a scenario of the Scenario commit, and the
+	# assertion holds a line of that scenario. So signoff can run it again (#422).
+	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `echo invented`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'`' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'names the command "echo invented", which is not just scenario <name>'
+	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario inspect; echo invented`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'`' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'names the command "just scenario inspect; echo invented", which is not just scenario <name>'
+	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario missing`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'`' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'runs the scenario testdata/script/missing.txtar, which the Scenario commit'
+	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: the count was wrong' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'names the assertion "the count was wrong", which holds no line of testdata/script/inspect.txtar'
 	git -C "${finish}" checkout -q readiness.md
 }

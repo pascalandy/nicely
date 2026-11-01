@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Sourced by template-test.sh to prove just signoff of the rendered
 # repository. fct_test_uninstall calls it after its install tests.
+# Markdown backticks in the fixture text are literal.
+# shellcheck disable=SC2016
 
 # Run the rendered recipe with real Git and just. Only gh is a stub.
 fct_test_signoff() {
@@ -24,23 +26,81 @@ SCRIPT
 	fi
 	[[ ! -e "${scratch}/signed-sha" ]] || fct_fail 'just signoff called gh signoff before just finish passed'
 
-	cp -R "${repo}" "${ready}"
-	fct_steps "${ready}"
-	for file in vision.md spec.md qa.md; do
-		grep -v '^Fill:' "${ready}/${file}" >"${scratch}/form.md"
-		mv "${scratch}/form.md" "${ready}/${file}"
-	done
-	git -C "${ready}" commit -qam 'fill the forms'
-	finish="${ready}" fct_readiness "$(git -C "${ready}" rev-parse HEAD)" Ready None.
-	git -C "${ready}" add readiness.md
-	git -C "${ready}" commit -qm 'readiness review'
+	# Signoff runs the first failing run again at its Scenario commit (#422).
+	# An invented command, a compile error, and a scenario that passes sign nothing.
+	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-echo" read
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-echo" 'echo invented' 'names the command "echo invented", which is not just scenario <name>'
+	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-compile" read 'package broken'$'\n''func {'
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-compile" 'just scenario first' 'before any line of the scenario, such as on a compile error'
+	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-passes" inspect
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-passes" 'just scenario first' 'passes at its Scenario commit'
+
+	fct_signoff_ready "${repo}" "${scratch}" "${ready}" read
+	fct_signoff_review "${ready}" 'just scenario first'
 	sha="$(git -C "${ready}" rev-parse HEAD)"
 	if ! fct_signoff "${ready}" "${scratch}"; then
 		cat "${scratch}/signoff.out" >&2
 		fct_fail 'rendered just signoff failed'
 	fi
 	fct_has "${scratch}/signoff.out" "Signed off on ${sha}"
+	grep -qF 'signoff: the first scenario fails again at' "${scratch}/signoff.out" || fct_fail 'just signoff did not run the first failing run again'
 	fct_has "${scratch}/signed-sha" "${sha}"
+}
+
+# fct_signoff_ready copies the rendered repository $1 to $3, with the steps of
+# round 1 and filled forms, in the scratch folder $2. Its first scenario
+# expects a message that ends with "can $4". "read" fails until the handler
+# changes the message, and "inspect" passes at once. A Go file $5 in the
+# Scenario commit, removed by the handler, breaks the build of that commit.
+fct_signoff_ready() {
+	local ready="${3}" file refuses expected
+	cp -R "${1}" "${ready}"
+	git -C "${ready}" commit -q --allow-empty -m 'step: intake'
+	git -C "${ready}" commit -q --allow-empty -m 'step: spec'
+	refuses="$(grep -m 1 '^refuses USAGE_INVALID ncly .* missing.md --json$' "${ready}/testdata/script/inspect.txtar")"
+	expected="$(grep -m 1 "^stderr 'missing.md is no file that .* can inspect\[.\]'$" "${ready}/testdata/script/inspect.txtar")"
+	printf '# A missing file names the cause in plain words.\n# spec: bad-input\n%s\n%s\n' "${refuses}" "${expected/can inspect/can ${4}}" >"${ready}/testdata/script/first.txtar"
+	[[ -z "${5:-}" ]] || printf '%s\n' "${5}" >"${ready}/broken.go"
+	git -C "${ready}" add -A
+	git -C "${ready}" commit -qm 'step: scenario'
+	[[ -z "${5:-}" ]] || git -C "${ready}" rm -q broken.go
+	if [[ "${4}" != inspect ]]; then
+		for file in locales/en.toml testdata/script/inspect.txtar; do
+			sed "s/ can inspect\([.[]\)/ can ${4}\1/" "${ready}/${file}" >"${2}/form.md"
+			mv "${2}/form.md" "${ready}/${file}"
+		done
+	fi
+	git -C "${ready}" commit -q --allow-empty -am 'handler'
+	for file in vision.md spec.md qa.md; do
+		grep -v '^Fill:' "${ready}/${file}" >"${2}/form.md"
+		mv "${2}/form.md" "${ready}/${file}"
+	done
+	git -C "${ready}" commit -qam 'fill the forms'
+}
+
+# fct_signoff_review commits the readiness review of the head of $1, whose
+# first failing run names the command $2.
+fct_signoff_review() {
+	local expected
+	expected="$(grep -m 1 '^stderr ' "${1}/testdata/script/first.txtar")"
+	finish="${1}" ledger_run=$'- **Commit**: '"$(fct_step "${1}" scenario)"$'\n- **Command**: `'"${2}"$'`\n- **Exit**: 1\n- **Assertion**: `'"${expected}"'` found no match' \
+		fct_readiness "$(git -C "${1}" rev-parse HEAD)" Ready None.
+	git -C "${1}" add readiness.md
+	git -C "${1}" commit -qm 'readiness review'
+}
+
+# fct_signoff_refuses requires that just signoff of the repository $2, whose
+# first failing run names the command $3, fails with the text $4 and signs
+# nothing.
+fct_signoff_refuses() {
+	local status=0
+	fct_signoff_review "${2}" "${3}"
+	fct_signoff "${2}" "${1}" || status=$?
+	if [[ "${status}" == 0 ]] || ! grep -qF -- "${4}" "${1}/signoff.out"; then
+		cat "${1}/signoff.out" >&2
+		fct_fail "just signoff with the first run \"${3}\" must fail with \"${4}\""
+	fi
+	[[ ! -e "${1}/signed-sha" ]] || fct_fail "just signoff signed a commit whose first run is \"${3}\""
 }
 
 # fct_signoff runs just signoff in the repository $1, with the stub gh of the scratch folder $2.

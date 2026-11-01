@@ -23,6 +23,8 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 | Round 1 records the intake, then the spec, then a failing scenario, then the handler | [Finish gate][finish] checks their commits in the [ledger][ledger] |
 | The intake gives, for each fact, its source, its version, and the part read, with each experiment apart; a link alone is not evidence | Prose only |
 | Round 1 records the Scenario commit, the command, the exit status, and the failed assertion of the first scenario run | The [ledger][ledger-run] checks the record |
+| The command of the first run is `just scenario <name>`, and its assertion holds a line of that scenario | The [ledger][ledger-run] checks the record |
+| `just signoff` runs the first scenario again at its commit, and never runs the text of the record | [Signoff replay][signoff-replay] |
 | A compile error is no failure of the first scenario; a scenario that cannot run without the command commits a handler that does no work | Prose only |
 | Read the source first, then run experiments only to confirm what you read | Prose only |
 | Each case of the Output group that applies has a test file that the tests make, checked by an independent reader | Prose only |
@@ -69,5 +71,6 @@ The paragraphs of `AGENTS.md` state the rules marked "Prose only".
 [finish-verdict]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness_verdict.go
 [readiness]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness.go
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
+[signoff-replay]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff_replay.go
 [release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
 [template-test]: https://github.com/pascalandy/nicely/blob/main/scripts/template-test.sh

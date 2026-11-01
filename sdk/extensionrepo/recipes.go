@@ -25,6 +25,10 @@ func checkRepository() int {
 		return report("check", err)
 	}
 	fmt.Fprintln(os.Stderr, "go test -count=1 ./...")
+	// Every scenario runs, so the coverage checks run too.
+	if err := os.Unsetenv(ScenarioEnv); err != nil {
+		return report("check", err)
+	}
 	return Test(nil)
 }
 

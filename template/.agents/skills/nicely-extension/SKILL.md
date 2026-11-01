@@ -65,7 +65,7 @@ Do these steps in this order. Commit each of the first four steps on its own:
 
 1. Record the intake facts under `## Intake` in `vision.md`, as "Evidence of the intake" in `intake.md` says. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives stays an open line of `spec.md`.
 2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`.
-3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails. Run it at that commit, and keep the command, its exit status, and the assertion that failed. A compile error is no such failure. When the scenario cannot run without the command, commit a handler that does no work in this step. Then the run reaches the assertion.
+3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails. Run it at that commit with `just scenario <name>`. Keep that command, its exit status, and the line of the scenario that failed. A compile error is no such failure. `just signoff` runs it again. When the scenario cannot run without the command, commit a handler that does no work in this step. Then the run reaches the assertion.
 4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
 5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
 6. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`.
