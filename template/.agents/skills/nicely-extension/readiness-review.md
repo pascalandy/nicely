@@ -37,7 +37,14 @@ Write each part of a finding as a bullet that starts with its bold name, such as
 - **Fix**: the smallest change that removes the problem
 
 Name a severity only in the bullet **Severity** of its finding. `just finish` reads no other line as a grade.
-After the first three lines, it fails on a severity in code, such as `` `warn` ``, on a severity alone in a cell of a table, and on the word severity under `## Findings`.
+After the first three lines, it fails on each form that grades in another place:
+
+- A severity in code, such as `` `warn` ``
+- A cell of a table that holds only a severity
+- The word severity before a severity, such as "Severity: block"
+- A finding heading, such as `### R1-F2`, outside `## Findings`
+- The word severity under `## Findings`
+
 The plain words pass in a title, in evidence, and in prose, such as `### R1-F1 Large inputs block the terminal`.
 
 A loss that a user can see is `warn` or `block`, never `advise`.
@@ -49,6 +56,7 @@ Grade it so in the round that first reports it. These examples set the grade:
 - **A message that names a wrong cause.** `inspect` answers that `notes.md` is missing, but the file exists and is not readable. At least `warn`, because the agent fixes the wrong thing
 - **A dry run that predicts a result that the run does not give.** The dry run says that the output is `notes.txt`, and the run writes `notes.md.txt`. At least `warn`. `block` when the run replaces a file that the dry run said it keeps
 - **An output whose meaning changes.** `notes.txt` drops the line `encoding: latin-1` and keeps the bytes, so a reader shows other letters. At least `warn`. `block` when `spec.md` promises the same text
+
 Never lower the severity of a finding in a later round.
 
 A `warn` or `block` finding closes only as `fixed` or `limit`. Only an `advise` can be `declined`.
@@ -101,6 +109,7 @@ After the findings, keep the ledger of the build. Add one row for this round, an
 
 ## First failing run
 
+- **Commit**: <the Scenario commit of ## Order of round 1>
 - **Command**: <the command that ran the first scenario at its commit>
 - **Exit**: <its exit status, which is not 0>
 - **Assertion**: <the assertion of the scenario that failed>
@@ -115,5 +124,6 @@ A build has at most 5 rounds.
 A round whose Finish is `pass` ends a build. A new build, such as of another command, starts at a new intake after it.
 The round numbers go on, and the ledger keeps each finding of each build.
 After `just update` from a template without a ledger, keep each finding of the older reviews, with an ID and a state.
+After `just update` from a template without `## First failing run`, run the scenario of the current build again at its commit. Then record that run.
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.

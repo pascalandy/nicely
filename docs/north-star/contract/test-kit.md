@@ -56,7 +56,7 @@ Each case of the Output group of [Generic cases](generic-cases.md) that applies 
 `acceptance.sh` makes that file in the extension's own domain, and proves the safe outcome on it. Two cases need more:
 
 - **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The check proves both results: the private text is not in the output, and the output still shows the content correctly
-- **Loses data that changes the meaning.** The test file gives each declaration that changes how a reader shows the content a value that is not the default. The independent reference applies that declaration before it compares the content, so a lost declaration fails the check
+- **Loses data that changes the meaning.** Some declarations change how a reader shows the content. The test file gives each of them a value that is not the default. The independent reference applies that declaration before it compares the content, so a lost declaration fails the check
 
 The tests make each file that they use. They never copy a file of the user, and the author never searches the home folder of the user for sample files.
 
