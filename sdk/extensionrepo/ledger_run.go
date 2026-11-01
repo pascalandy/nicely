@@ -113,8 +113,11 @@ func firstRunRecord(readiness string) (map[string]string, bool) {
 			}
 			continue
 		}
+		// The first value of each line counts, as for the severity forms in readinessFindings.
 		if m := firstRun.FindStringSubmatch(text); at > 0 && m != nil {
-			parts[m[1]] = strings.Trim(strings.TrimSuffix(m[2], "."), "`")
+			if _, read := parts[m[1]]; !read {
+				parts[m[1]] = strings.Trim(strings.TrimSuffix(m[2], "."), "`")
+			}
 		}
 	}
 	return parts, found

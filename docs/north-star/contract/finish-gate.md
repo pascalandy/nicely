@@ -35,7 +35,7 @@ After the first three lines, outside the line `- **Severity**:` of a finding, fi
 - A severity, then a hyphen and the word level, such as "warn-level". The text "block-level" fails too, so rephrase it
 - Under `## Findings`, the word severity alone
 
-The line `- **Assertion**:` of `## First failing run` is exempt, because it copies a line of the scenario.
+The first line `- **Assertion**:` of `## First failing run` is exempt, because it copies a line of the scenario. Finish reads only that line as the assertion.
 Finish reads each other line as prose, and it passes. This is also true when the line grades in other words, such as "the grade is warn" or "a block for me".
 The reviewer gives each grade only in the bullet **Severity** of its finding, and moves each other grade there before the verdict.
 

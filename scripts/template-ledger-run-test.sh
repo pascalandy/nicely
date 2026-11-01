@@ -80,6 +80,10 @@ fct_test_ledger_run() {
 	# The assertion copies a line of the scenario, so a severity in it grades nothing (#422).
 	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'` found no match, not `warn`' fct_readiness "${head}" Ready "${valid}" 'agent B'
 	fct_finish 0
+	# Only the first assertion is exempt, and it is the one that finish reads.
+	ledger_run=$'- **Commit**: '"$(fct_step "${finish}" scenario)"$'\n- **Command**: `just scenario inspect`\n- **Exit**: 1\n- **Assertion**: `stdout \'"lines":3\'` found no match\n- **Assertion**: Grade: block for the empty input' fct_readiness "${head}" Ready "${valid}" 'agent B'
+	fct_finish 1
+	fct_finish_said 'this line grades with the severity block'
 
 	# The command is just scenario <name>, of a scenario of the Scenario commit, and the
 	# assertion holds a line of that scenario. So signoff can run it again (#422).
