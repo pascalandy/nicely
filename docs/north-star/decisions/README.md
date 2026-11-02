@@ -73,3 +73,4 @@ A new decision takes the next number, a file named `D0NN-<short-slug>.md` that s
 | [D065](D065-backlog-items.md) | Plan work by extension and core backlog items |
 | [D066](D066-refuse-unreadable-variables.md) | Refuse a variable or a language that ncly cannot read |
 | [D067](D067-share-verification-rules.md) | Share verification rules and keep extension facts |
+| [D068](D068-verification-map.md) | Map each check to an owner and a level |

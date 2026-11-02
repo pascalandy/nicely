@@ -77,6 +77,13 @@ A later shared service starts in `sdk/`. Core keeps in `internal/` only what an 
 
 [Other folders](architecture/other-folders.md) says what each folder outside the code map holds, such as `cmd/ncly/`, `testdata/`, `template/`, and `tools/`.
 
+## Verification
+
+Three owners verify Nicely: core, the template, and each extension.
+Each correction lands at the highest of four verification levels that can prevent it: code, checks, prose, then QA and UAT.
+[D067](decisions/D067-share-verification-rules.md) chooses the owner of a check.
+[D068](decisions/D068-verification-map.md) maps each owner and level to its mechanism, and names the three measures.
+
 ## Domains and commands
 
 | Command | What it does | Kind |
