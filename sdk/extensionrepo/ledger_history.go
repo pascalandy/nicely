@@ -77,9 +77,10 @@ func passProblems(rounds []round, reviews []review) []string {
 // hold no Fill: line and no open line, and only readiness.md and **Limits.**
 // of spec.md differ from head. A later spec.md before the next round can
 // stand in when only **Limits.** differs, so a limit committed after the
-// review counts. The verdict and the states follow from the findings, which
-// keep each finding of the reviews before. A review without a ledger, of a
-// template before it, needs no state and no history.
+// review counts. The rows of ## Open lines of those limits may leave too.
+// The verdict and the states follow from the findings, which keep each
+// finding of the reviews before. A review without a ledger, of a template
+// before it, needs no state and no history.
 func passedAt(reviews []review, at int, head, next string) bool {
 	r := reviews[at]
 	show := func(commit, file string) (string, bool) {

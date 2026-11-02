@@ -115,13 +115,23 @@ func limitsOnly(commit string) bool {
 }
 
 // sameOutsideLimits reports whether two texts of spec.md differ only under
-// **Limits.**.
+// **Limits.**, and under ## Open lines by the rows of the limits of b. So
+// an open finding that the user accepts moves its row from ## Open lines to
+// **Limits.** with no new round. Other lines of ## Open lines, such as its
+// header or None., hold no open work.
 func sameOutsideLimits(a, b string) bool {
+	accepted := map[string]bool{}
+	for _, l := range SpecLines(b) {
+		if l.Part == "Limits" && l.Kind == SpecRow && l.ID != "" {
+			accepted[l.ID] = true
+		}
+	}
 	outside := func(spec string) []string {
 		lines := strings.Split(spec, "\n")
 		var kept []string
 		for _, l := range SpecLines(spec) {
-			if l.Part != "Limits" {
+			open := l.Kind == SpecRow || l.Kind == SpecBullet
+			if l.Part != "Limits" && (l.Part != "Open lines" || open && !accepted[l.ID]) {
 				kept = append(kept, lines[l.Number-1])
 			}
 		}

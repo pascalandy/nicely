@@ -17,6 +17,32 @@ fct_test_ledger_run() {
 	fct_finish_said 'spec.md: ## Open lines does not name the open finding' absent
 	git -C "${finish}" checkout -q spec.md
 
+	# Round 4 stops at a limit with R4-F1 open and named under ## Open lines.
+	# The user accepts it, so its row moves from ## Open lines to **Limits.**,
+	# and the reviewer gives it the state limit with no new round.
+	local before stop saved="${ledger_earlier}" r4=$'### R4-F1 Long lines are cut\n\n- **Severity**: `warn`'
+	before="$(git -C "${finish}" rev-parse HEAD)" ledger_earlier="${round1} ${round2} ${head}"
+	git -C "${finish}" checkout -q readiness.md
+	fct_edit "${finish}/spec.md" 'None.' $'| ID | Command | Part | Case | Code |\n|---|---|---|---|---|\n| `long-lines` | inspect | Failures | R4-F1: a line over 1 MB is cut | `RUNTIME` |'
+	git -C "${finish}" commit -qm 'round 4 stops with an open finding' spec.md
+	stop="$(git -C "${finish}" rev-parse HEAD)"
+	fct_readiness "${stop}" 'Needs work' "${valid}"$'\n\n'"${r4}"$'\n- **State**: `open`\n- **Spec**: `long-lines`' 'agent B'
+	git -C "${finish}" add readiness.md
+	git -C "${finish}" commit -qm 'readiness review of round 4'
+	fct_finish 1
+	fct_finish_said 'the finding R4-F1 is open'
+	fct_edit "${finish}/spec.md" '| `long-lines` | inspect | Failures | R4-F1: a line over 1 MB is cut | `RUNTIME` |' ''
+	fct_edit "${finish}/spec.md" '**Limits.** None.' $'**Limits.**\n\n| ID | State | Limit | Accepted |\n|---|---|---|---|\n| `long-lines` | `limit` | A line over 1 MB is cut | The user, 2026-10-31, https://example.com/pull/1 |'
+	git -C "${finish}" commit -qm 'the user accepts the limit long-lines' spec.md
+	fct_readiness "${stop}" 'Ready with stated limits' "${valid}"$'\n\n'"${r4}"$'\n- **State**: `limit`\n- **Spec**: `long-lines`' 'agent B'
+	fct_finish 0
+	# Any other change of spec.md still needs a review of its commit.
+	fct_edit "${finish}/spec.md" '| `bad-input` | The file is missing or is no regular file, or `--timeout` is no duration | `USAGE_INVALID` |' '| `bad-input` | The file is missing | `USAGE_INVALID` |'
+	fct_finish 1
+	fct_finish_said 'and these files changed since: spec.md'
+	git -C "${finish}" reset -q --hard "${before}"
+	ledger_earlier="${saved}"
+
 	# Round 1 records the run of its first scenario: the command, a failing
 	# exit status, and the assertion that failed (#420).
 	ledger_run='' fct_readiness "${head}" Ready "${valid}" 'agent B'

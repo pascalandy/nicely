@@ -82,6 +82,7 @@ A finding of the last round can have no state yet.
 
 The history is every committed `readiness.md` of HEAD, so a moved Intake hides no finding and resets no round.
 Finish checks a review that ends a build with the `spec.md` of its own commit. A later `spec.md` before the next round stands in when only **Limits.** differs, so a limit committed after the review counts.
+The rows of `## Open lines` whose IDs became rows of **Limits.** may leave too, so the user can accept an open finding at the limit of rounds.
 A limit or a spec ID that a later build changes does not change that check.
 A review without a ledger, from a template before the ledger, needs a passing verdict only to end a build.
 Its form of #409, a line `- **Limit**:` with a spec ID, reads as the state `limit`.

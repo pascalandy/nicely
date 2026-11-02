@@ -72,6 +72,7 @@ End the review with one verdict. The verdict follows from the findings, and `jus
 
 Only the user accepts a limit. Ask the user, and wait for the answer.
 Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.
+An open finding moves its row from `## Open lines` to that table, with the same ID.
 This change starts no round: the reviewer gives the finding the state `limit` in the review of the same commit.
 Commit the limit in `spec.md`, then commit `readiness.md` alone.
 Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
