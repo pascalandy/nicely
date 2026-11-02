@@ -82,8 +82,14 @@ fct_execute_this() {
 	cp -R "${repo}" "${scratch}/removal"
 	repo="${scratch}/removal"
 	fct_remove_example
+	# Since #406, Change a command sends the author to the rounds of the skill,
+	# and round 1 gives the numbered order of the work.
 	awk '/^## Change a command$/ { active=1; next } active && /^## / { exit } active && /^[0-9]+\. / { print }' \
 		"${scratch}/author-AGENTS.md" >"${scratch}/change-steps.txt"
+	if [[ ! -s "${scratch}/change-steps.txt" ]]; then
+		awk '/^### Round 1$/ { active=1; next } active && /^#/ { exit } active && /^[0-9]+\. / { print }' \
+			"${scratch}/rendered/.agents/skills/nicely-extension/SKILL.md" >"${scratch}/change-steps.txt"
+	fi
 	cp -R "${scratch}/rendered" "${scratch}/command"
 	repo="${scratch}/command"
 	fct_command_order

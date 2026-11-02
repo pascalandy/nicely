@@ -12,6 +12,22 @@ other = "Give a greeting"
 EOF
 }
 
+fct_manifest() {
+	cat >>"${repo}/manifest.toml" <<'EOF'
+
+[[commands]]
+path = "probe greet"
+summary = "probe.greet.summary"
+examples = ["ncly probe greet --json"]
+effects = {}
+
+[commands.result.schema]
+type = "object"
+required = ["message"]
+properties = { message = { type = "string" } }
+EOF
+}
+
 fct_handler() {
 	cat >"${repo}/greet.go" <<'EOF'
 package probe
@@ -48,6 +64,9 @@ fct_command_order() {
 	while IFS= read -r step; do
 		printf 'author-path: follow %s\n' "${step}"
 		case "${step}" in
+		'1. Record the intake facts under `## Intake` in `vision.md`'*)
+			# The probe wraps no program, so its intake holds no fact to record.
+			;;
 		*'`spec.md`'* | "1. Write the command's spec before its implementation.")
 			cat >>"${repo}/spec.md" <<'EOF'
 
@@ -62,19 +81,7 @@ EOF
 			saw_spec=1
 			;;
 		*'`manifest.toml`'* | '2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.')
-			cat >>"${repo}/manifest.toml" <<'EOF'
-
-[[commands]]
-path = "probe greet"
-summary = "probe.greet.summary"
-examples = ["ncly probe greet --json"]
-effects = {}
-
-[commands.result.schema]
-type = "object"
-required = ["message"]
-properties = { message = { type = "string" } }
-EOF
+			fct_manifest
 			saw_manifest=1
 			if [[ "${step}" == '2. Prepare the manifest, catalog, and placeholder handler until `extension.Check` passes.' ]]; then
 				fct_catalog
@@ -90,6 +97,23 @@ EOF
 		*'placeholder handler'*)
 			fct_handler
 			saw_handler=1
+			;;
+		'3. Write the first scenario at the public command boundary'*)
+			# A handler that does no work lets the scenario reach its assertion,
+			# and Change a command declares it in the manifest and the catalog.
+			if ! grep -qF 'Declare the command in the manifest and the catalog, so `extension.Check` passes.' "${scratch}/author-AGENTS.md"; then
+				fct_fail '#324: Change a command no longer declares the command before the scenario'
+				return
+			fi
+			fct_manifest
+			saw_manifest=1
+			fct_catalog
+			saw_catalog=1
+			fct_handler
+			saw_handler=1
+			fct_scenario
+			saw_scenario=1
+			break
 			;;
 		*'`testdata/script/`'* | '3. Write a scenario that fails for the missing behavior.')
 			fct_scenario
