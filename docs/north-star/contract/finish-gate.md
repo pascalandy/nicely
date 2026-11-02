@@ -14,7 +14,7 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`. A byte order mark before them is ignored
 - A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round
 - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
-- A severity after the first three lines, outside the line `- **Severity**:` of a finding, in a form that grades. [The limit of the parser](#the-limit-of-the-parser) lists each such form. The message names the word or the table that caused it
+- A severity after the first three lines, outside the line `- **Severity**:` of a finding, in a form that grades. [The limit of the parser](finish-gate/limit-of-the-parser.md) lists each such form. The message names the word or the table that caused it
 - A finding heading with an ID, such as `### R1-F2`, outside `## Findings`. Also a line outside `## Findings` that names the ID of no finding under it
 - `Ready` with a `block` or `warn` finding that is not `fixed`, or with a limit in `spec.md`
 - `Ready with stated limits` with a `block` finding that is not `fixed`, or with a `warn` that is neither `fixed` nor an accepted `limit`
@@ -25,21 +25,7 @@ Finish reads a severity only in the line `- **Severity**:` of a finding.
 The plain words block, warn, and advise pass in a title, in evidence, and in prose (#419).
 An example is the title `### R1-F1 Large inputs block the terminal`.
 
-### The limit of the parser
-
-The severities are the words block, warn, and advise, in any case.
-After the first three lines, outside the line `- **Severity**:` of a finding, finish fails on these forms, and only on these (#413, #416, #420, #422):
-
-- A severity in code, such as `` `warn` ``, also in fenced code
-- A cell of a table that holds only a severity, with only marks around it, such as `` `warn` ``, `**block**`, or `(advise)`
-- In a row that names a finding ID, a cell whose last word is a severity, such as `| R1-F1 | really a warn |`
-- The word severity, grade, grades, or graded, then only marks or spaces, then a severity, such as "Severity: block" or "Grade: warn"
-- A severity, then a hyphen and the word level, such as "warn-level". The text "block-level" fails too, so rephrase it
-- Under `## Findings`, the word severity alone
-
-The first line `- **Assertion**:` of `## First failing run` is exempt, because it copies a line of the scenario. Finish reads only that line as the assertion.
-Finish reads each other line as prose, and it passes. This is also true when the line grades in other words, such as "the grade is warn" or "a block for me".
-The reviewer gives each grade only in the bullet **Severity** of its finding, and moves each other grade there before the verdict.
+[The limit of the parser](finish-gate/limit-of-the-parser.md) lists the forms of a severity that finish fails on.
 
 ## The ledger
 

@@ -48,7 +48,7 @@ After the first three lines, it fails on each form that grades in another place:
 - The word severity under `## Findings`
 
 The plain words pass in a title, in evidence, and in prose, such as `### R1-F1 Large inputs block the terminal`.
-`just finish` does not find a grade in other words, such as "a block for me". "The limit of the parser" in `finish-gate.md` gives the exact forms.
+`just finish` does not find a grade in other words, such as "a block for me". "The limit of the parser" of the finish gate of Nicely, `docs/north-star/contract/finish-gate/limit-of-the-parser.md`, gives the exact forms.
 Before the verdict, read the whole review, also the notes. Move each grade in another form to the bullet **Severity** of its finding.
 
 A loss that a user can see is `warn` or `block`, never `advise`.
