@@ -12,7 +12,7 @@ This part says what `just finish` checks in an extension repository, as [Extensi
 - No table under `## Case matrix` of `spec.md` with the columns Family, Source, Accepted, and Refused (#423). Also a family that names no spec ID in Accepted, or a Refused cell with no spec ID and not `None`
 - A spec ID of `## Case matrix` that is no line of Failures or Acceptance and no accepted limit, so no test proves it. Also a line of Failures or Acceptance that no family names
 - A `readiness.md` whose first three lines hold no `Commit: <sha>`, no `Reviewer: <who>`, or no verdict `Ready` or `Ready with stated limits`. A byte order mark before them is ignored
-- A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round
+- A reviewed commit that differs from the working tree outside `readiness.md`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round. A row of `## Open lines` whose ID became a row of **Limits.** may leave too
 - A finding of `readiness.md` without its own `###` heading under `## Findings`, or without one severity: `block`, `warn`, or `advise`
 - A severity after the first three lines, outside the line `- **Severity**:` of a finding, in a form that grades. [The limit of the parser](finish-gate/limit-of-the-parser.md) lists each such form. The message names the word or the table that caused it
 - A finding heading with an ID, such as `### R1-F2`, outside `## Findings`. Also a line outside `## Findings` that names the ID of no finding under it
