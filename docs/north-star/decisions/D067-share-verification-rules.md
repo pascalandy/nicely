@@ -4,6 +4,7 @@ Decided for [COR-103-T13](../../backlog/COR-103-verification-loop.md#cor-103-t13
 Core's imported SDK and test kit own shared checks.
 Each extension supplies its inputs, fixtures, expected values, and independent checks.
 The template copies only tool calls and forms for the author.
+[D068](D068-verification-map.md) maps each owner and verification level to its mechanism, and names the measures.
 
 ## Choose the owner
 

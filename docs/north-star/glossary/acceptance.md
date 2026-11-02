@@ -30,3 +30,7 @@
 - Human escalation
   - Def.: a case where the agent of a UAT stops and calls a human, as [protocol.md](../../qa/protocol.md#human-escalation) lists them
   - Project note: each UAT issue names its cases in a section of that name
+- Verification level
+  - Def.: one of the four steps of the verification pyramid: code, checks, prose, then QA and UAT. Level 1, code, is the top
+  - Project note: [D068](../decisions/D068-verification-map.md) maps each owner and level to its mechanism
+  - Distinct from: a layer of the [code map](../architecture.md#code-map), which says what code may import

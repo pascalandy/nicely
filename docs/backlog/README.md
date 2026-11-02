@@ -7,6 +7,7 @@ This folder holds one file per extension or core item and the ordered delivery q
 ## Queue
 
 1. COR-102
+2. COR-104
 
 ## Plan rules
 
@@ -58,7 +59,7 @@ Create no new M file.
 | Shipped | Has no todo card or open questions |
 
 An extension maintained in its own repository, such as XT-101, keeps its cards in that repository's Epic.
-The exception is COR-103, which holds the verification cards of video-convert.
+The exceptions are COR-103 and COR-104, which hold the verification cards of video-convert.
 
 ## Make an item ready
 
