@@ -1,7 +1,7 @@
 ---
 id: XT-102
 extension: "transcript"
-state: "Ready. Next card: the dry-run lock fix. Shipped by M13 and M16. Later: summary, Go port, Omarchy, other inputs, live Deepgram check, recovery of a lost final message"
+state: "Shipped by M13, M16, and XT-102-T1. Later: summary, Go port, Omarchy, other inputs, live Deepgram check, recovery of a lost final message"
 ---
 
 # XT-102 transcript
@@ -14,7 +14,7 @@ A transcript dry run under a busy run ID answers like execution and starts no wo
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| XT-102-T1 | Probe the run lock during dry run | agent | - | todo |
+| XT-102-T1 | Probe the run lock during dry run | agent | - | done |
 
 ### XT-102-T1 Probe the run lock during dry run
 

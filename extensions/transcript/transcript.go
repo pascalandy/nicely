@@ -133,8 +133,10 @@ type check struct {
 	Message string `json:"message"`
 }
 
-// dryRun answers what execution would do. A run ID that a record holds
-// decides as execution decides, from a read without the lock. A completed
+// dryRun answers what execution would do. A run ID that another process
+// holds answers TEMPORARY, from a probe of the lock that never creates its
+// file and never keeps it. A run ID that a record holds then decides as
+// execution decides, from a read without the lock. A completed
 // run plans reuse, and a run that the call may not continue refuses alike.
 // Otherwise it resolves the job and asks the engine for its plan, as
 // execution does. It reads no key and creates no record, no result folder,
@@ -145,7 +147,14 @@ func dryRun(ctx context.Context, call extension.Call, j job) contract.Outcome {
 	held := ""
 	if id, given := call.Flags["run-id"]; given {
 		runs := store()
-		saved, err := runs.Read(id)
+		active, err := runs.Active(id)
+		if err == nil && active {
+			return refusal(inspect(p, contract.Temporary, id, "transcript.run.busy", map[string]any{"ID": id}), id)
+		}
+		var saved *record.Record
+		if err == nil {
+			saved, err = runs.Read(id)
+		}
 		var bad *record.UnreadableError
 		switch {
 		case errors.As(err, &bad):

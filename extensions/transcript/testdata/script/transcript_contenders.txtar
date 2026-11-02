@@ -1,8 +1,9 @@
 # Two calls at once never share a run or a result folder, as Records and replay in spec/ defines. The
 # real uv and Python run the engine with the test launcher, whose Deepgram waits under
 # NCLY_TEST_PAUSE=upload once it read the whole upload, until $WORK/release exists. It writes the
-# process ID of Python first. A second call under the busy run ID exits 75 and starts nothing. A
-# second run of the same title takes the next folder name, and each run completes in its own.
+# process ID of Python first. A second call under the busy run ID, and its dry run, exit 75 and
+# start nothing. A second run of the same title takes the next folder name, and each run completes
+# in its own.
 # exitcode writes the exit code of a call in the background.
 env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
 env DEEPGRAM_API_KEY=
@@ -24,6 +25,12 @@ env NCLY_TEST_PAUSE=upload NCLY_TEST_TITLE=busy
 exec exitcode first.txt ncly transcript run youtube --url $URL --output $OUT --run-id b1 --json &
 waitfile engine.pid
 exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id b1 --json
+! stdout .
+answer stderr TEMPORARY
+stderr '"run_id":"b1"'
+stderr '"hint":"ncly run view b1"'
+# Its dry run probes the lock before it reads the record, and finds the run busy alike
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id b1 --dry-run --json
 ! stdout .
 answer stderr TEMPORARY
 stderr '"run_id":"b1"'
@@ -62,6 +69,15 @@ exec ncly run view t1 --json
 stdout '"output_dir":"'${OUT@R}'/same",'
 exec ncly run view t2 --json
 stdout '"output_dir":"'${OUT@R}'/same-2",'
+grep -count=3 '(?m)^upload ' uploads.log
+
+# A dry run under a free run ID plans a new run. Its probe creates no lock file, and the dry run
+# writes no record
+exec ncly transcript run youtube --url $URL --output $OUT --run-id n1 --dry-run --json
+stdout '"dry_run":true,'
+stdout '"action":"run"'
+! exists $STATE/runs/n1.lock
+! exists $STATE/runs/n1.json
 grep -count=3 '(?m)^upload ' uploads.log
 
 -- seed.jsonl --
