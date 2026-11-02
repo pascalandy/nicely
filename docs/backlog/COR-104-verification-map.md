@@ -14,6 +14,7 @@ state: "Ready. Core and template first, then video-convert"
 
 [D068][d068] holds the map, the way a correction moves, and the measures.
 Each card names its owner (A, B, or C) and level, and fails first on a past mistake.
+The last merge of T1 to T9 releases a minor version with release-nicely, as this plan asks.
 Trial findings are evidence of gaps only.
 
 ## Cards
@@ -39,7 +40,6 @@ Trial findings are evidence of gaps only.
 A, level 2, measures 1 and 2.
 Core gets an index of the 154 rules of N2 in `docs/north-star/rules/`.
 `just test` checks both indexes: each enforcer links a file, or says `Prose only` or `Prose on purpose`.
-Each Go file of `sdk/extensiontest` and `sdk/extensionrepo`, except tests, enforces an indexed rule or is a listed helper.
 `just status` prints the `Prose only` count of each index, and `extensionrepo check` that of an extension.
 The template index marks 11 judgment rules `Prose on purpose`, and deletes one rule that signoff replay enforces.
 The QA ledger gets a Corrections table, with Level and Owner columns for each correction.
@@ -77,6 +77,7 @@ Intake facts and review findings become typed records that the SDK reads.
 A fact is sourced, an inference, or unknown, and an unknown fact opens a line.
 A finding has one ID, severity, state, spec ID, and family. `fixed` needs a passing and a refused test of its family.
 The SDK writes `## Intake` and `readiness.md` from them, and finish reads only the records.
+An extension with Markdown records starts a new build when it updates, and keeps them as history.
 It fails first on the parent of 59d33f38, where a finding with no state passed finish, and on the free-form grades of #422.
 
 ### COR-104-T5 Acceptance evaluator in the kit
@@ -132,7 +133,7 @@ Core's first model, its finish gate, fails first on the behavior before 59d33f38
 
 B, level 2, measure 3.
 As #427 asks, the contract and the template skill say how an existing extension adopts `just finish`.
-Its first build starts at the update commit, its intake reads its current `spec.md`, and it keeps past review SHAs.
+Its first build starts at the update commit, and its intake reads its current `spec.md`.
 The update test renders an extension at v0.23.4, updates it, runs that first build, and requires `just signoff` to pass.
 The skill also teaches the step of D068 for a correction of A or B, as prose on purpose.
 It fails first on #427, and the step on #407, where an extension could not fix answers of `sdk/wrap`.
@@ -143,7 +144,7 @@ It fails first on #427, and the step on #407, where an extension could not fix a
 - **Proves:** readiness.md and the release receipt, in ncly-video-convert
 
 C, level 2, measures 2 and 3.
-In ncly-video-convert, after the release of its dependencies, update and run the first build of #427.
+In ncly-video-convert, update to that release and run the first build of #427.
 Its publication proof runs through `sdk/verification`, and keeps its model, mapping, probes, and expected results.
 It declares its publications and acceptance cases.
 Each correction gets a ledger row, and a correction of A or B gets the step of D068.
