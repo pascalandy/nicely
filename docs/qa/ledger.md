@@ -37,6 +37,7 @@ A correction that lands below the highest level that can prevent its failure say
 
 | Correction | Failure | Level | Owner |
 |---|---|---|---|
+| COR-104-T4 | Finish parsed review prose: a finding with no state passed it at the parent of 59d33f38, and free-form grades of #422 hid from the parser | 1 | A |
 | COR-104-T3 | At the parent of 09809608, the lifecycle check of the kit passed `os.Environ()`, so an invalid `NCLY_CONFIG` reached `ncly`. At the parent of e35bd0bb, check ran `go test` outside the notice file, and a passing package hid its notices | 1 | A |
 | COR-104-T2 | At b695c8ba, `extensions/agent` gave a `runner.Program` `Stdout: io.Discard`, and only a review found the held pipe of 3e6a4eff. Level 1, an explicit output choice in `sdk/runner`, waits under Later of COR-104 | 2 | A |
 | COR-104-T1 | At 7f3ae60e, `ledger_history.go` enforced rules that no row of the template rule index named until b3dc8b48 | 2 | A |

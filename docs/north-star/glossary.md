@@ -62,6 +62,7 @@ See [Contract](glossary/contract.md).
   - Def.: a simulation that uses the same preparation as execution and changes nothing outside Nicely's cache
 - Run record
   - Def.: the durable evidence of one operation, identified by `run_id`, including its step outcomes and artifact references
+  - Distinct from a build record: `intake.toml` or `review.toml` of an extension repository, as [Build records](contract/build-records.md) defines
 - Run ID
   - Def.: the identifier of one run, chosen by the caller with `--run-id`, or generated
   - Project note: [Run IDs](contract/run-ids.md) defines what a call with an existing run ID does

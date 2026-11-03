@@ -26,12 +26,15 @@ Write each fact that the documentation does not give as an open line of `spec.md
 
 ## Evidence of the intake
 
-The intake records what you read, not only where the facts are (#420):
+The intake records what you read, not only where the facts are (#420).
+Write each fact as a table `[[facts]]` of `intake.toml`, with one `kind`. `build-records.md` in the contract gives each key:
 
-- For each settled fact: a link to the part of the source that you read, at a fixed revision. Such a part is a function of the script at a commit, or a section of the manual page of a version (#423)
-- Each fact that you did not read in a source, marked `inference`
-- The result of each experiment, apart from the documented facts, with its command and what it gave
-- Each declaration of the input that changes how a reader shows the content, not only the file types. `generic-cases.md` in the contract says why
-- Each fact that no source gives, as an open line of `spec.md` with its ID, before the spec commit
+- `sourced`: a fact that you read in a source. Give the `source`, its `revision`, and the part that you `read`. Such a part is a function of the script at a commit, or a section of the manual page of a version (#423)
+- `inference`: a fact that you did not read in a source. It names no source
+- `unknown`: a fact that no source gives. Its `id` is the spec ID of its open line in `spec.md`, before the spec commit
 
-A link alone is not evidence of a read. A reviewer of round 1 refuses a fact that only cites a source. Read the source first. Then run experiments only to confirm what you read, with a command that neither writes nor bills.
+Give the result of each experiment apart, as a table `[[experiments]]` with its `command` and its `result`.
+Give each declaration of the input that changes how a reader shows the content, not only the file types. `generic-cases.md` in the contract says why.
+Then run `just records`, which writes `## Intake` of `vision.md`. Commit both files.
+
+A link alone is not evidence of a read. A reviewer of round 1 refuses a fact whose part read does not support it. Read the source first. Then run experiments only to confirm what you read, with a command that neither writes nor bills.

@@ -60,8 +60,9 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 
 - `just check`: every check. It runs `go mod tidy -diff`, `gofmt`, `go vet`, the analyzers of the pinned SDK, and `go test`, whose test kit installs the extension into scratch folders
 - `just finish`: the exit of the loop. `finish-gate.md` in the pinned contract lists what it checks
+- `just records`: writes `## Intake` of `vision.md` from `intake.toml`, and `readiness.md` from `review.toml`, as `build-records.md` in the pinned contract says
 - `just scenario <name>`: runs the scenario `testdata/script/<name>.txtar`, such as the first scenario of round 1 at its commit
-- `just signoff`: runs `just finish` and `just check` on the committed SHA in a detached scratch worktree. It also runs the first failing run of `readiness.md` again, at its commit. Then it writes a receipt outside the repository, and signs that exact SHA
+- `just signoff`: runs `just finish` and `just check` on the committed SHA in a detached scratch worktree. It also runs the first failing run of `review.toml` again, at its commit. Then it writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
 - `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would. It runs in an owned run of the SDK, without the Nicely settings of the caller, such as `NCLY_CONFIG`. It works on a copy of the fixture, or on an input that it makes

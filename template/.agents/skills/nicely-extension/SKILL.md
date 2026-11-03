@@ -59,7 +59,7 @@ Do not search the home folder of the user for sample files. Never copy a file of
 ## Rounds
 
 A build of a command starts at the intake and ends at "Done when" in `AGENTS.md`.
-It has at most 5 rounds, and the ledger in `readiness.md` counts them.
+It has at most 5 rounds, and the ledger in `review.toml` counts them.
 A round is new commits on the open pull request, or a new pull request.
 Each round ends with the independent review, the readiness review, and `just finish`.
 
@@ -67,17 +67,17 @@ Each round ends with the independent review, the readiness review, and `just fin
 
 Do these steps in this order. Commit each of the first four steps on its own:
 
-1. Record the intake facts under `## Intake` in `vision.md`, as "Evidence of the intake" in `intake.md` says. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives stays an open line of `spec.md`.
+1. Record the intake facts in `intake.toml`, as "Evidence of the intake" in `intake.md` says, then run `just records`. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives is `unknown`, with an open line of `spec.md`.
 2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`. Write the table under `## Case matrix` too, as "Case matrix" says.
 3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails. Run it at that commit with `just scenario <name>`. Keep that command, its exit status, and the line of the scenario that failed. A compile error is no such failure. `just signoff` runs it again. When the scenario cannot run without the command, commit a handler that does no work in this step. Then the run reaches the assertion.
 4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
 5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
-6. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`.
+6. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`, and every `# Fill:` line of `intake.toml`.
 7. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`, with a test file for each generic case of the Output group that applies. For a paid command, limit it to the dry run.
 8. End the round.
 
-Give the commits of steps 1 to 4 to the reviewer, who records them under `## Order of round 1` in the ledger.
-Give the reviewer the record of the run of step 3 too. The reviewer checks it, and records it under `## First failing run`.
+Give the commits of steps 1 to 4 to the reviewer, who records them in `[order]` of the ledger.
+Give the reviewer the record of the run of step 3 too. The reviewer checks it, and records it in `[first_run]`.
 The first round is incomplete by design. The open lines start the next round.
 
 ### Case matrix
@@ -106,8 +106,8 @@ It reads the references only. The first reviewer checks that the matrix is compl
 2. For a command that needs a key, relay the grant hint to the human and wait.
 3. Run `just acceptance` on the real input until its independent checks pass.
 4. Ask an agent that did not write the round to review the changes of the round. Give it the commits of the round.
-5. Ask an agent that did not write the code to run the readiness review. It records the review and the ledger in `readiness.md`. One independent pass can do both reviews.
-6. Write each finding that a test can prove as an open line, which names the finding by its ID. Each finding that the ledger records as `open` keeps its line under `## Open lines`, so `spec.md` and the ledger agree. A finding of this round with no state is `open` too. The author can decline an `advise` instead, with a reason.
+5. Ask an agent that did not write the code to run the readiness review. It records the review and the ledger in `review.toml`, and runs `just records`. One independent pass can do both reviews.
+6. Write each finding that a test can prove as an open line, with the spec ID that the finding names. Each finding that the ledger records as `open` keeps its line under `## Open lines`, so `spec.md` and the ledger agree. The author can decline an `advise` instead, with a reason.
 7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
 8. When `just finish` fails after round 5, stop, as "Round limit" says.
 9. Otherwise, start the next round from the open lines and the open findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
@@ -147,4 +147,4 @@ For a command that replaces a user file, read [replace-a-file.md](replace-a-file
 ## Readiness review
 
 An agent that did not write the code runs the readiness review at the end of each round, and when the user asks for it.
-Read [readiness-review.md](readiness-review.md) for the review and the form of `readiness.md`.
+Read [readiness-review.md](readiness-review.md) for the review and the record `review.toml`.

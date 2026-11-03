@@ -1,55 +1,42 @@
 # Readiness review
 
-This file says how an agent that did not write the code reviews the extension, and how it writes `readiness.md`.
+This file says how an agent that did not write the code reviews the extension, and how it writes `review.toml`.
 
 An agent that did not write the code runs this review at the end of each round, and when the user asks for it.
 The author of the round never writes it. The checks of the contract apply in all cases, and `just check` runs them.
 
 Review the extension against "What a great extension does" and against the facts of the intake.
-Write the review in `readiness.md`, which starts with these three lines:
+Write the review in `review.toml`, a typed record with these first keys:
 
-```
-Commit: <the full SHA of the reviewed commit>
-Reviewer: <the agent that wrote this review, which wrote none of the code>
-Verdict: <Ready, Ready with stated limits, or Needs work>
+```toml
+commit = "<the full SHA of the reviewed commit>"
+reviewer = "<the agent that wrote this review, which wrote none of the code>"
+verdict = "<Ready, Ready with stated limits, or Needs work>"
 ```
 
-Then commit `readiness.md` alone. `just finish` accepts the verdict while only `readiness.md` and the part **Limits.** of `spec.md` differ from that commit.
-`finish-gate.md` in the contract lists each check of `just finish`.
+Then run `just records`, which writes `readiness.md` from the record. Never edit `readiness.md`.
+Commit `review.toml` and `readiness.md` alone. `just finish` accepts the verdict while only they and the part **Limits.** of `spec.md` differ from that commit.
+`build-records.md` in the contract gives each key, and `finish-gate.md` each check of `just finish`.
 
 ## Findings
 
-Put the findings under `## Findings`, or write `None.` when no round found any.
-Give each finding its own `###` heading, which starts with its ID, such as `### R2-F3 Long lines are cut`.
-`R2` is the round that first reported it, and `F3` its number in that round.
-Keep each finding of an earlier round, with the same ID and with a state for this round.
-Write each part of a finding as a bullet that starts with its bold name, such as ``- **Severity**: `warn` ``:
+Give each finding its own table `[[findings]]`, or none when no round found any.
+Its `id` is such as `R2-F3`: `R2` is the round that first reported it, and `F3` its number in that round.
+Keep each finding of an earlier round, with the same ID, and update its state for this round.
+Give each finding a value for each of these keys:
 
-- **Evidence**: the file and the line, the scenario, or the output that shows the problem
-- **Command**: the command that the finding affects
-- **Consequence**: what goes wrong for a user or an agent
-- **Severity**: `block` when the command breaks the contract, `warn` when the adapter works around a loss, or `advise` for a better practice
-- **State**: `open`, `fixed`, `limit`, or `declined`. A finding of this round can have no state yet, and then it is `open`
-- **Spec**: the spec ID of its line: the open line, the line that the test of the fix proves, or the accepted limit
-- **Commit**: for a `fixed` finding, the commit that fixed it
-- **Reason**: for a `declined` finding, the reason of the author
-- **Owner**: who can fix it, the author of the extension or the author of the script
-- **Fix**: the smallest change that removes the problem
+- `title`: what goes wrong, in a few words
+- `severity`: `block` when the command breaks the contract, `warn` when the adapter works around a loss, or `advise` for a better practice
+- `state`: `open`, `fixed`, `limit`, or `declined`. A finding of this round is `open`
+- `spec`: the spec ID of its line: the open line, the line that the test of the fix proves, or the accepted limit
+- `family`: the family of `## Case matrix` of that line
+- `commit`: for a `fixed` finding, the commit that fixed it
+- `reason`: for a `declined` finding, the reason of the author
 
-Name a severity only in the bullet **Severity** of its finding. `just finish` reads no other line as a grade.
-After the first three lines, it fails on each form that grades in another place:
+These keys hold prose: `evidence`, the file, line, scenario, or output that shows the problem. `command`, the command that it affects. `consequence`, what goes wrong for a user or an agent. `owner`, who can fix it. `fix`, the smallest change that removes the problem.
 
-- A severity in code, such as `` `warn` ``
-- A cell of a table that holds only a severity
-- In a row with a finding ID, a cell that ends with a severity, such as `| R1-F1 | really a warn |`
-- The word severity or grade before a severity, such as "Severity: block" or "Grade: warn"
-- A severity before `-level`, such as "warn-level"
-- A finding heading, such as `### R1-F2`, outside `## Findings`, or an ID outside it of no finding under it
-- The word severity under `## Findings`
-
-The plain words pass in a title, in evidence, and in prose, such as `### R1-F1 Large inputs block the terminal`.
-`just finish` does not find a grade in other words, such as "a block for me". "The limit of the parser" of the finish gate of Nicely, `docs/north-star/contract/finish-gate/limit-of-the-parser.md`, gives the exact forms.
-Before the verdict, read the whole review, also the notes. Move each grade in another form to the bullet **Severity** of its finding.
+`just finish` reads a grade only in `severity`, and a state only in `state`. It fails on a key that the record does not define, such as `grade`.
+A word in prose grades nothing, so "a block for me" in `evidence` is no grade. Give each grade in `severity`, before the verdict.
 
 A loss that a user can see is `warn` or `block`, never `advise`.
 Examples are data that the output keeps or changes, and a promise of `spec.md` that does not hold.
@@ -63,11 +50,12 @@ Grade it so in the round that first reports it. These examples set the grade:
 
 Never lower the severity of a finding in a later round.
 Give a finding the state `fixed` only when its repair adds a pair of tests for its whole family, as `## Case matrix` lists it (#423).
+`just finish` needs a line that passes and a line that refuses in that family.
 
 A `warn` or `block` finding closes only as `fixed` or `limit`. Only an `advise` can be `declined`.
 A change of `spec.md` that narrows a promise to close a `warn` or `block` finding is a `limit`. Only the user can accept it.
 `None.` under `## Open lines` does not close a finding that the ledger records as `open`.
-Each finding with the state `open` keeps a line under `## Open lines` of `spec.md` that names its ID. `just finish` fails without it. A finding of this round with no state is `open` too.
+The `spec` of each `open` finding is a row under `## Open lines` of `spec.md`. `just finish` fails without it.
 
 End the review with one verdict. The verdict follows from the findings, and `just finish` checks it:
 
@@ -79,7 +67,7 @@ Only the user accepts a limit. Ask the user, and wait for the answer.
 Then write the limit as a row under **Limits.** of its command, with the columns ID, State, Limit, and Accepted.
 An open finding moves its row from `## Open lines` to that table, with the same ID.
 This change starts no round: the reviewer gives the finding the state `limit` in the review of the same commit.
-Commit the limit in `spec.md`, then commit `readiness.md` alone.
+Commit the limit in `spec.md`, then commit `review.toml` and `readiness.md` alone.
 Its State is `limit`. Accepted records who accepted it, when, and where, such as a review comment.
 A loss that you report but that the user did not accept is a `warn` finding, not a limit.
 
@@ -95,51 +83,53 @@ First, before you review any repair, check `## Case matrix` of `spec.md` (#423):
 
 Then review the rest of round 1:
 
-- The intake commit comes before the spec commit. The intake gives, for each fact, its source, its version, and the part that the author read, and the result of each experiment apart. A link alone is not evidence of a read
-- Refuse a fact that only cites a source, such as a link or a file name, with no part read. Such a fact is marked `inference`, or it is a finding
-- Each unknown fact is an open line of `spec.md` with an ID, in the spec commit
-- The record of the first failing run gives the command, its exit status, and the assertion that failed at the scenario commit. The command is `just scenario <name>`. Run it again at that commit when in doubt, and `just signoff` runs it again too. Refuse a failure that is only a compile error, because it does not prove the missing behavior
+- The intake commit comes before the spec commit. `just finish` checks the keys of `intake.toml`: each `sourced` fact gives its source, its revision, and the part read
+- Refuse a fact whose part read does not support it, such as a link or a file name. Such a fact is an `inference`, or it is a finding
+- Each `unknown` fact is an open line of `spec.md` with its ID, in the spec commit
+- The first failing run gives the scenario, its exit status, and the assertion that failed at the scenario commit. Run `just scenario <name>` again at that commit when in doubt, and `just signoff` runs it again too. Refuse a failure that is only a compile error, because it does not prove the missing behavior
 - Each case of the Output group of `generic-cases.md` that applies has a test file that the tests make, and an independent check. A case name alone is not a test
 - Test families of cases, such as all the declarations that change the meaning, not one counterexample
 
 ## Ledger
 
-After the findings, keep the ledger of the build. Add one row for this round, and keep the rows of earlier rounds:
+After the findings, keep the ledger of the build in `review.toml`. Add one table `[[rounds]]` for this round, and keep the tables of earlier rounds:
 
+```toml
+[[rounds]]
+head = "<full SHA of the head of round 1>"
+change_review = "<reviewer>"
+change_commits = "<first>..<last>"
+readiness_review = "<reviewer>"
+finish = "fail"
+
+[[rounds]]
+head = "<full SHA of the head of this round>"
+change_review = "<reviewer>"
+change_commits = "<first>..<last>"
+readiness_review = "<reviewer>"
+finish = "pending"
+
+[order]
+intake = "<sha>"
+spec = "<sha>"
+scenario = "<sha>"
+handler = "<sha>"
+
+[first_run]
+commit = "<the Scenario commit of [order]>"
+scenario = "<the name of the first scenario, which ran at its commit>"
+exit = 1
+assertion = "<the line of the scenario that failed, as the output of the run names it>"
 ```
-## Rounds
 
-| Round | Head | Change review | Change commits | Readiness review | Finish |
-|---|---|---|---|---|---|
-| 1 | <full SHA of the head of round 1> | <reviewer> | <first>..<last> | <reviewer> | `fail` |
-| 2 | <full SHA of the head of this round> | <reviewer> | <first>..<last> | <reviewer> | `pending` |
-
-## Order of round 1
-
-| Step | Commit |
-|---|---|
-| Intake | <sha> |
-| Spec | <sha> |
-| Scenario | <sha> |
-| Handler | <sha> |
-
-## First failing run
-
-- **Commit**: <the Scenario commit of ## Order of round 1>
-- **Command**: just scenario <the name of the first scenario, which ran at its commit>
-- **Exit**: <its exit status, which is not 0>
-- **Assertion**: <the line of the scenario that failed, as the output of the run names it>
-```
-
-Change commits names the commits that the change review covered. The readiness review covers Head.
-When one pass did both reviews, name the same reviewer in both cells.
-Finish holds the result of `just finish` for each earlier round, and `pending` for this round.
-Keep the row of each earlier round as it was. Only its Finish changes, from `pending` to its result.
-Commit `readiness.md` at the end of each round, so each round has a committed review of its head.
+`change_commits` names the commits that the change review covered. The readiness review covers `head`.
+When one pass did both reviews, name the same reviewer in both keys.
+`finish` holds the result of `just finish` for each earlier round, and `pending` for this round.
+Keep each earlier round as it was. Only its `finish` changes, from `pending` to its result.
+Commit `review.toml` and `readiness.md` at the end of each round, so each round has a committed review of its head.
 A build has at most 5 rounds.
-A round whose Finish is `pass` ends a build. A new build, such as of another command, starts at a new intake after it.
+A round whose `finish` is `pass` ends a build. A new build, such as of another command, starts at a new intake after it.
 The round numbers go on, and the ledger keeps each finding of each build.
-After `just update` from a template without a ledger, keep each finding of the older reviews, with an ID and a state.
-After `just update` from a template without `## First failing run`, run the scenario of the current build again at its commit. Then record that run.
+After `just update` from a template with a Markdown `readiness.md`, start a new build at a new intake commit. Git keeps the Markdown reviews as history.
 
 Never reject a script because it is small, young, or private. Judge what the command does, not where the script comes from.

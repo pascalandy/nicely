@@ -64,7 +64,7 @@ fct_command_order() {
 	while IFS= read -r step; do
 		printf 'author-path: follow %s\n' "${step}"
 		case "${step}" in
-		'1. Record the intake facts under `## Intake` in `vision.md`'*)
+		'1. Record the intake facts in `intake.toml`'*)
 			# The probe wraps no program, so its intake holds no fact to record.
 			;;
 		*'`spec.md`'* | "1. Write the command's spec before its implementation.")

@@ -24,7 +24,7 @@ Trial findings are evidence of gaps only.
 | COR-104-T1 | Rule indexes and ledger columns | agent | - | done |
 | COR-104-T2 | SDK analyzers in every check | agent | - | done |
 | COR-104-T3 | Owned verification runs | agent | COR-104-T2 | done |
-| COR-104-T4 | Typed build records | agent | - | todo |
+| COR-104-T4 | Typed build records | agent | - | done |
 | COR-104-T5 | Acceptance evaluator in the kit | agent | - | todo |
 | COR-104-T6 | Publication declaration | agent | - | todo |
 | COR-104-T7 | Publication helpers | agent | COR-104-T6 | todo |
