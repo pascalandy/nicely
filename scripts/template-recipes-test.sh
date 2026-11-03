@@ -38,6 +38,30 @@ fct_test_analyzers() {
 	rm "${probe}"
 }
 
+# fct_test_gates proves the gates that just check of the rendered repository
+# $1 adds: the analyzers, and ## Publication of its command $4.
+fct_test_gates() {
+	fct_test_analyzers "${1}" "${2}" "${3}"
+	fct_test_publication "${1}" "${2}" "${4}"
+}
+
+# fct_test_publication proves that just check reads ## Publication of
+# spec.md through the kit. The rendered repository $1, whose command is $3,
+# declares that this command writes a user file, and gives it no row. Its
+# effects in manifest.toml say so, as the builds of #425 did.
+fct_test_publication() {
+	local repo="${1}" scratch="${2}" command="${3}"
+	cp "${repo}/manifest.toml" "${scratch}/publication-manifest.toml"
+	fct_edit "${repo}/manifest.toml" "effects = {}" "effects = { user_writes = true }"
+	if (cd "${repo}" && just check) >"${scratch}/publication.out" 2>&1; then
+		fct_fail 'just check accepts a command that writes a user file with no row in ## Publication'
+	fi
+	grep -qF "spec.md: \`ncly ${command}\` may write a user file, because its effects set user_writes or are absent, and ## Publication has no row for it." "${scratch}/publication.out" ||
+		fct_fail "just check fails without the problem of ## Publication: $(cat "${scratch}/publication.out")"
+	cp "${scratch}/publication-manifest.toml" "${repo}/manifest.toml"
+	fct_has "${repo}/spec.md" "## Publication"
+}
+
 # fct_test_example_notices requires notices from plain just check in the rendered repository $1, whose slug is $3.
 fct_test_example_notices() {
 	local repo="${1}" scratch="${2}" status=0 line examples count

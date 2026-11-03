@@ -71,7 +71,7 @@ fct_repository() {
 	git -C "${repo}" init -q
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
-	fct_test_analyzers "${repo}" "${scratch}" "${domain}"
+	fct_test_gates "${repo}" "${scratch}" "${domain}" "${command}"
 	fct_test_finish "${repo}" "${scratch}"
 	fct_test_ledger "${repo}" "${scratch}"
 	fct_test_example_notices "${repo}" "${scratch}" "${slug}"
