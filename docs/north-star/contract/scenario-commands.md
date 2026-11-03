@@ -16,6 +16,7 @@ A scenario uses the commands of [testscript](https://pkg.go.dev/github.com/rogpe
 | `protect <path>...` | Selects files, folders, or absent paths that the next `signal` or `appears` call and subsequent `refuses` calls must keep unchanged |
 | `refuses <code> <command> <arg>...` | Requires the same refusal code and exit in a dry run and a run |
 | `predicts <command> <arg>...` | Requires a successful dry run that changes no file, then a run that publishes what it predicted |
+| `reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> <arg>...` | Reads the output with an independent reader, compares the reference, and requires the bad variant to fail, as [Acceptance cases](acceptance-cases.md) says |
 | `grant <service>` | Grants the key of a declared service to the extension at its scratch path |
 | `fake <name>` | Puts the fake child in `$WORK/bin`, first in `PATH`, under the name `name` |
 

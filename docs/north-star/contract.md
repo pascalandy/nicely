@@ -49,6 +49,7 @@ Each part is one file, in reading order.
       - [Spec IDs](contract/spec-ids.md)
       - [Generic cases](contract/generic-cases.md)
       - [Publication declaration](contract/publication.md)
+      - [Acceptance cases](contract/acceptance-cases.md)
   - [Extension repository](contract/extension-repository.md)
     - [Finish gate](contract/finish-gate.md)
     - [Build records](contract/build-records.md)

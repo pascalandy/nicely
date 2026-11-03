@@ -97,6 +97,10 @@
   - Def.: the step of a command that creates or replaces a user file at its destination. An operation such as a hard link or a rename does it
   - Project note: `## Publication` of `spec.md` declares each mode of it, as [Publication declaration](../contract/publication.md) defines
   - Distinct from: a release, which publishes a version of an extension
+- Acceptance case
+  - Def.: a scenario that makes an input, runs the command, and calls `reads`. The kit reads the output with an independent reader, compares it with a reference, and searches each private text
+  - Project note: [Acceptance cases](../contract/acceptance-cases.md) defines it. Its bad variant must fail
+  - Distinct from: `just acceptance`, which runs `acceptance.sh` on the real input
 - Obligation
   - Def.: a check that a row of `## Publication` asks for, such as `predicts`. A passing check of a scenario proves it, or a reason covers it
   - Distinct from: a spec ID, which a test claims with a comment, and which no run proves

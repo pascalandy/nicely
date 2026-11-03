@@ -10,8 +10,8 @@ Each refusal in it has a pair of tests: one input passes, and one input is refus
 The line states the outcome of the case, such as a refusal with its code.
 The safe outcome below is the default. Another outcome is a limit, and only the user can accept it.
 A case that cannot occur for the command needs no line.
-A case name is not a test. For each case of the Output group that applies to the command, `just acceptance` checks a test file of the extension's own domain.
-The test makes that file, and an independent reader proves the safe outcome on it, as [Test kit](test-kit.md#acceptance-test-files) says.
+A case name is not a test. For each case of the Output group that applies to the command, a scenario checks a test file of the extension's own domain.
+The scenario makes that file, and `reads` proves the safe outcome on it with an independent reader, as [Acceptance cases](acceptance-cases.md) says.
 An error that names the input gives its path or its item, so an agent knows which call failed.
 A command that creates or replaces a user file also declares its publication, as [Publication declaration](publication.md) says.
 

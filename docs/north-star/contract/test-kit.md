@@ -36,6 +36,7 @@ A scratch `HOME` does not hide the OS keychain. `ncly` reads it only when the va
 - Human text earns no coverage for a command with a structured result
 - A path-qualified Nicely call in `exits` is refused with the registered command spelling
 - A failed report on stdout is checked as one complete object, including its envelope and declared result fields
+- Each `reads` case reads the output with its reader, compares the reference, searches each private text, and requires its bad variant to fail. After all scenarios, each Output case of `## Case matrix` needs a case, as [Acceptance cases](acceptance-cases.md) says
 - `## Publication` of `spec.md` declares each mode of each command that may write a user file, and the manifest agrees, as [Publication declaration](publication.md) says. After all scenarios, a check proves each obligation, or a reason covers it
 - Each line of Failures and of Acceptance in `spec.md` starts with its own spec ID, and a test claims each ID, as [Spec IDs](#spec-ids) says. Each claim names an ID of `spec.md`
 - The skill names no `ncly <root>` command that the manifest lacks. Core's commands and commands outside that root stay free to mention, including sibling extensions
@@ -48,16 +49,17 @@ The fixture extension repository in `testdata/extensions/standalone/` proves eac
 
 The kit proves the declared cases. Whether a claimed test proves its line, and whether a command has a hidden effect, stay judgments for the author and the reviewer.
 
-`acceptance.sh` checks the primary output with a reader that is not the wrapped program.
+`acceptance.sh` checks the primary output of the real input with a reader that is not the wrapped program.
 A check that reads only a header or the file type is not sufficient.
 The check compares the content that this reader gives with an independent reference, such as a file of expected text that the author writes.
+An acceptance case makes the same check on a made input, and the kit runs it, as [Acceptance cases](acceptance-cases.md) says.
 
 ### Acceptance test files
 
 Each case of the Output group of [Generic cases](generic-cases.md) that applies to the command needs a test file (#420).
-`acceptance.sh` makes that file in the extension's own domain, and proves the safe outcome on it. Two cases need more:
+A scenario makes that file in the extension's own domain, and `reads` proves the safe outcome on it, as [Acceptance cases](acceptance-cases.md) says. Two cases need more:
 
-- **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The block uses a value that is not the default. The check proves both results with an independent reader: the private text is not in the output, and the output still shows the content correctly. A handler that keeps the raw block fails the check (#423)
+- **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The block uses a value that is not the default. The case proves both results with an independent reader: the private text is not in the output, and the output still shows the content correctly. Its bad variant keeps the raw block, and fails (#423)
 - **Loses data that changes the meaning.** Some declarations change how a reader shows the content. The test file gives each of them a value that is not the default. The independent reference applies that declaration before it compares the content, so a lost declaration fails the check
 
 The tests make each file that they use. They never copy a file of the user, and the author never searches the home folder of the user for sample files.
