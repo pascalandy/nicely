@@ -31,6 +31,9 @@ func (k *kit) links() []string {
 		problems = append(problems, k.scenarioLinks(scripts)...)
 		problems = append(problems, k.specLinks(scripts)...)
 	}
+	if spec, err := os.ReadFile(filepath.Join(k.root, "spec.md")); err == nil {
+		k.outputs = matrixOutputs(string(spec))
+	}
 	publications, reasons, publicationProblems := k.readPublication()
 	k.publications, k.reasons = publications, reasons
 	problems = append(problems, publicationProblems...)

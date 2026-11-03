@@ -79,20 +79,9 @@ grep -qE "\"size_bytes\":$(wc -c <"$input" | tr -d ' ')[,}]" "$scratch/answer" |
 # spec: lines
 grep -qE "\"lines\":$(awk 'END { print NR }' "$input")[,}]" "$scratch/answer" || die "the line count differs from awk"
 
-# Fill: for each case of the Output group of generic-cases.md in the contract
-# that applies to the command, make a test file of this domain here, and check
-# its safe outcome as "Acceptance test files" of test-kit.md says. This script
-# makes each file, before the first review. Never copy a file of the user. A
-# declaration that changes the meaning gets a value that is not the default,
-# and the reference applies it before the compare. inspect writes no output,
-# so it has no such case. For a command that writes notes.txt from notes.md,
-# the block that a reader needs can look like this:
-#   printf 'encoding: latin-1\nauthor: Ana Lima\n\ncaf\351\n' >"$work/header.md"
-#   (cd "$work" && ncly "${command[@]}" header.md --json --no-input) >/dev/null || die 'the header failed'
-#   ! grep -qF 'Ana Lima' "$work/header.txt" || die 'the output keeps the private text'
-#   printf 'caf\303\251\n' | cmp -s - <(reader "$work/header.txt") || die 'a reader shows other text'
-# Here reader is an independent reader of the output. Change the handler to
-# keep the raw header, and check that this part fails (#423).
+# The acceptance cases of testdata/script/ prove each case of the Output group
+# of generic-cases.md on a made input, and the kit checks them with reads, as
+# acceptance-cases.md in the contract says. This script checks the real input.
 
 # A second run checks the Determinism criterion of qa.md.
 (cd "$work" && ncly "${command[@]}" "$input" --json --no-input) >"$scratch/second" || die "the second run failed"

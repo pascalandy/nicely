@@ -44,6 +44,15 @@ func (k *kit) commands() map[string]func(*testscript.TestScript, bool, []string)
 		"fake":     k.fakeChild,
 		"predicts": k.predicts,
 	})
+	// reads reads only an output that a call of the extension wrote.
+	for _, name := range []string{"ncly", direct, "exits", "signal", "appears", "refuses", "predicts"} {
+		run := commands[name]
+		commands[name] = func(ts *testscript.TestScript, neg bool, args []string) {
+			k.acceptance.markCalled(ts)
+			run(ts, neg, args)
+		}
+	}
+	commands["reads"] = k.reads
 	return commands
 }
 

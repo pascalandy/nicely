@@ -3,6 +3,7 @@ package extensiontest
 import (
 	"flag"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/pascalandy/nicely/sdk/extensionrepo"
@@ -24,7 +25,7 @@ func (k *kit) reportCoverage(t *testing.T) {
 			t.Errorf("extensionrepo.Notice: %v", err)
 		}
 	}
-	for _, problem := range append(k.Missing(), k.publicationMissing()...) {
+	for _, problem := range slices.Concat(k.Missing(), k.publicationMissing(), k.acceptanceMissing()) {
 		t.Error(problem)
 	}
 }

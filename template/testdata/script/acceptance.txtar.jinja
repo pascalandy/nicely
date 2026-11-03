@@ -1,0 +1,36 @@
+# A model of an acceptance case of ## Acceptance in spec.md, as Acceptance
+# cases in the folder that just contract prints defines. The case makes its
+# input, runs the command, then reads checks the primary output: it reads the
+# output with a reader that is not the wrapped program, compares the text of
+# the reader with the reference, and requires the bad variant to fail.
+#
+# The answer of ncly {{ example_command }} is its output, so the kit's reader
+# answer reads its keys. It compares each whole value, so 30 lines never pass
+# for 3. Its bad variant is the answer of a worker that counts ten times.
+#
+# Fill: one case like this one for each property of ## Acceptance. For a
+# command that writes a file, read that file with a decoder of its format.
+# Give a case to each Output case that ## Case matrix names, with -case and
+# its name. For a block that a reader needs, give its private text with
+# -private, and make the bad variant keep the raw block.
+chmod 755 bin/python3
+
+# spec: size lines
+ncly {{ example_command }} notes.md --json
+cp stdout answer.json
+reads answer.json reference bad.json answer size_bytes lines
+
+-- notes.md --
+# Notes
+First line
+Last line
+-- reference --
+size_bytes: 29
+lines: 3
+-- bad.json --
+{"ok":true,"contract_version":1,"size_bytes":29,"lines":30}
+-- bin/python3 --
+#!/bin/sh
+# python3 of this scenario: the Python of the system.
+case "$1" in --version) exec /usr/bin/python3 --version ;; esac
+exec /usr/bin/python3 "$@"

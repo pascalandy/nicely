@@ -52,6 +52,7 @@ const header = "ncly video convert header.md --json\nreads -case 'Keeps data tha
 const acceptanceFiles = "-- notes.md --\none\ntwo\nthree\n" +
 	"-- reference --\nlines: 3\n" +
 	"-- bad.json --\n{\"ok\":true,\"contract_version\":1,\"lines\":30}\n" +
+	"-- good.json --\n{\"ok\":true,\"contract_version\":1,\"lines\":3}\n" +
 	"-- header.md --\nencoding: iso-8859-1\nauthor: Ana Lima\n\ncaf\xe9\n" +
 	"-- show.sh --\nencoding=$(sed -n 's/^encoding: //p' \"$1\")\nsed '1,/^$/d' \"$1\" | iconv -f \"${encoding:-utf-8}\" -t utf-8\n" +
 	"-- reference.txt --\ncafé\n" +
@@ -110,28 +111,31 @@ func TestAcceptanceRejectsPastMistakes(t *testing.T) {
 //   - a read before any call
 //   - a path outside the scenario folder
 //   - a private case without private text
+//   - an Output case that the matrix does not name
 //   - an Output case of the matrix that no case reads
 func TestAcceptanceRefusesWeakCases(t *testing.T) {
 	spec := matrix + "| The output keeps the encoding | Output: Loses data that changes the meaning | `header` | None |\n"
 	out, err := acceptanceFixture(t, spec, map[string]string{
-		"weak":      "ncly video convert notes.md --json\ncp stdout answer.json\nreads answer.json reference reference answer lines\n",
+		"weak":      "ncly video convert notes.md --json\ncp stdout answer.json\nreads answer.json reference good.json answer lines\n",
 		"clean":     "ncly video convert header.md --json\nreads -case 'Keeps data that a reader needs' -private 'Ana Lima' header.txt reference.txt reference.txt sh show.sh\n",
 		"extension": "ncly video convert notes.md --json\ncp stdout answer.json\nreads answer.json reference bad.json ncly-video-convert answer.json\n",
 		"wrapped":   "ncly video convert notes.md --json\ncp stdout answer.json\nreads answer.json reference bad.json awk '{ print }'\n",
 		"first":     "reads notes.md reference bad.json answer lines\n",
 		"outside":   "ncly video convert notes.md --json\nreads $WORK/../notes.md reference bad.json answer lines\n",
 		"public":    "ncly video convert header.md --json\nreads -case 'Keeps data that a reader needs' header.txt reference.txt bad.txt sh show.sh\n",
+		"unlisted":  "ncly video convert notes.md --json\ncp stdout answer.json\nreads -case 'Temporary file' answer.json reference bad.json answer lines\n",
 	})
 	t.Logf("go test: %v\n%s", err, out)
 	for _, want := range []string{
-		"reads: the bad variant reference passes, so the reader and the reference cannot refuse a wrong output",
+		"reads: the bad variant good.json passes, so the reader and the reference cannot refuse a wrong output",
 		"reads: the bad variant reference.txt holds no private text, so it cannot prove that the search finds it",
 		"reads: the reader ncly-video-convert is the extension or a program that it wraps",
 		"reads: the reader awk is the extension or a program that it wraps",
 		"reads: no call of ncly or ncly-video-convert ran before it in this scenario",
 		"is no path in the folder of the scenario",
 		"reads: the case \"Keeps data that a reader needs\" needs the private text of its test file, given with -private",
-		"spec.md:18: ## Case matrix names the Output case \"Loses data that changes the meaning\", and no scenario proves it with a passing reads -case",
+		"reads: ## Case matrix of spec.md names no family from the Output case \"Temporary file\"",
+		"spec.md:19: ## Case matrix names the Output case \"Loses data that changes the meaning\", and no scenario proves it with a passing reads -case",
 	} {
 		if err == nil || !strings.Contains(out, want) {
 			t.Errorf("want rejection with %q, got %v", want, err)

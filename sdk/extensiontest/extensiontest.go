@@ -18,6 +18,8 @@
 //	protect <path>...            selects paths that refuses and the next signal or appears keep
 //	refuses <code> <command> <arg>  checks the same refusal in a dry run and a run
 //	predicts <command> <arg>...  checks that a dry run predicts the publication of its run
+//	reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]
+//	                              reads the output with an independent reader, as Acceptance cases defines
 //	grant <service>               grants the key of a declared service to the extension
 //	fake <name>                   puts the fake child in $WORK/bin as name
 //
@@ -114,6 +116,10 @@ type kit struct {
 	// publications and reasons are the tables of ## Publication of spec.md.
 	publications []publication
 	reasons      []reason
+	// outputs are the Output cases that ## Case matrix of spec.md names,
+	// and acceptance what reads records of them.
+	outputs    []outputCase
+	acceptance *acceptance
 }
 
 func load(e extension.Extension) (*kit, error) {
@@ -128,7 +134,7 @@ func load(e extension.Extension) (*kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kit{Coverage: coverage, ext: e, root: filepath.Dir(gomod)}, nil
+	return &kit{Coverage: coverage, ext: e, root: filepath.Dir(gomod), acceptance: &acceptance{called: map[*testscript.TestScript]bool{}, proved: map[string]bool{}}}, nil
 }
 
 // build makes the programs that the scenarios run. ncly is the one that go
