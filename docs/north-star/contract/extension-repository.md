@@ -42,7 +42,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 - `just release <tag> [fixture]` publishes the signed SHA and proves the README install, as [Release and install](extensions.md#release-and-install) defines
 - `just install` builds the executable and exports its sidecars from that build. It replaces the previous install of the slug in the extensions folder of [Discovery](discovery.md), the executable last
 - `just uninstall` removes the install of the slug from that folder, the executable first. With nothing installed, it says so and exits 0
-- `just acceptance [fixture]` runs `acceptance.sh` as an agent would, with `--json` and `--no-input`, in an [owned](owned-runs.md) scratch run without the settings of the caller. It installs the extension and the `ncly` of the pinned Nicely version into scratch XDG folders. It works on a copy of the fixture and checks that the fixture keeps its checksum. Without a fixture, it makes an input
+- `just acceptance [fixture]` runs `acceptance.sh` as an agent would, with `--json` and `--no-input`, in an [owned run](owned-runs.md) without the Nicely settings of the caller. It installs the extension and the `ncly` of the pinned Nicely version into scratch XDG folders. It works on a copy of the fixture and checks that the fixture keeps its checksum. Without a fixture, it makes an input
 - `just update <version>` runs the target version's updater on a clean Git tree, with the template before the SDK. [Update an extension](update-an-extension.md) defines bootstrap and conflict recovery
 - `just contract` prints the folder of this contract in the Go module of the pinned Nicely version, so an agent reads the exact rules offline
 

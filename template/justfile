@@ -35,7 +35,7 @@ install:
 uninstall:
     go run ./internal/export uninstall
 
-# Run the command of ## Acceptance on a copy of the fixture or on a made input, in an owned scratch run
+# Run the command of ## Acceptance on a copy of the fixture or on a made input, in an owned run
 acceptance fixture="":
     go run ./internal/export acceptance {{ if fixture == "" { "" } else { quote(join(invocation_directory(), fixture)) } }}
 

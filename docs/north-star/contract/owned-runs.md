@@ -11,8 +11,8 @@ The [analyzer](analyzers.md) `callerenv` refuses `os.Environ` and `syscall.Envir
 
 A run has one of two profiles:
 
-- A host run keeps the tools and accounts of the caller, such as `PATH`, `HOME`, and the login of `gh`. Signoff, `go test` of `just check`, and the Git steps of a release use it
-- A scratch run keeps no variable of the caller. The kit, acceptance, and the install check of a release use it
+- A host run keeps the tools and accounts of the caller, such as `PATH`, `HOME`, and the login of `gh`. Signoff, `go test` of `just check`, acceptance, and the Git steps of a release use it
+- A scratch run keeps no variable of the caller. The kit and the install check of a release use it
 
 A host run drops this caller state:
 
@@ -36,7 +36,7 @@ The profile names the variables of the caller that the run keeps anyway, and the
 | Signoff | Host | Nothing more | Nothing more |
 | Git and gh steps of a release | Host | `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM` | Nothing more |
 | Install check of a release | Scratch | `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM` | Go settings, `NCLY_NO_INPUT=1`, `LC_ALL=C` |
-| `just acceptance` | Scratch | Nothing | Go settings |
+| `just acceptance` | Host | Nothing more | `TMPDIR`, the folder of the run |
 
 The Go settings are the caches, the module folder, and the module source of the caller.
 They are `GOCACHE`, `GOMODCACHE`, `GOPATH`, `GOPROXY`, `GOPRIVATE`, `GONOPROXY`, `GONOSUMDB`, `GOSUMDB`, `GOINSECURE`, and `GOTOOLCHAIN`.
@@ -45,7 +45,8 @@ A scratch run that uses programs of the caller links them into its `bin` folder 
 A shim of a version manager reads its configuration under `HOME`, which the run moves.
 
 `just acceptance` calls `go run ./internal/export acceptance [fixture]`.
-That action runs `acceptance.sh` in its scratch run, with the programs that the manifest declares.
+That action runs `acceptance.sh` in its host run, which keeps `HOME`, so the script finds each program before it moves the XDG folders.
+The script makes its scratch folder in the folder of the run.
 
 ## The result
 
@@ -57,7 +58,7 @@ One writer delivers it after the action ends:
 2. It writes the notices, then any refusal of the action, to stderr.
 3. It returns the exit code of the child, or 1 for a refusal.
 
-A stream that refuses the answer or the notices fails the action with exit 1, because the caller never read them.
+A stream that refuses the answer or the notices fails the action, because the caller never read them. The exit code is 1, or the code of a child that already failed.
 A host run with a folder gives its programs `NCLY_TEST_NOTICES`, so `extensionrepo.Notice` records each notice there.
 The result reads them from the run.
 At the parent of e35bd0bb, check ran `go test` outside that file, and a passing package hid its notices.

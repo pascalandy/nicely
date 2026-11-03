@@ -42,7 +42,7 @@ func action(e extension.Extension, args []string) (result, bool) {
 		// The updater writes its own lines, and gives only its exit code.
 		return result{action: "update", exit: update(rest)}, true
 	case name == "acceptance" && len(rest) <= 1:
-		return acceptance(e, rest), true
+		return acceptance(rest), true
 	case name == "signoff" && len(rest) == 0:
 		recipes := []string{"check"}
 		if len(e.Manifest) != 0 {
