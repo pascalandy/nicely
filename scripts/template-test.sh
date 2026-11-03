@@ -72,6 +72,7 @@ fct_repository() {
 	fct_commit "rendered from v0.0.1"
 	(cd "${repo}" && just check)
 	fct_test_gates "${repo}" "${scratch}" "${domain}" "${command}"
+	fct_test_acceptance_cases "${repo}" "${scratch}"
 	fct_test_finish "${repo}" "${scratch}"
 	fct_test_ledger "${repo}" "${scratch}"
 	fct_test_example_notices "${repo}" "${scratch}" "${slug}"
@@ -125,6 +126,8 @@ fct_main() {
 	source "${root}/scripts/template-release-test.sh"
 	# shellcheck source=scripts/template-recipes-test.sh
 	source "${root}/scripts/template-recipes-test.sh"
+	# shellcheck source=scripts/template-acceptance-test.sh
+	source "${root}/scripts/template-acceptance-test.sh"
 	fct_test_recipe_lines "${root}/template/justfile"
 	# shellcheck source=scripts/template-signoff-test.sh
 	source "${root}/scripts/template-signoff-test.sh"
