@@ -2,6 +2,15 @@
 # Sourced by template-test.sh to render and check one extension repository.
 # shellcheck disable=SC2154 # root and copier come from fct_main in template-test.sh.
 
+# Every Nicely documentation link in a render uses its selected template tag.
+fct_revision_links() {
+	local links link
+	links="$(grep -RhoE --exclude-dir=.git 'https://github\.com/pascalandy/nicely/blob/[^[:space:])>]+' "${1}")" || fct_fail 'the render has no Nicely documentation links'
+	while IFS= read -r link; do
+		[[ "${link}" == "https://github.com/pascalandy/nicely/blob/${2}/"* ]] || fct_fail "rendered link uses another revision: ${link}"
+	done <<<"${links}"
+}
+
 fct_repository() {
 	local scratch="${1}" domain="${2}" name="${3}" slug="${4}" command="${5}" src repo data extensions lipgloss file
 	shift 5
@@ -14,6 +23,7 @@ fct_repository() {
 	git -C "${src}" init -q
 	fct_revision v0.0.1
 	"${copier[@]}" copy --quiet --vcs-ref v0.0.1 --defaults --data "domain=${domain}" --data "module=example.com/ncly-${slug}" "$@" "${src}" "${repo}"
+	fct_revision_links "${repo}" v0.0.1
 
 	# The reading order must send an author to the real-input acceptance criteria.
 	awk '

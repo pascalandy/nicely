@@ -7,6 +7,7 @@
 
 - `template-loop` sends each command of the rendered repository to its `nicely-extension` skill, which builds it in rounds until `just finish` passes
 - `template-install` renders the template, and installs the rendered repository with `just install` in the scratch data folder
+- `template-links` pin documentation to the selected tag
 - `template-rule-index` counts the rules of the rule index in `just check` of the rendered repository
 - `template-publication` refuses in `just check` a command that writes a user file with no row in `## Publication` of `spec.md`
 - `template-acceptance` reads the answer of `probe inspect` in its acceptance case, and refuses a count of 30 lines for 3
@@ -38,6 +39,7 @@ Preconditions:
 - `uv`, `just`, and a `python3` of 3.9 or later, which answers under the scratch home
 
 - **Render and install.** Run `just verify prepare "$run" template`. It exits 0. Its log names `just install` of `probe`, the line `installed <run>/scratch/home/.local/share/nicely/extensions/ncly-probe`, and the `python3` that it puts first in the PATH of the wrapper. Then run `ls "$run/scratch/home/.local/share/nicely/extensions"`: it lists `ncly-probe`, `ncly-probe.locales`, `ncly-probe.skill`, and `ncly-probe.toml`, beside the four files of `hello`. Report the output of `prepare` and of `ls` beside the quote.
+- **Links.** Run `rg --hidden 'nicely/blob/' "$run/scratch/ncly-probe" -g '*.md'`. Each link uses `blob/v0.0.0/`.
 - **Release and install text.** Run `grep -n -A12 '^## Release$' "$run/scratch/ncly-probe/AGENTS.md"` and `grep -n -A3 '^git clone' "$run/scratch/ncly-probe/README.md"`. Both exit 0. `AGENTS.md` names `just release vX.Y.Z` and the release receipt. `README.md` holds the lines `git clone --branch TAG https://example.com/ncly-probe ncly-probe`, `cd ncly-probe`, `just install`, and `ncly describe probe --json`. Report both outputs beside the quote.
 - **Loop text.** Run `grep -n -A12 '^## Done when$' "$run/scratch/ncly-probe/AGENTS.md"`, then `grep -n '^## Open lines$\|^## Case matrix$' "$run/scratch/ncly-probe/spec.md"`. Both exit 0, and `spec.md` lists both parts. "Done when" names `just finish`, the hosted checks, 5 rounds, and a "full stop" request that runs only after it. Then run `grep -n '^##' "$run/scratch/ncly-probe/.agents/skills/nicely-extension/SKILL.md"`. It lists `## Intake`, `## Acceptance lines`, `## Test files`, `## Rounds`, and `## Readiness review`. Then run `grep -n '^##' "$run/scratch/ncly-probe/.agents/skills/nicely-extension/intake.md"`. It lists `## Intake of a script`, `## Intake of a program`, and `## Evidence of the intake`. Report the four outputs.
 - **Finish gate.** Run `(cd "$run/scratch/ncly-probe" && just finish)`. Exit 1. Stderr names each `Fill:` line of `vision.md`, `spec.md`, `qa.md`, and `intake.toml` as `<file>:<line>: this line of the form is not filled`, and `review.toml: no readiness review is recorded`. Then run `just records` there. Exit 0, and it names `vision.md`. Report both outputs.

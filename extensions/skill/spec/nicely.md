@@ -15,3 +15,6 @@ The skills teach only what the release that ships them can do. Each item that ad
 
 Every external extension ships a skill named after its slug.
 An agent reads `ncly skill view <slug>` for an extension root that it finds through describe. The `skill` extension ships no skill named `skill`: the bundled skills teach core and the skill domain together.
+
+Links in the bundled `nicely-extensions` skill use the running `ncly` release tag.
+A development build uses `main`, including a build from a Go pseudo-version.

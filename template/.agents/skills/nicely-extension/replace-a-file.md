@@ -49,4 +49,5 @@ Prove these invariants of each command that writes a user file with the commands
 A `protect` before a `signal`, `appears`, `keeps`, or `holds` call covers that one call.
 For `appears`, the stub of the wrapped program writes the marker, then waits until the file exists.
 
-For a command that replays paid work, run `create-formal-verification-skill`.
+For a command that replays paid work, write a bounded TLA+ model of its run and replay invariants.
+Run it with `just verify-models`, and keep its model, mapping, probes, and expected results.

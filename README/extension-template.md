@@ -1,3 +1,6 @@
 # Extension template
 
 The extension template, which creates the repository of an extension outside Nicely, with its tests and its recipes. Its `AGENTS.md` explains how to add a first command, remove the example, and release a version. Its `nicely-extension` skill builds each command in rounds, until `just finish` passes. `just finish` reads the intake and the reviews only in the typed records `intake.toml` and `review.toml`. An extension of an older template adopts `just finish` through `just update`, and its first build starts after the update commit. Its `just check` counts the rules of its rule index that wait for a check. Its `spec.md` declares each command that writes a user file. The test kit proves that a dry run predicts its run, and on Linux, a run without a hard link. Each acceptance case reads the output with a reader that is not the wrapped program, and its bad variant must fail. Its `README.md` tells a user how to install a release
+
+The template's documentation links use its selected revision.
+The bundled `nicely-extensions` skill links to the running release's documentation, or `main` for a development build.

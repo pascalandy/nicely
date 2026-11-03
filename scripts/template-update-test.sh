@@ -61,6 +61,7 @@ fct_test_update() {
 	fct_has "${repo}/AGENTS.md" '# AGENTS.md of the author'
 	fct_has "${repo}/AGENTS.md" 'This line comes from template v0.0.2.'
 	fct_has "${repo}/.copier-answers.yml" '_commit: v0.0.2'
+	fct_revision_links "${repo}" v0.0.2
 	fct_has "${repo}/go.mod" "${dependency}"
 	[[ "$(go -C "${repo}" list -m -f '{{.Version}}' github.com/pascalandy/nicely)" == v0.0.2 ]] || fct_fail 'the SDK pin did not move'
 	fct_has "${repo}/go.mod" "replace github.com/pascalandy/nicely => ${root}"

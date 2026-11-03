@@ -1,6 +1,6 @@
 # Contract, extension, repository, kit, and i18n
 
-This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments. It also holds S52 to S53 of COR-104-T3, S54 to S55 of COR-104-T6. [Formal models](models.md) holds S56 to S58 of COR-104-T8.
+This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments. It also holds S52 to S53 of COR-104-T3 and S54 to S55 of COR-104-T6. S65 covers pinned documentation. [Formal models](models.md) holds S56 to S58 of COR-104-T8.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|
@@ -34,7 +34,13 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 | S53 | Each action of the export program returns one result, whose answer, notices, and exit code one writer delivers | [Owned runs][owned-runs] | [result.go][result], [result test][result-test], [isolation test][isolation-test], [template recipes test][recipes-test] |
 | S54 | `## Publication` of `spec.md` declares each mode of each command that may write a user file. A passing check proves each obligation, or a reason covers it | [Publication declaration][publication-contract] | [publication.go][publication], [publication_row.go][publication-row], [publication_report.go][publication-report], [publication test][publication-test], [predicts test][predicts-test], [template recipes test][recipes-test], partial: the reviewer accepts each reason |
 | S55 | A successful dry run changes no file, and predicts the destination and the overwrite choice of its run | [Scenario commands][scenario-commands] | [predicts.go][predicts], [publication test][publication-test], [predicts test][predicts-test], partial: only Linux removes an ability of the destination, with `without` of [S61](publication.md) |
+| S65 | Template documentation links use the selected revision. Bundled extension documentation uses the running release tag, or main for development | [Version pins][repository-versions], [bundled skills][skill-spec] | [Source links test][revision-sources], [render test][revision-render], [bundled links test][revision-bundled] |
 
+[repository-versions]: ../contract/extension-repository/versions.md
+[skill-spec]: ../../../extensions/skill/spec/nicely.md
+[revision-sources]: ../../../tools/cmd/plan/template_links_test.go
+[revision-render]: ../../../scripts/template-repository-test.sh
+[revision-bundled]: ../../../extensions/skill/bundled_test.go
 [agents]: ../../../AGENTS.md
 [contract-codes]: ../../../sdk/contract/codes.go
 [contract-spec]: ../../../sdk/contract/spec_test.go

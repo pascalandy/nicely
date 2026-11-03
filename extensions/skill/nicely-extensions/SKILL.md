@@ -7,7 +7,7 @@ description: Use to install, build, or remove an ncly extension.
 
 ## Install an extension
 
-[Release and install](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md#release-and-install) holds the install rule:
+[Release and install](https://github.com/pascalandy/nicely/blob/@NCLY_REVISION@/docs/north-star/contract/extensions.md#release-and-install) holds the install rule:
 
 > A user installs a fixed version with `git clone --branch <tag> <repository>`, then `just install` in the clone, which need Go and `just`.
 > For an annotated tag, Git can warn that the tag `is not a commit!`, then note a detached HEAD: the clone holds the tagged commit.
@@ -32,7 +32,7 @@ uv tool run copier@9.19.1 copy --vcs-ref VERSION --defaults --data domain=DOMAIN
 
 The domain names a family of work, such as `video`, and the optional name identifies one job, such as `convert`. Neither names the wrapped tool. For a whole-domain extension, omit `--data name=NAME` and both `-NAME` suffixes.
 
-Then build each command with the `nicely-extension` skill of the new repository, from the first command. That skill is in `.agents/skills/nicely-extension/`, and `AGENTS.md` gives the reading order and the recipes. [Extensions](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extensions.md) holds the rules of an extension.
+Then build each command with the `nicely-extension` skill of the new repository, from the first command. That skill is in `.agents/skills/nicely-extension/`, and `AGENTS.md` gives the reading order and the recipes. [Extensions](https://github.com/pascalandy/nicely/blob/@NCLY_REVISION@/docs/north-star/contract/extensions.md) holds the rules of an extension.
 
 ## Update an extension repository
 
@@ -48,7 +48,7 @@ go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/
 On a conflict, resolve each file and mark it with `git add`.
 Remove each `.rej` file, then run the printed bootstrap command with `--continue`.
 Success ends with `just check`.
-[Update an extension](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/update-an-extension.md) holds the recovery rules, and the first build after an update from a template before `just finish`.
+[Update an extension](https://github.com/pascalandy/nicely/blob/@NCLY_REVISION@/docs/north-star/contract/update-an-extension.md) holds the recovery rules, and the first build after an update from a template before `just finish`.
 
 ## Remove an extension
 

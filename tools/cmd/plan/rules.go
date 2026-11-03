@@ -128,6 +128,10 @@ func markdownFiles(root, dir, suffix string) ([]string, error) {
 // their enforcers link to named, and returns its problems. ids maps each ID
 // of a core rule to the file that holds it.
 func readRules(root, file, text string, index *ruleIndex, named map[string]bool, ids map[string]string) []string {
+	// Resolve template links against this checkout before Markdown parses their spaces.
+	if strings.HasPrefix(file, "template/") {
+		text = strings.ReplaceAll(text, "{{ _commit }}", "main")
+	}
 	var problems []string
 	refs := definitions(text)
 	var header []string
