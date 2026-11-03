@@ -37,6 +37,7 @@ A correction that lands below the highest level that can prevent its failure say
 
 | Correction | Failure | Level | Owner |
 |---|---|---|---|
+| COR-104-T7 | In the builds of 2026-10-30, a failed hard link of a create fell back to a check and a rename over the output. N3 of COR-104 found it. A host with hard links never ran that fallback, and no check could remove an ability | 2 | A |
 | COR-104-T5 | At the parent of 86d24e83, a prefix match of `acceptance.sh` accepted 30 lines for 3. In #425, no test file held private text in a block that a reader needs, and two builds kept it. The reviewer still judges that a reader and a reference are independent | 2 | A |
 | COR-104-T8 | On 2026-11-02, the pinned URL of TLC v1.8.0 served other bytes, and only the digest check of video-convert stopped them. At the parent of 59d33f38, a finding of this round with no state passed finish, which the finish model now shows | 2 | A |
 | COR-104-T6 | In #425, a dry run passed, and the run failed on a destination with no hard link. No form named the abilities of the destination. Level 2 waits for the check of COR-104-T7 that removes an ability, so a reason covers each operation | 2 | A |

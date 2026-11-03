@@ -43,3 +43,4 @@ Each feature file starts with an H1 title and one paragraph about what the user 
 - `transcript-run.md` goes on in the run of `transcript.md`. It drives a grant in a terminal, a run with a fake key, its record, the calls after it, and a Ctrl-C
 - `extensions-skill.md` covers the `nicely-extensions` skill: the commands that create an extension repository, install an extension at a release tag, and remove one
 - `template.md` covers the extension template, rendered as the extension `probe` and installed in the scratch home. It drives discovery, help, `probe inspect` and its usage error, describe, the skill, and doctor
+- `publication-helpers.md` goes on in the run of `template.md`. It drives `keeps` and `without` of the test kit in a scenario of the rendered repository, on Linux
