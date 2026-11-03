@@ -6,23 +6,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/contract"
 )
 
-func releaseEnv() []string {
-	env := signoffEnv()
-	// Git URL rewrites also let the published install run against a local test remote.
-	for _, key := range []string{"GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"} {
-		if value, ok := os.LookupEnv(key); ok {
-			env = append(env, key+"="+value)
-		}
-	}
-	return env
+// releaseGit names the Git settings that a release keeps. Git URL rewrites
+// also let the published install run against a local test remote.
+var releaseGit = []string{"GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"}
+
+// releaseEnv is the environment of the owned host run of a release.
+func releaseEnv() ([]string, error) {
+	run, err := NewOwnedRun("", Profile{Keep: releaseGit})
+	return run.Env, err
 }
 
 func releaseInstallBlock(readme []byte) (string, error) {
@@ -125,53 +122,18 @@ func (r *releaseReceipt) publishedInstall(ctx context.Context, env []string, roo
 	return nil
 }
 
+// releaseScratchEnv builds the owned scratch run of the install check in
+// work. Its bin folder holds the programs of the caller and the built ncly.
 func releaseScratchEnv(ctx context.Context, env []string, root, work string, m contract.Manifest) ([]string, error) {
 	bin := filepath.Join(work, "bin")
-	path := []string{bin}
-	// Resolve version-manager shims while they can still read the caller's configuration.
-	for i, name := range append([]string{"go", "just", "git", "sh"}, m.Programs...) {
-		if _, err := os.Lstat(filepath.Join(bin, name)); err == nil {
-			continue
-		}
-		found, err := releaseOutput(ctx, env, root, "mise", "which", name)
-		if err != nil {
-			found, err = exec.LookPath(name)
-		}
-		if err != nil {
-			if i >= 4 {
-				continue
-			}
-			return nil, err
-		}
-		if err := os.Symlink(found, filepath.Join(bin, name)); err != nil {
-			return nil, err
-		}
+	if err := scratchTools(ctx, env, root, bin, []string{"go", "just", "git", "sh"}, m.Programs); err != nil {
+		return nil, err
 	}
-	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
-		if !filepath.IsAbs(dir) {
-			continue
-		}
-		if found, _ := filepath.Glob(filepath.Join(dir, "ncly-*")); len(found) == 0 {
-			path = append(path, dir)
-		}
+	set, err := goSettings(ctx, env, root)
+	if err != nil {
+		return nil, err
 	}
-	isolated := []string{
-		"HOME=" + work, "PATH=" + strings.Join(slices.Compact(path), string(filepath.ListSeparator)),
-		"TMPDIR=" + work, "XDG_CONFIG_HOME=" + filepath.Join(work, "config"), "XDG_DATA_HOME=" + filepath.Join(work, "data"),
-		"XDG_STATE_HOME=" + filepath.Join(work, "state"), "XDG_CACHE_HOME=" + filepath.Join(work, "cache"),
-		"DBUS_SESSION_BUS_ADDRESS=disabled:", "NCLY_NO_INPUT=1", "GOWORK=off", "GOFLAGS= ", "LC_ALL=C",
-	}
-	for _, key := range []string{"GOCACHE", "GOMODCACHE", "GOPATH"} {
-		value, err := releaseOutput(ctx, env, root, "go", "env", key)
-		if err != nil {
-			return nil, err
-		}
-		isolated = append(isolated, key+"="+value)
-	}
-	for _, key := range []string{"GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"} {
-		if value, ok := os.LookupEnv(key); ok {
-			isolated = append(isolated, key+"="+value)
-		}
-	}
-	return isolated, nil
+	set["NCLY_NO_INPUT"], set["LC_ALL"] = "1", "C"
+	run, err := NewOwnedRun(work, Profile{Scratch: true, Path: []string{bin}, Keep: releaseGit, Set: set})
+	return run.Env, err
 }

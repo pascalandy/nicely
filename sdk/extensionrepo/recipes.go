@@ -11,51 +11,50 @@ import (
 	"github.com/pascalandy/nicely/sdk/analysis"
 )
 
-func checkRepository() int {
+// checkRepository runs just check. Its go test runs every scenario, so the
+// coverage checks run too, because the owned run drops NCLY_TEST_SCENARIO.
+func checkRepository() result {
 	if err := printRuleIndex(); err != nil {
-		return report("check", err)
+		return failed("check", err)
 	}
 	if err := updateRun("go", "mod", "tidy", "-diff"); err != nil {
-		return report("check", err)
+		return failed("check", err)
 	}
 	files, err := exec.Command("gofmt", "-l", ".").Output()
 	if err != nil {
-		return report("check", err)
+		return failed("check", err)
 	}
 	if len(files) != 0 {
 		fmt.Fprint(os.Stderr, string(files))
-		return report("check", errors.New("run gofmt -w . to format these files"))
+		return failed("check", errors.New("run gofmt -w . to format these files"))
 	}
 	if err := updateRun("go", "vet", "./..."); err != nil {
-		return report("check", err)
+		return failed("check", err)
 	}
 	if err := analysis.Check("./..."); err != nil {
-		return report("check", err)
+		return failed("check", err)
 	}
 	fmt.Fprintln(os.Stderr, "go test -count=1 ./...")
-	// Every scenario runs, so the coverage checks run too.
-	if err := os.Unsetenv(ScenarioEnv); err != nil {
-		return report("check", err)
-	}
-	return Test(nil)
+	return test("check", nil, nil)
 }
 
-func printContractDirectory() error {
+// contractDirectory answers just contract with the folder of the contract in
+// the pinned Nicely module.
+func contractDirectory() result {
 	if err := updateRun("go", "mod", "download", nicelyModule); err != nil {
-		return err
+		return failed("contract", err)
 	}
 	dir, err := updateOutput("go", "list", "-m", "-f", "{{.Dir}}", nicelyModule)
 	if err != nil {
-		return err
+		return failed("contract", err)
 	}
 	path := filepath.Join(strings.TrimSpace(string(dir)), "docs", "north-star", "contract")
 	info, err := os.Stat(path)
 	if err != nil {
-		return err
+		return failed("contract", err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("%s is not a directory", path)
+		return failed("contract", fmt.Errorf("%s is not a directory", path))
 	}
-	fmt.Println(path)
-	return nil
+	return result{action: "contract", answer: []string{path}}
 }

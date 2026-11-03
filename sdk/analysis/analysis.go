@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pascalandy/nicely/sdk/analysis/callerenv"
 	"github.com/pascalandy/nicely/sdk/analysis/runnerdiscard"
 	goanalysis "golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/unitchecker"
@@ -22,6 +23,7 @@ import (
 
 // Analyzers are the rules that nicelyvet runs.
 var Analyzers = []*goanalysis.Analyzer{
+	callerenv.Analyzer,
 	runnerdiscard.Analyzer,
 }
 

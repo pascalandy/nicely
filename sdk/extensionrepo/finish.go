@@ -13,7 +13,7 @@ import (
 // stays green for an incomplete round. This gate fails until the loop ends.
 // Then each form is filled, no line is open, the user accepted each limit,
 // and a passing readiness verdict names the commit under review.
-func finishRepository() int {
+func finishRepository() result {
 	problems, spec := formProblems()
 	specs, limits := specProblems(spec)
 	if spec != "" {
@@ -27,10 +27,9 @@ func finishRepository() int {
 		if ledgerRounds() >= maxRounds {
 			fmt.Fprintf(os.Stderr, "finish: this build used its %d rounds. Stop, and report each open line and each open finding to the user. An answer that lets you choose starts no round\n", maxRounds)
 		}
-		return report("finish", errors.New("the loop of the nicely-extension skill is not done"))
+		return failed("finish", errors.New("the loop of the nicely-extension skill is not done"))
 	}
-	fmt.Println("finish: no line or finding is open, the user accepted each limit, and readiness.md holds a passing verdict and ledger for this commit")
-	return 0
+	return result{action: "finish", answer: []string{"finish: no line or finding is open, the user accepted each limit, and readiness.md holds a passing verdict and ledger for this commit"}}
 }
 
 // formProblems reports each missing form of the template, and each line of

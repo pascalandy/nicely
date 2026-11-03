@@ -35,9 +35,9 @@ install:
 uninstall:
     go run ./internal/export uninstall
 
-# Run the command of ## Acceptance on a copy of the fixture or on a made input
+# Run the command of ## Acceptance on a copy of the fixture or on a made input, in an owned scratch run
 acceptance fixture="":
-    @bash acceptance.sh {{ if fixture == "" { "" } else { quote(join(invocation_directory(), fixture)) } }}
+    go run ./internal/export acceptance {{ if fixture == "" { "" } else { quote(join(invocation_directory(), fixture)) } }}
 
 # Run the target version's updater, with the template before the SDK, on a clean Git tree
 update version:

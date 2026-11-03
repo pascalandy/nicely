@@ -22,12 +22,14 @@
 //
 // The rules of its code:
 //   - No case reads the user's keychain, HOME, or XDG folders, or finds the
-//     user's extensions. Each scenario gets a scratch HOME and scratch XDG
-//     folders, and a PATH without the folders that hold an ncly-*
-//     file. Each service that the manifest declares gets the sentinel key
+//     user's extensions. Each scenario gets an owned scratch run of
+//     extensionrepo.NewOwnedRun. It has a scratch HOME, TMPDIR, and XDG
+//     folders, and a PATH without the folders that hold an ncly-* file. Each service that the manifest declares gets the sentinel key
 //     sentinel-<service> in its variable, so ncly never reads the keychain
 //     for it. On Linux, D-Bus names no bus, so a read that a scenario forces
 //     finds no keychain
+//   - No code of the kit reads the environment of the caller as a whole.
+//     The analyzer callerenv refuses os.Environ here
 //   - The kit imports no package of core's internal/, which an extension
 //     repository cannot import either
 //   - The kit builds every program that it runs from Go source: the
@@ -44,7 +46,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,6 +54,7 @@ import (
 	"testing"
 
 	"github.com/pascalandy/nicely/sdk/extension"
+	"github.com/pascalandy/nicely/sdk/extensionrepo"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -105,8 +107,6 @@ type kit struct {
 	root string
 	// bin holds ncly, which go tool ncly built.
 	bin string
-	// path is the PATH of the caller without its extensions.
-	path string
 	// built is the ncly-<slug> that go build made, and fake the fake
 	// child.
 	built, fake string
@@ -124,7 +124,7 @@ func load(e extension.Extension) (*kit, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &kit{Coverage: coverage, ext: e, root: filepath.Dir(gomod), path: isolate(os.Getenv("PATH"))}, nil
+	return &kit{Coverage: coverage, ext: e, root: filepath.Dir(gomod)}, nil
 }
 
 // build makes the programs that the scenarios run. ncly is the one that go
@@ -168,26 +168,25 @@ func (k *kit) setup(env *testscript.Env) error {
 	return nil
 }
 
-// installScratch gives an install its scratch folders, sentinel keys, and extension.
+// installScratch gives an install its owned scratch run, sentinel keys, and
+// extension. The run keeps only the coverage settings of the caller.
 // It publishes the executable last, after the sidecars that Export writes.
 func (k *kit) installScratch(env *testscript.Env) error {
 	work := env.WorkDir
-	vars := map[string]string{
-		"HOME":            work,
-		"XDG_CONFIG_HOME": filepath.Join(work, ".config"),
-		"XDG_DATA_HOME":   filepath.Join(work, ".local", "share"),
-		"XDG_STATE_HOME":  filepath.Join(work, ".local", "state"),
-		"XDG_CACHE_HOME":  filepath.Join(work, ".cache"),
-		"PATH":            strings.Join([]string{filepath.Join(work, "bin"), k.bin, k.path}, string(filepath.ListSeparator)),
-		// The keychain of Linux answers through the D-Bus session bus, which
-		// this address cannot reach.
-		"DBUS_SESSION_BUS_ADDRESS": "disabled:",
+	run, err := extensionrepo.NewOwnedRun(work, extensionrepo.Profile{
+		Scratch: true,
+		Path:    []string{filepath.Join(work, "bin"), k.bin},
+		Keep:    []string{"GOCOVERDIR", "GORACE"},
+	})
+	if err != nil {
+		return err
+	}
+	for _, entry := range run.Env {
+		name, value, _ := strings.Cut(entry, "=")
+		env.Setenv(name, value)
 	}
 	for _, service := range k.services() {
-		vars[strings.ToUpper(service)+"_API_KEY"] = "sentinel-" + service
-	}
-	for _, name := range slices.Sorted(maps.Keys(vars)) {
-		env.Setenv(name, vars[name])
+		env.Setenv(strings.ToUpper(service)+"_API_KEY", "sentinel-"+service)
 	}
 	extensions := filepath.Dir(k.installed(env.Getenv))
 	if err := os.MkdirAll(filepath.Join(work, "bin"), 0o755); err != nil {
@@ -210,19 +209,6 @@ func (k *kit) services() []string {
 	}
 	slices.Sort(services)
 	return slices.Compact(services)
-}
-
-// isolate returns path without each folder that holds an ncly-*
-// file, as verify-nicely does. Discovery then finds no extension of the
-// caller, only the one that the scenario installs.
-func isolate(path string) string {
-	var kept []string
-	for _, dir := range filepath.SplitList(path) {
-		if found, _ := filepath.Glob(filepath.Join(dir, "ncly-*")); len(found) == 0 {
-			kept = append(kept, dir)
-		}
-	}
-	return strings.Join(kept, string(filepath.ListSeparator))
 }
 
 // goCommand runs the go command in dir and returns its stdout without the

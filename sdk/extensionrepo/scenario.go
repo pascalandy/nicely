@@ -30,16 +30,13 @@ func scenarioArgs(name string) []string {
 	return []string{"-run", ScenarioRun(name), "./..."}
 }
 
-// runScenario runs just scenario <name>, through Test.
-func runScenario(name string) int {
+// runScenario runs just scenario <name>, through the go test of Test.
+func runScenario(name string) result {
 	if !scenarioRecipe.MatchString("just scenario " + name) {
-		return report("scenario", fmt.Errorf("%q is no name of a scenario. Fix: give the name of a file of testdata/script/ without .txtar, such as inspect", name))
+		return failed("scenario", fmt.Errorf("%q is no name of a scenario. Fix: give the name of a file of testdata/script/ without .txtar, such as inspect", name))
 	}
 	if _, err := os.Stat(filepath.Join("testdata", "script", name+".txtar")); err != nil {
-		return report("scenario", fmt.Errorf("testdata/script/%s.txtar: %w. Fix: give the name of a scenario of this commit", name, err))
+		return failed("scenario", fmt.Errorf("testdata/script/%s.txtar: %w. Fix: give the name of a scenario of this commit", name, err))
 	}
-	if err := os.Setenv(ScenarioEnv, name); err != nil {
-		return report("scenario", err)
-	}
-	return Test(scenarioArgs(name))
+	return test("scenario", scenarioArgs(name), map[string]string{ScenarioEnv: name})
 }

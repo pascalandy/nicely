@@ -15,42 +15,54 @@ import (
 	"github.com/pascalandy/nicely/sdk/extension"
 )
 
-func release(e extension.Extension, args []string) error {
+// release answers Released <tag> <sha> once the published install passes.
+func release(e extension.Extension, args []string) result {
+	answer, err := releaseTag(e, args)
+	if err != nil {
+		return failed("release", err)
+	}
+	return result{action: "release", answer: []string{answer}}
+}
+
+func releaseTag(e extension.Extension, args []string) (string, error) {
 	if len(args) < 1 || len(args) > 2 || !regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`).MatchString(args[0]) {
-		return errors.New("usage: just release vX.Y.Z [fixture]")
+		return "", errors.New("usage: just release vX.Y.Z [fixture]")
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	env := releaseEnv()
+	env, err := releaseEnv()
+	if err != nil {
+		return "", err
+	}
 	root, err := releaseOutput(ctx, env, "", "git", "rev-parse", "--show-toplevel")
 	if err != nil {
-		return err
+		return "", err
 	}
 	sha, err := releaseOutput(ctx, env, root, "git", "rev-parse", "HEAD^{commit}")
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := releasePushed(ctx, env, root, sha); err != nil {
-		return err
+		return "", err
 	}
 	signed, err := releaseSigned(sha)
 	if err != nil {
-		return err
+		return "", err
 	}
 	manifest, err := contract.ParseManifest(e.Manifest, "")
 	if err != nil {
-		return err
+		return "", err
 	}
 	r, err := newReleaseRun(root, args[0], signed)
 	if err != nil {
-		return err
+		return "", err
 	}
 	fmt.Fprintln(os.Stderr, "release: receipt in", filepath.Join(r.dir, "receipt.json"))
 	fixture := ""
 	if len(args) == 2 && args[1] != "" {
 		fixture, err = filepath.Abs(args[1])
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 	err = r.publish(ctx, env, root, manifest, fixture)
@@ -58,13 +70,12 @@ func release(e extension.Extension, args []string) error {
 		r.Failure = err.Error()
 	}
 	if writeErr := r.write(); writeErr != nil {
-		return errors.Join(err, writeErr)
+		return "", errors.Join(err, writeErr)
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
-	fmt.Println("Released", r.Tag, r.SHA)
-	return nil
+	return "Released " + r.Tag + " " + r.SHA, nil
 }
 
 func (r *releaseReceipt) publish(ctx context.Context, env []string, root string, m contract.Manifest, fixture string) error {
