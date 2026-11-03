@@ -69,6 +69,9 @@ func TestExamplesChooseSafeModes(t *testing.T) {
 			edits: []edit{
 				{"manifest.toml", example, `examples = ["ncly video convert"]`},
 				{"manifest.toml", "effects = {}\n", ""},
+				// A command without effects may write a user file, so ## Publication says that it writes none.
+				{"spec.md", "The direct executable uses that sentinel without a host grant.", "The direct executable uses that sentinel without a host grant.\n\n## Publication\n\n" +
+					"| Command | Mode | Obligation | Reason |\n|---|---|---|---|\n| `ncly video convert` | - | `publication` | The fixture writes no file, and omits its effects to test the examples |\n"},
 			},
 			want: "skipped: paid effects are undeclared and the command has no dry run",
 		},
