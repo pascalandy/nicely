@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"regexp"
 	"slices"
+	"strings"
 )
 
 // specID is the form of a spec ID, as Spec IDs in the contract defines it.
@@ -90,4 +91,16 @@ func intakeOrderProblems(intake, spec string) []string {
 		}
 	}
 	return problems
+}
+
+// intakeAdded returns the newest commit of HEAD that added intake.toml, or
+// "". Copier writes the record with the example facts of the template. A new
+// extension commits it in its first commit. An extension that adopts just
+// finish commits it in its update commit (#427).
+func intakeAdded() string {
+	out, err := exec.Command("git", "log", "--diff-filter=A", "--format=%H", "-n", "1", "HEAD", "--", intakeFile).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }

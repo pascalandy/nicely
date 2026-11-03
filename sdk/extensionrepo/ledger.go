@@ -37,7 +37,7 @@ func ledgerProblems(review reviewRecord, spec string, limits []limit) []string {
 	}
 	markdown := markdownEnd()
 	reviews := committedReviews(markdown)
-	problems = append(problems, orderProblems(review.Order, ended, markdown)...)
+	problems = append(problems, orderProblems(review.Order, ended, markdown, intakeAdded())...)
 	problems = append(problems, firstRunProblems(review.FirstRun, review.Order)...)
 	problems = append(problems, stateProblems(review.Findings, len(rounds), spec, limits)...)
 	problems = append(problems, passProblems(rounds, reviews)...)
@@ -93,7 +93,10 @@ func roundProblems(r round, number int, last bool) []string {
 // The scenario precedes the handler, so it could fail first. The intake
 // comes after the end of the build before. It also comes after the last
 // Markdown readiness.md, so the records start a new build after an update.
-func orderProblems(o order, ended, markdown string) []string {
+// And it comes after added, the commit that added intake.toml, whose facts
+// are the example of the template. So the first build of an extension that
+// adopts just finish starts after its update (#427).
+func orderProblems(o order, ended, markdown, added string) []string {
 	const fix = "Fix: give review.toml a table [order] with the commits intake, spec, scenario, and handler"
 	var problems []string
 	previous := ""
@@ -112,6 +115,9 @@ func orderProblems(o order, ended, markdown string) []string {
 		case step[0] == "intake" && markdown != "" && ancestor(commit, markdown):
 			problems = append(problems, fmt.Sprintf("review.toml: the intake of this build comes before the last Markdown readiness.md, in %.12s, of a template before typed records. "+
 				"Fix: start a new build with a new intake commit, and keep the Markdown reviews as history", markdown))
+		case step[0] == "intake" && added != "" && ancestor(commit, added):
+			problems = append(problems, fmt.Sprintf("review.toml: the intake of this build is not after %.12s, which added intake.toml with the example facts of the template. "+
+				"Fix: record the intake in a commit after it, from the current spec.md and the wrapped programs, as the nicely-extension skill says", added))
 		case previous != "" && !ancestor(previous, commit):
 			problems = append(problems, fmt.Sprintf("review.toml: the step %s comes before the step that precedes it in round 1. Fix: do the steps of round 1 in the order of the skill", step[0]))
 		case step[0] == "handler" && commit == previous:
