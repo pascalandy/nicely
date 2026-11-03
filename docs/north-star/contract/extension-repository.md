@@ -35,7 +35,7 @@ Public repositories also run the same steps on `macos-15`, and both runners are 
 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has nine recipes:
 
-- `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders. It first prints how many rules of the rule index are `Prose only`
+- `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, the [analyzers](analyzers.md) of the pinned SDK, and `go test`, whose test kit installs the extension into scratch folders. It first prints how many rules of the rule index are `Prose only`
 - `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. [Finish gate](finish-gate.md) lists what it checks
 - `just signoff` runs `just finish` and `just check` on the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines. After `just finish`, it runs the first failing run again, as [Finish gate](finish-gate.md#the-first-failing-run-again) says
 - `just scenario <name>` runs the scenario `testdata/script/<name>.txtar` alone, and the test kit skips its coverage checks

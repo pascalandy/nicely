@@ -51,6 +51,7 @@ Each part is one file, in reading order.
   - [Extension repository](contract/extension-repository.md)
     - [Finish gate](contract/finish-gate.md)
     - [Update an extension](contract/update-an-extension.md)
+    - [Analyzers](contract/analyzers.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)
   - [Record format](contract/record-format.md)

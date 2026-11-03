@@ -62,6 +62,7 @@ Each part has one owner: one package and one spec section.
 | 2 | Extension entry | One entry point that serves an extension as `ncly-<slug>` or bundled, the export of its sidecars, and its embedded workers | `sdk/extension/` | [SDK](contract/sdk.md) |
 | 2 | Extension repository | The subcommands of the recipes that its spec lists | `sdk/extensionrepo/` | [Extension repository](contract/extension-repository.md) |
 | 2 | Wrap helper | One program that a handler runs, such as a worker: its check, input, environment, captured output, and failures | `sdk/wrap/` | [Wrapped programs](contract/wrap.md) |
+| 2 | Analyzers | The Go analyzers that core's `just lint` and `extensionrepo check` run through `go vet -vettool` | `sdk/analysis/` | [Analyzers](contract/analyzers.md) |
 | 2 | Test kit | The tests of an extension repository: its checks, its scenarios, and an install into scratch folders | `sdk/extensiontest/` | [Test kit](contract/test-kit.md) |
 | 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract/command-descriptions.md), [Output](contract/output.md) |
 | 2 | Program runner | Child environment, process groups and sessions, captured output, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract/programs-that-ncly-runs.md), [Required programs](core-spec.md#required-programs) |

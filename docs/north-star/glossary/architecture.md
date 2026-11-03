@@ -66,6 +66,10 @@
 - Test kit
   - Def.: the SDK package `sdk/extensiontest`, which lets an extension repository test itself
   - Project note: [Test kit](../contract/test-kit.md) says what it runs and checks
+- Analyzer
+  - Def.: a Go rule of the SDK package `sdk/analysis`, which `go vet -vettool` runs on production files
+  - Project note: [Analyzers](../contract/analyzers.md) lists the rules. An extension gets those of its pinned Nicely version
+  - Distinct from: a check of the test kit, which runs the extension instead of reading its code
 - Spec ID
   - Def.: the name in backticks that starts a line of Failures or of Acceptance in the `spec.md` of an extension repository, such as `still-image`
   - Project note: [Spec IDs](../contract/test-kit.md#spec-ids) defines its form

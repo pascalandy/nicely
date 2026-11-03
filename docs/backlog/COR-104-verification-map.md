@@ -22,7 +22,7 @@ Trial findings are evidence of gaps only.
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
 | COR-104-T1 | Rule indexes and ledger columns | agent | - | done |
-| COR-104-T2 | SDK analyzers in every check | agent | - | todo |
+| COR-104-T2 | SDK analyzers in every check | agent | - | done |
 | COR-104-T3 | Owned verification runs | agent | COR-104-T2 | todo |
 | COR-104-T4 | Typed build records | agent | - | todo |
 | COR-104-T5 | Acceptance evaluator in the kit | agent | - | todo |
