@@ -120,7 +120,7 @@ func TestAcceptanceRefusesWeakCases(t *testing.T) {
 		"clean":     "ncly video convert header.md --json\nreads -case 'Keeps data that a reader needs' -private 'Ana Lima' header.txt reference.txt reference.txt sh show.sh\n",
 		"extension": "ncly video convert notes.md --json\ncp stdout answer.json\nreads answer.json reference bad.json ncly-video-convert answer.json\n",
 		"wrapped":   "ncly video convert notes.md --json\ncp stdout answer.json\nreads answer.json reference bad.json awk '{ print }'\n",
-		"first":     "reads notes.md reference bad.json answer lines\n",
+		"first":     "exits 0 sh -c 'cp notes.md notes.txt'\nreads notes.md reference bad.json answer lines\n",
 		"outside":   "ncly video convert notes.md --json\nreads $WORK/../notes.md reference bad.json answer lines\n",
 		"public":    "ncly video convert header.md --json\nreads -case 'Keeps data that a reader needs' header.txt reference.txt bad.txt sh show.sh\n",
 		"unlisted":  "ncly video convert notes.md --json\ncp stdout answer.json\nreads -case 'Temporary file' answer.json reference bad.json answer lines\n",
