@@ -14,12 +14,12 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 | S08 | Print test notices after the results of the Go packages, and keep the exit of a failed test | [install.go][repo-install], [test main][repo-test-main] | [test.go][repo-test], [template recipes test][recipes-test] |
 | S09 | An extension repository runs the kit from one Go test | [extensiontest.go][kit] | [Kit test][kit-test], partial: nothing refuses a deleted call |
 | S10 | The kit checks the links of the manifest, the skill, the spec, the scenarios, and the version | [extensiontest.go][kit] | [Kit test][kit-test], [links.go][links] |
-| S11 | Build the pinned host and the extension, install them in scratch, then run examples and scenarios | [extensiontest.go][kit] | [extensiontest.go][kit], [kit test][kit-test], [examples test][examples-test] |
+| S11 | Build the pinned host and the extension, install them in scratch, then run examples and scenarios | [extensiontest.go][kit] | [extensiontest.go][kit], [build.go][kit-build], [kit test][kit-test], [examples test][examples-test] |
 | S12 | Credit coverage only for checked JSON answers or declared text results | [extensiontest.go][kit] | [scenario.go][kit-scenario], [calls test][calls-test] |
 | S13 | Scenarios use the commands of the kit, which check answers, exits, and protected pairs | [extensiontest.go][kit] | [Answer schema][answer-schema], [kit test][kit-test], [paired test][paired-test], [protect test][protect-test] |
 | S14 | Scenarios get scratch HOME and XDG folders, sentinel keys, no keychain bus, and no caller extensions | [extensiontest.go][kit] | [extensiontest.go][kit], [isolation test][isolation-test], [install test][kit-install-test], partial: absolute paths stay readable |
 | S15 | The kit imports no internal package of core | [extensiontest.go][kit] | [Lint config][golangci], partial: test files are exempt |
-| S16 | Build the host, the extension, and the fake child from Go source | [extensiontest.go][kit], [fake/main.go][fake] | [extensiontest.go][kit], [kit test][kit-test] |
+| S16 | Build the host, the extension, and the fake child from Go source | [extensiontest.go][kit], [fake/main.go][fake] | [build.go][kit-build], [kit test][kit-test] |
 | S17 | Copy each program to its run location, and never hard-link it | [extensiontest.go][kit] | Prose only |
 | S18 | Each failure of the kit names the file, the missing link, and the fix | [extensiontest.go][kit] | [Kit test][kit-test], partial: its negative fixtures |
 | S19 | Each catalog entry has a description for translators | [i18n.go][i18n], [AGENTS.md][agents] | [Rules test][i18n-rules], [rules.go][i18n-rules-go] |
@@ -56,6 +56,7 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 [repo-test-main]: ../../../sdk/extensionrepo/test/main.go
 [repo-test]: ../../../sdk/extensionrepo/test.go
 [kit]: ../../../sdk/extensiontest/extensiontest.go
+[kit-build]: ../../../sdk/extensiontest/build.go
 [fake]: ../../../sdk/extensiontest/fake/main.go
 [kit-test]: ../../../sdk/extensiontest/extensiontest_test.go
 [links]: ../../../sdk/extensiontest/links.go
