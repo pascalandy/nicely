@@ -120,6 +120,11 @@ Read [delivery.md](delivery.md) to reach "Done when" in 5 rounds, for the stop a
 
 For a command that replaces a user file, read [replace-a-file.md](replace-a-file.md). It lists the invariants to prove, and the commands of the test kit that prove them.
 
+## Update and fixes of Nicely
+
+Read [update.md](update.md) after `just update` to a template with `just finish`, for the first build of the commands that exist.
+Read it too when a failure comes from the SDK or the template of Nicely.
+
 ## Readiness review
 
 An agent that did not write the code runs the readiness review at the end of each round, and when the user asks for it.

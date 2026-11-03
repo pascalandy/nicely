@@ -30,3 +30,18 @@ Both update paths finish with `just check`.
 The updater preserves unrelated dependencies and replacements.
 It never resets, stashes, or commits.
 If Copier fails, its output gives restoration commands and the bootstrap command to retry.
+
+## Adopt just finish
+
+An extension rendered before `just finish`, such as one of template v0.23.4, adopts the loop through its update (#427).
+After the update, `just signoff` and so `just release` need a build that `just finish` accepts.
+
+1. The update brings new `Fill:` lines and new parts into the forms, such as `## Case matrix` of `spec.md`. Keep them on a conflict.
+2. Commit the update on its own. That commit adds `intake.toml`, with the example facts of the template.
+3. The first build of the commands that exist starts after the update commit. Its intake reads the current `spec.md`, and the wrapped programs at the revisions that `vision.md` names.
+4. The spec keeps each line that a test claims, and opens each line that no test proves yet. The first scenario claims an open line, and it fails first.
+
+`just finish` refuses an Intake commit that is not after the newest commit that added `intake.toml`, as [Finish gate](finish-gate.md) says.
+So the example facts never stand in for an intake, in a new extension or in an updated one.
+A Markdown `readiness.md` stays history, as [Build records](build-records.md#markdown-records) says.
+The `nicely-extension` skill of the template teaches these steps.

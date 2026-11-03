@@ -109,3 +109,4 @@ A template before COR-104-T4 wrote `readiness.md` by hand, and finish parsed its
 An extension with such a `readiness.md` starts a new build of records when it updates.
 The Intake commit of that build comes after the last commit of a Markdown `readiness.md`.
 Its Git history keeps the Markdown reviews, and finish reads none of them.
+An extension rendered before `just finish` adopts it as [Update an extension](update-an-extension.md#adopt-just-finish) says.

@@ -31,6 +31,8 @@ This part of the [rule index](../rule-index.md) holds the rules of the rounds of
 | Finish reads the intake and the reviews only in `intake.toml` and `review.toml`; a key that a record does not define fails | [Build records][records] |
 | `just records` writes `## Intake` of `vision.md` and `readiness.md`; a view that differs from its record fails | [Build records][records], [views][records-view] |
 | A Markdown `readiness.md` of an older template is history, and the records start a new build after it | [Ledger][ledger], [ledger history][ledger-history] |
+| After `just update` from a template before `just finish`, the first build starts after the update commit, and its intake reads the current `spec.md` | The [ledger][ledger] needs an Intake after the commit that added `intake.toml`; partial: the reviewer judges that the intake read the current `spec.md` |
+| A failure that only Nicely can fix gets an issue in pascalandy/nicely and an accepted limit that links it, until `just update` brings the fix | Prose on purpose: only the agent can judge that the fix belongs to the SDK or the template, not to the extension |
 | At the exit, filled forms, no open line, accepted limits, and a passing readiness verdict for this commit, by a named reviewer, from its findings | [Finish gate][finish] |
 | A build has at most 5 rounds | The [ledger][ledger] counts them, and the [finish gate][finish] fails after 5 |
 | At the limit, stop and report; an answer that lets the agent choose starts no round | Prose on purpose: the ledger refuses a sixth round, but only the agent stops, reports, and reads what the user allows |

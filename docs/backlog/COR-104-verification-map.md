@@ -29,7 +29,7 @@ Trial findings are evidence of gaps only.
 | COR-104-T6 | Publication declaration | agent | - | todo |
 | COR-104-T7 | Publication helpers | agent | COR-104-T6 | todo |
 | COR-104-T8 | TLC runner in the kit | agent | - | todo |
-| COR-104-T9 | Adoption and shared corrections | agent | COR-104-T4 | todo |
+| COR-104-T9 | Adoption and shared corrections | agent | COR-104-T4 | done |
 | COR-104-T10 | Video-convert adopts the loop | agent | COR-104-T1, COR-104-T2, COR-104-T3, COR-104-T4, COR-104-T5, COR-104-T6, COR-104-T7, COR-104-T8, COR-104-T9 | todo |
 
 ### COR-104-T1 Rule indexes and ledger columns
@@ -129,7 +129,7 @@ Core's first model, its finish gate, fails first on the behavior before 59d33f38
 ### COR-104-T9 Adoption and shared corrections
 
 - **Read:** [D068][d068], [Update an extension](../north-star/contract/update-an-extension.md)
-- **Proves:** `scripts/template-update-test.sh`, `scripts/template-test.sh`
+- **Proves:** `scripts/template-adoption-test.sh`
 
 B, level 2, measure 3.
 As #427 asks, the contract and the template skill say how an existing extension adopts `just finish`.

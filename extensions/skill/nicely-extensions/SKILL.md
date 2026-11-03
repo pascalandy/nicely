@@ -48,6 +48,7 @@ go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/
 On a conflict, resolve each file and mark it with `git add`.
 Remove each `.rej` file, then run the printed bootstrap command with `--continue`.
 Success ends with `just check`.
+After an update from a template before `just finish`, the first build starts after the update commit, as [Adopt just finish](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/update-an-extension.md#adopt-just-finish) says.
 [Update an extension](https://github.com/pascalandy/nicely/blob/main/docs/north-star/contract/extension-repository.md#update-an-extension) holds the recovery rules.
 
 ## Remove an extension

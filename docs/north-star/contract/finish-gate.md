@@ -80,6 +80,7 @@ The reviewer of a later round gives each earlier finding a new state when it cha
 - A round with the `finish` `pass` whose newest committed review would fail `just finish` as the repository stood then. Its forms hold no `Fill:` line and no open line, and only the records, their views, and **Limits.** of `spec.md` differ from its head. Its verdict and states follow from its findings, which keep each finding of the reviews before it
 - An Intake that is not after the head of the round that ended the build before
 - An Intake that is not after the last commit of a Markdown `readiness.md`, as [Build records](build-records.md#markdown-records) says
+- An Intake that is not after the newest commit that added `intake.toml`, whose facts are the example of the template, as [Update an extension](update-an-extension.md#adopt-just-finish) says
 - A commit of a round or of a fixed finding that is not HEAD or an ancestor of HEAD
 - A last round whose `head` is not the `commit` of `review.toml`
 - A step of round 1 that is missing, out of order, or in the commit of the step before it
