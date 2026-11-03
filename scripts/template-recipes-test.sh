@@ -99,8 +99,9 @@ fct_test_example_notices() {
 }
 
 # fct_test_acceptance runs just acceptance in the rendered repository $1 on
-# the input that it makes. Then it runs it from another folder on a read-only
-# fixture, given by a relative path, which keeps its content.
+# the input that it makes, also under settings of the caller that the owned
+# run drops. Then it runs it from another folder on a read-only fixture,
+# given by a relative path, which keeps its content.
 fct_test_acceptance() {
 	local repo="${1}" scratch="${2}" fixture="${2}/fixtures/notes.md"
 	# The author fills acceptance.sh, so it starts free of findings.
@@ -111,6 +112,12 @@ fct_test_acceptance() {
 		fct_fail 'just acceptance fails on the input that it makes'
 	fi
 	grep -q '^acceptance: ncly .* passed on .*/work/notes\.md$' "${scratch}/acceptance.out" || fct_fail "just acceptance reports no pass: $(cat "${scratch}/acceptance.out")"
+	# At the parent of 09809608, a scratch HOME kept the other settings of the caller, such as this NCLY_CONFIG.
+	printf '[invalid\n' >"${scratch}/caller-config.toml"
+	if ! (cd "${repo}" && NCLY_CONFIG="${scratch}/caller-config.toml" NCLY_LANG=xx-YY just acceptance) >"${scratch}/acceptance.out" 2>&1; then
+		cat "${scratch}/acceptance.out" >&2
+		fct_fail 'just acceptance runs with the NCLY_CONFIG and NCLY_LANG of the caller'
+	fi
 	mkdir -p "${scratch}/fixtures"
 	printf 'one\ntwo\n' >"${fixture}"
 	chmod 444 "${fixture}"
