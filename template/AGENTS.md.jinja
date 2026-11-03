@@ -27,7 +27,7 @@ Never relay arbitrary arguments to a wrapped program.
 The skill teaches when to use the command, rather than its implementation.
 For a command with a dry run, tell the agent to dry-run the call first.
 
-In `acceptance.sh`, judge the primary output with a reader that is not the wrapped program.
+Judge the primary output with a reader that is not the wrapped program. Do it in each acceptance case of `testdata/script/`, and in `acceptance.sh` on the real input.
 A check that reads only a header or the file type is not sufficient.
 Compare the content that this reader gives with an independent reference.
 Use the real input and criteria of `## Acceptance`.
@@ -45,7 +45,7 @@ A wrapped script goes in `worker/`.
 
 {% if name %}Keep the named extension's root. After these steps, follow "Change a command" for `ncly {{ root }}`.
 
-{% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none
+{% endif %}1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none. Rewrite `testdata/script/acceptance.txtar` for a property of your command
 2. Replace the example declaration at `{{ example_command }}` and its examples in `manifest.toml`. Remove the `[[errors]]` entry of `{{ slug | upper | replace("-", "_") }}_NOT_TEXT`, and `[programs.python3]` when no command needs it
 3. Replace the `{{ slug }}.inspect` catalog entries for the new command. {% if not name %}Rewrite `{{ slug }}.summary` for the remaining commands. {% endif %}Keep every catalog ID under `{{ slug }}.`
 4. Remove the `ncly {{ example_command }}` section and the introduction line that names the example from `spec.md`. Remove its mentions from `vision.md`, `qa.md`, `skill/SKILL.md`, and the Recipes of `AGENTS.md`. Replace it in `acceptance.sh`

@@ -39,17 +39,17 @@ The lines of Failures and Acceptance in `spec.md` are the acceptance criteria of
 3. Give each line a spec ID and a state, as the opening of `spec.md` says: `open`, `proven`, or `limit`.
 
 A case that cannot occur for the command needs no line.
-A case name is not a test. Each case of the Output group that applies gets a test file in `acceptance.sh`, as "Acceptance test files" of `test-kit.md` in the contract says.
+A case name is not a test. Each case of the Output group that applies gets an acceptance case in `testdata/script/`, as `acceptance-cases.md` in the contract says.
 
 ## Test files
 
 The tests of the extension use files that the tests make, such as a text file that a scenario or `acceptance.sh` writes.
 
-Before the first review, `acceptance.sh` makes a test file with a block that a reader needs, for each command that writes an output (#423):
+Before the first review, each command that writes an output gets an acceptance case. Its test file has a block that a reader needs (#423):
 
 - The block uses a value that is not the default, such as `encoding: latin-1`, and it holds private text, such as `author: Ana Lima`
 - An independent reader proves both results: the private text is not in the output, and the output still shows the content correctly
-- Change the handler to keep the raw block, and check that `just acceptance` fails. Then undo that change
+- Its bad variant is the output of a handler that keeps the raw block. `reads` with `-private` requires that this variant fails
 
 The tests and `just acceptance` need no root, no mount, and no system service.
 Each experiment uses a new scratch folder, such as one that `mktemp -d` makes.
@@ -73,7 +73,7 @@ Do these steps in this order. Commit each of the first four steps on its own:
 4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
 5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
 6. Replace every `Fill:` line of `vision.md`, `spec.md`, and `qa.md`, and every `# Fill:` line of `intake.toml`.
-7. Fill in `acceptance.sh` from `## Acceptance` in `spec.md`, with a test file for each generic case of the Output group that applies. For a paid command, limit it to the dry run.
+7. Write an acceptance case for each property of `## Acceptance` and each Output case of `## Case matrix`, as `testdata/script/acceptance.txtar` shows. Fill in `acceptance.sh` for the real input. For a paid command, limit it to the dry run.
 8. End the round.
 
 Give the commits of steps 1 to 4 to the reviewer, who records them in `[order]` of the ledger.

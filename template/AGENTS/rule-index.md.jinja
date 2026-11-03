@@ -19,7 +19,7 @@ The linked checks enforce these rules.
 | The skill names only declared commands | [Kit skill links][links] |
 | Sign off through `just signoff` and release through `just release vX.Y.Z` | [Signoff][signoff] writes its [receipt][signoff-receipt], and [release][release] reads it in its [receipt][release-receipt] |
 | A copied recipe holds no script | [Core template test][template-test] |
-| `acceptance.sh` compares the primary output, from a reader that is not the wrapped program, with an independent reference | Prose only; [release runs acceptance][release] |
+| An acceptance case compares the primary output, from a reader that is not the wrapped program, with an independent reference | [Kit `reads`][reads], and [release runs acceptance][release] on the real input; partial: the reviewer judges that the reader and the reference are independent |
 | A test claims each line of Failures and Acceptance in `spec.md` | [Kit spec IDs][spec] |
 | One bounded job, no arbitrary argument relay; the skill teaches when | Prose on purpose: the domain decides whether a job has useful bounds, and when the skill sends an agent to it |
 | A command that replaces a user file proves its invariants with `protect`, `refuses`, `signal`, and `appears` | [Kit `protect`][protected], [kit `refuses`][refuses], [kit `signal`][signal], [kit `appears`][appears] |
@@ -45,6 +45,7 @@ The linked checks enforce these rules.
 [publication-row]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/publication_row.go
 [publication-report]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/publication_report.go
 [predicts]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/predicts.go
+[reads]: https://github.com/pascalandy/nicely/blob/main/sdk/extensiontest/acceptance.go
 
 [signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
 [signoff-receipt]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff_receipt.go
