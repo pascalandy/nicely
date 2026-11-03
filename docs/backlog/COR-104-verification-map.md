@@ -1,7 +1,7 @@
 ---
 id: COR-104
 core: "verification map"
-state: Active. Core and template first, then video-convert
+state: "Active. Core and template first, then video-convert. Gate review of #427 waits under After"
 ---
 
 # COR-104 verification map
@@ -38,10 +38,11 @@ Trial findings are evidence of gaps only.
 - **Proves:** `tools/cmd/plan/rules_test.go`, `tools/cmd/plan/qa_test.go`
 
 A, level 2, measures 1 and 2.
-Core gets an index of the 154 rules of N2 in `docs/north-star/rules/`.
+Core's index in `docs/north-star/rules/` starts with N2's 154 rules.
+`just status` now counts 169 core rules and 13 template rules `Prose on purpose`.
 `just test` checks both indexes: each enforcer links a file, or says `Prose only` or `Prose on purpose`.
 `just status` prints the `Prose only` count of each index, and `extensionrepo check` that of an extension.
-The template index marks 11 judgment rules `Prose on purpose`, and deletes one rule that signoff replay enforces.
+T1 marked 11 judgment rules `Prose on purpose` and deleted one rule that signoff replay enforces.
 The QA ledger gets a Corrections table, with Level and Owner columns for each correction.
 It fails first at 7f3ae60e, where `ledger_history.go` enforced rules that no row named until b3dc8b48.
 
@@ -153,6 +154,9 @@ It fails first on its record, which rejects the new pin ([P1][p1]), and on #427.
 ## After
 
 Pascal runs a UAT of video-convert at the release of COR-104-T10, and its corrections enter the ledger.
+
+Compare the time and findings of each gate in [#427](https://github.com/pascalandy/nicely/issues/427).
+After Pascal accepts each removal, remove each gate that took time and found no real defect.
 
 ## Later
 

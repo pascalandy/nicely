@@ -54,3 +54,20 @@ Without `--dry-run`, it runs the task under the ID of `--run-id`, or one that it
 ## Extension template
 
 `copier.yml` and `template/` hold the extension template. With the Copier that the template pins, an agent creates the repository of an extension outside Nicely, as the `nicely-extensions` skill shows. Its example command, `inspect`, runs a Python worker through `sdk/wrap`, and its scenarios cover each failure of a wrapped program. In that repository, `just check` runs the checks and the test kit, and `just install` installs the extension. `just update <version>` carries the repository to another Nicely version, and stops before `go get` on a conflict. Its `README.md` gives a user the commands that install a release tag, and its `AGENTS.md` gives the release steps.
+
+`just finish` checks the extension's `spec.md` and reads its intake and reviews only in the typed records `intake.toml` and `review.toml`.
+It rejects open findings and a generated view that differs from its records.
+`just signoff` runs it and repeats the recorded first failing scenario before signing the commit.
+An existing extension adopts it through `just update`, then starts its first build after the update commit.
+[Finish gate](north-star/contract/finish-gate.md) lists the checks.
+
+## Verification and queue
+
+[COR-104](backlog/COR-104-verification-map.md) delivered T1 through T9 in core and the template.
+The SDK now provides analyzers, [owned runs](north-star/contract/owned-runs.md), typed build records, acceptance checks, publication checks, and the TLC runner.
+Video-convert has yet to adopt the loop of the `nicely-extension` skill through COR-104-T10, tracked in [#427](https://github.com/pascalandy/nicely/issues/427).
+
+The queue is COR-104, COR-102 Canadian French, then COR-105 AUR package.
+`just next` prints COR-104-T10.
+COR-105-T1 waits on Pascal's AUR account and release key.
+After COR-102 ships, XT-602 returns for one small useful slice through the loop.

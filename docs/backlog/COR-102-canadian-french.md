@@ -49,8 +49,21 @@ stderr '"code":"NOT_FOUND"'
 
 ### COR-102-T1 Translate core
 
-- **Read:** [Configuration](../north-star/contract/configuration.md)
-- **Proves:** `testdata/script/language_fr.txtar`
+- **Read:** [Configuration](../north-star/contract/configuration.md), [D067](../north-star/decisions/D067-share-verification-rules.md), [Analyzers](../north-star/contract/analyzers.md)
+- **Proves:** `testdata/script/language_fr.txtar`, `sdk/analysis/catalogtext/catalogtext_test.go`
+
+First, add `sdk/analysis/catalogtext`, following [Add a rule](../north-star/contract/analyzers.md#add-a-rule).
+The analyzer finds user-visible English strings outside the catalogs in core and `sdk/`.
+Scope its package paths as `callerenv` does.
+Its fixtures reject the known cases and accept catalog lookups, protocol identifiers, and packages outside that scope.
+Its first known cases are:
+
+- `sdk/extensionrepo/update.go`: lines 47, 51, 79, and 80
+- `sdk/extensionrepo/signoff.go`: line 140
+- `sdk/extensionrepo/release_install.go`: lines 50, 87, and 94
+- `internal/cli/values.go`: lines 98-152
+
+Move those strings into their owner's catalog before translating them.
 
 A complete `fr-CA` catalog for core and for the SDK, which renders the help pages, the global flags, and the error labels of every command, each passing the parity test against `en`. The system language selects them.
 A confirmation shows `[o/N]` and accepts `o` and `oui`.

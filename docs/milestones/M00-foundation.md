@@ -9,7 +9,7 @@ An installable `ncly` answers `--help`, `--version`, and `completion`. It fixes 
 
 ## Prerequisites
 
-All three were in place before M00-T6. The AUR account moved to [AUR](../backlog/COR-625-aur-package.md) with the AUR publication, so `AUR_SSH_KEY` stays unused until then.
+All three were in place before M00-T6. The AUR account moved to [AUR](../backlog/COR-105-aur-package.md) with the AUR publication, so `AUR_SSH_KEY` stays unused until then.
 
 - The empty repository `pascalandy/homebrew-tap` exists
 - The `pascalandy/nicely` repository has two secrets for `release.yml`: `HOMEBREW_TAP_SSH_KEY`, the private half of a deploy key with write access to `pascalandy/homebrew-tap`, and `AUR_SSH_KEY`, the private half of the `nicely-release-aur` key
