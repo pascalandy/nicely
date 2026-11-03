@@ -1,6 +1,8 @@
 # auth
 
-`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, says whether its key comes from its environment variable or from the OS keychain, without printing any key, and which extensions hold its grant. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. `ncly auth grant` lets an extension receive a key once a human confirms it in a terminal, and `ncly auth revoke` takes the grant back. This feature drives it against the real keychain, with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. Its fixture `verifykeys` declares that service, and `ncly verifykeys digest` answers the SHA-256 of the key that it receives, never the key. It never touches the key of a real service.
+`ncly auth` keeps the keys of extensions. `ncly auth status` lists each service that an installed extension declares, says whether its key comes from its environment variable or from the OS keychain, without printing any key, and which extensions hold its grant. `ncly auth login` stores a key in the keychain, and `ncly auth logout` removes it. In a terminal, `login` asks for the key in a masked field, and a replacement or a logout asks for a typed `[y/N]` confirmation. `ncly auth grant` lets an extension receive a key once a human confirms it in a terminal, and `ncly auth revoke` takes the grant back. On Linux, this feature uses the real Secret Service in the run's private session.
+On macOS, this feature uses the login keychain.
+This feature drives the keychain with the test service `verifynicely`, whose variable is `VERIFYNICELY_API_KEY`, and a fake key that is no human's key. Its fixture `verifykeys` declares that service, and `ncly verifykeys digest` answers the SHA-256 of the key that it receives, never the key. It never touches the key of a real service.
 
 ## Sub-features
 
@@ -52,7 +54,7 @@ Follow these guides in order:
 
 - Set `VERIFYNICELY_API_KEY` on the step itself, as written: the wrapper passes the caller's environment to `ncly`, so a value left in the shell changes the result of every later step
 - Quote each `--answer` as written: the shell would expand the brackets of `[y/N]` otherwise
-- `"keychain":"unavailable"` on Linux means that no Secret Service answers, such as gnome-keyring outside a desktop session: report it, because the steps that expect `available` then fail with `KEYRING_UNAVAILABLE`
+- `"keychain":"unavailable"` on Linux means the run's private Secret Service failed: stop and report it. Never use the user's session instead
 - On macOS, `prepare` needs `--mac-keychain`. Run the steps in the desktop session, because the login keychain refuses an SSH session. [Desktop session](../../../../docs/qa/protocol.md#desktop-session) in docs/qa says how, and when to call a human
 - `ncly auth status` and `ncly doctor auth` fail the stored key with `KEY_NOT_GRANTED` until the step Grant in a terminal, and again after the step Revoke: a key that no extension may receive is a problem to fix, and exit 78 is the expected result there
 - `just verify step` has no terminal, and `grant` takes no `--force`, so only the `tmux` step grants the key. Never print the fake key to compare digests: pipe it straight into `sha256sum`

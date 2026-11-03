@@ -44,8 +44,16 @@ cleanup() {
 	# The auth feature leaves its fake key in the real keychain, after a failed
 	# run too. The scratch folder stays until the key is gone, so that a later
 	# cleanup can try again.
-	if [[ -f "$run/auth-prepared" && -d "$run/scratch" ]]; then
-		logout_fake_key "$run" || die "kept the scratch folder of $run: run cleanup again once the keychain answers"
+	if [[ -f "$run/auth-prepared" && -d "$run/scratch" && ! -f "$run/scratch/keyring/stopped" ]]; then
+		if ! logout_fake_key "$run"; then
+			if [[ -d "$run/scratch/keyring" ]]; then
+				bash "$script_dir/keyring.sh" stop "$run/scratch/keyring" | tee -a "$run/evidence/keyring.txt" || die "kept $run: private keyring cleanup failed"
+			fi
+			die "kept the scratch folder of $run: inspect the failed auth cleanup, then run cleanup again"
+		fi
+	fi
+	if [[ -d "$run/scratch/keyring" ]]; then
+		bash "$script_dir/keyring.sh" stop "$run/scratch/keyring" | tee -a "$run/evidence/keyring.txt" || die "kept the scratch folder of $run: private keyring cleanup failed"
 	fi
 	# Go can put read-only module folders under the scratch home.
 	for folder in "$run/scratch" "$run/build"; do

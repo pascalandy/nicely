@@ -17,13 +17,23 @@ Copy this checklist and tick each step:
 - [ ] 5. Evidence: the transcripts outlive the cleanup, and the report quotes them
 ```
 
+On Linux, a run also needs `dbus-run-session` and `gnome-keyring-daemon`.
+Launch fails with the missing program's name; it never uses the caller's D-Bus session.
+The run starts and unlocks its own keyring in one private session, shared by every later step.
+Cleanup stops that keyring and its bus before removing scratch files.
+The Linux integration test follows this real start, auth and cleanup path.
+It skips with the missing program's name when either prerequisite is absent.
+The macOS keychain path is unchanged.
+
 ## Launch
 
 ```bash
 run="$(just verify)"
 ```
 
-`just verify` runs `scripts/verify.sh start`. It builds `ncly` from the checkout as it is, uncommitted changes included, into `$run/build/`. It makes a scratch home in `$run/scratch/home/`, with its own XDG folders, and installs the Go fixture `hello` there as an external extension, in `.local/share/nicely/extensions/`, with its manifest, catalogs, and skill beside it. It writes the wrapper `$run/scratch/bin/ncly`, which sets `HOME`, the XDG folders, and a `PATH` without any folder that holds an `ncly-<domain>` file, and unsets `NCLY_CONFIG`, which would point the config elsewhere, so every later command reaches only the scratch folder. On macOS, the auth feature points `HOME` back at the real home, as [auth](features/auth.md) says. Its last line on stdout is the run folder, under `${XDG_CACHE_HOME:-$HOME/.cache}/nicely/verify/`. Done when that folder holds `scratch/bin/ncly`.
+`just verify` runs `scripts/verify.sh start`. It builds `ncly` from the checkout as it is, uncommitted changes included, into `$run/build/`. It makes a scratch home in `$run/scratch/home/`, with its own XDG folders, and installs the Go fixture `hello` there as an external extension, in `.local/share/nicely/extensions/`, with its manifest, catalogs, and skill beside it. It writes the wrapper `$run/scratch/bin/ncly`, which sets `HOME`, the XDG folders, and a `PATH` without any folder that holds an `ncly-<domain>` file, and unsets `NCLY_CONFIG`, which would point the config elsewhere, so every later command reaches only the scratch folder. On Linux, the wrapper replaces the caller's bus address and runtime directory with the private session of this run.
+A missing or stopped private session fails the call, with no fallback.
+On macOS, the auth feature points `HOME` back at the real home, as [auth](features/auth.md) says. Its last line on stdout is the run folder, under `${XDG_CACHE_HOME:-$HOME/.cache}/nicely/verify/`. Done when that folder holds `scratch/bin/ncly`.
 
 ## Doctor
 
@@ -49,6 +59,8 @@ just verify cleanup "$run"
 ```
 
 `cleanup` makes scratch and build files writable, including Go's module cache, before removal.
+On Linux, it first stops the private keyring and D-Bus session, after any fake-key cleanup.
+Its evidence records that stop. A stop failure keeps scratch files and fails cleanup.
 It keeps `$run/evidence/` and refuses a folder that `start` did not create.
 When the run prepared `auth`, cleanup first removes its fake key and checks that the keychain reports `AUTH_MISSING`.
 Both calls remain in `$run/evidence/cleanup.txt`.

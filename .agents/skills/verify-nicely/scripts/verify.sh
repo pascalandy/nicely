@@ -100,8 +100,22 @@ XDG_CACHE_HOME='$home/.cache'
 PATH='$path'
 export HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME PATH
 unset NCLY_CONFIG
-exec '$binary' "\$@"
 EOF
+	if [[ "$(uname -s)" == Linux ]]; then
+		cat >>"$wrapper" <<EOF
+state='$home/../keyring'
+if [ ! -s "\$state/address" ] || [ -f "\$state/stop" ] || [ -f "\$state/stopped" ]; then
+    echo 'verify-nicely: private keyring session is unavailable; start a new run' >&2
+    exit 1
+fi
+DBUS_SESSION_BUS_ADDRESS=\$(cat "\$state/address")
+XDG_RUNTIME_DIR=\$(cat "\$state/runtime")
+GNOME_KEYRING_CONTROL="\$XDG_RUNTIME_DIR/keyring"
+export DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR GNOME_KEYRING_CONTROL
+unset DBUS_SESSION_BUS_PID DBUS_SESSION_BUS_WINDOWID DBUS_STARTER_ADDRESS DBUS_STARTER_BUS_TYPE
+EOF
+	fi
+	printf 'exec '\''%s'\'' "$@"\n' "$binary" >>"$wrapper"
 	chmod +x "$wrapper"
 }
 
@@ -120,6 +134,9 @@ stamp() {
 start() {
 	local repo run stamp home path
 	command -v go >/dev/null || die "go is missing: install it from https://go.dev/dl/"
+	if [[ "$(uname -s)" == Linux ]]; then
+		bash "$script_dir/keyring.sh" check
+	fi
 	repo="$(git -C "$script_dir" rev-parse --show-toplevel)" || die "run it from a checkout of nicely"
 	stamp="$(date +%Y%m%d-%H%M%S)-$$"
 	run="$(runs_root)/$stamp"
@@ -132,6 +149,9 @@ start() {
 	install_hello "$repo" "$home/.local/share/nicely/extensions"
 	path="$(clean_path)"
 	write_wrapper "$run/scratch/bin/ncly" "$run/build/ncly" "$home" "$path"
+	if [[ "$(uname -s)" == Linux ]]; then
+		bash "$script_dir/keyring.sh" start "$run/scratch/keyring" "$home"
+	fi
 	git -C "$repo" rev-parse --short=12 HEAD >"$run/evidence/commit.txt"
 	if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
 		echo "dirty" >>"$run/evidence/commit.txt"

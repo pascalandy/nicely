@@ -114,3 +114,6 @@ Issues and pull requests are welcome. [AGENTS.md](AGENTS.md) explains how change
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+On Linux, `just verify` uses a private D-Bus session and keyring for every step of its scratch run.
+It needs `dbus-run-session` and `gnome-keyring-daemon`; a missing prerequisite stops the run.
