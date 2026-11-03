@@ -3,56 +3,41 @@ package extensionrepo
 import (
 	"fmt"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
-// firstRun finds a line of ## First failing run, in the bold forms that
-// readinessPart reads. That part records the run of the first scenario of
-// round 1 at its commit, before the handler (#420).
-var firstRun = regexp.MustCompile(`^\s*[-*+]\s+\*\*(Commit|Command|Exit|Assertion)(?:\*\*:|:\*\*)\s*(.*?)\s*$`)
-
 // firstRunProblems checks the record of the first failing run of the current
-// build. It needs the Scenario commit of ## Order of round 1, so a record of
-// an earlier build never stands in. It also needs three more lines. The
-// command is just scenario <name>, of a scenario of that commit. The exit
-// status is not 0. The assertion that failed holds a line of that scenario.
-// just signoff
-// runs the scenario again, and the reviewer judges whether the assertion
-// proves the missing behavior (#422).
-func firstRunProblems(readiness string, order map[string]round) []string {
-	const fix = "Fix: run the first scenario at its commit with just scenario <name>, before the handler, and record that run under ## First failing run " +
-		"in the lines - **Commit**:, - **Command**:, - **Exit**:, and - **Assertion**:"
-	parts, found := firstRunRecord(readiness)
-	if !found {
-		return []string{"readiness.md: it holds no part ## First failing run, so no record shows that the first scenario of round 1 failed before the handler. " + fix}
+// build (#420). Its commit is the Scenario commit of [order], so a record of
+// an earlier build never stands in. Its scenario is a scenario of that
+// commit, its exit status is not 0, and its assertion holds a line of that
+// scenario. just signoff runs the scenario again, and the reviewer judges
+// whether the assertion proves the missing behavior (#422).
+func firstRunProblems(run *firstRun, o order) []string {
+	const fix = "Fix: run the first scenario at its commit with just scenario <name>, before the handler, and record that run in the table [first_run] " +
+		"with the keys commit, scenario, exit, and assertion"
+	if run == nil {
+		return []string{"review.toml: it records no first failing run, so no record shows that the first scenario of round 1 failed before the handler. " + fix}
 	}
 	var problems []string
-	scenario, recorded := order["Scenario"], ""
-	if len(scenario.cells) == 2 {
-		recorded, _ = ledgerCommit(scenario.cells[1])
-	}
-	commit, _ := ledgerCommit(parts["Commit"])
+	recorded, _ := ledgerCommit(o.Scenario)
+	commit, _ := ledgerCommit(run.Commit)
 	if commit == "" || commit != recorded {
-		problems = append(problems, fmt.Sprintf("readiness.md: ## First failing run names the commit %q, which is not the Scenario commit of ## Order of round 1. %s", parts["Commit"], fix))
+		problems = append(problems, fmt.Sprintf("review.toml: the first run names the commit %q, which is not the Scenario commit of [order]. %s", run.Commit, fix))
 	}
-	if parts["Command"] == "" {
-		problems = append(problems, "readiness.md: ## First failing run names no command. "+fix)
-	} else if name := scenarioRecipe.FindStringSubmatch(parts["Command"]); name == nil {
-		problems = append(problems, fmt.Sprintf("readiness.md: ## First failing run names the command %q, which is not just scenario <name>. "+
-			"just signoff runs only that recipe again, never the text of the record. %s", parts["Command"], fix))
-	} else if commit != "" {
-		problems = append(problems, scenarioProblems(commit, name[1], parts["Assertion"], fix)...)
+	switch {
+	case run.Scenario == "":
+		problems = append(problems, "review.toml: the first run names no scenario. "+fix)
+	case !scenarioName.MatchString(run.Scenario):
+		problems = append(problems, fmt.Sprintf("review.toml: the first run names the scenario %q, which is no name of a scenario. "+
+			"just signoff runs only just scenario <name> again, never the text of the record. %s", run.Scenario, fix))
+	case commit != "":
+		problems = append(problems, scenarioProblems(commit, run.Scenario, run.Assertion, fix)...)
 	}
-	switch exit, err := strconv.Atoi(parts["Exit"]); {
-	case err != nil:
-		problems = append(problems, fmt.Sprintf("readiness.md: the exit status %q of the first run is no number. %s", parts["Exit"], fix))
-	case exit == 0:
-		problems = append(problems, "readiness.md: the first run of the scenario exited 0, so it did not fail. "+fix)
+	if run.Exit == 0 {
+		problems = append(problems, "review.toml: the first run of the scenario exited 0, so it did not fail. "+fix)
 	}
-	if strings.TrimSpace(strings.TrimSuffix(parts["Assertion"], ".")) == "" {
-		problems = append(problems, "readiness.md: ## First failing run names no assertion that failed. "+
+	if strings.TrimSpace(strings.TrimSuffix(run.Assertion, ".")) == "" {
+		problems = append(problems, "review.toml: the first run names no assertion that failed. "+
 			"A compile error is no failed assertion, because it proves no missing behavior. "+fix)
 	}
 	return problems
@@ -64,10 +49,10 @@ func scenarioProblems(commit, name, assertion, fix string) []string {
 	file := "testdata/script/" + name + ".txtar"
 	script, err := exec.Command("git", "show", commit+":"+file).Output()
 	if err != nil {
-		return []string{fmt.Sprintf("readiness.md: ## First failing run runs the scenario %s, which the Scenario commit %s does not hold. %s", file, commit, fix)}
+		return []string{fmt.Sprintf("review.toml: the first run runs the scenario %s, which the Scenario commit %s does not hold. %s", file, commit, fix)}
 	}
 	if strings.TrimSpace(assertion) == "" || scenarioLine(string(script), assertion) == 0 {
-		return []string{fmt.Sprintf("readiness.md: ## First failing run names the assertion %q, which holds no line of %s at %s. "+
+		return []string{fmt.Sprintf("review.toml: the first run names the assertion %q, which holds no line of %s at %s. "+
 			"Fix: copy the line of the scenario that failed, as the output of the run names it", assertion, file, commit)}
 	}
 	return nil
@@ -87,38 +72,4 @@ func scenarioLine(script, text string) int {
 		}
 	}
 	return 0
-}
-
-// firstRunRecord reads the lines of ## First failing run, outside fenced
-// code. It also says whether readiness.md holds that part.
-func firstRunRecord(readiness string) (map[string]string, bool) {
-	parts, at, found, fence := map[string]string{}, 0, false, ""
-	for i, text := range strings.Split(readiness, "\n") {
-		// A fence closes with its own run of marks, alone on its line, as in readinessFindings.
-		switch trimmed := strings.TrimSpace(text); {
-		case fence != "":
-			if strings.HasPrefix(trimmed, fence) && strings.Trim(trimmed, fence[:1]) == "" {
-				fence = ""
-			}
-			continue
-		case strings.HasPrefix(trimmed, "```"), strings.HasPrefix(trimmed, "~~~"):
-			fence = trimmed[:len(trimmed)-len(strings.TrimLeft(trimmed, trimmed[:1]))]
-			continue
-		}
-		if h := readinessHeading.FindStringSubmatch(text); h != nil && len(h[1]) <= 2 {
-			found = found || h[2] == "First failing run"
-			at = 0
-			if h[2] == "First failing run" {
-				at = i + 1
-			}
-			continue
-		}
-		// The first value of each line counts, as for the severity forms in readinessFindings.
-		if m := firstRun.FindStringSubmatch(text); at > 0 && m != nil {
-			if _, read := parts[m[1]]; !read {
-				parts[m[1]] = strings.Trim(strings.TrimSuffix(m[2], "."), "`")
-			}
-		}
-	}
-	return parts, found
 }

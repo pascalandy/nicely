@@ -84,3 +84,25 @@ func matrixIDs(cell string) []string {
 	}
 	return ids
 }
+
+// A family is one row of ## Case matrix: the spec IDs of its inputs that
+// pass, and of those that the command refuses.
+type family struct {
+	accepted, refused []string
+}
+
+// matrixFamilies returns the families of ## Case matrix of spec, by the text
+// of their Family cell.
+func matrixFamilies(spec string) map[string]family {
+	families, header := map[string]family{}, false
+	for _, l := range SpecLines(spec) {
+		switch {
+		case l.Part != "Case matrix":
+		case l.Kind == SpecHeader:
+			header = slices.Equal(l.Cells, matrixColumns)
+		case l.Kind == SpecRow && header && len(l.Cells) == len(matrixColumns):
+			families[l.Cells[0]] = family{accepted: matrixIDs(l.Cells[2]), refused: matrixIDs(l.Cells[3])}
+		}
+	}
+	return families
+}

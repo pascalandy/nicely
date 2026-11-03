@@ -1,0 +1,44 @@
+# The intake record of the extension. build-records.md, in the folder that
+# just contract prints, defines its keys. just records writes the part
+# ## Intake of vision.md from it, and just finish reads only this record.
+#
+# This record is filled for the example command. It inspects a file until you
+# replace it. Replace its facts, then delete each line that starts with "# Fill:".
+#
+# Fill: each fact of the intake of each wrapped program: its effects, its exit codes, its resource use, and its known failures.
+# Fill: each declaration of the input that changes how a reader shows the content.
+# Fill: a fact that a source gives is sourced, with the source, its revision, and the part that you read. A link alone is not evidence of a read.
+# Fill: a fact that no source gives is an inference, or an unknown fact with the spec ID of its open line in spec.md.
+# Fill: the result of each experiment, apart from the facts.
+
+[[facts]]
+kind = "sourced"
+statement = "Effects: `worker/inspect.py` reads the file once, in chunks of 64 KiB, and writes nothing"
+source = "`worker/inspect.py` of the template"
+revision = "the Nicely version that `go.mod` pins"
+read = "the function `main`"
+
+[[facts]]
+kind = "sourced"
+statement = "Exit codes: 0 with one JSON object on stdout, and 2 for a wrong argument count"
+source = "`worker/inspect.py` of the template"
+revision = "the Nicely version that `go.mod` pins"
+read = "`main` and the last two lines of the file"
+
+[[facts]]
+kind = "sourced"
+statement = "Resource use: memory stays near one chunk, whatever the size of the file"
+source = "`worker/inspect.py` of the template"
+revision = "the Nicely version that `go.mod` pins"
+read = "the loop of `main`"
+
+[[facts]]
+kind = "sourced"
+statement = "Known failures: Python raises an error and exits 1 on a file that it cannot open"
+source = "`worker/inspect.py` of the template"
+revision = "the Nicely version that `go.mod` pins"
+read = "the call to `open` in `main`, which nothing catches"
+
+[[experiments]]
+command = "python3 worker/inspect.py notes.md"
+result = "on a file of three lines, the last without a newline, it printed `\"lines\": 3` and exited 0"

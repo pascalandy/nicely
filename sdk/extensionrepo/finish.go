@@ -12,14 +12,32 @@ import (
 // skill, which "Done when" of the template AGENTS.md runs (#405). just check
 // stays green for an incomplete round. This gate fails until the loop ends.
 // Then each form is filled, no line is open, the user accepted each limit,
-// and a passing readiness verdict names the commit under review.
+// and a passing readiness verdict names the commit under review. Finish
+// reads the intake and the reviews only in their build records (COR-104-T4).
 func finishRepository() result {
 	problems, spec := formProblems()
 	specs, limits := specProblems(spec)
 	if spec != "" {
 		specs = append(specs, matrixProblems(spec, limits)...)
 	}
-	problems = append(append(problems, specs...), readinessProblems(spec, limits)...)
+	problems = append(problems, specs...)
+	// A view follows its record only when the record reads.
+	var current *reviewRecord
+	intake, found, decoded := readIntake()
+	problems = append(problems, decoded...)
+	if found && len(decoded) == 0 {
+		problems = append(problems, intakeProblems(intake, spec)...)
+		problems = append(problems, intakeViewProblems(intake)...)
+	}
+	review, reviewed, decoded := readReview()
+	problems = append(problems, decoded...)
+	if len(decoded) == 0 {
+		if reviewed {
+			current = &review
+			problems = append(problems, reviewViewProblems(review)...)
+		}
+		problems = append(problems, reviewProblems(current, spec, limits)...)
+	}
 	for _, problem := range problems {
 		fmt.Fprintln(os.Stderr, problem)
 	}
@@ -29,17 +47,19 @@ func finishRepository() result {
 		}
 		return failed("finish", errors.New("the loop of the nicely-extension skill is not done"))
 	}
-	return result{action: "finish", answer: []string{"finish: no line or finding is open, the user accepted each limit, and readiness.md holds a passing verdict and ledger for this commit"}}
+	return result{action: "finish", answer: []string{"finish: no line or finding is open, the user accepted each limit, and review.toml holds a passing verdict and ledger for this commit"}}
 }
 
-// formProblems reports each missing form of the template, and each line of
-// a form that starts with "Fill:" after its indent. Round 1 of the skill
-// replaces each such line (#408, #412). It also returns spec.md, or "" when
-// spec.md is missing, so finish goes on to its other checks.
+// formProblems reports each missing form of the template. It also reports
+// each line of a form that starts with "Fill:" after its indent, and each
+// line of intake.toml that starts with "# Fill:". Round 1 of the skill
+// replaces each such line (#408, #412).
+// It also returns spec.md, or "" when spec.md is missing, so finish goes on
+// to its other checks.
 func formProblems() ([]string, string) {
 	var problems []string
 	var spec string
-	for _, form := range []string{"vision.md", "spec.md", "qa.md"} {
+	for _, form := range []string{"vision.md", "spec.md", "qa.md", intakeFile} {
 		data, err := os.ReadFile(form)
 		if errors.Is(err, os.ErrNotExist) {
 			problems = append(problems, form+": the form is missing. Fix: restore it from the Git history of the repository, then fill it")
@@ -52,7 +72,7 @@ func formProblems() ([]string, string) {
 			spec = string(data)
 		}
 		for i, line := range strings.Split(string(data), "\n") {
-			if strings.HasPrefix(strings.TrimSpace(line), "Fill:") {
+			if form != intakeFile && unfilled.MatchString(line) || form == intakeFile && intakeUnfilled.MatchString(line) {
 				problems = append(problems, fmt.Sprintf("%s:%d: this line of the form is not filled. Fix: write what it asks for the commands of this extension, then delete it", form, i+1))
 			}
 		}

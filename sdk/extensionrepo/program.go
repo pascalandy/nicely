@@ -22,7 +22,7 @@ func Main(e extension.Extension) {
 func run(e extension.Extension, args []string) int {
 	r, ok := action(e, args)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "usage: export install | uninstall | signoff | release <tag> [fixture] | check | finish | scenario <name> | acceptance [fixture] | contract | export <folder> | test [go test arguments] | update vX.Y.Z /absolute/repository [--continue]")
+		fmt.Fprintln(os.Stderr, "usage: export install | uninstall | signoff | release <tag> [fixture] | check | finish | records | scenario <name> | acceptance [fixture] | contract | export <folder> | test [go test arguments] | update vX.Y.Z /absolute/repository [--continue]")
 		return 2
 	}
 	return r.deliver(os.Stdout, os.Stderr)
@@ -55,6 +55,8 @@ func action(e extension.Extension, args []string) (result, bool) {
 		return checkRepository(), true
 	case name == "finish" && len(rest) == 0:
 		return finishRepository(), true
+	case name == "records" && len(rest) == 0:
+		return writeRecords(), true
 	case name == "scenario" && len(rest) == 1:
 		return runScenario(rest[0]), true
 	case name == "contract" && len(rest) == 0:

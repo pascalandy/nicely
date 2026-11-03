@@ -120,6 +120,7 @@ fct_test_ledger_builds() {
 	fct_readiness "${head2}" Ready "${advise}" 'agent B'
 	fct_finish 1
 	fct_finish_said 'review.toml: the intake of this build comes before the last Markdown readiness.md, in'
+	git -C "${finish}" checkout -q readiness.md
 	fct_steps "${finish}"
 	printf 'Handler of the first build of records.\n' >>"${finish}/README.md"
 	git -C "${finish}" commit -qam 'handler of the first build of records'

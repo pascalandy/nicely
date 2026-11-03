@@ -2,93 +2,85 @@ package extensionrepo
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
 	"strconv"
-	"strings"
 )
 
-// stateProblems checks the state of each finding in the build of n rounds.
-// A new finding of round n can have no state yet, and then it is open (#423).
+// stateProblems checks the state of each finding in the build of n rounds
+// (#417). An open finding names its row under ## Open lines (#420, #423).
+// A fixed finding names a line of a family of ## Case matrix. That family
+// has a test that passes and a test that refuses (T43 of N2). Review still
+// judges that the family is the whole family of the problem.
 func stateProblems(findings []finding, n int, spec string, limits []limit) []string {
-	var proven []string
+	proven, open := map[string]bool{}, map[string]bool{}
 	for _, l := range SpecLines(spec) {
-		if l.ID != "" && (l.Part == "Failures" || l.Part == "Acceptance") {
-			proven = append(proven, l.ID)
-		}
-	}
-	lines := strings.Split(spec, "\n")
-	var open []string
-	for _, l := range SpecLines(spec) {
-		if l.Part == "Open lines" && (l.Kind == SpecRow || l.Kind == SpecBullet) {
-			open = append(open, lines[l.Number-1])
-		}
-	}
-	var problems []string
-	seen := map[string]bool{}
-	for _, f := range findings {
-		at := fmt.Sprintf("readiness.md:%d: ", f.line)
-		m := readinessID.FindStringSubmatch(f.id)
-		if m == nil {
-			problems = append(problems, at+"this finding has no ID. Fix: start its heading with R, the round that first reported it, then -F and its number, such as ### R2-F1")
-			continue
-		}
-		first, _ := strconv.Atoi(m[2])
 		switch {
-		case seen[f.id]:
-			problems = append(problems, at+"another finding has the ID "+f.id+". Fix: give each finding its own ID, and keep it in later rounds")
-		case first > n:
-			problems = append(problems, fmt.Sprintf("%sthe finding %s is of round %d, after the last round %d of ## Rounds. Fix: correct its ID or the rounds", at, f.id, first, n))
+		case l.ID == "":
+		case l.Part == "Failures" || l.Part == "Acceptance":
+			proven[l.ID] = true
+		case l.Part == "Open lines" && l.Kind == SpecRow:
+			open[l.ID] = true
 		}
-		seen[f.id] = true
-		switch f.state {
-		case "":
-			if first < n {
-				problems = append(problems, fmt.Sprintf("%sthe finding %s of round %d has no state. Fix: the reviewer of this round gives it the state open, fixed, limit, or declined", at, f.id, first))
-				continue
+	}
+	families := matrixFamilies(spec)
+	var problems []string
+	for _, f := range findings {
+		at := "review.toml: the finding " + f.ID
+		if m := findingID.FindStringSubmatch(f.ID); m != nil {
+			if first, _ := strconv.Atoi(m[1]); first > n {
+				problems = append(problems, fmt.Sprintf("%s is of round %d, after the last round %d of the ledger. Fix: correct its ID or the rounds", at, first, n))
 			}
-			fix := "Fix: prove its spec ID in a round, or ask the user to accept it as a limit"
-			if f.severity == "advise" {
-				fix += ". The author can also decline an advise, with - **State**: `declined` and - **Reason**:"
-			}
-			problems = append(problems, fmt.Sprintf("%sthe finding %s of this round has no state, so it is open, even if ## Open lines holds None. %s", at, f.id, fix))
-			problems = append(problems, openLineProblems(f.id, open)...)
+		}
+		switch f.State {
 		case "open":
-			problems = append(problems, fmt.Sprintf("%sthe finding %s is open, even if ## Open lines holds None. Fix: prove its spec ID in a round, or ask the user to accept it as a limit", at, f.id))
-			problems = append(problems, openLineProblems(f.id, open)...)
+			problems = append(problems, at+" is open, even if ## Open lines holds None. Fix: prove its spec ID in a round, or ask the user to accept it as a limit")
+			if !open[f.Spec] {
+				problems = append(problems, fmt.Sprintf("spec.md: ## Open lines holds no row `%s`, which the open finding %s names. "+
+					"Fix: give the open finding the spec ID of its row under ## Open lines, so spec.md and the ledger agree on the open work", f.Spec, f.ID))
+			}
 		case "fixed":
-			if commit, ok := ledgerCommit(f.commit); !ok || commit == "" {
-				problems = append(problems, at+"this fixed finding names no commit of HEAD. Fix: name the commit that fixed it in a line - **Commit**: <sha>")
+			if commit, ok := ledgerCommit(f.Commit); !ok || commit == "" {
+				problems = append(problems, "review.toml: the fixed finding "+f.ID+" names no commit of HEAD. Fix: name the commit that fixed it in its key commit")
 			}
-			if !slices.Contains(proven, f.spec) {
-				problems = append(problems, at+"this fixed finding names no line of Failures or Acceptance in spec.md. Fix: name the spec ID that its test proves in a line - **Spec**: `<id>`")
+			if !proven[f.Spec] {
+				problems = append(problems, "review.toml: the fixed finding "+f.ID+" names no line of Failures or Acceptance in spec.md. Fix: name the spec ID that its test proves in its key spec")
 			}
+			problems = append(problems, pairProblems(f, families, proven)...)
 		case "limit":
-			if !slices.ContainsFunc(limits, func(l limit) bool { return l.id == f.spec && l.accepted }) {
-				problems = append(problems, at+"this limit names no limit that the user accepted in spec.md. Fix: name its row under **Limits.** in a line - **Spec**: `<id>`, after the user accepts it")
+			if !acceptedLimit(f, limits) {
+				problems = append(problems, at+" names no limit that the user accepted in spec.md. Fix: name its row under **Limits.** in its key spec, after the user accepts it")
 			}
 		case "declined":
-			if f.severity != "advise" {
-				problems = append(problems, fmt.Sprintf("%sthe finding %s has the severity %s, and only an advise can be declined. Fix: fix it, or ask the user to accept it as a limit", at, f.id, f.severity))
+			if f.Severity != "advise" {
+				problems = append(problems, fmt.Sprintf("%s has the severity %s, and only an advise can be declined. Fix: fix it, or ask the user to accept it as a limit", at, f.Severity))
 			}
-			if f.why == "" {
-				problems = append(problems, at+"this declined finding gives no reason. Fix: write the reason of the author in a line - **Reason**:")
+			if f.Reason == "" {
+				problems = append(problems, "review.toml: the declined finding "+f.ID+" gives no reason. Fix: write the reason of the author in its key reason")
 			}
-		default:
-			problems = append(problems, fmt.Sprintf("%sthe state %q is not open, fixed, limit, or declined", at, f.state))
 		}
 	}
 	return problems
 }
 
-// openLineProblems reports an open finding whose ID no line under ## Open
-// lines names. So spec.md and the ledger give one state of the open work
-// (#420).
-func openLineProblems(id string, open []string) []string {
-	named := regexp.MustCompile(`\b` + regexp.QuoteMeta(id) + `\b`)
-	if slices.ContainsFunc(open, named.MatchString) {
-		return nil
+// pairProblems checks the family of a fixed finding. The family is a row of
+// ## Case matrix, and it holds the spec ID of the finding. It also names a
+// proven line that passes and one that refuses. So a fix adds a pair of
+// tests of the family, not only a test of its example (#423).
+func pairProblems(f finding, families map[string]family, proven map[string]bool) []string {
+	at := "review.toml: the fixed finding " + f.ID
+	fam, found := families[f.Family]
+	if !found {
+		return []string{fmt.Sprintf("%s names the family %q, which is no row of ## Case matrix. Fix: name the family of its pair of tests, as the column Family of spec.md names it", at, f.Family)}
 	}
-	return []string{fmt.Sprintf("spec.md: ## Open lines does not name the open finding %s of readiness.md. "+
-		"Fix: list it under ## Open lines by its ID, such as in the Case of its row, so spec.md and the ledger agree on the open work", id)}
+	var problems []string
+	if !slices.Contains(fam.accepted, f.Spec) && !slices.Contains(fam.refused, f.Spec) {
+		problems = append(problems, fmt.Sprintf("%s names the line `%s`, which is not in its family %q. Fix: name the family whose row names that line", at, f.Spec, f.Family))
+	}
+	if !slices.ContainsFunc(fam.accepted, func(id string) bool { return proven[id] }) {
+		problems = append(problems, fmt.Sprintf("%s has no passing test in its family %q. Fix: add a test of the family that gives an input that passes, and name its line in Accepted", at, f.Family))
+	}
+	if !slices.ContainsFunc(fam.refused, func(id string) bool { return proven[id] }) {
+		problems = append(problems, fmt.Sprintf("%s has no refused test in its family %q. Fix: add a test of the family that refuses an input, and name its line in Refused", at, f.Family))
+	}
+	return problems
 }

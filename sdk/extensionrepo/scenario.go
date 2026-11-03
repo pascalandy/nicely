@@ -18,10 +18,10 @@ func ScenarioRun(name string) string {
 	return "^TestExtension$/^" + name + "$"
 }
 
-// scenarioRecipe is the one command that ## First failing run can record:
-// just scenario <name>. Finish and signoff read the name of the scenario from
-// it, and never run the text of the record (#422).
-var scenarioRecipe = regexp.MustCompile(`^just scenario ([A-Za-z0-9][A-Za-z0-9_-]*)$`)
+// scenarioName is the form of the name of a scenario, which [first_run] of
+// review.toml records. Finish and signoff run only just scenario <name> of
+// such a name, and never the text of the record (#422).
+var scenarioName = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
 
 // scenarioArgs gives the go test arguments that run the scenario
 // testdata/script/<name>.txtar. The test kit runs each scenario as a subtest
@@ -32,7 +32,7 @@ func scenarioArgs(name string) []string {
 
 // runScenario runs just scenario <name>, through the go test of Test.
 func runScenario(name string) result {
-	if !scenarioRecipe.MatchString("just scenario " + name) {
+	if !scenarioName.MatchString(name) {
 		return failed("scenario", fmt.Errorf("%q is no name of a scenario. Fix: give the name of a file of testdata/script/ without .txtar, such as inspect", name))
 	}
 	if _, err := os.Stat(filepath.Join("testdata", "script", name+".txtar")); err != nil {

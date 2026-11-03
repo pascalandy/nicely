@@ -32,7 +32,7 @@ fct_test_finish_intake() {
 	# a line of spec.md (T24, T30, and T31 of N2).
 	printf '\n[[facts]]\nkind = "sourced"\nstatement = "The worker reads stdin"\nsource = "https://example.com/inspect"\n\n[[facts]]\nkind = "inference"\nstatement = "Large files take long"\nread = "the loop of main"\n\n[[facts]]\nkind = "guess"\nstatement = "It runs fast"\n\n[[facts]]\nkind = "unknown"\nstatement = "The time of a file over 2 GB"\n\n[[facts]]\nkind = "unknown"\nstatement = "The time of a file over 4 GB"\nid = "huge-file"\n\n[[facts]]\nkind = "sourced"\nsource = "worker/inspect.py"\nrevision = "v1"\nread = "main"\n\n[[experiments]]\ncommand = "python3 worker/inspect.py big.md"\n' >>"${finish}/intake.toml"
 	fct_finish 1
-	fct_finish_said "intake.toml: the sourced fact $((facts + 3)) has no revision or no part read. Fix: give its source, its revision, and the part that you read in read. A link alone is not evidence of a read"
+	fct_finish_said "intake.toml: the sourced fact $((facts + 3)) has no source, no revision, or no part read. Fix: give its source, its revision, and the part that you read in read. A link alone is not evidence of a read"
 	fct_finish_said "intake.toml: the inference fact $((facts + 4)) names a source, a revision, or a part read. Fix: make it a sourced fact, or remove them"
 	fct_finish_said "intake.toml: the fact $((facts + 5)) has the kind \"guess\". Fix: give it the kind sourced, inference, or unknown"
 	fct_finish_said "intake.toml: the unknown fact $((facts + 6)) has no id. Fix: give it the spec ID of its open line in spec.md"
@@ -91,7 +91,7 @@ fct_test_finish_forms() {
 	fct_finish_said 'review.toml: two findings have the ID R1-F2'
 	fct_finish_said 'review.toml: the finding "F1" has no ID of the form R<round>-F<number>'
 	fct_finish_said 'review.toml: the finding F1 has the state "closed", which is not open, fixed, limit, or declined'
-	fct_finish_said 'review.toml: the finding R9-F1 is of round 9, after the last round 1 of the ledger'
+	fct_finish_said 'review.toml: the finding R9-F1 is of round 9, after the last round 2 of the ledger'
 	fct_finish_said 'review.toml: the finding R9-F1 has no title'
 	fct_finish_said 'review.toml: the finding R9-F1 has no family'
 	fct_finish_said 'review.toml: the declined finding R9-F1 gives no reason'

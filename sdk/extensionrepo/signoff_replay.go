@@ -3,6 +3,7 @@ package extensionrepo
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,27 +23,27 @@ type signoffReplay struct {
 	Failed string `json:"failed"`
 }
 
-// replayFirstRun runs the scenario of ## First failing run of the readiness.md
-// of worktree again, at its Scenario commit, in a new worktree under run. It
+// replayFirstRun runs the scenario of [first_run] of the review.toml of
+// worktree again, at its Scenario commit, in a new worktree under run. It
 // builds the go test arguments from the name of the scenario, so the text of
 // the record never runs (#422). The run must fail on a line of the scenario
-// that the recorded assertion holds. So an invented command, or a compile
+// that the recorded assertion holds. So an invented scenario, or a compile
 // error, signs nothing.
 func replayFirstRun(ctx context.Context, env []string, root, worktree, run string, log io.Writer) (*signoffReplay, error) {
-	const fix = "Fix: run the first scenario at its Scenario commit with just scenario <name>, and record that run under ## First failing run"
-	data, err := os.ReadFile(filepath.Join(worktree, "readiness.md"))
+	const fix = "Fix: run the first scenario at its Scenario commit with just scenario <name>, and record that run in [first_run] of review.toml"
+	data, err := os.ReadFile(filepath.Join(worktree, reviewFile))
 	if err != nil {
 		return nil, err
 	}
-	readiness := strings.TrimPrefix(string(data), "\ufeff")
-	parts, _ := firstRunRecord(readiness)
-	_, order, _ := ledgerTables(readiness)
-	name := scenarioRecipe.FindStringSubmatch(parts["Command"])
-	scenario := order["Scenario"]
-	if name == nil || len(scenario.cells) != 2 {
-		return nil, fmt.Errorf("readiness.md records no command just scenario <name> and no Scenario commit to run again. %s", fix)
+	var record reviewRecord
+	if problems := decodeRecord(reviewFile, string(data), &record); len(problems) != 0 {
+		return nil, errors.New(strings.Join(problems, "\n"))
 	}
-	commit, err := signoffOutput(ctx, env, worktree, "git", "rev-parse", "--verify", strings.Trim(scenario.cells[1], "`")+"^{commit}")
+	first := record.FirstRun
+	if first == nil || !scenarioName.MatchString(first.Scenario) || record.Order.Scenario == "" {
+		return nil, fmt.Errorf("review.toml records no scenario name and no Scenario commit to run again. %s", fix)
+	}
+	commit, err := signoffOutput(ctx, env, worktree, "git", "rev-parse", "--verify", record.Order.Scenario+"^{commit}")
 	if err != nil {
 		return nil, err
 	}
@@ -57,22 +58,22 @@ func replayFirstRun(ctx context.Context, env []string, root, worktree, run strin
 	if _, err := signoffOutput(ctx, env, root, "git", "worktree", "add", "--quiet", "--detach", dir, commit); err != nil {
 		return nil, err
 	}
-	args := append([]string{"go", "test", "-count=1"}, scenarioArgs(name[1])...)
+	args := append([]string{"go", "test", "-count=1"}, scenarioArgs(first.Scenario)...)
 	if _, err := fmt.Fprintf(log, "$ %s  # at the Scenario commit %s\n", strings.Join(args, " "), commit); err != nil {
 		return nil, err
 	}
 	var output bytes.Buffer
-	cmd := signoffCommand(ctx, append(env, ScenarioEnv+"="+name[1]), dir, args[0], args[1:]...)
+	cmd := signoffCommand(ctx, append(env, ScenarioEnv+"="+first.Scenario), dir, args[0], args[1:]...)
 	cmd.Stdout, cmd.Stderr = io.MultiWriter(&output, log), io.MultiWriter(&output, log)
 	replay := &signoffReplay{Commit: commit, Command: args, Exit: signoffExit(cmd.Run())}
 	if err := ctx.Err(); err != nil {
 		return replay, err
 	}
-	file := "testdata/script/" + name[1] + ".txtar"
+	file := "testdata/script/" + first.Scenario + ".txtar"
 	if replay.Exit == 0 {
 		return replay, fmt.Errorf("the first scenario %s passes at its Scenario commit %s, so it never failed before the handler. %s", file, commit, fix)
 	}
-	failed := regexp.MustCompile(`(?m)^\s*FAIL: .*testdata/script/` + regexp.QuoteMeta(name[1]) + `\.txtar:([0-9]+): `).FindStringSubmatch(output.String())
+	failed := regexp.MustCompile(`(?m)^\s*FAIL: .*testdata/script/` + regexp.QuoteMeta(first.Scenario) + `\.txtar:([0-9]+): `).FindStringSubmatch(output.String())
 	if failed == nil {
 		return replay, fmt.Errorf("the first scenario %s fails at %s before any line of the scenario, such as on a compile error, which proves no missing behavior. "+
 			"The log is %s. %s", file, commit, filepath.Join(run, "check.log"), fix)
@@ -87,9 +88,9 @@ func replayFirstRun(ctx context.Context, env []string, root, worktree, run strin
 		return replay, fmt.Errorf("the first scenario %s fails at %s on line %d, which it does not hold. %s", file, commit, number, fix)
 	}
 	replay.Failed = strings.TrimSpace(lines[number-1])
-	if replay.Failed == "" || !strings.Contains(parts["Assertion"], replay.Failed) {
-		return replay, fmt.Errorf("the first scenario %s fails at %s on line %d, %q, and ## First failing run names the assertion %q. "+
-			"Fix: record the assertion that failed, as the run names it", file, commit, number, replay.Failed, parts["Assertion"])
+	if replay.Failed == "" || !strings.Contains(first.Assertion, replay.Failed) {
+		return replay, fmt.Errorf("the first scenario %s fails at %s on line %d, %q, and first_run of review.toml names the assertion %q. "+
+			"Fix: record the assertion that failed, as the run names it", file, commit, number, replay.Failed, first.Assertion)
 	}
 	return replay, nil
 }
