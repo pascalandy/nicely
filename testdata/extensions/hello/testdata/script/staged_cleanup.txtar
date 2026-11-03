@@ -1,0 +1,93 @@
+# The host and SDK worker runners used equal cleanup deadlines. The host could
+# kill the handler before its deferred cleanup removed private partial output.
+# Every call uses the ordinary signal adapter; no fixture-specific exception.
+install hello
+cp input.txt input.before
+cp output.txt output.before
+
+env CLEANUP_WORKER=stubborn
+env CLEANUP_FILES=20000
+protect input.txt output.txt
+signal INT worker.pid ncly hello staged worker.sh
+answer stderr INTERRUPTED
+cp stderr answer.json
+exec sh check.sh
+exists cleanup.done
+grep '"stage":"' answer.json
+gone worker.pid
+gone grandchild.pid
+cmp input.txt input.before
+cmp output.txt output.before
+
+rm worker.pid grandchild.pid cleanup.done
+protect input.txt output.txt
+signal TERM worker.pid ncly hello staged worker.sh
+answer stderr TERMINATED
+cp stderr answer.json
+exec sh check.sh
+exists cleanup.done
+grep '"stage":"' answer.json
+gone worker.pid
+gone grandchild.pid
+cmp input.txt input.before
+cmp output.txt output.before
+
+# The same extension also cleans up directly, with its ordinary worker budget.
+rm worker.pid grandchild.pid cleanup.done
+protect input.txt output.txt
+signal TERM worker.pid ncly-hello staged worker.sh
+answer stderr TERMINATED
+exists cleanup.done
+exec sh check.sh
+gone worker.pid
+gone grandchild.pid
+cmp input.txt input.before
+cmp output.txt output.before
+
+# A cooperative worker follows the same path without needing the force stop.
+rm worker.pid grandchild.pid cleanup.done
+env CLEANUP_WORKER=cooperative
+protect input.txt output.txt
+signal INT worker.pid ncly hello staged worker.sh
+answer stderr INTERRUPTED
+exists cleanup.done
+exec sh check.sh
+gone worker.pid
+gone grandchild.pid
+cmp input.txt input.before
+cmp output.txt output.before
+
+-- input.txt --
+original input
+-- output.txt --
+previous output
+-- check.sh --
+for stage in .ncly-stage-*; do
+  if [ -e "$stage" ]; then
+    echo "private staging remains: $stage" >&2
+    exit 91
+  fi
+done
+-- worker.sh --
+printf 'partial output\n' > "$1/partial"
+python3 -c 'import os, signal; os.setsid(); signal.signal(signal.SIGINT, signal.SIG_DFL); signal.signal(signal.SIGTERM, signal.SIG_DFL); os.execl("/bin/sh", "sh", "grandchild.sh")' >/dev/null 2>&1 &
+while [ ! -f grandchild.pid ]; do sleep 0.01; done
+if [ "$CLEANUP_WORKER" = stubborn ]; then
+  trap '' INT TERM
+else
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+fi
+echo $$ > worker.tmp
+mv worker.tmp worker.pid
+exec sleep 30
+-- grandchild.sh --
+if [ "$CLEANUP_WORKER" = stubborn ]; then
+  trap '' INT TERM
+else
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+fi
+echo $$ > grandchild.tmp
+mv grandchild.tmp grandchild.pid
+exec sleep 30

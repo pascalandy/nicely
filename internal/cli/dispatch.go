@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/pascalandy/nicely/internal/keychain"
 	"github.com/pascalandy/nicely/sdk/command"
@@ -69,13 +70,14 @@ func (c *call) run(p *i18n.Printer, g command.Globals, b keychain.Backend, stdou
 	}
 	maps.Copy(vars, keys)
 	program := runner.Program{
-		Path:     c.extension.path,
-		Args:     c.args,
-		Env:      runner.Environ(os.Environ(), vars),
-		Stdin:    os.Stdin,
-		Stdout:   stdout,
-		Stderr:   stderr,
-		Terminal: true,
+		Path:           c.extension.path,
+		Args:           c.args,
+		Env:            runner.Environ(os.Environ(), vars),
+		Stdin:          os.Stdin,
+		Stdout:         stdout,
+		Stderr:         stderr,
+		Terminal:       true,
+		CleanupReserve: 2 * time.Second,
 	}
 	if c.extension.bundled {
 		// Started under the extension's name, the binary of ncly runs the

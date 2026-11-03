@@ -60,6 +60,10 @@ type Program struct {
 	// Completion also bounds output reading by Limit and skips cleanup on
 	// cancellation, as a list command that completion runs requires.
 	Completion bool
+	// CleanupReserve leaves this much of Cleanup for the direct program after
+	// force-stopping its descendants. Zero keeps the ordinary single deadline.
+	// The reservation is clamped to zero through Cleanup; it never extends it.
+	CleanupReserve time.Duration
 }
 
 // Result is how a program ended.
@@ -168,7 +172,7 @@ func Run(ctx context.Context, p Program) (Result, error) {
 		if stopped {
 			result.Signal = SignalOf(ctx)
 		}
-		signalTree(syscall.SIGKILL)
+		signalTree(syscall.SIGKILL, 0)
 		<-exited
 		drain(streams, time.Now())
 		result.Exit = exitCode(cmd.ProcessState)
@@ -178,13 +182,8 @@ func Run(ctx context.Context, p Program) (Result, error) {
 	if stopped {
 		result.Signal = SignalOf(ctx)
 		cleanupEnds = time.Now().Add(Cleanup)
-		signalTree(result.Signal)
-		select {
-		case <-exited:
-		case <-time.After(Cleanup):
-			signalTree(syscall.SIGKILL)
-			<-exited
-		}
+		signalTree(result.Signal, 0)
+		waitCleanup(exited, cmd.Process.Pid, cleanupEnds, p.CleanupReserve)
 	}
 	var stopping sync.WaitGroup
 	if result.Signal != nil {
@@ -196,7 +195,7 @@ func Run(ctx context.Context, p Program) (Result, error) {
 	// by its execution limit and then ends what still runs.
 	if p.Completion && p.Limit > 0 && result.Signal == nil {
 		drain(streams, limitEnds)
-		signalTree(syscall.SIGKILL)
+		signalTree(syscall.SIGKILL, 0)
 	} else {
 		drain(streams, exitedAt.Add(DrainLimit))
 	}
@@ -215,7 +214,7 @@ const signalSettle = 25 * time.Millisecond
 func stopDescendants(cleanupEnds time.Time) {
 	for len(platform.Descendants(os.Getpid())) > 0 {
 		if time.Now().After(cleanupEnds) {
-			signalTree(syscall.SIGKILL)
+			signalTree(syscall.SIGKILL, 0)
 			return
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -229,13 +228,16 @@ func stopDescendants(cleanupEnds time.Time) {
 // macOS, so a command that a signal ends while it waits for one calls it.
 func Stop(sig os.Signal) {
 	cleanupEnds := time.Now().Add(Cleanup)
-	signalTree(sig)
+	signalTree(sig, 0)
 	stopDescendants(cleanupEnds)
 }
 
-// signalTree sends sig to every descendant of ncly.
-func signalTree(sig os.Signal) {
+// signalTree sends sig to every descendant of ncly except keep, when nonzero.
+func signalTree(sig os.Signal, keep int) {
 	for _, pid := range platform.Descendants(os.Getpid()) {
+		if pid == keep {
+			continue
+		}
 		if process, err := os.FindProcess(pid); err == nil {
 			_ = process.Signal(sig)
 			// On Linux, FindProcess opens a pidfd that only Release or the

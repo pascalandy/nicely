@@ -155,3 +155,10 @@ other = "{{.File}} is no file that hello can scan."
 ["hello.scan.done"]
 description = "Text of hello scan once its worker read the whole file. {{.File}} is the path that the caller gave."
 other = "Scanned {{.File}}"
+["hello.staged.summary"]
+description = "Summary of the handler cleanup fixture."
+other = "Run a worker with private staging"
+
+["hello.staged.worker"]
+description = "Path of the worker used by the handler cleanup fixture."
+other = "Worker script"

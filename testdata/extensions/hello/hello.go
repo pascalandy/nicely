@@ -35,13 +35,14 @@ var Extension = extension.Extension{
 	Skill:     skill,
 	Resources: resources,
 	Handlers: map[string]extension.Handler{
-		"hello count": count,
-		"hello run":   run,
-		"hello check": check,
-		"hello say":   say,
-		"hello wait":  wait,
-		"hello pick":  pick,
-		"hello scan":  scan,
+		"hello count":  count,
+		"hello run":    run,
+		"hello check":  check,
+		"hello say":    say,
+		"hello wait":   wait,
+		"hello pick":   pick,
+		"hello scan":   scan,
+		"hello staged": staged,
 	},
 }
 

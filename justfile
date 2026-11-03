@@ -98,7 +98,7 @@ template:
 race:
     go test -race ./sdk/... ./internal/...
 
-# Check the Python of transcript and of the extension template with ruff, and transcript with pyright and pytest, through uv
+# Check transcript, template and Verify Python with ruff; transcript also gets pyright and pytest
 [group('checks')]
 python:
     #!/usr/bin/env bash
@@ -107,8 +107,8 @@ python:
     # that folder the root of pyright, which otherwise takes the first parent with a pyproject.toml,
     # such as a home folder, and checks all of it.
     cd extensions/transcript/python
-    uv tool run ruff@0.16.9 check --isolated . ../../../template/worker
-    uv tool run ruff@0.16.9 format --isolated --check . ../../../template/worker
+    uv tool run ruff@0.16.9 check --isolated . ../../../template/worker ../../../.agents/skills/verify-nicely/scripts/cleanup-stress.py
+    uv tool run ruff@0.16.9 format --isolated --check . ../../../template/worker ../../../.agents/skills/verify-nicely/scripts/cleanup-stress.py
     requirements="$(mktemp)"
     trap 'rm -f "$requirements"' EXIT
     uv export --quiet --no-hashes --script transcript.py > "$requirements"

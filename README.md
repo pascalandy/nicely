@@ -92,3 +92,6 @@ It needs `dbus-run-session` and `gnome-keyring-daemon`; a missing prerequisite s
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+On cancellation, the host stops resistant descendants before its final deadline, leaving the extension handler two seconds to remove private staging.
+The existing 15-second cleanup bound still ends an unresponsive handler.

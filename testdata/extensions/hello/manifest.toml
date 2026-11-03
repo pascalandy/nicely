@@ -3,6 +3,21 @@ contract_version = 1
 domain = "hello"
 
 [[commands]]
+path = "hello staged"
+summary = "hello.staged.summary"
+effects = { user_writes = true }
+
+[[commands.args]]
+name = "worker"
+summary = "hello.staged.worker"
+required = true
+
+[commands.result.schema]
+type = "object"
+required = ["stage"]
+properties = { stage = { type = "string" } }
+
+[[commands]]
 path = "hello"
 summary = "hello.summary"
 examples = ["ncly hello run Ada", "ncly hello check --json"]

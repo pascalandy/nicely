@@ -14,6 +14,7 @@
 #                                       server does not answer, type each answer once
 #                                       its prompt shows, and record it the same way
 #   verify.sh quote <run> [<feature>]   print transcripts with placeholders for home paths
+#   verify.sh stress-cleanup <run> [count] [files] repeat real public cancellation with private staging
 #   verify.sh cleanup <run>             remove the scratch folder, keep the evidence
 #   verify.sh prune --keep <n>          remove the runs before the newest <n>, once cleaned up
 set -Eeuo pipefail
@@ -31,10 +32,10 @@ log() { echo "verify-nicely: $*" >&2; }
 # usage prints the commands of the header: on stdout for help, on stderr with exit 2 otherwise.
 usage() {
 	if [[ "${1:-}" == help ]]; then
-		sed -n '6,18p' "$0" | sed 's/^# \{0,1\}//'
+		sed -n '6,19p' "$0" | sed 's/^# \{0,1\}//'
 		exit 0
 	fi
-	sed -n '6,18p' "$0" | sed 's/^# \{0,1\}//' >&2
+	sed -n '6,19p' "$0" | sed 's/^# \{0,1\}//' >&2
 	exit 2
 }
 
@@ -214,6 +215,11 @@ start) start ;;
 prepare) prepare "$@" ;;
 step) step "$@" ;;
 tmux) tmux_step "$@" ;;
+stress-cleanup)
+	run="$(run_folder "${1:-}")"
+	shift
+	exec uv run --no-project --python 3.12 "$script_dir/cleanup-stress.py" "$run" "$@"
+	;;
 quote) quote "$@" ;;
 cleanup) cleanup "$@" ;;
 prune) prune "$@" ;;

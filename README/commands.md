@@ -1,4 +1,4 @@
-## Planned commands
+# Planned commands
 
 Nicely is a small core that extensions add commands to, in the spirit of Pi.
 Core brings `describe`, `doctor`, `auth`, and `run`. It bundles `skill`, which agents use to learn Nicely.
