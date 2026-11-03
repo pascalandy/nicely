@@ -19,13 +19,14 @@ func TestPredicts(t *testing.T) {
 		{"pending without its check", publicationHost, strings.ReplaceAll(declared, "| checks |", "| pending |"), "predicts ncly video convert clip.mov\n", "predicts: the dry run lists no publication.link in pending_checks"},
 		{"pending with its check", strings.Replace(publicationHost, `\"pending_checks\":[]`, `\"pending_checks\":[\"publication.link\",\"publication.rename\"]`, 1), strings.ReplaceAll(declared, "| checks |", "| pending |"), proved, ""},
 		{"undeclared mode", publicationHost, strings.Replace(declared, "| `ncly video convert` | replace | `output` | `overwrite` | `file` | `rename` | checks |\n", "", 1), "predicts ncly video convert clip.mov --force\n", "predicts: ## Publication of spec.md declares no replace mode of `ncly video convert`"},
+		{"replace mode without a row", publicationHost, strings.Replace(declared, "| `ncly video convert` | replace | `output` | `overwrite` | `file` | `rename` | checks |\n", "", 1), "predicts ncly video convert clip.mov\n", "spec.md: `ncly video convert` sets user_writes, and ## Publication has no row for its replace mode"},
 		{"refused dry run", publicationHost, declared, "predicts ncly video convert missing.mov\n", "predicts: the dry run refused with USAGE_INVALID and exit 2"},
 		{"stale reason", publicationHost, declared + "| `ncly video convert` | create | `predicts` | Stale |\n", proved, "a scenario proves `predicts` of the create mode of `ncly video convert`, so its reason is stale"},
 		{"missing appears", publicationHost, declared, "predicts ncly video convert clip.mov\npredicts ncly video convert clip.mov --force\n", "has no scenario that proves `appears`, and no reason"},
 		{"form against the manifest", publicationHost, "\n## Publication\n\n" +
 			"| Command | Mode | Destination | Overwrite | Protected | Operation | Dry run |\n|---|---|---|---|---|---|---|\n" +
 			"| `ncly video convert` | create | `path` | `overwrite` | `input` | `rename` | maybe |\n" +
-			"| `ncly video convert` | append | `output` | `overwrite` | None | `copy` | checks |\n" +
+			"| `ncly video convert` | append | `output` | `overwrite` | `--input` | `copy` | checks |\n" +
 			"| `ncly video subtitle` | create | `output` | `overwrite` | None | `link` | checks |\n" +
 			"| `ncly video convert` | replace | `output` | `overwrite` | None | `rename` | checks |\n" +
 			"| `ncly video convert` | replace | `output` | `overwrite` | None | `rename` | checks |\n\n" +
@@ -43,7 +44,8 @@ func TestPredicts(t *testing.T) {
 		"`ncly video subtitle` is no running command of the manifest",
 		"the reason names `signal`, which is no obligation",
 		"the replace mode of `ncly video convert` repeats the row of line 21",
-		"the obligation `publication` says that `ncly video convert` publishes no file",
+		"the obligation `publication` says that the mode replace of `ncly video convert` writes no file, and that mode has a row",
+		"Protected names `--input`, which is no argument and no flag with one value",
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

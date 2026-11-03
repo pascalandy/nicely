@@ -56,7 +56,7 @@ fct_test_publication() {
 	if (cd "${repo}" && just check) >"${scratch}/publication.out" 2>&1; then
 		fct_fail 'just check accepts a command that writes a user file with no row in ## Publication'
 	fi
-	grep -qF "spec.md: \`ncly ${command}\` may write a user file, because its effects set user_writes or are absent, and ## Publication has no row for it." "${scratch}/publication.out" ||
+	grep -qF "spec.md: \`ncly ${command}\` sets user_writes, and ## Publication has no row for its create mode." "${scratch}/publication.out" ||
 		fct_fail "just check fails without the problem of ## Publication: $(cat "${scratch}/publication.out")"
 	cp "${scratch}/publication-manifest.toml" "${repo}/manifest.toml"
 	fct_has "${repo}/spec.md" "## Publication"

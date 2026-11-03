@@ -83,7 +83,7 @@ func publicationFixture(t *testing.T, host, spec, script string) (string, error)
 	return goTest(t, "standalone-named", os.Getenv("PATH"),
 		edit{"extension.go", "key, problem :=", "if call.Flags[\"dry-run\"] == \"true\" {\n\t\treturn contract.Outcome{Data: map[string]any{\"dry_run\": true, \"output\": \"out/clip.txt\", \"overwrite\": false, \"pending_checks\": []string{}}}\n\t}\n\tkey, problem :="},
 		edit{"manifest.toml", "effects = {}", "effects = { user_writes = true }\nmodes = { dry_run = true }"},
-		edit{"manifest.toml", "[[commands.args]]", "[[commands.flags]]\nname = \"force\"\nshorthand = \"f\"\nsummary = \"video-convert.file\"\n\n[[commands.args]]"},
+		edit{"manifest.toml", "[[commands.args]]", "[[commands.flags]]\nname = \"force\"\nshorthand = \"f\"\nsummary = \"video-convert.file\"\n\n[[commands.flags]]\nname = \"input\"\nvalue = \"file\"\nvariadic = true\nsummary = \"video-convert.file\"\n\n[[commands.args]]"},
 		edit{
 			"manifest.toml", "[commands.result.schema]\ntype = \"object\"\nrequired = [\"file\", \"sha256\"]\nproperties = { file = { type = \"string\" }, sha256 = { type = \"string\" } }",
 			"[commands.result.dry_run_schema]\ntype = \"object\"\nrequired = [\"dry_run\", \"output\", \"overwrite\", \"pending_checks\"]\n" +
@@ -99,7 +99,7 @@ func publicationFixture(t *testing.T, host, spec, script string) (string, error)
 func TestPublicationRejectsIssue425(t *testing.T) {
 	legacy := "cp clip.mov out/.no-hard-link\nncly video convert clip.mov --dry-run\nexits 1 ncly video convert clip.mov\nstderr '\"code\":\"RUNTIME\"'\n"
 	steps := []struct{ name, host, spec, script, want string }{
-		{"no declaration", publicationHost, "", legacy, "## Publication has no row for it"},
+		{"no declaration", publicationHost, "", legacy, "## Publication has no row for its create mode"},
 		{"no check of the hard link", publicationHost, strings.Split(declared, "\n| Command | Mode | Obligation")[0], proved, "has no scenario that proves `link`, and no reason"},
 		{
 			"dry run predicts a failed run", publicationHost, declared, "cp clip.mov out/.no-hard-link\npredicts ncly video convert clip.mov\n",
