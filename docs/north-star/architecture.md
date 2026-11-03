@@ -64,6 +64,7 @@ Each part has one owner: one package and one spec section.
 | 2 | Wrap helper | One program that a handler runs, such as a worker: its check, input, environment, captured output, and failures | `sdk/wrap/` | [Wrapped programs](contract/wrap.md) |
 | 2 | Analyzers | The Go analyzers that core's `just lint` and `extensionrepo check` run through `go vet -vettool` | `sdk/analysis/` | [Analyzers](contract/analyzers.md) |
 | 2 | Test kit | The tests of an extension repository: its checks, its scenarios, and an install into scratch folders | `sdk/extensiontest/` | [Test kit](contract/test-kit.md) |
+| 2 | TLC runner | The pinned TLC that checks the TLA+ models of a repository, and the record that `just check` reads | `sdk/verification/` | [Formal models](contract/formal-models.md) |
 | 2 | Command line | Declarations turned into commands, global flags, help pages, forms for missing values, and answers printed | `sdk/command/` | [Command descriptions](contract/command-descriptions.md), [Output](contract/output.md) |
 | 2 | Program runner | Child environment, process groups and sessions, captured output, timeouts, signals, process cleanup, and the program check that doctor and status commands share | `sdk/runner/` | [Programs that ncly runs](contract/programs-that-ncly-runs.md), [Required programs](core-spec.md#required-programs) |
 | 2 | Record support | Run IDs, durable records, step transitions, execution locks, and result publication | `sdk/` | [Operations](contract/operations.md) |

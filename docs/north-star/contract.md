@@ -55,6 +55,7 @@ Each part is one file, in reading order.
     - [Update an extension](contract/update-an-extension.md)
     - [Analyzers](contract/analyzers.md)
     - [Owned runs](contract/owned-runs.md)
+    - [Formal models](contract/formal-models.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)
   - [Record format](contract/record-format.md)

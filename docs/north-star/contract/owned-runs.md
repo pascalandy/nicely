@@ -5,8 +5,8 @@ This part says how the SDK builds the environment of a verification run, and how
 
 ## The constructor
 
-`extensionrepo.NewOwnedRun` builds the environment and the folder of each run of the test kit, signoff, release, and acceptance.
-It is the one function of `sdk/extensionrepo` and `sdk/extensiontest` that reads the environment of the caller as a whole.
+`extensionrepo.NewOwnedRun` builds the environment and the folder of each run of the test kit, signoff, release, acceptance, and `just verify-models`.
+It is the one function of `sdk/extensionrepo`, `sdk/extensiontest`, and `sdk/verification` that reads the environment of the caller as a whole.
 The [analyzer](analyzers.md) `callerenv` refuses `os.Environ` and `syscall.Environ` everywhere else in these packages.
 
 A run has one of two profiles:
@@ -37,6 +37,7 @@ The profile names the variables of the caller that the run keeps anyway, and the
 | Git and gh steps of a release | Host | `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM` | Nothing more |
 | Install check of a release | Scratch | `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_NOSYSTEM` | Go settings, `NCLY_NO_INPUT=1`, `LC_ALL=C` |
 | `just acceptance` | Host | Nothing more | `TMPDIR`, the folder of the run |
+| `just verify-models` | Host | Nothing more | Nothing more |
 
 The Go settings are the caches, the module folder, and the module source of the caller.
 They are `GOCACHE`, `GOMODCACHE`, `GOPATH`, `GOPROXY`, `GOPRIVATE`, `GONOPROXY`, `GONOSUMDB`, `GOSUMDB`, `GOINSECURE`, and `GOTOOLCHAIN`.

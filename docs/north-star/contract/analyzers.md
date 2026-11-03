@@ -22,13 +22,13 @@ It skips each `_test.go` file, because a test can do on purpose what the rule re
 
 | Rule | Refuses | Use instead | Past mistake |
 |---|---|---|---|
-| `callerenv` | `os.Environ` or `syscall.Environ` in `sdk/extensionrepo` and `sdk/extensiontest`, outside `extensionrepo.NewOwnedRun` | An [owned run](owned-runs.md) | The parent of 09809608 |
+| `callerenv` | `os.Environ` or `syscall.Environ` in `sdk/extensionrepo`, `sdk/extensiontest`, and `sdk/verification`, outside `extensionrepo.NewOwnedRun` | An [owned run](owned-runs.md) | The parent of 09809608 |
 | `runnerdiscard` | `io.Discard` as the `Stdout` or `Stderr` of a `runner.Program`, in a struct literal or a field assignment | `nil`, or no field | 3e6a4eff |
 
 **callerenv.** Each check that copies the environment of its caller filters it in its own way.
 Each new caller setting then needs a fix in each copy, as 17 past corrections did.
 The rule reads a call and a function value.
-It reads only the two packages of the kit and the repository gates, so an extension never meets it.
+It reads only the packages of the kit, the repository gates, and the TLC runner, so an extension never meets it.
 A program that starts with no `Env` inherits the environment of the caller too, and the rule cannot see that.
 
 **runnerdiscard.** The runner reads a writer that is not a file through a pipe.
