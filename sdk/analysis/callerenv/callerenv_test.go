@@ -20,8 +20,8 @@ func TestCallerEnvironment(t *testing.T) {
 	analysistest.Run(t, root, Analyzer, "./sdk/analysis/callerenv/testdata/cases")
 }
 
-// TestOwnedPackages requires that the kit and the repository gates read the
-// environment of the caller only in NewOwnedRun.
+// TestOwnedPackages requires that the kit, the repository gates, and the TLC
+// runner read the environment of the caller only in NewOwnedRun.
 func TestOwnedPackages(t *testing.T) {
-	analysistest.Run(t, root, Analyzer, "./sdk/extensionrepo", "./sdk/extensiontest")
+	analysistest.Run(t, root, Analyzer, "./sdk/extensionrepo", "./sdk/extensiontest", "./sdk/verification")
 }

@@ -4,6 +4,8 @@
 
 # shellcheck source=scripts/template-install-test.sh
 source "${BASH_SOURCE[0]%/*}/template-install-test.sh"
+# shellcheck source=scripts/template-models-test.sh
+source "${BASH_SOURCE[0]%/*}/template-models-test.sh"
 
 # fct_test_files checks the files of the rendered repository $1 that no
 # recipe runs, and that its forms keep no Jinja. The slug is $2.
@@ -39,10 +41,12 @@ fct_test_analyzers() {
 }
 
 # fct_test_gates proves the gates that just check of the rendered repository
-# $1 adds: the analyzers, and ## Publication of its command $4.
+# $1 adds: the analyzers, ## Publication of its command $4, and the record
+# of the models.
 fct_test_gates() {
 	fct_test_analyzers "${1}" "${2}" "${3}"
 	fct_test_publication "${1}" "${2}" "${4}"
+	fct_test_models "${1}" "${2}"
 }
 
 # fct_test_publication proves that just check reads ## Publication of

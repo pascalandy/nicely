@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "java": "java@temurin-21.0.13+9.0.LTS",
+  "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+  "inputs": {
+    "verification/finish/Current.cfg": "e15ef2ed2a3d26f17bb6e2d35fba17a446e9ebc13a8ef2783cc4bcc86090ebf6",
+    "verification/finish/Finish.tla": "36bda6a2c1ee60a79ef0cde4d15dc449e21017c8d4ba05cec0e079229cbdcf71",
+    "verification/finish/PreFix.cfg": "6121589247a84d55da6e93ab243448964008beabb1c961dbf2fb841a95b92358",
+    "verification/tlc.json": "80a4411487bca9cba34b6b775f06e8d79ba8c43de4c1ad038a9c3eef3e8c0f3d"
+  },
+  "results": [
+    {
+      "name": "Current",
+      "exit": 0,
+      "distinct": 467328,
+      "depth": 13
+    },
+    {
+      "name": "PreFix",
+      "exit": 12,
+      "violation": "NoOpenPass"
+    }
+  ]
+}

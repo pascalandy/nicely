@@ -20,12 +20,12 @@ A card that adds a check moves its rule up, as D068 says.
 | [preferences.md](preferences.md) | D01 to D26 of `dev-preferences.md`: mockups, docs, and Python |
 | [landing.md](landing.md) | D27 to D46 of `dev-preferences.md`: reviews, merges, stacks, UATs, and releases |
 | [principles.md](principles.md) | P01 to P31 of `principles.md` |
-| [sdk.md](sdk.md) | S01 to S26: contract, extension, repository, kit, and i18n. S52 to S53: owned runs and results. S54 to S55: publication |
+| [sdk.md](sdk.md) | S01 to S26: contract, extension, repository, kit, and i18n. S52 to S53: owned runs and results. S54 to S55: publication. S56 to S58: the TLC runner |
 | [runtime.md](runtime.md) | S27 to S51: platform, record, runner, tui, wrap, the fake child, and analysis |
 
 ## Support code
 
-`just test` also reads each Go file of the kit and of the repository gates, outside the tests.
+`just test` also reads each Go file of the kit, the repository gates, and the TLC runner, outside the tests.
 An enforcer of an index links it, or this table says what it does.
 At 7f3ae60e, `ledger_history.go` enforced rules that no row named until b3dc8b48.
 

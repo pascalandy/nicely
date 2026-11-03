@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pascalandy/nicely/sdk/analysis"
+	"github.com/pascalandy/nicely/sdk/verification"
 )
 
 // checkRepository runs just check. Its go test runs every scenario, so the
@@ -16,6 +17,9 @@ import (
 func checkRepository() result {
 	if err := printRuleIndex(); err != nil {
 		return failed("check", err)
+	}
+	if modelProblems() {
+		return failed("check", errors.New("the record of the models is not that of "+verification.SuiteFile))
 	}
 	if err := updateRun("go", "mod", "tidy", "-diff"); err != nil {
 		return failed("check", err)

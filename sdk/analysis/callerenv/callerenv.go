@@ -1,5 +1,5 @@
 // Package callerenv refuses a read of the whole environment of the caller in
-// the test kit and the repository gates. Only extensionrepo.NewOwnedRun reads
+// the test kit, the repository gates, and the TLC runner. Only extensionrepo.NewOwnedRun reads
 // it, as Analyzers in contract.md defines.
 //
 // At the parent of 09809608, the lifecycle check of the kit passed
@@ -23,7 +23,7 @@ import (
 // owned runs.
 var Analyzer = &analysis.Analyzer{
 	Name: "callerenv",
-	Doc:  "refuse os.Environ in the test kit and the repository gates outside extensionrepo.NewOwnedRun",
+	Doc:  "refuse os.Environ in the test kit, the repository gates, and the TLC runner outside extensionrepo.NewOwnedRun",
 	Run:  run,
 }
 
@@ -33,6 +33,7 @@ var Analyzer = &analysis.Analyzer{
 var owners = map[string]string{
 	"github.com/pascalandy/nicely/sdk/extensionrepo": "NewOwnedRun",
 	"github.com/pascalandy/nicely/sdk/extensiontest": "",
+	"github.com/pascalandy/nicely/sdk/verification":  "",
 }
 
 func run(pass *analysis.Pass) (any, error) {

@@ -19,6 +19,10 @@ finish:
 records:
     go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo records
 
+# Check the TLA+ models of verification/tlc.json with the pinned TLC, then write the record that just check reads. A local jar needs the pinned SHA-256 too
+verify-models jar="":
+    go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo verify-models {{ if jar == "" { "" } else { quote(join(invocation_directory(), jar)) } }}
+
 # Run one scenario of testdata/script/ by its name, such as just scenario inspect
 scenario name:
     go run github.com/pascalandy/nicely/sdk/extensionrepo/cmd/extensionrepo scenario {{ quote(name) }}

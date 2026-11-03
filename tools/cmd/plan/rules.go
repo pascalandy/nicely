@@ -27,10 +27,11 @@ const (
 	repoBlob      = "https://github.com/pascalandy/nicely/blob/main/"
 )
 
-// gateDirs hold the kit and the repository gates. Each Go file of them,
-// outside its tests, is the enforcer of a rule in an index, or support code.
-// See COR-104-T1, which fails first at 7f3ae60e.
-var gateDirs = []string{"sdk/extensionrepo", "sdk/extensiontest"}
+// gateDirs hold the kit, the repository gates, and the TLC runner of
+// COR-104-T8. Each Go file of them, outside its tests, is the enforcer of a
+// rule in an index, or support code. See COR-104-T1, which fails first at
+// 7f3ae60e.
+var gateDirs = []string{"sdk/extensionrepo", "sdk/extensiontest", "sdk/verification"}
 
 var (
 	refDefinition = regexp.MustCompile(`^\[([^\]]+)\]:\s+(\S+)`)

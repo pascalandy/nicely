@@ -83,6 +83,11 @@ test *args:
     bash scripts/scenario-test.sh
     bash scripts/install-test.sh
 
+# Check the TLA+ models of verification/tlc.json with the pinned TLC, then write their record. A local jar needs the pinned SHA-256 too
+[group('checks')]
+verify-models jar="":
+    go run ./sdk/extensionrepo/cmd/extensionrepo verify-models {{ if jar == "" { "" } else { quote(join(invocation_directory(), jar)) } }}
+
 # Render the extension template and check the rendered repository
 [group('checks')]
 template:
