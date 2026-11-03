@@ -14,6 +14,23 @@ answer stderr INTERRUPTED
 stderr '"output_dir":"/Users/me/out"'
 gone fixture.pid
 
+# The reservation also stops the handler's cleanup child. Its diagnostic never
+# enters the JSON stream; the handler answers before the final force-stop.
+rm fixture.pid
+exec exitcode exit.txt ncly hello cleanup-child --json &
+waitfile fixture.pid
+kill -INT
+wait
+grep '^130$' exit.txt
+! stdout .
+answer stderr INTERRUPTED
+stderr '"output_dir":"/Users/me/out"'
+! stderr Killed
+exec cat cleanup-child.exit
+stdout '^137\n$'
+gone cleanup-child.pid
+gone fixture.pid
+
 # An extension that keeps running after Ctrl-C got the signal, and SIGKILL ends it once
 # cleanup ends. A second Ctrl-C during cleanup changes nothing: it never reaches the
 # extension, and core still answers INTERRUPTED
@@ -45,9 +62,25 @@ gone fixture.pid
 
 -- bin/ncly-hello --
 #!/bin/sh
+cleanup_child() {
+  # A shell can print its wait diagnostic itself, so redirect the whole group.
+  {
+    sh cleanup-child.sh &
+    child=$!
+    wait "$child"
+    result=$?
+  } 2> "$WORK/cleanup-child.stderr"
+  printf '%s\n' "$result" > "$WORK/cleanup-child.exit"
+  echo '{"ok":true,"contract_version":1,"output_dir":"/Users/me/out"}'
+  exit 0
+}
 case "$1" in
 late)
-  trap 'sleep 3; echo "{\"ok\":true,\"contract_version\":1,\"output_dir\":\"/Users/me/out\"}"; exit 0' INT TERM
+  # Delay in the handler itself: core may force-stop descendant processes first.
+  exec python3 late.py
+  ;;
+cleanup-child)
+  trap cleanup_child INT TERM
   ;;
 stubborn)
   trap 'echo INT >> "$WORK/signals.txt"' INT
@@ -61,6 +94,34 @@ esac
 echo $$ > "$WORK/fixture.tmp"
 mv "$WORK/fixture.tmp" "$WORK/fixture.pid"
 while :; do sleep 0.1; done
+-- cleanup-child.sh --
+echo $$ > "$WORK/cleanup-child.tmp"
+mv "$WORK/cleanup-child.tmp" "$WORK/cleanup-child.pid"
+exec sleep 30
+-- late.py --
+import json
+import os
+import signal
+import time
+from pathlib import Path
+
+
+def stop(_signal: int, _frame: object) -> None:
+    time.sleep(3)
+    print(
+        json.dumps({"ok": True, "contract_version": 1, "output_dir": "/Users/me/out"})
+    )
+    raise SystemExit(0)
+
+
+signal.signal(signal.SIGINT, stop)
+signal.signal(signal.SIGTERM, stop)
+folder = Path(os.environ["WORK"])
+temporary = folder / "fixture.tmp"
+temporary.write_text(f"{os.getpid()}\n", encoding="utf-8")
+temporary.rename(folder / "fixture.pid")
+while True:
+    signal.pause()
 -- bin/ncly-hello.toml --
 format_version = 1
 contract_version = 1
@@ -73,6 +134,10 @@ summary = "hello.summary"
 [[commands]]
 path = "hello late"
 summary = "hello.late.summary"
+
+[[commands]]
+path = "hello cleanup-child"
+summary = "hello.cleanup_child.summary"
 
 [[commands]]
 path = "hello stubborn"
@@ -89,6 +154,10 @@ other = "Greet people"
 ["hello.late.summary"]
 description = "Summary of hello late."
 other = "Answer 3 seconds after a signal"
+
+["hello.cleanup_child.summary"]
+description = "Summary of hello cleanup-child."
+other = "Answer after the cleanup child stops"
 
 ["hello.stubborn.summary"]
 description = "Summary of hello stubborn."

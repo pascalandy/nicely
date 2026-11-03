@@ -69,7 +69,8 @@ Both calls must finish within the 15-second cleanup budget plus the 2-second str
 Check that `cleanup.done` exists, no `.ncly-stage-*` remains, both worker PIDs are gone, and input and previous output match their copies.
 Also drive the cooperative worker with `CLEANUP_WORKER=cooperative`.
 The scenario covers the direct-extension control with the same SDK and no host.
-The host's final deadline also stops a handler that never returns, as `extension_cancel_stubborn` proves.
+The [stubborn control](../../../../testdata/script/extension_cancel_stubborn.txtar) proves the final handler deadline and the force-stop of a cleanup child.
+Only the direct handler receives the reservation; see [Cancellation](../../../../docs/north-star/contract/programs-that-ncly-runs.md).
 
 For the repeated production-budget check, run `just verify stress-cleanup "$run" 10 20000` from the same clean committed checkout that built the run.
 It runs the real public host ten times per signal, with 20,000 files and partial output in each private stage.
