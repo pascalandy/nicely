@@ -156,18 +156,7 @@ Pascal runs a UAT of video-convert at the release of COR-104-T10, and its correc
 
 ## Later
 
-### Unprivileged scratch runs
-
-Tests, acceptance, and reviews run in a new scratch folder, with no root, mount, or system service.
-Two template rules stay `Prose only` until then.
-
-Revisit condition: a review stalls on a recursive delete or mounts a file system again, as in #425.
-
-### Process lifetime in the runner
-
-`sdk/runner` makes the output of each program an explicit choice, and the COR-104-T2 rule on `io.Discard` goes.
-
-Revisit condition: a new correction of exit, signal, drain, or cleanup, class K04 of [N1][n1].
+[Deferred verification work](COR-104-verification-map/later.md) keeps the scratch-run and process-lifetime ideas and their revisit conditions.
 
 [d068]: ../north-star/decisions/D068-verification-map.md
 [n1]: https://github.com/pascalandy/nicely-research/blob/main/synthesis/verification-map/analysis/N1-correct.md
