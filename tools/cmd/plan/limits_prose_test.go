@@ -27,6 +27,8 @@ func TestLimitsProse(t *testing.T) {
 		{"list paragraphs", "notes.md", "", "- " + strings.TrimSuffix(words(25), ".") + "\n* " + words(25) + "\n+ " + words(25) + "\n1. " + words(25), nil},
 		{"end list", "notes.md", "", "- " + half + "\n" + words(15), nil},
 		{"metadata", "notes.md", "", "Status: done\nVersion: v0.0.1\n", nil},
+		{"link definitions", "notes.md", "", "Short.\n\n" + strings.Repeat("[a-link]: ../a/long/path.md\n", 20), nil},
+		{"after link definitions", "notes.md", "", "[a]: a.md\n" + long, []string{"notes.md:2 holds a sentence of 26 words, more than 25"}},
 		{"move within file", "notes.md", long + "\nShort.\n", "Short.\n\n" + half + "\n" + words(11) + "\n", nil},
 		{"link target", "notes.md", strings.TrimSuffix(words(26), ".") + " [link](old.md).\n", strings.TrimSuffix(words(26), ".") + " [link](new.md).\n", nil},
 		{"code span", "notes.md", "", strings.TrimSuffix(words(24), ".") + " `a complete command here`.", nil},

@@ -110,7 +110,8 @@ func extractSentences(file string, content []byte) []sentence {
 			html = !strings.Contains(text, "-->")
 			continue
 		}
-		if f.in(line) || text == "" || strings.HasPrefix(text, "#") {
+		// A link reference definition, as in a rule index, is no prose.
+		if f.in(line) || text == "" || strings.HasPrefix(text, "#") || refDefinition.MatchString(text) {
 			flush()
 			continue
 		}

@@ -1,6 +1,6 @@
 # UAT ledger
 
-This file answers one question: which UATs ran, with which verdict and measurements, and what stays open? Add one row per UAT, newest first. The issue holds the detail.
+This file answers one question: which UATs ran, with which verdict and measurements, what stays open, and where did each correction land? Add one row per UAT, newest first. The issue holds the detail.
 
 | UAT | Subject | Template | Verdict | Date | Follow-ups |
 |---|---|---|---|---|---|
@@ -27,3 +27,14 @@ Add one row per UAT that measured the common commands of the [budgets](north-sta
 | Reference, `052b3184` | video-convert v0.1.2 | 2,071 | 1,278 | 2,036 | 3,743 | 181 | 241 | 169 | 200 |
 
 The reference row set the budgets on 2026-10-29, on the Linux test host, with a 2-second clip that ffmpeg made. Its `describe video convert --json` counts 1,002 tokens with `o200k_base`. #375 measured 3,830 bytes for it on `71125d9`.
+
+## Corrections
+
+Add one row per correction, newest first, as step 4 of [Move a correction](../north-star/decisions/D068-verification-map.md#move-a-correction) asks.
+Level is the level of D068 where the correction landed, from 1 to 4. Owner is A, B, or C.
+A correction that lands below the highest level that can prevent its failure says so in its Failure cell.
+`just test` refuses another Level or Owner.
+
+| Correction | Failure | Level | Owner |
+|---|---|---|---|
+| COR-104-T1 | At 7f3ae60e, `ledger_history.go` enforced rules that no row of the template rule index named until b3dc8b48 | 2 | A |

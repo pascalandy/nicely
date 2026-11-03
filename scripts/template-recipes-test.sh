@@ -23,7 +23,7 @@ fct_test_files() {
 
 # fct_test_example_notices requires notices from plain just check in the rendered repository $1, whose slug is $3.
 fct_test_example_notices() {
-	local repo="${1}" scratch="${2}" status=0 line examples
+	local repo="${1}" scratch="${2}" status=0 line examples count
 	local skipped='skipped: command is outside this manifest, so its paid effects are unknown'
 	local code reason='Requires a controlled runtime; https://example.com/issues/1'
 	code="$(printf '%s_WARNING' "${3}" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
@@ -41,6 +41,15 @@ fct_test_example_notices() {
 	fi
 	cat "${scratch}/examples-check.out"
 	cat "${scratch}/examples-check.err" >&2
+	# awk counts the rule index apart from the SDK, which prints measure 1 of D068 for owner C.
+	count="$(awk -F'|' '/^\| Rule \| Enforced by \|$/ { rows = 1; next }
+		rows && /^\|---/ { next }
+		rows && /^\|/ { n++; if ($3 ~ /^ Prose only/) only++; if ($3 ~ /^ Prose on purpose/) purpose++; next }
+		{ rows = 0 }
+		END { printf "%d of %d rules are Prose only, and %d Prose on purpose", only, n, purpose }' "${repo}/AGENTS/rule-index.md" "${repo}"/AGENTS/rule-index/*.md)"
+	[[ "${count}" != "0 of 0 "* ]] || fct_fail 'the rendered rule index holds no rule'
+	grep -qxF "AGENTS/rule-index.md: ${count}" "${scratch}/examples-check.err" ||
+		fct_fail "plain just check does not print: AGENTS/rule-index.md: ${count}"
 	if ! grep -qF "warning ${code} untested" "${scratch}/examples-check.err" ||
 		! grep -qF "${reason}" "${scratch}/examples-check.err"; then
 		fct_fail 'plain just check hides the declared-code reservation on stderr'

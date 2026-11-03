@@ -1,5 +1,6 @@
 // Command plan validates the backlog, prints the next queued card, and shows item states.
-// It also checks documentation links, card references, codes, and typography.
+// It also checks documentation links, card references, codes, typography, and the rule indexes.
+// status also counts the rules of each index by enforcer.
 // next and status validate the plan before pointing an agent to work.
 //
 // plan next|status|check <repository root>
@@ -108,6 +109,15 @@ func run(args []string, out io.Writer) error {
 	}
 	items := b.items
 	problems := b.check(root)
+	var indexes []ruleIndex
+	if args[0] != "next" {
+		var found []string
+		indexes, found, err = ruleIndexes(root)
+		if err != nil {
+			return err
+		}
+		problems = append(problems, found...)
+	}
 	var output strings.Builder
 	if args[0] == "check" {
 		codes, err := knownCodes(root)
@@ -131,6 +141,7 @@ func run(args []string, out io.Writer) error {
 		nextItem(&output, b)
 	case args[0] == "status":
 		itemStatus(&output, b.items)
+		ruleStatus(&output, indexes)
 	default:
 		fmt.Fprintf(&output, "%s keeps the format, and the docs pass every check\n", backlogDir)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"slices"
@@ -66,4 +67,73 @@ func missingAxes(protocol string) []string {
 		}
 	}
 	return missing
+}
+
+// TestLedgerCorrections checks the Corrections table of the QA ledger, which
+// measure 2 of D068 reads: each correction names its level and its owner.
+func TestLedgerCorrections(t *testing.T) {
+	data, err := os.ReadFile("../../../docs/qa/ledger.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger := string(data)
+	if problems := correctionProblems(ledger); len(problems) > 0 {
+		t.Fatalf("docs/qa/ledger.md: %v", problems)
+	}
+	row := "| 2 | A |\n"
+	for _, cut := range []struct{ old, new, want string }{
+		{row, "| 5 | A |\n", "level 5"},
+		{row, "| 2 | D |\n", "owner D"},
+		{row, "|  | A |\n", "level "},
+		{"| Correction | Failure | Level | Owner |\n|---|---|---|---|\n", "| Correction | Failure | Owner |\n|---|---|---|\n", "no Level and Owner"},
+		{"## Corrections\n", "## Fixes\n", "no Corrections"},
+	} {
+		changed := strings.Replace(ledger, cut.old, cut.new, 1)
+		problems := correctionProblems(changed)
+		if changed == ledger || !slices.ContainsFunc(problems, func(p string) bool { return strings.Contains(p, cut.want) }) {
+			t.Errorf("a ledger with %q passed, or gave %q", cut.new, problems)
+		}
+	}
+}
+
+// correctionProblems returns what is wrong with the Corrections table of the
+// ledger: a missing section or column, or a level or an owner outside D068.
+func correctionProblems(ledger string) []string {
+	var problems []string
+	var section string
+	var header []string
+	found, columns := false, false
+	for line := range strings.Lines(ledger) {
+		line = strings.TrimRight(line, "\n")
+		if title, isHeading := strings.CutPrefix(line, "## "); isHeading {
+			section = title
+			continue
+		}
+		if section != "Corrections" {
+			continue
+		}
+		found = true
+		cells, isHeader := tableRow(line, &header)
+		level, owner := slices.Index(header, "Level"), slices.Index(header, "Owner")
+		if isHeader {
+			columns = level >= 0 && owner >= 0
+			continue
+		}
+		if cells == nil || !columns || len(cells) != len(header) {
+			continue
+		}
+		if !slices.Contains([]string{"1", "2", "3", "4"}, cells[level]) {
+			problems = append(problems, fmt.Sprintf("%s: level %s is not 1, 2, 3, or 4", cells[0], cells[level]))
+		}
+		if !slices.Contains([]string{"A", "B", "C"}, cells[owner]) {
+			problems = append(problems, fmt.Sprintf("%s: owner %s is not A, B, or C", cells[0], cells[owner]))
+		}
+	}
+	switch {
+	case !found:
+		problems = append(problems, "no Corrections section")
+	case !columns:
+		problems = append(problems, "the Corrections table has no Level and Owner columns")
+	}
+	return problems
 }

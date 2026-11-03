@@ -10,6 +10,9 @@ import (
 )
 
 func checkRepository() int {
+	if err := printRuleIndex(); err != nil {
+		return report("check", err)
+	}
 	if err := updateRun("go", "mod", "tidy", "-diff"); err != nil {
 		return report("check", err)
 	}
