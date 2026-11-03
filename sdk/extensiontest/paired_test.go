@@ -3,6 +3,8 @@ package extensiontest_test
 import (
 	"cmp"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -105,4 +107,38 @@ func pairedFixture(t *testing.T, host, script string) (string, error) {
 		edit{"manifest.toml", "[commands.result.schema]", "[commands.result.dry_run_schema]\ntype = \"object\"\nrequired = [\"file\", \"sha256\"]\nproperties = { file = { type = \"string\" }, sha256 = { type = \"string\" } }\n\n[commands.result.schema]"},
 		edit{"manifest.toml", "[[commands.args]]", "[[commands.flags]]\nname = \"label\"\nvalue = \"text\"\nsummary = \"video-convert.file\"\n\n[[commands.args]]"},
 		edit{file: "testdata/script/convert.txtar", new: setup + script + "\n-- fake.mov --\nfake media\n-- host.sh --\n" + host})
+}
+
+// TestPublicationRejectsCheckedRename proves the past mistake of N3 in the builds of 2026-10-30.
+// After a hard link failed, the fallback checked the output, then renamed over it, which Generic cases forbid.
+// A host with hard links never enters that fallback, so the scenario of ordinary calls passes.
+// Under without link, the guard of the kit refuses the hard link for the run only, and predicts sees the rename.
+// The repaired stub fails closed, which keeps proves.
+func TestPublicationRejectsCheckedRename(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("only Linux refuses an operation for the child only")
+	}
+	if _, err := exec.LookPath("perl"); err != nil {
+		t.Skip("the fallback renames with perl, as os.Rename does")
+	}
+	link := `ln "$stage" "$out" 2>/dev/null || { rm -f "$stage"; fail RUNTIME "The output appeared." 1; }`
+	fallback := strings.Replace(publicationHost, link, `ln "$stage" "$out" 2>/dev/null || {
+    [ ! -e "$out" ] || { rm -f "$stage"; fail RUNTIME "The output appeared." 1; }
+    perl -e 'rename $ARGV[0], $ARGV[1] or exit 1' "$stage" "$out"
+  }`, 1)
+	// The repaired stub is publicationHost, which fails closed without a hard link.
+	withoutLink := strings.Replace(declared, "| `ncly video convert` | create | `link` | The stub refuses at out/.no-hard-link, and refuses links proves it |\n", "", 1)
+	if out, err := publicationFixture(t, fallback, declared, proved); err != nil {
+		t.Fatalf("legacy scenario rejected the past mistake: %v\n%s", err, out)
+	}
+	out, err := publicationFixture(t, fallback, declared, proved+"rm out/clip.txt\n[linux] without link predicts ncly video convert clip.mov\n")
+	t.Logf("guarded fixture: %v\n%s", err, out)
+	if want := "predicts: the run published out/clip.txt with `rename`, which the create mode of `ncly video convert` does not declare"; err == nil || !strings.Contains(out, want) {
+		t.Fatalf("want rejection with %q, got %v\n%s", want, err, out)
+	}
+	script := proved + "rm out/clip.txt\nprotect clip.mov out\n[linux] without link keeps 1 ncly video convert clip.mov\n"
+	if out, err := publicationFixture(t, publicationHost, withoutLink, script); err != nil {
+		t.Fatalf("repaired fixture failed: %v\n%s", err, out)
+	}
+	t.Log("legacy go test exit 0; guarded fallback go test exit 1; guarded repair go test exit 0")
 }
