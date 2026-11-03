@@ -21,6 +21,20 @@ fct_test_files() {
 	done
 }
 
+# fct_test_analyzers proves that just check runs the analyzers of the pinned
+# SDK on the code of the author. Its probe repeats the line that 3e6a4eff
+# removed from extensions/agent/execute.go.
+fct_test_analyzers() {
+	local repo="${1}" scratch="${2}" domain="${3}" probe="${1}/analyzer_probe.go"
+	printf 'package %s\n\nimport (\n\t"context"\n\t"io"\n\n\t"github.com/pascalandy/nicely/sdk/runner"\n)\n\nfunc probe(ctx context.Context, path string) error {\n\t_, err := runner.Run(ctx, runner.Program{Path: path, Stdout: io.Discard})\n\treturn err\n}\n' "${domain}" >"${probe}"
+	if (cd "${repo}" && just check) >"${scratch}/analyzers.out" 2>&1; then
+		fct_fail 'just check accepts io.Discard as the Stdout of a runner.Program'
+	fi
+	grep -qF 'analyzer_probe.go:11:63: runner.Program.Stdout: use nil or omit the field instead of io.Discard' "${scratch}/analyzers.out" ||
+		fct_fail "just check fails without the diagnostic of runnerdiscard: $(cat "${scratch}/analyzers.out")"
+	rm "${probe}"
+}
+
 # fct_test_example_notices requires notices from plain just check in the rendered repository $1, whose slug is $3.
 fct_test_example_notices() {
 	local repo="${1}" scratch="${2}" status=0 line examples count
