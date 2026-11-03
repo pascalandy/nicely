@@ -15,7 +15,8 @@ func TestKeeps(t *testing.T) {
 		{"other exit", publicationHost, "keeps 1 ncly video convert missing.mov\n", "keeps: ncly exited with 2, want 1"},
 		{"a protected folder changes", publicationHost, "protect out\nkeeps 0 ncly video convert clip.mov\n", "keeps: the call changed protected paths"},
 		{"the run changes its input", strings.Replace(publicationHost, `stage=out/.stage.$$`, `echo changed > "$input"; stage=out/.stage.$$`, 1), "keeps 0 ncly video convert clip.mov\n", "keeps: the call changed protected paths: $WORK/clip.mov"},
-		{"a child remains", child, "keeps 0 ncly video convert clip.mov\n", "keeps: these processes of the call still ran after it exited"},
+		// The guard names each child on Linux, and the group check of keeps on another system names none.
+		{"a child remains", child, "keeps 0 ncly video convert clip.mov\n", "of the call still ran after it exited"},
 		{"answer schema", strings.Replace(publicationHost, `\"ok\":false`, `\"ok\":\"false\"`, 1), "keeps 2 ncly-video-convert missing.mov\n", "breaks the schema"},
 		{"path bypass", publicationHost, "keeps 0 $XDG_DATA_HOME/nicely/extensions/ncly-video-convert clip.mov\n", "use the registered command"},
 	}

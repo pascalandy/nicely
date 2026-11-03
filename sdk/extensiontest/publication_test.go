@@ -2,6 +2,7 @@ package extensiontest_test
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -98,18 +99,26 @@ func publicationFixture(t *testing.T, host, spec, script string) (string, error)
 // Before COR-104-T6, the scenario of ordinary calls passed. The declaration now asks for each obligation, and predicts rejects the run.
 func TestPublicationRejectsIssue425(t *testing.T) {
 	legacy := "cp clip.mov out/.no-hard-link\nncly video convert clip.mov --dry-run\nexits 1 ncly video convert clip.mov\nstderr '\"code\":\"RUNTIME\"'\n"
-	steps := []struct{ name, host, spec, script, want string }{
-		{"no declaration", publicationHost, "", legacy, "## Publication has no row for its create mode"},
-		{"no check of the hard link", publicationHost, strings.Split(declared, "\n| Command | Mode | Obligation")[0], proved, "has no scenario that proves `link`, and no reason"},
+	// Only Linux refuses an operation for one call. On another system, a case with a notice passes and prints that notice.
+	linuxOnly := "checks the obligations of the operations of ## Publication on Linux only"
+	steps := []struct{ name, host, spec, script, want, notice string }{
+		{"no declaration", publicationHost, "", legacy, "## Publication has no row for its create mode", ""},
+		{"no check of the hard link", publicationHost, strings.Split(declared, "\n| Command | Mode | Obligation")[0], proved, "has no scenario that proves `link`, and no reason", linuxOnly},
 		{
 			"dry run predicts a failed run", publicationHost, declared, "cp clip.mov out/.no-hard-link\npredicts ncly video convert clip.mov\n",
-			"predicts: the dry run predicted a file at out/clip.txt, and the run failed with RUNTIME and exit 1",
+			"predicts: the dry run predicted a file at out/clip.txt, and the run failed with RUNTIME and exit 1", "",
 		},
 	}
 	for _, s := range steps {
 		t.Run(s.name, func(t *testing.T) {
 			out, err := publicationFixture(t, s.host, s.spec, s.script)
 			t.Logf("go test: %v\n%s", err, out)
+			if s.notice != "" && runtime.GOOS != "linux" {
+				if err != nil || !strings.Contains(out, s.notice) {
+					t.Fatalf("want a pass with %q on %s, got %v\n%s", s.notice, runtime.GOOS, err, out)
+				}
+				return
+			}
 			if err == nil || !strings.Contains(out, s.want) {
 				t.Fatalf("want rejection with %q, got %v\n%s", s.want, err, out)
 			}
