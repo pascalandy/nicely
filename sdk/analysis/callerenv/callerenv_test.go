@@ -15,13 +15,13 @@ var root = filepath.Join("..", "..", "..")
 // 09809608, and notices.go on the go test of e35bd0bb.
 func TestCallerEnvironment(t *testing.T) {
 	cases := "github.com/pascalandy/nicely/sdk/analysis/callerenv/testdata/cases"
-	owners[cases] = "NewOwnedRun"
+	owners[cases] = []string{"NewOwnedRun"}
 	t.Cleanup(func() { delete(owners, cases) })
 	analysistest.Run(t, root, Analyzer, "./sdk/analysis/callerenv/testdata/cases")
 }
 
 // TestOwnedPackages requires that the kit, the repository gates, and the TLC
-// runner read the environment of the caller only in NewOwnedRun.
+// runner and their descendants use only their exact allowed readers.
 func TestOwnedPackages(t *testing.T) {
-	analysistest.Run(t, root, Analyzer, "./sdk/extensionrepo", "./sdk/extensiontest", "./sdk/verification")
+	analysistest.Run(t, root, Analyzer, "./sdk/extensionrepo/...", "./sdk/extensiontest/...", "./sdk/verification/...")
 }

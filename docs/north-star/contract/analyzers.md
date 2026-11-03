@@ -22,13 +22,19 @@ It skips each `_test.go` file, because a test can do on purpose what the rule re
 
 | Rule | Refuses | Use instead | Past mistake |
 |---|---|---|---|
-| `callerenv` | `os.Environ` or `syscall.Environ` in `sdk/extensionrepo`, `sdk/extensiontest`, and `sdk/verification`, outside `extensionrepo.NewOwnedRun` | An [owned run](owned-runs.md) | The parent of 09809608 |
+| `callerenv` | `os.Environ` or `syscall.Environ` in `sdk/extensionrepo`, `sdk/extensiontest`, `sdk/verification`, and their child packages, outside the exact allowed readers below | An [owned run](owned-runs.md) | The parent of 09809608 |
 | `runnerdiscard` | `io.Discard` as the `Stdout` or `Stderr` of a `runner.Program`, in a struct literal or a field assignment | `nil`, or no field | 3e6a4eff |
 
 **callerenv.** Each check that copies the environment of its caller filters it in its own way.
 Each new caller setting then needs a fix in each copy, as 17 past corrections did.
 The rule reads a call and a function value.
-It reads only the packages of the kit, the repository gates, and the TLC runner, so an extension never meets it.
+It reads each owned package and every path starting with that package followed by `/`.
+A similar prefix such as `sdk/extensiontestx` is outside its scope.
+The allowed readers match the exact package and function; a child package never inherits an allowance.
+`extensionrepo.NewOwnedRun` builds owned runs, and `extensionrepo.updateEnviron` removes `GIT_*` for update programs.
+`extensiontest/guard.stage` preserves the isolated scenario environment across `exec`.
+`extensiontest/fake.run` prints environment names, never values, for its `env` action.
+An extension package is outside these SDK paths.
 A program that starts with no `Env` inherits the environment of the caller too, and the rule cannot see that.
 
 **runnerdiscard.** The runner reads a writer that is not a file through a pipe.

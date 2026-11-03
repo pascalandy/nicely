@@ -243,12 +243,26 @@ func updateBootstrap(version, repo string, resume bool) string {
 func updateRun(name string, args ...string) error {
 	fmt.Fprintln(os.Stderr, strings.Join(append([]string{name}, args...), " "))
 	cmd := exec.Command(name, args...)
+	cmd.Env = updateEnviron()
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return cmd.Run()
 }
 
 func updateOutput(name string, args ...string) ([]byte, error) {
 	cmd := exec.Command(name, args...)
+	cmd.Env = updateEnviron()
 	cmd.Stderr = os.Stderr
 	return cmd.Output()
+}
+
+// updateEnviron keeps update tools' caller settings except Git's repository
+// selection and other GIT_* state, which can leak from a hook or rebase --exec.
+func updateEnviron() []string {
+	var env []string
+	for _, value := range os.Environ() {
+		if !strings.HasPrefix(value, "GIT_") {
+			env = append(env, value)
+		}
+	}
+	return env
 }

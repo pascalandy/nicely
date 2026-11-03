@@ -1,6 +1,6 @@
 # Contract, extension, repository, kit, and i18n
 
-This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments. It also holds S52 to S53 of COR-104-T3 and S54 to S55 of COR-104-T6. [Documentation](documentation.md) holds S65 for pinned documentation. [Formal models](models.md) holds S56 to S58 of COR-104-T8.
+This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments. It also holds S52 to S53 of COR-104-T3 and S54 to S55 of COR-104-T6. S66 covers update environments. [Documentation](documentation.md) holds S65 for pinned documentation. [Formal models](models.md) holds S56 to S58 of COR-104-T8.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|
@@ -30,11 +30,17 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 | S24 | Format numbers, sizes, durations, and dates with i18n | [i18n.go][i18n] | Prose only |
 | S25 | Translated text sets its own width | [i18n.go][i18n] | Prose only |
 | S26 | Clip command-line and variable values before a refusal quotes them | [i18n.go][i18n] | [Long values scenario][long-values] |
-| S52 | The kit, signoff, release, acceptance, and the TLC runner build each environment with `NewOwnedRun`, which alone reads `os.Environ` | [Owned runs][owned-runs] | [owned_run.go][owned-run], [callerenv][callerenv], [isolation test][isolation-test], [acceptance.go][acceptance], [models.go][models], [template recipes test][recipes-test], partial: a program with no `Env` inherits its caller |
+| S52 | The kit, signoff, release, acceptance, and the TLC runner build each environment with `NewOwnedRun`. Only the exact readers of [Analyzers][analyzers] may read the whole caller environment in the owned package trees | [Owned runs][owned-runs] | [owned_run.go][owned-run], [callerenv][callerenv], [isolation test][isolation-test], [acceptance.go][acceptance], [models.go][models], [template recipes test][recipes-test], partial: a program with no `Env` inherits its caller |
 | S53 | Each action of the export program returns one result, whose answer, notices, and exit code one writer delivers | [Owned runs][owned-runs] | [result.go][result], [result test][result-test], [isolation test][isolation-test], [template recipes test][recipes-test] |
 | S54 | `## Publication` of `spec.md` declares each mode of each command that may write a user file. A passing check proves each obligation, or a reason covers it | [Publication declaration][publication-contract] | [publication.go][publication], [publication_row.go][publication-row], [publication_report.go][publication-report], [publication test][publication-test], [predicts test][predicts-test], [template recipes test][recipes-test], partial: the reviewer accepts each reason |
 | S55 | A successful dry run changes no file, and predicts the destination and the overwrite choice of its run | [Scenario commands][scenario-commands] | [predicts.go][predicts], [publication test][publication-test], [predicts test][predicts-test], partial: only Linux removes an ability of the destination, with `without` of [S61](publication.md) |
+| S66 | Every update program gets an explicit environment without any caller `GIT_*` setting, including Git that Copier starts | [Update an extension][update-contract] | [update.go][update], [poisoned update test][update-test], [callerenv scope test][callerenv-scope] |
 
+[analyzers]: ../contract/analyzers.md
+[update-contract]: ../contract/update-an-extension.md
+[update]: ../../../sdk/extensionrepo/update.go
+[update-test]: ../../../sdk/extensionrepo/update_environment_test.go
+[callerenv-scope]: ../../../sdk/analysis/callerenv/scope_test.go
 [agents]: ../../../AGENTS.md
 [contract-codes]: ../../../sdk/contract/codes.go
 [contract-spec]: ../../../sdk/contract/spec_test.go

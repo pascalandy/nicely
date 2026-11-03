@@ -60,6 +60,7 @@ It uses dry runs where available and prints skip reasons in plain `just check` o
 The kit, `just signoff`, `just release`, and `just acceptance` run in [owned runs](docs/north-star/contract/owned-runs.md), without settings of the caller such as `NCLY_CONFIG`.
 `just verify-models` checks the TLA+ models of `verification/tlc.json` with a pinned TLC, whose SHA-256 it checks before Java starts. `just check` reads only their [record](docs/north-star/contract/formal-models.md), with no Java and no network.
 `just update VERSION` runs the target version's updater.
+It removes the caller's `GIT_*` settings from update programs, including Copier's Git calls, so a hook cannot redirect the update to another repository.
 Older repositories use the bootstrap in [Update an extension](docs/north-star/contract/extension-repository.md#update-an-extension).
 Further work lives in [docs hub](docs/backlog/XT-104-docs-hub.md), [Canadian French](docs/backlog/COR-102-canadian-french.md),
 [Markdown view](docs/backlog/XT-103-markdown-view.md), and [video and image jobs](docs/backlog/XT-602-video-image-jobs.md).

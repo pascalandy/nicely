@@ -1,6 +1,6 @@
-// Package callerenv refuses a read of the whole environment of the caller in
-// the test kit, the repository gates, and the TLC runner. Only extensionrepo.NewOwnedRun reads
-// it, as Analyzers in contract.md defines.
+// Package callerenv refuses whole caller environment reads in the test kit,
+// repository gates, TLC runner and their child packages.
+// The exact allowed readers are listed below and in Analyzers of contract.md.
 //
 // At the parent of 09809608, the lifecycle check of the kit passed
 // os.Environ() to a scratch install, which replaced HOME and kept an invalid
@@ -14,31 +14,42 @@ package callerenv
 import (
 	"go/ast"
 	"go/types"
+	"slices"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
 )
 
-// Analyzer reports os.Environ and syscall.Environ outside the constructor of
-// owned runs.
+// Analyzer reports os.Environ and syscall.Environ outside the exact allowed
+// readers in the owned package trees.
 var Analyzer = &analysis.Analyzer{
 	Name: "callerenv",
-	Doc:  "refuse os.Environ in the test kit, the repository gates, and the TLC runner outside extensionrepo.NewOwnedRun",
+	Doc:  "refuse whole caller environment reads in owned SDK package trees outside their exact allowed readers",
 	Run:  run,
 }
 
-// owners maps each package that the rule reads to the one function there that
-// may read the environment of the caller as a whole. An empty name allows
-// none.
-var owners = map[string]string{
-	"github.com/pascalandy/nicely/sdk/extensionrepo": "NewOwnedRun",
-	"github.com/pascalandy/nicely/sdk/extensiontest": "",
-	"github.com/pascalandy/nicely/sdk/verification":  "",
+// Each key owns its package and descendants. Its allowed function names apply
+// only to that exact package, never to descendants.
+var owners = map[string][]string{
+	"github.com/pascalandy/nicely/sdk/extensionrepo": {"NewOwnedRun", "updateEnviron"},
+	"github.com/pascalandy/nicely/sdk/extensiontest": nil,
+	"github.com/pascalandy/nicely/sdk/verification":  nil,
+	// stage preserves the isolated scenario environment across syscall.Exec.
+	"github.com/pascalandy/nicely/sdk/extensiontest/guard": {"stage"},
+	// run implements the fixture's env action, which prints names, never values.
+	"github.com/pascalandy/nicely/sdk/extensiontest/fake": {"run"},
 }
 
 func run(pass *analysis.Pass) (any, error) {
-	owner, ok := owners[pass.Pkg.Path()]
-	if !ok {
+	path := pass.Pkg.Path()
+	owned := false
+	for parent := range owners {
+		if path == parent || strings.HasPrefix(path, parent+"/") {
+			owned = true
+			break
+		}
+	}
+	if !owned {
 		return nil, nil
 	}
 	for _, file := range pass.Files {
@@ -46,7 +57,7 @@ func run(pass *analysis.Pass) (any, error) {
 			continue
 		}
 		for _, decl := range file.Decls {
-			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && owner != "" && fn.Name.Name == owner {
+			if fn, ok := decl.(*ast.FuncDecl); ok && fn.Recv == nil && slices.Contains(owners[path], fn.Name.Name) {
 				continue
 			}
 			ast.Inspect(decl, func(node ast.Node) bool {

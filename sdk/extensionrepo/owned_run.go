@@ -13,7 +13,8 @@ import (
 // OwnedRun is the environment and the scratch folder of one verification
 // run, as Owned runs in the contract defines. The test kit, signoff,
 // release, and acceptance each build theirs with NewOwnedRun. The analyzer
-// callerenv refuses os.Environ elsewhere in this package and the kit.
+// callerenv permits whole caller reads only in the exact functions of
+// Analyzers in the contract.
 type OwnedRun struct {
 	// Dir is the folder of the run. A scratch run holds HOME, TMPDIR, and
 	// the XDG folders there. A host run keeps its notices there.

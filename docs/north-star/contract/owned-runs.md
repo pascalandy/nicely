@@ -6,8 +6,8 @@ This part says how the SDK builds the environment of a verification run, and how
 ## The constructor
 
 `extensionrepo.NewOwnedRun` builds the environment and the folder of each run of the test kit, signoff, release, acceptance, and `just verify-models`.
-It is the one function of `sdk/extensionrepo`, `sdk/extensiontest`, and `sdk/verification` that reads the environment of the caller as a whole.
-The [analyzer](analyzers.md) `callerenv` refuses `os.Environ` and `syscall.Environ` everywhere else in these packages.
+The `callerenv` analyzer checks these SDK package trees and permits only the exact whole-environment readers listed in [Analyzers](analyzers.md).
+That list includes the constructor, the updater's Git filter, and two intentional fixture readers.
 
 A run has one of two profiles:
 

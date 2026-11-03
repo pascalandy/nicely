@@ -17,6 +17,9 @@ go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/
 ```
 
 The updater accepts only `vX.Y.Z` tags and an absolute repository path.
+Every program it starts gets an explicit environment, with every `GIT_*` variable of the caller removed.
+This includes Git started by Copier, so a hook or `git rebase --exec` cannot redirect the update to its repository.
+Other caller settings remain available to the update programs.
 It first requires a committed, clean Git tree.
 Copier keeps the author's `go.mod` and applies the target template.
 The updater checks for conflict markers, `.rej` files, and unmerged index entries before changing dependencies.
