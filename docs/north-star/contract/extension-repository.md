@@ -7,7 +7,8 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | File | Holds |
 |---|---|
 | `README.md` | What the extension adds, and the commands that install a release |
-| `vision.md` | The job of the extension in one sentence, the source and revision of each wrapped program, its intake facts, and what it refuses |
+| `vision.md` | The job of the extension in one sentence, the source and revision of each wrapped program, the view of its intake, and what it refuses |
+| `intake.toml`, `review.toml` | The [build records](build-records.md): the facts of the intake, and the last readiness review with the ledger of the builds |
 | `spec.md` | One section per command, titled `## ncly <path>`: what proves success, why each effect exists, each failure and its code, and the limits that the user accepted. Then `## Acceptance`: the real input, the properties that the output keeps, and each input that the wrapped program accepts but the domain refuses. Then `## Open lines`: the lines that no test proves yet. Each line of Failures and of Acceptance starts with its spec ID, as [Test kit](test-kit.md#spec-ids) says |
 | `manifest.toml`, `locales/`, `skill/` | The manifest, the catalogs, and the skill, which the extension embeds as [SDK](sdk.md) defines |
 | `worker/` | The scripts that it embeds as workers, one per command that wraps one |
@@ -18,7 +19,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
 | `AGENTS/rule-index.md` | The check that enforces each rule of `AGENTS.md`, with its parts in `AGENTS/rule-index/` |
 | `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
-| `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings. Then the ledger of the build, as [Finish gate](finish-gate.md#the-ledger) defines |
+| `readiness.md` | The view of `review.toml`, which `just records` writes |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
 | `.github/workflows/check.yml` | The `just check` that GitHub runs on Ubuntu, plus macOS for public repositories, for each push to `main` and each pull request |
 
@@ -33,10 +34,11 @@ The template refuses `main` and each Go keyword as a domain, such as `type`. It 
 A push can skip Lefthook, so its GitHub workflow runs `just check` again on `ubuntu-24.04`.
 Public repositories also run the same steps on `macos-15`, and both runners are free.
 
-The repository tests itself through the [test kit](test-kit.md). Its `justfile` has nine recipes:
+The repository tests itself through the [test kit](test-kit.md). Its `justfile` has ten recipes:
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, the [analyzers](analyzers.md) of the pinned SDK, and `go test`, whose test kit installs the extension into scratch folders. It first prints how many rules of the rule index are `Prose only`
 - `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. [Finish gate](finish-gate.md) lists what it checks
+- `just records` writes the views of the [build records](build-records.md#views): `## Intake` of `vision.md`, and `readiness.md`
 - `just signoff` runs `just finish` and `just check` on the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines. After `just finish`, it runs the first failing run again, as [Finish gate](finish-gate.md#the-first-failing-run-again) says
 - `just scenario <name>` runs the scenario `testdata/script/<name>.txtar` alone, and the test kit skips its coverage checks
 - `just release <tag> [fixture]` publishes the signed SHA and proves the README install, as [Release and install](extensions.md#release-and-install) defines
@@ -48,7 +50,7 @@ The repository tests itself through the [test kit](test-kit.md). Its `justfile` 
 
 `just install` grants no key. A human grants one after reviewing the extension, as [Grants](grants.md) defines.
 
-The SDK package `extensionrepo` owns install, uninstall, finish, signoff, and release.
+The SDK package `extensionrepo` owns install, uninstall, finish, records, signoff, and release.
 The template's `internal/export/` program calls `extensionrepo.Main(Extension)`.
 The recipes each call that program in one line: `go run ./internal/export install` or `go run ./internal/export uninstall`.
 Signoff calls `go run ./internal/export signoff`.

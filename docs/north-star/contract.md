@@ -50,6 +50,7 @@ Each part is one file, in reading order.
       - [Generic cases](contract/generic-cases.md)
   - [Extension repository](contract/extension-repository.md)
     - [Finish gate](contract/finish-gate.md)
+    - [Build records](contract/build-records.md)
     - [Update an extension](contract/update-an-extension.md)
     - [Analyzers](contract/analyzers.md)
     - [Owned runs](contract/owned-runs.md)
