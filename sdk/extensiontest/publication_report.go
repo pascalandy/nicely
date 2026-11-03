@@ -7,27 +7,30 @@ import (
 )
 
 // publicationLinks reports these problems:
-//   - a row that the effects of its command contradict
+//   - a row of a command whose effects do not set user_writes
 //   - a reason for no obligation
-//   - a command that may write a user file, with no row and no reason
+//   - a mode of a command with user_writes that has no row and no reason
 //
-// A command may write one when its effects set user_writes or are absent,
-// as Manifest says.
+// Such a command runs the mode create, and the mode replace when it
+// declares the switch force. A reason for the obligation publication says
+// that one mode, or the whole command with the mode -, writes no file.
 func (k *kit) publicationLinks(rows []publication, reasons []reason) []string {
 	var problems []string
-	declared := map[string]bool{}
+	declared := func(path, mode string) bool {
+		return slices.ContainsFunc(rows, func(p publication) bool { return p.path == path && (mode == "-" || p.mode == mode) })
+	}
 	for _, row := range rows {
-		declared[row.path] = true
-		if command, _ := k.manifest.Command(row.path); command.Effects != nil && !command.Effects.UserWrites {
+		if command, _ := k.manifest.Command(row.path); command.Effects == nil || !command.Effects.UserWrites {
 			problems = append(problems, fmt.Sprintf("spec.md:%d: `ncly %s` publishes a file, and its effects in manifest.toml do not set user_writes. Fix: set user_writes = true", row.line, row.path))
 		}
 	}
-	unwritten := map[string]bool{}
+	unwritten := map[[2]string]bool{}
 	for _, r := range reasons {
 		if r.obligation == "publication" {
-			unwritten[r.path] = true
-			if declared[r.path] || r.mode != "-" {
-				problems = append(problems, fmt.Sprintf("spec.md:%d: the obligation `publication` says that `ncly %s` publishes no file. Fix: give it the mode -, and keep it only for a command with no row", r.line, r.path))
+			unwritten[[2]string{r.path, r.mode}] = true
+			if !slices.Contains([]string{"-", "create", "replace"}, r.mode) || declared(r.path, r.mode) {
+				problems = append(problems, fmt.Sprintf("spec.md:%d: the obligation `publication` says that the mode %s of `ncly %s` writes no file, and that mode has a row or is unknown. "+
+					"Fix: keep the reason only for create or replace with no row, or for the mode - of a command with no row", r.line, r.mode, r.path))
 			}
 			continue
 		}
@@ -38,10 +41,18 @@ func (k *kit) publicationLinks(rows []publication, reasons []reason) []string {
 		}
 	}
 	for _, command := range k.manifest.Commands {
-		path := strings.Join(command.Path, " ")
-		if k.manifest.Runs(command) && (command.Effects == nil || command.Effects.UserWrites) && !declared[path] && !unwritten[path] {
-			problems = append(problems, fmt.Sprintf("spec.md: `ncly %s` may write a user file, because its effects set user_writes or are absent, and ## Publication has no row for it. "+
-				"Fix: give each mode of its publication a row, or give the obligation `publication` a reason when it creates or replaces no user file", path))
+		if !k.manifest.Runs(command) || command.Effects == nil || !command.Effects.UserWrites {
+			continue
+		}
+		path, modes := strings.Join(command.Path, " "), []string{"create"}
+		if forceSwitch(command) {
+			modes = append(modes, "replace")
+		}
+		for _, mode := range modes {
+			if !declared(path, mode) && !unwritten[[2]string{path, mode}] && !unwritten[[2]string{path, "-"}] {
+				problems = append(problems, fmt.Sprintf("spec.md: `ncly %s` sets user_writes, and ## Publication has no row for its %s mode. "+
+					"Fix: give that mode a row, or give the obligation `publication` a reason when that mode creates or replaces no user file", path, mode))
+			}
 		}
 	}
 	return problems

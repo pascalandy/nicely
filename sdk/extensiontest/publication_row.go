@@ -27,7 +27,7 @@ func (k *kit) publicationRow(cells []string, line int) (publication, []string) {
 	switch p.mode {
 	case "create":
 	case "replace":
-		if !slices.ContainsFunc(command.Flags, func(f contract.Flag) bool { return f.Name == "force" && f.Value == "" }) {
+		if !forceSwitch(command) {
 			add("%s declares the mode replace and no switch force. Fix: declare the switch force, or delete the row", name)
 		}
 	default:
@@ -60,9 +60,9 @@ func (k *kit) publicationRow(cells []string, line int) (publication, []string) {
 	}
 	for _, name := range p.protected {
 		flag, isFlag := strings.CutPrefix(name, "--")
-		if isFlag && !slices.ContainsFunc(command.Flags, func(f contract.Flag) bool { return f.Name == flag && f.Value != "" }) ||
+		if isFlag && !slices.ContainsFunc(command.Flags, func(f contract.Flag) bool { return f.Name == flag && f.Value != "" && !f.Variadic }) ||
 			!isFlag && !slices.ContainsFunc(command.Args, func(a contract.Arg) bool { return a.Name == name }) {
-			add("Protected names `%s`, which is no argument and no flag with a value of %s. Fix: name a declared argument, or a flag as --name", name, "`ncly "+p.path+"`")
+			add("Protected names `%s`, which is no argument and no flag with one value of %s. Fix: name a declared argument, or a flag as --name", name, "`ncly "+p.path+"`")
 		}
 	}
 	p.operations = codeCells(cells[5])
@@ -81,4 +81,10 @@ func (k *kit) publicationRow(cells []string, line int) (publication, []string) {
 		add("the dry-run treatment %q is not checks or pending. Fix: write checks when the dry run checks each operation as the run does, or pending", p.dryRun)
 	}
 	return p, problems
+}
+
+// forceSwitch reports whether a command declares the switch force, which
+// selects the mode replace.
+func forceSwitch(command contract.Command) bool {
+	return slices.ContainsFunc(command.Flags, func(f contract.Flag) bool { return f.Name == "force" && f.Value == "" })
 }

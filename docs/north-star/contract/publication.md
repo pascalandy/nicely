@@ -17,7 +17,7 @@ The extension keeps its publication code. The kit checks the declaration and the
 - **Mode**: `create` for a run without `--force`, or `replace` for a run with it. A command with `replace` declares the switch `force`
 - **Destination**: the key that holds the path of the published file, in the dry-run answer and in the answer of the run. Both schemas of the manifest declare it
 - **Overwrite**: the boolean key of the dry-run answer that says whether the run replaces a file. The dry-run schema declares it
-- **Protected**: the arguments, such as `file`, and the flags with a value, such as `--input`, whose paths the run keeps unchanged. Write `None` when no path is protected
+- **Protected**: the arguments, such as `file`, and the flags with one value, such as `--input`, whose paths the run keeps unchanged. Write `None` when no path is protected
 - **Operation**: each operation that publishes the file in this mode. Each operation is also an ability that the file system of the destination needs
 - **Dry run**: `checks` when the dry run checks each operation as the run does, and refuses as the run refuses. `pending` when the dry run cannot check them, so it predicts no success
 
@@ -32,8 +32,9 @@ These are the operations:
 With `pending`, the dry-run answer lists `publication.<operation>` in `pending_checks` for each operation, such as `publication.link`.
 An item is that string, or an object whose `id` is that string.
 
-A command may write a user file when its `effects` set `user_writes`, or when it declares no `effects`, as [Manifest](manifest.md) says.
-Such a command has a row for each mode that it runs, or a reason for the obligation `publication`.
+A command whose `effects` set `user_writes`, as [Manifest](manifest.md) says, runs the mode `create`.
+It also runs the mode `replace` when it declares the switch `force`.
+Each mode that it runs has a row, or a reason for the obligation `publication`.
 A row of a command whose `effects` do not set `user_writes` fails.
 When no command creates or replaces a user file, the part says `None`.
 
@@ -46,7 +47,7 @@ Each row gives obligations. A scenario proves each one with a check of the kit, 
 | `predicts` | Each row | A `predicts` call of the command in that mode passes |
 | `appears` | A row `create` | An `appears` call of the command passes |
 | Each operation, such as `link` | Each row | A check on a destination without that ability. The kit has no such check yet, so the obligation needs a reason, as COR-104-T7 plans |
-| `publication` | A command with no row | None: the command writes no user file, though its `effects` may say so |
+| `publication` | A mode with no row | None: the mode writes no user file, though the `effects` of its command say so |
 
 The second table has the columns Command, Mode, Obligation, and Reason:
 
@@ -54,7 +55,7 @@ The second table has the columns Command, Mode, Obligation, and Reason:
 |---|---|---|---|
 | `ncly notes export` | create | `link` | The refusal of `refuses` covers a destination without hard link, and the source review checks that the run never falls back |
 
-The Mode of the obligation `publication` is `-`.
+The Mode of the obligation `publication` is the mode with no row, or `-` for a command with no row.
 Each reason names an obligation of its row, and says why no scenario proves it and what proves it instead.
 The reviewer of round 1 accepts each reason, as for an `untested` code.
 
