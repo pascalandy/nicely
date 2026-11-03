@@ -21,7 +21,7 @@ A card that adds a check moves its rule up, as D068 says.
 | [landing.md](landing.md) | D27 to D46 of `dev-preferences.md`: reviews, merges, stacks, UATs, and releases |
 | [principles.md](principles.md) | P01 to P31 of `principles.md` |
 | [sdk.md](sdk.md) | S01 to S26: contract, extension, repository, kit, and i18n |
-| [runtime.md](runtime.md) | S27 to S49: platform, record, runner, tui, wrap, and the fake child |
+| [runtime.md](runtime.md) | S27 to S51: platform, record, runner, tui, wrap, the fake child, and analysis |
 
 ## Support code
 

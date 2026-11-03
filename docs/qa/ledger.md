@@ -37,4 +37,5 @@ A correction that lands below the highest level that can prevent its failure say
 
 | Correction | Failure | Level | Owner |
 |---|---|---|---|
+| COR-104-T2 | At b695c8ba, `extensions/agent` gave a `runner.Program` `Stdout: io.Discard`, and only a review found the held pipe of 3e6a4eff. Level 1, an explicit output choice in `sdk/runner`, waits under Later of COR-104 | 2 | A |
 | COR-104-T1 | At 7f3ae60e, `ledger_history.go` enforced rules that no row of the template rule index named until b3dc8b48 | 2 | A |

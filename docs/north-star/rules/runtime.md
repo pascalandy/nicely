@@ -1,6 +1,6 @@
-# Platform, record, runner, tui, and wrap
+# Platform, record, runner, tui, wrap, and analysis
 
-This part of the [core rule index](README.md) holds S27 to S49, the rules of SDK package comments.
+This part of the [core rule index](README.md) holds S27 to S51, the rules of SDK package comments.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|
@@ -27,6 +27,8 @@ This part of the [core rule index](README.md) holds S27 to S49, the rules of SDK
 | S47 | Set Program.Input, so runtime and signal messages name the item | [wrap.go][wrap-go] | Prose only |
 | S48 | The fake child runs its action file in order, with defined output, input, sleep, exit, and missing actions | [fake/main.go][fake] | [Fake test][fake-test] |
 | S49 | The env action of the fake child prints names only, never values | [fake/main.go][fake] | [Fake test][fake-test] |
+| S50 | Discard a stream of a runner.Program with nil, never io.Discard, so no descendant holds its pipe | [runnerdiscard.go][runnerdiscard] | [runnerdiscard test][runnerdiscard-test], [template recipes test][template-recipes-test], partial: no variable flow |
+| S51 | Add an analyzer as a package listed in Analyzers, with cases that fail first on its past mistake | [analysis.go][analysis] | Prose only |
 
 [proctree]: ../../../sdk/platform/proctree.go
 [platform-file]: ../../../sdk/platform/file_test.go
@@ -50,3 +52,7 @@ This part of the [core rule index](README.md) holds S27 to S49, the rules of SDK
 [wrap-stop]: ../../../testdata/extensions/hello/testdata/script/wrap_stop.txtar
 [fake]: ../../../sdk/extensiontest/fake/main.go
 [fake-test]: ../../../sdk/extensiontest/fake/main_test.go
+[runnerdiscard]: ../../../sdk/analysis/runnerdiscard/runnerdiscard.go
+[runnerdiscard-test]: ../../../sdk/analysis/runnerdiscard/runnerdiscard_test.go
+[template-recipes-test]: ../../../scripts/template-recipes-test.sh
+[analysis]: ../../../sdk/analysis/analysis.go
