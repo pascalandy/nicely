@@ -22,13 +22,20 @@ const maxCandidates = 1000
 
 // execute runs the prepared job under the run ID of the call, or a new one,
 // as Records and replay in spec/records-and-replay.md defines. It takes the
-// run lock, then replays a completed run, which needs no key, or refuses an
-// uncertain one. Otherwise it resolves the job, reads the granted key before
-// any record or effect, and starts an attempt.
+// run lock first for a caller-named run, then replays completion or refuses
+// uncertainty. An unnamed run checks its output and key before opening.
+// A new attempt starts with the resolved job and granted key.
 func execute(ctx context.Context, call extension.Call, j job, id string) contract.Outcome {
 	p := call.Printer
 	runs := store()
-	if id == "" {
+	generated := id == ""
+	var key string
+	var problem *contract.Problem
+	if generated {
+		key, problem = prepareAttempt(ctx, call, &j)
+		if problem != nil {
+			return refusal(problem, "")
+		}
 		id = record.NewID(time.Now())
 	}
 	run, err := runs.Open(ctx, id)
@@ -56,18 +63,26 @@ func execute(ctx context.Context, call extension.Call, j job, id string) contrac
 			return refusal(problem, id)
 		}
 	}
-	if problem := resolve(ctx, call, &j); problem != nil {
-		return refusal(problem, savedID(run))
-	}
-	key, problem := call.Key("deepgram")
-	if problem == nil && !headerSafe(key) {
-		problem = keyUnusable(p)
-	}
-	if problem != nil {
-		return refusal(problem, savedID(run))
+	if !generated || run.Record != nil {
+		key, problem = prepareAttempt(ctx, call, &j)
+		if problem != nil {
+			return refusal(problem, savedID(run))
+		}
 	}
 	a := &attempt{call: call, p: p, j: j, run: run, saved: run.Record != nil}
 	return a.execute(ctx, key)
+}
+
+// prepareAttempt checks the output and key before a new attempt can start.
+func prepareAttempt(ctx context.Context, call extension.Call, j *job) (string, *contract.Problem) {
+	if problem := resolve(ctx, call, j); problem != nil {
+		return "", problem
+	}
+	key, problem := call.Key("deepgram")
+	if problem == nil && !headerSafe(key) {
+		problem = keyUnusable(call.Printer)
+	}
+	return key, problem
 }
 
 // headerSafe reports whether a key holds only visible ASCII. Only such a

@@ -1,0 +1,21 @@
+# An unusable output without --run-id leaves the existing run files unchanged.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env NCLY_TEST_UV_CACHE=$WORK/cache
+env NCLY_TEST_LAUNCHER=$WORK/unused.py
+onlyncly transcript-external
+install transcript
+env RUNS=$WORK/.local/state/nicely/runs
+mkdir $RUNS
+cp retained.lock $RUNS/retained.lock
+exec /bin/ls -A $RUNS
+cp stdout before.txt
+exits 2 ncly transcript run youtube --url https://youtu.be/abc --output $WORK/missing --json
+answer stderr USAGE_INVALID
+! stderr '"run_id"'
+exec /bin/ls -A $RUNS
+cmp stdout before.txt
+cmp retained.lock $RUNS/retained.lock
+
+-- retained.lock --
+keep this existing lock file

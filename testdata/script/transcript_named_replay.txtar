@@ -1,0 +1,32 @@
+# A named completed run still replays without an output check, programs, or key.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env NCLY_TEST_UV_CACHE=$WORK/cache
+env NCLY_TEST_LAUNCHER=$WORK/unused.py
+onlyncly transcript-external
+install transcript
+env RUNS=$WORK/.local/state/nicely/runs
+mkdir $RUNS $WORK/out/saved $WORK/.config/nicely
+cp words.txt $WORK/out/saved/raw_transcript.txt
+cp words.txt $WORK/out/saved/raw_sentences.txt
+cp paragraphs.json $WORK/out/saved/raw_transcript.json
+cp config.toml $WORK/.config/nicely/config.toml
+exec /bin/sh -c '/usr/bin/sed "s|ROOT|$WORK|g" saved.json > "$RUNS/saved.json"'
+cp $RUNS/saved.json before.json
+exec ncly transcript run youtube --url https://youtu.be/abc --run-id saved --json
+answer stdout ok
+stdout '"run_id":"saved"'
+stdout '"output_dir":"'${WORK@R}'/out/saved"'
+stdout '"transcript":"'${WORK@R}'/out/saved/raw_transcript\.txt"'
+cmp $RUNS/saved.json before.json
+exists $RUNS/saved.lock
+
+-- config.toml --
+[transcript.youtube]
+output = "missing-output"
+-- words.txt --
+hello
+-- paragraphs.json --
+[]
+-- saved.json --
+{"format_version":1,"run_id":"saved","path":"transcript run youtube","status":"completed","started_at":"2026-10-03T09:00:00Z","updated_at":"2026-10-03T09:02:00Z","ncly_version":"v0.26.0","attempts":1,"inputs":{"source":"youtube","output":null},"resolved":{"output":"ROOT/out","browser":null},"tools":{"transcript":"1.0.0","yt-dlp":"2026.1.1"},"items":[{"key":"https://youtu.be/abc","output_dir":"ROOT/out/saved","steps":[{"id":"transcribe","effect":"paid","status":"completed","started_at":"2026-10-03T09:00:01Z","finished_at":"2026-10-03T09:02:00Z","artifacts":[{"path":"ROOT/out/saved/raw_transcript.txt","size_bytes":6,"sha256":"5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"},{"path":"ROOT/out/saved/raw_sentences.txt","size_bytes":6,"sha256":"5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"},{"path":"ROOT/out/saved/raw_transcript.json","size_bytes":3,"sha256":"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"}],"error":null,"evidence":{"format_version":1,"warnings":[]}}]}]}

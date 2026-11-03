@@ -28,6 +28,7 @@ The current build brings:
 
 YouTube sign-in refusals stop automatic retries with `TRANSCRIPT_DOWNLOAD_FAILED`.
 Their hint names the transcript `browser` setting.
+Output or key refusals leave no empty run-lock files when `--run-id` is omitted.
 
 Extension manifests declare errors and warnings with optional command scopes, execution modes, and coverage exemptions linked to issues.
 `extension.Check` rejects invalid scopes with TOML line and column positions.

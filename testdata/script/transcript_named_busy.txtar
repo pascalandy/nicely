@@ -1,0 +1,18 @@
+# A named run takes its lock before the invalid output and missing key checks.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+env NCLY_TEST_UV_CACHE=$WORK/cache
+env NCLY_TEST_LAUNCHER=$WORK/unused.py
+onlyncly transcript-external holdlock
+install transcript
+env RUNS=$WORK/.local/state/nicely/runs
+mkdir $RUNS
+! exec holdlock $RUNS/busy.lock held &
+waitfile held
+exits 75 ncly transcript run youtube --url https://youtu.be/abc --output $WORK/missing --run-id busy --json
+answer stderr TEMPORARY
+stderr '"run_id":"busy"'
+kill
+wait
+exists $RUNS/busy.lock
+! exists $RUNS/busy.json

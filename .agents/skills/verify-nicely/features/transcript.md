@@ -10,6 +10,7 @@
 - `transcript-doctor` passes `transcript.uv` and `transcript.python3`, the programs that the manifest requires, then `transcript.cookies`
 - `transcript-cookies` warns when the config sets `browser = "arc"` and no cookie file of Arc's default profile opens, and passes once one does
 - `transcript-skill` serves the skill installed beside the extension
+- `transcript-lock-refusals` creates no run lock when an unnamed execution fails its output or key check
 - `transcript-refusals` refuses a URL that names no single video and a missing output folder with `USAGE_INVALID`, before the engine is extracted
 - `transcript-dry-run` runs the engine through `uv` from an empty uv cache and answers the plan as JSON and as text. It creates no record and no result folder
 
@@ -47,6 +48,9 @@ In `just verify step "$run" transcript <args>`, `transcript` names this feature,
 - **Engine.** Run `ls "$run/scratch/home/.cache/nicely/python"/*/`, then `ls "$run/scratch/home/.cache/nicely/uv"`. The first lists `deepgram.py`, `outputs.py`, `protocol.py`, `runtime.py`, `transcript.py`, `youtube.py`, and `ytdlp_arc.py`, in one folder named after a hash of 64 hexadecimal digits. The second lists the cache that `uv` filled for the dry run, such as `archive-v0` and `wheels-v7`. Report both outputs beside the quote.
 - **No record.** Run `ls "$run/scratch/home/.local/state/nicely/runs"`, then `ls -A "$run/scratch/home/videos"`. The first fails and the second prints nothing, because a dry run records nothing and creates no result folder. Report both outputs beside the quote.
 - **Dry run as text.** Run the call of Dry run without `--json`. Exit 0, and stdout holds two lines: `Would transcribe https://www.youtube.com/watch?v=EIEc43CxIvY into a new folder in <run>/scratch/home/videos.`, then `pending  auth.deepgram  Authentication is checked only during execution.`
+
+- **Unnamed key refusal.** Before the grant of transcript-run, create `$run/scratch/home/.local/state/nicely/runs` and record its empty `ls -A` output. Run `just verify step "$run" transcript transcript run youtube --url 'https://www.youtube.com/watch?v=EIEc43CxIvY' --output "$run/scratch/home/videos" --json`. Exit 78, with `KEY_NOT_GRANTED` and no `run_id`. The wrapper supplies only a fake key, and no grant lets it reach the extension. A second `ls -A` of the runs folder is empty.
+- **Unnamed output refusal.** Run the same call with `--output "$run/scratch/home/missing"`. Exit 2, with `USAGE_INVALID` and no `run_id`. The runs folder is still empty. Quote both CLI calls and report all three directory observations; neither call reaches YouTube or Deepgram.
 
 ## Gotchas
 
