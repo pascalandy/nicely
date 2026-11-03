@@ -1,0 +1,60 @@
+# Rule index of the build loop
+
+This part of the [rule index](../rule-index.md) holds the rules of the rounds of the `nicely-extension` skill.
+
+| Rule | Enforced by |
+|---|---|
+| Round 1 records the intake, then the spec, then a failing scenario, then the handler | [Finish gate][finish] checks their commits in the [ledger][ledger] |
+| The intake gives, for each fact, its source, its version, and the part read, with each experiment apart; a link alone is not evidence | Prose only |
+| Round 1 records the Scenario commit, the command, the exit status, and the failed assertion of the first scenario run | The [ledger][ledger-run] checks the record |
+| The command of the first run is `just scenario <name>`, and its assertion holds a line of that scenario | The [ledger][ledger-run] checks the record |
+| `just signoff` runs the first scenario again at its commit, and never runs the text of the record | [Signoff replay][signoff-replay] |
+| A compile error is no failure of the first scenario; a scenario that cannot run without the command commits a handler that does no work | Prose only |
+| Read the source first, then run experiments only to confirm what you read | Prose only |
+| Each settled fact of the intake links the part read, at a fixed revision; a fact without a read is marked `inference` | Prose only |
+| Each unknown fact of the intake is an open line with an ID before the spec | Prose only |
+| The reviewer of round 1 refuses a fact that only cites a source | Prose only |
+| Before the first review, a test file holds a block that a reader needs, with a value that is not the default and private text | Prose only |
+| An independent reader proves that the private text is gone and the content shows correctly; a handler that keeps the raw block fails | Prose only |
+| Each experiment uses a new scratch folder; never delete files recursively inside `sh -c` or a loop | Prose only |
+| The tests and `just acceptance` need no root, no mount, and no system service | Prose only |
+| Each case of the Output group that applies has a test file that the tests make, checked by an independent reader | Prose only |
+| The tests make their files; never search the home folder or copy a file of the user | Prose only |
+| Round 1 tests each generic case that applies, and the first review tests families of cases | Prose only |
+| Before the review of round 1, `## Case matrix` gives each family its tests, and each line of Failures and Acceptance a family | [Finish matrix][finish-matrix] checks the references only, not that the matrix is complete or correct |
+| Each refusal and each branch that classifies an input has a pair of tests | [Finish matrix][finish-matrix] needs a spec ID in Accepted of each family; the reviewer checks that it passes |
+| The first reviewer checks that the matrix is complete and runs it, before any repair | Prose only |
+| A repair adds a pair of tests for its whole family, and only then is its finding `fixed` | Prose only |
+| A root cause is fixed before the next review, and the last rounds verify | Prose only |
+| Build each command with the `nicely-extension` skill, in rounds from its first pull request | Prose only |
+| The first round writes every line of `spec.md`; a line without a test stays `open` | Prose only |
+| Each round ends with an independent review and the readiness review | [Signoff][signoff] runs the [finish gate][finish], which needs a readiness review of the signed commit by a named reviewer |
+| At the exit, filled forms, no open line, accepted limits, and a passing readiness verdict for this commit, by a named reviewer, from its findings | [Finish gate][finish] |
+| A build has at most 5 rounds | The [ledger][ledger] counts them, and the [finish gate][finish] fails after 5 |
+| At the limit, stop and report; an answer that lets the agent choose starts no round | Prose only |
+| A pull request for review, a stop report, and the delivery are three acts; deliver only after "Done when" | [Signoff][signoff] runs the [finish gate][finish], and [release][release] needs a receipt with `just finish` |
+| Release runs `just finish` again on the signed commit before the tag | [Release][release] |
+| The ledger names the head, the reviewers, the commits that each review covered, and the result of `just finish` of each round | [Ledger][ledger] |
+| Each finding keeps its ID and its highest severity, and gets a state each round; a `warn` or `block` closes only as `fixed` or `limit` | [Ledger findings][ledger-findings], [ledger history][ledger-history] |
+| `## Open lines` of `spec.md` names each finding that the ledger records as `open`, by its ID | [Ledger findings][ledger-findings] |
+| A finding of the last round with no state is `open` | [Ledger findings][ledger-findings] |
+| A severity is read only in the line **Severity** of a finding; the plain words block, warn, and advise pass elsewhere | [Readiness findings][readiness] |
+| A finding heading stays under `## Findings`, and no other form grades | [Readiness findings][readiness] |
+| Finish finds a grade in code, in a cell, after severity or grade, or before `-level` | [Readiness findings][readiness] |
+| The reviewer moves each grade in another form, which the parser does not find, to the bullet **Severity** | Prose only |
+| A broken promise of `spec.md` or of the help text is at least `warn` at its first review | Prose only |
+| Each round keeps its row and has a committed review; a build ends only at a review that passes | [Ledger history][ledger-history] |
+| Accepting a limit starts no round; after a review, only **Limits.** of `spec.md` changes | [Finish gate][finish-verdict] |
+| A change of `spec.md` that narrows a promise to close a `warn` or `block` is a limit that only the user accepts | Prose only |
+
+[finish]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/finish.go
+[ledger]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger.go
+[ledger-run]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_run.go
+[ledger-findings]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_findings.go
+[ledger-history]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/ledger_history.go
+[finish-matrix]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/spec_matrix.go
+[finish-verdict]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness_verdict.go
+[readiness]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/readiness.go
+[signoff]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff.go
+[signoff-replay]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/signoff_replay.go
+[release]: https://github.com/pascalandy/nicely/blob/main/sdk/extensionrepo/release.go
