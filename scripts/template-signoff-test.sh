@@ -7,17 +7,7 @@
 # Run the rendered recipe with real Git and just. Only gh is a stub.
 fct_test_signoff() {
 	local repo="${1}" scratch="${2}" ready="${2}/signoff-ready" sha file status=0
-	mkdir -p "${scratch}/signoff-bin"
-	cat >"${scratch}/signoff-bin/gh" <<'SCRIPT'
-#!/usr/bin/env bash
-set -Eeuo pipefail
-if [[ "$*" == --version ]]; then echo 'gh version test'; exit 0; fi
-[[ "$#" == 3 && "$1" == signoff && "$2" == --commit ]]
-[[ "$(git rev-parse HEAD)" == "$3" ]]
-if git symbolic-ref --quiet HEAD; then exit 1; fi
-printf '%s\n' "$3" >"${NCLY_TEMPLATE_SIGNOFF}"
-SCRIPT
-	chmod 755 "${scratch}/signoff-bin/gh"
+	fct_signoff_stub "${scratch}"
 	# Signoff runs just finish first, so it signs no commit before the loop of the skill is done (#413).
 	fct_signoff "${repo}" "${scratch}" || status=$?
 	if [[ "${status}" == 0 ]] || ! grep -qF 'this line of the form is not filled' "${scratch}/signoff.out"; then
@@ -91,12 +81,12 @@ fct_signoff_ready() {
 
 # fct_signoff_review commits the readiness review of the head of $1, whose
 # first failing run names the scenario $2, and the assertion $3 or the line
-# stderr of the first scenario.
+# stderr of the first scenario. Its verdict is $4, or Ready.
 fct_signoff_review() {
 	local expected="${3:-}"
 	[[ -n "${expected}" ]] || expected="$(grep -m 1 '^stderr ' "${1}/testdata/script/first.txtar")"
 	finish="${1}" ledger_run=$'[first_run]\ncommit = "'"$(fct_step "${1}" scenario)"$'"\nscenario = "'"${2}"$'"\nexit = 1\nassertion = \'\'\''"${expected}"$' found no match\'\'\'' \
-		fct_readiness "$(git -C "${1}" rev-parse HEAD)" Ready ''
+		fct_readiness "$(git -C "${1}" rev-parse HEAD)" "${4:-Ready}" ''
 	fct_review "${1}" 'readiness review'
 }
 
@@ -112,6 +102,22 @@ fct_signoff_refuses() {
 		fct_fail "just signoff with the first run \"${3}\" must fail with \"${4}\""
 	fi
 	[[ ! -e "${1}/signed-sha" ]] || fct_fail "just signoff signed a commit whose first run is \"${3}\""
+}
+
+# fct_signoff_stub writes the stub gh of the scratch folder $1. It signs only
+# the detached HEAD of the scratch worktree of signoff.
+fct_signoff_stub() {
+	mkdir -p "${1}/signoff-bin"
+	cat >"${1}/signoff-bin/gh" <<'SCRIPT'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ "$*" == --version ]]; then echo 'gh version test'; exit 0; fi
+[[ "$#" == 3 && "$1" == signoff && "$2" == --commit ]]
+[[ "$(git rev-parse HEAD)" == "$3" ]]
+if git symbolic-ref --quiet HEAD; then exit 1; fi
+printf '%s\n' "$3" >"${NCLY_TEMPLATE_SIGNOFF}"
+SCRIPT
+	chmod 755 "${1}/signoff-bin/gh"
 }
 
 # fct_signoff runs just signoff in the repository $1, with the stub gh of the scratch folder $2.

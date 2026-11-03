@@ -5,7 +5,8 @@
 # folders. A clone at a release tag installs with the commands of its
 # README.md. just update then carries a customized repository to the next
 # template revision, and keeps the edits and the dependencies of its author. On
-# a conflict, it stops before dependency changes. The test runs on macOS and Linux,
+# a conflict, it stops before dependency changes. An extension of v0.23.4, before
+# just finish, updates and passes just signoff after its first build. The test runs on macOS and Linux,
 # with the bash 3.2 of macOS, and uses no network once uv holds the pinned
 # Copier.
 set -Eeuo pipefail
@@ -116,6 +117,8 @@ fct_main() {
 	source "${root}/scripts/template-test-helpers.sh"
 	# shellcheck source=scripts/template-update-test.sh
 	source "${root}/scripts/template-update-test.sh"
+	# shellcheck source=scripts/template-adoption-test.sh
+	source "${root}/scripts/template-adoption-test.sh"
 	# shellcheck source=scripts/template-input-test.sh
 	source "${root}/scripts/template-input-test.sh"
 	# shellcheck source=scripts/template-release-test.sh
@@ -155,6 +158,7 @@ fct_main() {
 	fct_repository "${scratch}/named" video convert video-convert 'video convert' --data name=convert
 	fct_repository "${scratch}/whole" probe '' probe 'probe inspect'
 	fct_test_bootstrap "${scratch}/bootstrap" "${copier[@]}"
+	fct_test_adoption "${scratch}/adoption" "${copier[@]}"
 	template_src="${scratch}/whole/source"
 	fct_test_import_domains "${template_src}" "${scratch}" "${root}" "${copier[@]}"
 	fct_test_release_url "${template_src}" "${scratch}" "${copier[@]}"
