@@ -28,7 +28,7 @@ Trial findings are evidence of gaps only.
 | COR-104-T5 | Acceptance evaluator in the kit | agent | - | todo |
 | COR-104-T6 | Publication declaration | agent | - | done |
 | COR-104-T7 | Publication helpers | agent | COR-104-T6 | todo |
-| COR-104-T8 | TLC runner in the kit | agent | - | todo |
+| COR-104-T8 | TLC runner in the kit | agent | - | done |
 | COR-104-T9 | Adoption and shared corrections | agent | COR-104-T4 | done |
 | COR-104-T10 | Video-convert adopts the loop | agent | COR-104-T1, COR-104-T2, COR-104-T3, COR-104-T4, COR-104-T5, COR-104-T6, COR-104-T7, COR-104-T8, COR-104-T9 | todo |
 
