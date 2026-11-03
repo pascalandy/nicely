@@ -25,7 +25,7 @@ A card that adds a check moves its rule up, as D068 says.
 | [models.md](models.md) | S56 to S58: the TLC runner |
 | [acceptance.md](acceptance.md) | S59: acceptance cases of the kit |
 | [runtime.md](runtime.md) | S27 to S51: platform, record, runner, tui, wrap, the fake child, and analysis. S68: handler cleanup reservation |
-| [verification.md](verification.md) | V01: private Linux keyring runs |
+| [verification.md](verification.md) | V01: private Linux keyring runs. V02: the recorded-session design |
 | [publication.md](publication.md) | S60 to S64: the guard, `without`, `keeps`, and `holds` |
 
 ## Support code
