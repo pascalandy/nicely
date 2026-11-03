@@ -2,6 +2,7 @@ package extensiontest
 
 import (
 	"fmt"
+	"runtime"
 	"slices"
 	"strings"
 )
@@ -75,6 +76,9 @@ func (k *kit) publicationMissing() []string {
 	var problems []string
 	for _, row := range k.publications {
 		for _, obligation := range row.obligations() {
+			if k.operationNotice() != "" && slices.Contains(operations, obligation) {
+				continue
+			}
 			proved := k.proved(row.path, row.mode, obligation)
 			i := slices.IndexFunc(k.reasons, func(r reason) bool {
 				return r.path == row.path && r.mode == row.mode && r.obligation == obligation
@@ -103,5 +107,15 @@ func obligationFix(row publication, obligation string) string {
 	case "appears":
 		return fmt.Sprintf("run appears <marker> <destination> ncly %s <arg>... in a scenario, or %s", row.path, reason)
 	}
-	return fmt.Sprintf("%s, such as the source review that shows the refusal. The kit has no check of a destination without `%s` yet, as COR-104-T7 plans", reason, obligation)
+	return fmt.Sprintf("run [linux] without %s refuses <code> ncly %s <arg>...%s in a scenario, or predicts or keeps after without %s, or %s", obligation, row.path, force, obligation, reason)
+}
+
+// operationNotice says why the kit checks no obligation of an operation on
+// this platform, or returns "". Only Linux refuses an operation for one
+// call, so the scenarios run without on Linux only.
+func (k *kit) operationNotice() string {
+	if runtime.GOOS == "linux" || !slices.ContainsFunc(k.publications, func(p publication) bool { return len(p.operations) > 0 }) {
+		return ""
+	}
+	return fmt.Sprintf("spec.md: %s cannot refuse an operation for one call, so the kit checks the obligations of the operations of ## Publication on Linux only", runtime.GOOS)
 }

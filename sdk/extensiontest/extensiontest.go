@@ -20,6 +20,9 @@
 //	predicts <command> <arg>...  checks that a dry run predicts the publication of its run
 //	reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]
 //	                              reads the output with an independent reader, as Acceptance cases defines
+//	keeps <exit> <command> <arg>  checks the exact exit, the protected paths, and the children of any call
+//	holds <marker> <path> <command> <arg>  checks the public path while the worker waits, then the commit
+//	without <operation> <check> <arg>  runs refuses, predicts, appears, or keeps without that operation, on Linux
 //	grant <service>               grants the key of a declared service to the extension
 //	fake <name>                   puts the fake child in $WORK/bin as name
 //
@@ -36,7 +39,8 @@
 //   - The kit imports no package of core's internal/, which an extension
 //     repository cannot import either
 //   - The kit builds every program that it runs from Go source: the
-//     extension, ncly, and the fake child of the fake/ folder
+//     extension, ncly, and the fake child of the fake/ folder. On Linux, it
+//     also builds the guard of the guard/ folder
 //   - The kit copies each program to where it runs, and never makes a hard
 //     link. macOS checks a new program at its first start through one name
 //     of its file. A scenario deletes its names when it ends. A check through

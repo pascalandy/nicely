@@ -27,10 +27,7 @@ func (k *kit) predicts(ts *testscript.TestScript, neg bool, args []string) {
 	if _, given := call.line.Switch("dry-run"); given || !call.command.Modes.DryRun {
 		ts.Fatalf("predicts: give a command with a dry run, without a dry-run flag")
 	}
-	mode := "create"
-	if on, _ := call.line.Switch("force"); on {
-		mode = "replace"
-	}
+	mode := modeOf(call)
 	row, found := k.publicationOf(call.path, mode)
 	if !found {
 		ts.Fatalf("predicts: ## Publication of spec.md declares no %s mode of `ncly %s`. Fix: give that mode a row", mode, call.path)
@@ -41,13 +38,15 @@ func (k *kit) predicts(ts *testscript.TestScript, neg bool, args []string) {
 	ts.Check(err)
 	input, done := saveStdin(ts, "predicts")
 	defer done()
+	g := k.guarded(ts, "predicts", false)
 
 	preview := append([]string{"--dry-run=true"}, args[1:]...)
 	observed := slices.Clone(preview)
 	if args[0] == "ncly-"+k.manifest.Slug() {
 		observed = append(k.manifest.Root(), preview...)
 	}
-	exit := execSaved(ts, input, program, preview)
+	exit := execSaved(ts, input, program, preview, g)
+	g.read(ts, "predicts: dry run")
 	code, problem := k.checkedCode(observed, exit, ts.ReadFile("stdout"), ts.ReadFile("stderr"))
 	switch {
 	case problem != "":
@@ -88,7 +87,8 @@ func (k *kit) predicts(ts *testscript.TestScript, neg bool, args []string) {
 	}
 	kept, err := snapshotFiles(protected, false)
 	ts.Check(err)
-	exit = execSaved(ts, input, program, args[1:])
+	exit = execSaved(ts, input, program, args[1:], g)
+	report := g.read(ts, "predicts: run")
 	code, problem = k.checkedCode(words, exit, ts.ReadFile("stdout"), ts.ReadFile("stderr"))
 	switch {
 	case problem != "":
@@ -108,7 +108,13 @@ func (k *kit) predicts(ts *testscript.TestScript, neg bool, args []string) {
 	if !same {
 		ts.Fatalf("predicts: the run changed protected paths: %s", strings.Join(protected, ", "))
 	}
+	if g != nil {
+		checkCommit(ts, "predicts", report, row, destination)
+	}
 	k.prove(call.path, mode, "predicts")
+	if op := g.proves(ts, "predicts"); op != "" {
+		k.prove(call.path, mode, op)
+	}
 }
 
 // protectedPaths returns the absolute path of each value of a call that

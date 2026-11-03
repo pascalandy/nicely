@@ -10,6 +10,7 @@ import (
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/pascalandy/nicely/sdk/extension"
 	"github.com/pascalandy/nicely/sdk/i18n"
+	"github.com/rogpeppe/go-internal/testscript"
 )
 
 // Coverage checks answers and records calls across parallel scenarios.
@@ -23,6 +24,10 @@ type Coverage struct {
 	// proven holds each obligation of ## Publication that a check proved,
 	// by command path, mode, and obligation.
 	proven map[[3]string]bool
+	// scripts holds the selections of each scenario that runs.
+	scripts map[*testscript.TestScript]*scriptFiles
+	// guard is the guard program that the kit builds on Linux, or "".
+	guard string
 }
 
 // NewCoverage prepares the manifest and answer checks that Run uses.

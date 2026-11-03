@@ -20,7 +20,11 @@ func (k *kit) reportCoverage(t *testing.T) {
 			return
 		}
 	}
-	for _, reservation := range k.Reservations() {
+	notices := k.Reservations()
+	if notice := k.operationNotice(); notice != "" {
+		notices = append(notices, notice)
+	}
+	for _, reservation := range notices {
 		if err := extensionrepo.Notice(reservation); err != nil {
 			t.Errorf("extensionrepo.Notice: %v", err)
 		}

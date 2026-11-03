@@ -55,7 +55,7 @@ echo "{\"ok\":true,\"contract_version\":1,\"input\":\"$input\",\"output\":\"$out
 // repairedHost checks the hard link in its dry run too, and refuses as its run does.
 var repairedHost = strings.Replace(publicationHost, "# CHECK", `[ "$force" = true ] || [ ! -e out/.no-hard-link ] || fail CAPABILITY_UNSUPPORTED "The destination has no hard link." 78`, 1)
 
-// declared is ## Publication of spec.md for publicationHost. No check of the kit removes a hard link or a rename yet, so both have a reason.
+// declared is ## Publication of spec.md for publicationHost. Its dry run never probes a hard link or a rename, so both have a reason.
 const declared = "\n## Publication\n\n" +
 	"| Command | Mode | Destination | Overwrite | Protected | Operation | Dry run |\n|---|---|---|---|---|---|---|\n" +
 	"| `ncly video convert` | create | `output` | `overwrite` | `file` | `link` | checks |\n" +

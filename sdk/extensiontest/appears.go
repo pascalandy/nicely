@@ -33,10 +33,12 @@ func (c *Coverage) appears(ts *testscript.TestScript, neg bool, args, protected 
 			ts.Fatalf("appears: %s must not exist before the call", args[i])
 		}
 	}
+	g := c.guarded(ts, "appears", false)
 	before, err := snapshotFiles(protected, false)
 	ts.Check(err)
 	var made os.FileInfo
-	exit, stdout, stderr := foreground(ts, "appears", program, args[3:], func(done <-chan struct{}, host *os.Process) error {
+	guard, guarded := g.wrap(program, args[3:])
+	exit, stdout, stderr := foreground(ts, "appears", guard, guarded, func(done <-chan struct{}, host *os.Process) error {
 		if err := waitMarker("appears", done, host, marker); err != nil {
 			return err
 		}
@@ -51,6 +53,7 @@ func (c *Coverage) appears(ts *testscript.TestScript, neg bool, args, protected 
 		}
 		return nil
 	})
+	g.read(ts, "appears")
 	if _, problem := c.checkedCode(words, exit, stdout, stderr); problem != "" {
 		ts.Fatalf("appears: %s", problem)
 	}
@@ -63,6 +66,7 @@ func (c *Coverage) appears(ts *testscript.TestScript, neg bool, args, protected 
 	if !same {
 		ts.Fatalf("appears: the run changed protected paths: %s", fmt.Sprint(protected))
 	}
+	g.proves(ts, "appears")
 	c.prove(call.path, "create", "appears")
 }
 

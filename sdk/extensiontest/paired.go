@@ -8,36 +8,48 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/pascalandy/nicely/sdk/contract"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
 // scriptFiles holds the selections of one scenario.
-// protect lasts until the next protect call, and next until the next signal or appears call.
+// protect lasts until the next protect call, and next until the next signal, appears, keeps, or holds call.
+// without names the operation that the guard refuses for the next call of without.
 type scriptFiles struct {
 	protect, next, survives []string
+	without                 string
+}
+
+// script returns the selections of a scenario, which end with it.
+func (c *Coverage) script(ts *testscript.TestScript) *scriptFiles {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.scripts == nil {
+		c.scripts = map[*testscript.TestScript]*scriptFiles{}
+	}
+	if c.scripts[ts] == nil {
+		c.scripts[ts] = &scriptFiles{}
+		ts.Defer(func() {
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			delete(c.scripts, ts)
+		})
+	}
+	return c.scripts[ts]
+}
+
+// takeNext returns the protect selection of the next signal, appears, keeps, or holds call, and ends it.
+func (c *Coverage) takeNext(ts *testscript.TestScript) []string {
+	files := c.script(ts)
+	next := files.next
+	files.next = nil
+	return next
 }
 
 // ScenarioCommands supplies signal, appears, refuses, protect, and survives to a testscript runner.
 // host is the registered ncly's absolute path, independent of the scenario's PATH.
 func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.TestScript, bool, []string) {
-	var mu sync.Mutex
-	files := map[*testscript.TestScript]*scriptFiles{}
-	state := func(ts *testscript.TestScript) *scriptFiles {
-		mu.Lock()
-		defer mu.Unlock()
-		if files[ts] == nil {
-			files[ts] = &scriptFiles{}
-			ts.Defer(func() {
-				mu.Lock()
-				defer mu.Unlock()
-				delete(files, ts)
-			})
-		}
-		return files[ts]
-	}
 	selectFiles := func(survives bool) func(*testscript.TestScript, bool, []string) {
 		return func(ts *testscript.TestScript, neg bool, args []string) {
 			if neg || len(args) == 0 {
@@ -48,29 +60,24 @@ func (c *Coverage) ScenarioCommands(host string) map[string]func(*testscript.Tes
 				paths[i] = ts.MkAbs(path)
 			}
 			if survives {
-				state(ts).survives = paths
+				c.script(ts).survives = paths
 			} else {
-				state(ts).protect, state(ts).next = paths, paths
+				c.script(ts).protect, c.script(ts).next = paths, paths
 			}
 		}
 	}
 	return map[string]func(*testscript.TestScript, bool, []string){
 		"protect": selectFiles(false), "survives": selectFiles(true),
 		"signal": func(ts *testscript.TestScript, neg bool, args []string) {
-			files := state(ts)
-			next := files.next
-			files.next = nil
+			files := c.script(ts)
 			defer func() { files.survives = nil }()
-			c.signal(ts, neg, args, files.survives, next, host)
+			c.signal(ts, neg, args, files.survives, c.takeNext(ts), host)
 		},
 		"appears": func(ts *testscript.TestScript, neg bool, args []string) {
-			files := state(ts)
-			next := files.next
-			files.next = nil
-			c.appears(ts, neg, args, next, host)
+			c.appears(ts, neg, args, c.takeNext(ts), host)
 		},
 		"refuses": func(ts *testscript.TestScript, neg bool, args []string) {
-			c.refuses(ts, neg, args, state(ts).protect, host)
+			c.refuses(ts, neg, args, c.script(ts).protect, host)
 		},
 	}
 }
@@ -143,6 +150,7 @@ func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected 
 	if _, given := call.line.Switch("dry-run"); given || !call.command.Modes.DryRun {
 		ts.Fatalf("refuses: give a command with a dry run, without a dry-run flag")
 	}
+	g := c.guarded(ts, "refuses", false)
 	before, err := snapshotFiles(protected, false)
 	ts.Check(err)
 	input, done := saveStdin(ts, "refuses")
@@ -153,7 +161,8 @@ func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected 
 	wantExit := 0
 	for i, arguments := range [][]string{preview, args[2:]} {
 		mode := []string{"dry run", "run"}[i]
-		exit := execSaved(ts, input, program, arguments)
+		exit := execSaved(ts, input, program, arguments, g)
+		g.read(ts, "refuses: "+mode)
 		observed := words
 		if i == 0 {
 			observed = slices.Clone(preview)
@@ -182,6 +191,18 @@ func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected 
 			ts.Fatalf("refuses: %s changed protected paths: %s", mode, fmt.Sprint(protected))
 		}
 	}
+	if op := g.proves(ts, "refuses"); op != "" {
+		c.prove(call.path, modeOf(call), op)
+	}
+}
+
+// modeOf returns the mode of a call: replace with --force, and create
+// without it.
+func modeOf(call parsed) string {
+	if on, _ := call.line.Switch("force"); on {
+		return "replace"
+	}
+	return "create"
 }
 
 // saveStdin saves the stdin of the scenario in a file, because Exec consumes
@@ -195,9 +216,10 @@ func saveStdin(ts *testscript.TestScript, name string) (string, func()) {
 	return input, func() { _ = os.RemoveAll(dir) }
 }
 
-// execSaved runs program with arguments and the saved stdin, and returns
-// its exit code.
-func execSaved(ts *testscript.TestScript, input, program string, arguments []string) int {
+// execSaved runs program with arguments and the saved stdin, under the
+// guard g when it is not nil, and returns its exit code.
+func execSaved(ts *testscript.TestScript, input, program string, arguments []string, g *guardRun) int {
+	program, arguments = g.wrap(program, arguments)
 	invocation := append([]string{"-c", `input=$1; shift; exec "$@" < "$input"`, "ncly-kit", input, program}, arguments...)
 	exit, err := exitCode(ts.Exec("/bin/sh", invocation...))
 	ts.Check(err)

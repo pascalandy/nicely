@@ -7,13 +7,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
 
 // build makes the programs that the scenarios run. ncly is the one that go
 // tool ncly builds from the Nicely version of go.mod. ncly-<slug> comes
-// from cmd/ncly-<slug>/, and the fake child from fake/.
+// from cmd/ncly-<slug>/, the fake child from fake/, and the guard from
+// guard/.
 func (k *kit) build(t *testing.T) {
 	dir := t.TempDir()
 	k.bin = filepath.Join(dir, "bin")
@@ -35,6 +37,13 @@ func (k *kit) build(t *testing.T) {
 	k.fake = filepath.Join(dir, "fake")
 	if _, err := goCommand(k.root, "build", "-o", k.fake, "github.com/pascalandy/nicely/sdk/extensiontest/fake"); err != nil {
 		t.Fatalf("go build of the fake child fails: %v", err)
+	}
+	// Only Linux runs the guard, which refuses an operation for one call.
+	if runtime.GOOS == "linux" {
+		k.guard = filepath.Join(dir, "guard")
+		if _, err := goCommand(k.root, "build", "-o", k.guard, "github.com/pascalandy/nicely/sdk/extensiontest/guard"); err != nil {
+			t.Fatalf("go build of the guard fails: %v", err)
+		}
 	}
 }
 
