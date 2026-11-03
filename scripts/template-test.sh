@@ -112,17 +112,6 @@ fct_repository() {
 fct_main() {
 	local root pin scratch copier template_src proxy cache_proxy
 	root="$(cd "${BASH_SOURCE[0]%/*}/.." && pwd -P)"
-	# Copied recipes only wire commands to the SDK or an owned script.
-	awk '
-		/^[^[:space:]#].*:[[:space:]]*$/ { recipe = $1; sub(/:$/, "", recipe); lines = 0; reported = 0 }
-		/^[[:space:]]+#!/ || /^[[:space:]]+[^[:space:]#]/ {
-			if ((++lines > 1 || $1 ~ /^#!/) && !reported++) {
-				print "template-test.sh: recipe " recipe " must have one command line" > "/dev/stderr"
-				failed = 1
-			}
-		}
-		END { exit failed }
-	' "${root}/template/justfile"
 	# shellcheck source=scripts/template-test-helpers.sh
 	source "${root}/scripts/template-test-helpers.sh"
 	# shellcheck source=scripts/template-update-test.sh
@@ -133,6 +122,7 @@ fct_main() {
 	source "${root}/scripts/template-release-test.sh"
 	# shellcheck source=scripts/template-recipes-test.sh
 	source "${root}/scripts/template-recipes-test.sh"
+	fct_test_recipe_lines "${root}/template/justfile"
 	# shellcheck source=scripts/template-signoff-test.sh
 	source "${root}/scripts/template-signoff-test.sh"
 	# shellcheck source=scripts/template-finish-test.sh

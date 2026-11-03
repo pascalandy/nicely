@@ -128,3 +128,19 @@ fct_test_acceptance() {
 	grep -qF '"size_bytes":8' "${scratch}/acceptance.out" || fct_fail "just acceptance did not run on the fixture: $(cat "${scratch}/acceptance.out")"
 	[[ "$(cat "${fixture}")" == $'one\ntwo' ]] || fct_fail 'just acceptance changes the fixture'
 }
+
+# fct_test_recipe_lines requires one command line in each recipe of the
+# justfile $1, so a copied recipe only wires a command to the SDK or an owned
+# script.
+fct_test_recipe_lines() {
+	awk '
+		/^[^[:space:]#].*:[[:space:]]*$/ { recipe = $1; sub(/:$/, "", recipe); lines = 0; reported = 0 }
+		/^[[:space:]]+#!/ || /^[[:space:]]+[^[:space:]#]/ {
+			if ((++lines > 1 || $1 ~ /^#!/) && !reported++) {
+				print "template-test.sh: recipe " recipe " must have one command line" > "/dev/stderr"
+				failed = 1
+			}
+		}
+		END { exit failed }
+	' "${1}"
+}
