@@ -10,9 +10,13 @@ Each global flag other than `--help` and `--version` has an environment variable
 | `--no-input` | `NCLY_NO_INPUT=1` | off | Never prompts, even in a terminal. |
 | `--no-color` | `NO_COLOR`, or `TERM=dumb` | off | Plain text. |
 | `--lang <tag>` | `NCLY_LANG` | detected | Language of human text, such as `en` or `fr-CA`. |
-| `-v`, `--verbose` | `NCLY_VERBOSE=1` | off | Adds step details on stderr. |
+| `-v`, `--verbose` | `NCLY_VERBOSE=1` | off | Passes the choice to extensions, which add details when needed. Core adds no details today. |
 
-`NCLY_DEBUG=1` adds internals, timings, and child commands on stderr. It has no flag. Keys never appear in any output.
+`NCLY_DEBUG=1` has no flag. Core adds no debug details today.
+An extension adds details when it needs them.
+Transcript forwards worker diagnostics to stderr with verbose or debug enabled, and debug enables Python debug logs.
+[COR-630](../../backlog/COR-630-core-diagnostics.md) revisits core details when a core command needs them.
+Keys never appear in any output.
 
 Every command that writes accepts `--dry-run`. The other flags below apply when the command confirms an action or produces files.
 

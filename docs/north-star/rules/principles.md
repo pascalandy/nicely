@@ -12,7 +12,7 @@ This part of the [core rule index](README.md) holds the rules of `principles.md`
 | P06 | Machine values keep their types, units, values, meanings, and version compatibility | [principles.md][principles] | [Compatibility test][compat], partial: listed consumer cases |
 | P07 | A writing command and its dry run share their preparation | [principles.md][principles] | [Kit `refuses`][paired], [its test][paired-test], partial: scenarios choose the cases |
 | P08 | Overwrite or delete only with force, or with consent at a terminal | [principles.md][principles] | [Auth login][auth-login], [auth form][auth-form], partial: each handler needs cases |
-| P09 | Send a deleted user file to the trash of the OS | [principles.md][principles] | Prose only |
+| P09 | The first command that deletes a user file sends it to OS trash through the SDK, per [COR-629][trash] | [principles.md][principles] | Prose only |
 | P10 | Each effect is safe to retry, and a named completed run replays without new effects | [principles.md][principles] | [Agent run boundaries][agent-run], [transcript replay][replay], partial: recorded commands |
 | P11 | Give outside text to an agent only with its tools off | [principles.md][principles] | Prose only |
 | P12 | Never call a check after execution a prevention of writes | [principles.md][principles] | Prose only |
@@ -27,7 +27,7 @@ This part of the [core rule index](README.md) holds the rules of `principles.md`
 | P21 | A wrapped user worker can keep its own language | [principles.md][principles] | [Template test][template-test], [wrap scenario][wrap] |
 | P22 | Use XDG paths under `nicely` on macOS and Linux | [principles.md][principles], [config.go][config] | [Config test][config-test] |
 | P23 | Portable setup goes in the shared config, and the setup of one machine in the local config | [principles.md][principles] | [Config test][config-test] |
-| P24 | Import Go libraries, wrap other tools, and credit a wrapped tool in its help | [principles.md][principles] | Prose only |
+| P24 | Import Go libraries and wrap other tools. Credit tools in help once sdk/wrap supports it, per [COR-631][credit] | [principles.md][principles] | Prose only |
 | P25 | Each release ships the license notices of its dependencies | [principles.md][principles] | [Archive check][archive], [its test][artifacts-test] |
 | P26 | Build only what the card needs, and decide costly constraints before code forces a rewrite | [principles.md][principles] | Prose only |
 | P27 | Extensions compose through `ncly` JSON commands, never through the code of another extension | [principles.md][principles] | Prose only |
@@ -37,6 +37,8 @@ This part of the [core rule index](README.md) holds the rules of `principles.md`
 | P31 | Use the keyboard, and typed y/N confirmations that keep the question and the answer visible | [principles.md][principles] | [Auth form][auth-form], [form scenario][form] |
 
 [principles]: ../principles.md
+[trash]: ../../backlog/COR-629-os-trash.md
+[credit]: ../../backlog/COR-631-tool-credit.md
 [spec-test]: ../../../internal/cli/spec_test.go
 [shared-domains]: ../../../testdata/script/extension_shared_domains.txtar
 [command]: ../../../sdk/command/command.go
