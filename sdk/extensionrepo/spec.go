@@ -2,8 +2,52 @@ package extensionrepo
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 )
+
+// SpecAcceptedLimit reports whether id names one complete, accepted Limits row.
+// It uses the acceptance state that finish reads and requires the canonical form.
+func SpecAcceptedLimit(spec, id string) bool {
+	_, limits := specProblems(spec)
+	count, accepted := 0, false
+	for _, limit := range limits {
+		if limit.id == id {
+			count++
+			accepted = limit.accepted
+		}
+	}
+	if count != 1 || !accepted {
+		return false
+	}
+	header := false
+	for _, line := range SpecLines(spec) {
+		if line.Part != "Limits" {
+			continue
+		}
+		switch line.Kind {
+		case SpecLabel, SpecHeading:
+			header = false
+		case SpecHeader:
+			header = slices.Equal(line.Cells, []string{"ID", "State", "Limit", "Accepted"})
+		case SpecRow:
+			if line.ID != id {
+				continue
+			}
+			if !header || len(line.Cells) != 4 {
+				return false
+			}
+			for _, cell := range line.Cells[2:] {
+				text := strings.Trim(cell, "`* .-")
+				if text == "" || strings.EqualFold(text, "None") || strings.HasPrefix(strings.ToLower(text), "fill:") {
+					return false
+				}
+			}
+			return true
+		}
+	}
+	return false
+}
 
 // SpecKind says what a line of spec.md is.
 type SpecKind int

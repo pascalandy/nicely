@@ -15,20 +15,26 @@ import (
 
 // A readCase is the arguments of one reads call.
 type readCase struct {
-	name                   string
+	name, limit            string
 	private                []string
 	output, reference, bad string
 	reader                 []string
 }
 
-// parseReads reads reads [-case <case>] [-private <text>]... <output>
+// parseReads reads reads [-case <case>] [-limit <id>] [-private <text>]... <output>
 // <reference> <bad> <reader> [<arg>...].
 func parseReads(args []string) (readCase, bool) {
 	var c readCase
-	for len(args) > 1 && (args[0] == "-case" || args[0] == "-private") {
-		if args[0] == "-case" {
+	for len(args) > 1 && (args[0] == "-case" || args[0] == "-limit" || args[0] == "-private") {
+		switch args[0] {
+		case "-case":
 			c.name = caseName(args[1])
-		} else {
+		case "-limit":
+			if c.limit != "" || args[1] == "" {
+				return c, false
+			}
+			c.limit = args[1]
+		case "-private":
 			c.private = append(c.private, args[1])
 		}
 		args = args[2:]
@@ -46,7 +52,7 @@ func parseReads(args []string) (readCase, bool) {
 func (k *kit) reads(ts *testscript.TestScript, neg bool, args []string) {
 	c, ok := parseReads(args)
 	if neg || !ok {
-		ts.Fatalf("usage: reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]")
+		ts.Fatalf("usage: reads [-case <case>] [-limit <id>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]")
 	}
 	direct := "ncly-" + k.manifest.Slug()
 	if !k.acceptance.wasCalled(ts) {
@@ -56,6 +62,9 @@ func (k *kit) reads(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("reads: the reader %s is the extension or a program that it wraps, so it can share the bug of the handler. "+
 			"Fix: read the output with another program, such as a decoder of its format", c.reader[0])
 	}
+	if c.limit != "" && !slices.Contains(privateCases, c.name) {
+		ts.Fatalf("reads: -limit needs a privacy Output case. Fix: use -case with a privacy case and its accepted limit ID")
+	}
 	if c.name != "" {
 		if !slices.ContainsFunc(outputCases, func(name string) bool { return caseName(name) == c.name }) {
 			ts.Fatalf("reads: -case %q names no case of the Output group of Generic cases. Fix: give its name, such as %q", c.name, caseName(outputCases[5]))
@@ -63,7 +72,10 @@ func (k *kit) reads(ts *testscript.TestScript, neg bool, args []string) {
 		if !slices.ContainsFunc(k.outputs, func(o outputCase) bool { return o.name == c.name }) {
 			ts.Fatalf("reads: ## Case matrix of spec.md names no family from the Output case %q. Fix: add the row of its family, with the Source Output: %s", c.name, c.name)
 		}
-		if slices.Contains(privateCases, c.name) && len(c.private) == 0 {
+		if c.limit != "" && !slices.ContainsFunc(k.outputs, func(o outputCase) bool { return o.name == c.name && slices.Contains(o.limits, c.limit) }) {
+			ts.Fatalf("reads: limit %q is not accepted for every matrix row of the Output case %q. Fix: record the accepted limit in Limits and name its ID in Accepted for each applicable row", c.limit, c.name)
+		}
+		if slices.Contains(privateCases, c.name) && len(c.private) == 0 && c.limit == "" {
 			ts.Fatalf("reads: the case %q needs the private text of its test file, given with -private. Fix: put private text in the block, and give it with -private", c.name)
 		}
 	}

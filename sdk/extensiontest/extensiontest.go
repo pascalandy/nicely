@@ -18,7 +18,7 @@
 //	protect <path>...            selects paths that refuses and the next signal or appears keep
 //	refuses <code> <command> <arg>  checks the same refusal in a dry run and a run
 //	predicts <command> <arg>...  checks that a dry run predicts the publication of its run
-//	reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]
+//	reads [-case <case>] [-limit <id>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]
 //	                              reads the output with an independent reader, as Acceptance cases defines
 //	keeps <exit> <command> <arg>  checks the exact exit, the protected paths, and the children of any call
 //	holds <marker> <path> <command> <arg>  checks the public path while the worker waits, then the commit

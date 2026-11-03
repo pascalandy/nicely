@@ -33,11 +33,22 @@ var (
 // a cell of spec.md can quote a flag or not.
 func caseName(text string) string { return strings.ReplaceAll(text, "`", "") }
 
+// explicitOutputCase requires a complete Output binding for a privacy exception.
+func explicitOutputCase(source, name string) bool {
+	for _, part := range strings.Split(caseName(source), ";") {
+		if strings.TrimSpace(part) == "Output: "+caseName(name) {
+			return true
+		}
+	}
+	return false
+}
+
 // An outputCase is an Output case that a cell Source of ## Case matrix in
 // spec.md names, at its line.
 type outputCase struct {
-	name string
-	line int
+	name   string
+	line   int
+	limits []string
 }
 
 // acceptance is what reads records across parallel scenarios, as
@@ -86,6 +97,12 @@ func (a *acceptance) wasProved(name string) bool {
 // cell can name more than one.
 func matrixOutputs(spec string) []outputCase {
 	var found []outputCase
+	var accepted []string
+	for _, line := range extensionrepo.SpecLines(spec) {
+		if line.Part == "Limits" && line.ID != "" && extensionrepo.SpecAcceptedLimit(spec, line.ID) {
+			accepted = append(accepted, line.ID)
+		}
+	}
 	header := false
 	for _, l := range extensionrepo.SpecLines(spec) {
 		switch {
@@ -93,9 +110,24 @@ func matrixOutputs(spec string) []outputCase {
 		case l.Kind == extensionrepo.SpecHeader:
 			header = slices.Equal(l.Cells, []string{"Family", "Source", "Accepted", "Refused"})
 		case l.Kind == extensionrepo.SpecRow && header && len(l.Cells) == 4 && strings.Contains(l.Cells[1], "Output"):
+			var limits []string
+			for _, id := range accepted {
+				if strings.Contains(l.Cells[2], "`"+id+"`") {
+					limits = append(limits, id)
+				}
+			}
 			for _, name := range outputCases {
-				if strings.Contains(caseName(l.Cells[1]), caseName(name)) && !slices.ContainsFunc(found, func(c outputCase) bool { return c.name == caseName(name) }) {
-					found = append(found, outputCase{name: caseName(name), line: l.Number})
+				if !strings.Contains(caseName(l.Cells[1]), caseName(name)) {
+					continue
+				}
+				bound := limits
+				if !explicitOutputCase(l.Cells[1], name) {
+					bound = nil
+				}
+				if index := slices.IndexFunc(found, func(c outputCase) bool { return c.name == caseName(name) }); index >= 0 {
+					found[index].limits = slices.DeleteFunc(found[index].limits, func(id string) bool { return !slices.Contains(bound, id) })
+				} else {
+					found = append(found, outputCase{name: caseName(name), line: l.Number, limits: slices.Clone(bound)})
 				}
 			}
 		}

@@ -42,7 +42,7 @@ At 7f3ae60e, `ledger_history.go` enforced rules that no row named until b3dc8b48
 | [extensionrepo/release_example.go](../../../sdk/extensionrepo/release_example.go) | Reads the words of an example without a shell |
 | [extensionrepo/release_install.go](../../../sdk/extensionrepo/release_install.go) | Runs the install block of `README.md` in scratch folders |
 | [extensionrepo/scenario.go](../../../sdk/extensionrepo/scenario.go) | Runs one scenario for `just scenario` |
-| [extensionrepo/spec.go](../../../sdk/extensionrepo/spec.go) | Reads the lines of `spec.md` for the kit and finish |
+| [extensionrepo/spec.go](../../../sdk/extensionrepo/spec.go) | Reads spec lines and accepted limits for the kit and finish |
 | [extensionrepo/update.go](../../../sdk/extensionrepo/update.go) | Runs `just update` |
 | [extensiontest/install.go](../../../sdk/extensiontest/install.go) | Installs the built extension into the scratch folders of the kit |
 

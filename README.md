@@ -34,6 +34,7 @@ Extension manifests declare errors and warnings with optional command scopes, ex
 `extension.Check` rejects invalid scopes with TOML line and column positions.
 The [test kit](docs/north-star/contract/test-kit.md#declared-codes) requires each declared code in every selected command and mode.
 It lists coverage exemptions for the UAT report.
+Accepted privacy limits use [a declared case](docs/north-star/contract/acceptance-cases.md#accepted-privacy-limits), with `reads -case '<case>' -limit <id>` and an independent reader.
 
 [The current build](docs/status.md) describes each command. The commands below are planned work.
 

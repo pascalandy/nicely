@@ -22,7 +22,7 @@ café
 
 The archive also holds `show.sh`, `reference.txt`, and `bad.txt`. The made input is the file `header.md`, in ISO-8859-1.
 
-`reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]` takes these parts:
+`reads [-case <case>] [-limit <id>] [-private <text>]... <output> <reference> <bad> <reader> [<arg>...]` takes these parts:
 
 - **Output**: the primary output that the command wrote. When the answer is the output, `cp stdout answer.json` keeps it in a file first
 - **Reference**: the file that holds what the reader must print, byte for byte. The author writes it from the made input, without the extension
@@ -51,7 +51,7 @@ The kit compares the whole value, so an answer of 30 lines never passes for 3. A
 4. The reader exits 0 on the output, and prints the reference.
 5. No private text is in the output, or in the text of the reader.
 6. The bad variant fails. With a private text, the bad variant holds it. Without one, the reader fails on the bad variant, or prints other text.
-7. The cases `Keeps data that a reader needs` and `Keeps private data of the input` give a private text.
+7. The cases `Keeps data that a reader needs` and `Keeps private data of the input` give private text or a validated `-limit`.
 8. The case of `-case` is an Output case, and `## Case matrix` of `spec.md` names it.
 
 Step 6 proves that the reader, the reference, and the search can refuse a bad output.
@@ -72,3 +72,21 @@ The reviewer judges these facts:
 - The matrix names each Output case that applies
 - The reader and the reference share no bug of the handler
 - The made input uses a value that is not the default
+
+## Accepted privacy limits
+
+An accepted privacy limit can retain metadata that the command does not remove.
+Its case still needs a passing independent reader, the complete reference, and a bad variant that fails.
+
+1. Declare the limit under **Limits.**, with its ID, state `limit`, description, and the user's acceptance record.
+   Use the columns ID, State, Limit, and Accepted, in that order. Empty cells and placeholder text supply no acceptance.
+2. Name that ID in backticks in Accepted for each matrix row that names the applicable Output case.
+   Source uses the complete `Output: <case>` binding. Separate multiple bindings with semicolons.
+3. Use `reads -case '<case>' -limit <id> <output> <reference> <bad> <reader> [<arg>...]`.
+4. Make the reader and reference check each retained field and the input's nondefault display declaration.
+5. Keep `-private` for text that must stay absent. Every such search remains strict, including with `-limit`.
+
+Only the two privacy Output cases accept `-limit`.
+The ID must identify exactly one accepted limit and apply in every matrix row that names the case.
+An unknown ID, missing acceptance, unrelated matrix row, or ambiguous binding fails.
+A declaration alone proves no case and grants no coverage exemption.

@@ -61,6 +61,8 @@ Before the review of round 1, this table lists each family of cases of each comm
 A family comes from a generic case that applies, or from a family that the intake found.
 An example of such a family is each way that the input declares how to read it.
 Accepted names the lines whose tests give an input that passes. Refused names the lines whose tests refuse an input, or `None`.
+An accepted privacy limit names its ID in Accepted for every applicable Output case.
+Its acceptance case uses `reads -case '<case>' -limit <id>` and independently checks the retained metadata and nondefault display declaration.
 Each refusal and each branch that classifies an input has a pair: a test that passes, and a test that refuses.
 Each line of Failures and of Acceptance is in a family. `just finish` fails when a family has no test.
 A repair of a finding adds a pair of tests for its whole family, not only a test of the reported example.
