@@ -23,7 +23,7 @@ A card that adds a check moves its rule up, as D068 says.
 | [sdk.md](sdk.md) | S01 to S26: contract, extension, repository, kit, and i18n. S52 to S53: owned runs and results. S54 to S55: publication. S56 to S58: the TLC runner |
 | [acceptance.md](acceptance.md) | S59: acceptance cases of the kit |
 | [runtime.md](runtime.md) | S27 to S51: platform, record, runner, tui, wrap, the fake child, and analysis |
-| [publication.md](publication.md) | S59 to S63: the guard, `without`, `keeps`, and `holds` |
+| [publication.md](publication.md) | S60 to S64: the guard, `without`, `keeps`, and `holds` |
 
 ## Support code
 
