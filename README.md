@@ -26,6 +26,9 @@ The current build brings:
 - The [extension template](README/extension-template.md), which creates an extension repository with its tests and recipes
 - SDK checks that explain broken manifest rules and missing catalog IDs in English, with their repository file names
 
+YouTube sign-in refusals stop automatic retries with `TRANSCRIPT_DOWNLOAD_FAILED`.
+Their hint names the transcript `browser` setting.
+
 Extension manifests declare errors and warnings with optional command scopes, execution modes, and coverage exemptions linked to issues.
 `extension.Check` rejects invalid scopes with TOML line and column positions.
 The [test kit](docs/north-star/contract/test-kit.md#declared-codes) requires each declared code in every selected command and mode.

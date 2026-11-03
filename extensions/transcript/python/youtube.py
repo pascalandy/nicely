@@ -41,6 +41,7 @@ YTDLP_TEMPORARY = re.compile(
     r"Network is unreachable|Remote end closed connection",
     re.IGNORECASE,
 )
+YTDLP_ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 log = logging.getLogger("transcript")
 
@@ -136,22 +137,25 @@ def run_ytdlp(
     if anonymous.returncode == 0:
         return YtDlpResult(anonymous, "anonymous", warnings)
 
-    anonymous_diagnostic = _clean_subprocess_diagnostic(
-        anonymous.stderr or anonymous.stdout
-    )
+    raw_diagnostic = YTDLP_ANSI.sub("", anonymous.stderr or anonymous.stdout)
+    error_records = [
+        line for line in raw_diagnostic.splitlines() if line.startswith("ERROR:")
+    ]
+    failure = error_records[-1] if error_records else raw_diagnostic
+    anonymous_diagnostic = _clean_subprocess_diagnostic(raw_diagnostic)
     message = f"yt-dlp failed: {anonymous_diagnostic or 'no diagnostic was returned'}"
     if arc_diagnostic:
         message = f"Arc attempt: {arc_diagnostic}; anonymous fallback: {message}"
     raise YtDlpError(
         message,
-        temporary=bool(YTDLP_TEMPORARY.search(anonymous_diagnostic)),
+        temporary=bool(YTDLP_TEMPORARY.search(failure)),
         warnings=warnings,
     )
 
 
 def _clean_subprocess_diagnostic(text: str) -> str:
     """Remove terminal controls and collapse a subprocess diagnostic."""
-    without_ansi = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", text)
+    without_ansi = YTDLP_ANSI.sub("", text)
     without_secrets = re.sub(
         r"(?im)^(\s*(?:authorization|cookie|set-cookie)\s*[:=])[^\r\n]*",
         r"\1 [redacted]",

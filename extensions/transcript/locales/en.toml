@@ -261,8 +261,8 @@ description = "Item error of `ncly transcript run youtube`: yt-dlp could not dow
 other = "yt-dlp could not download the audio of {{.URL}}."
 
 ["transcript.download_failed_hint"]
-description = "Hint of the item error transcript.download_failed. --verbose stays as is."
-other = "Check that the video plays in a browser, then run the call again with --verbose."
+description = "Hint of the item error transcript.download_failed. browser, arc, [transcript], and --verbose stay as is."
+other = "Check that the video plays in a browser. If YouTube asks you to sign in, set browser = \"arc\" in [transcript]. Run the call again with --verbose."
 
 ["transcript.deepgram_unreachable"]
 description = "Item error of `ncly transcript run youtube`: Deepgram could not be reached, or refused the request for now, such as with HTTP 429. Deepgram is the name of a service."

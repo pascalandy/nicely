@@ -1,0 +1,123 @@
+# The real engine classifies raw diagnostics from a failing yt-dlp subprocess.
+# NCLY_TEST_DOWNLOAD is not used: this launcher changes only yt-dlp's executable.
+# Every refusal happens before the paid step and leaves the output empty.
+env LANG= LC_ALL= LC_MESSAGES= NCLY_LANG=
+env DEEPGRAM_API_KEY=
+mkdir bin
+symlink bin/uv -> $UV
+symlink bin/python3 -> $PYTHON3
+onlyncly transcript-external
+env NCLY_TEST_LAUNCHER=$WORK/launcher.py
+env URL=https://www.youtube.com/watch?v=EIEc43CxIvY
+env OUT=$WORK/out
+mkdir $OUT
+env STATE=$WORK/.local/state/nicely
+mkdir $STATE
+cp seed.jsonl test-keychain.jsonl
+exec /bin/sh -c 'printf "{\"format_version\":1,\"grants\":[{\"service\":\"deepgram\",\"domain\":\"transcript\",\"path\":\"%s\",\"granted_at\":\"2026-10-18T04:00:00Z\"}]}\n" "$DATA/ncly-transcript" > "$STATE/grants.json"'
+
+# A warning about 429 cannot make a later sign-in refusal retryable.
+env CASE=signin
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id signin --json
+answer stderr RUNTIME
+stderr '"code":"TRANSCRIPT_DOWNLOAD_FAILED"'
+stderr '"hint":"[^"]*browser = '
+stderr '\[transcript\]'
+
+# The final error can follow more than the diagnostic's 2,000-character display limit.
+env CASE=long-signin
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id long-signin --json
+answer stderr RUNTIME
+stderr '"code":"TRANSCRIPT_DOWNLOAD_FAILED"'
+env CASE=long-network
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id long-network --json
+answer stderr TEMPORARY
+
+# Each supported final network error remains retryable.
+env CASE=429
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id rate-limit --json
+answer stderr TEMPORARY
+env CASE=503
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id unavailable --json
+answer stderr TEMPORARY
+env CASE=refused
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id refused --json
+answer stderr TEMPORARY
+
+# An unknown final error stops retries, even after an earlier network ERROR.
+env CASE=unknown
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id unknown --json
+answer stderr RUNTIME
+stderr '"code":"TRANSCRIPT_DOWNLOAD_FAILED"'
+env CASE=last-fatal
+exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id last-fatal --json
+answer stderr RUNTIME
+stderr '"code":"TRANSCRIPT_DOWNLOAD_FAILED"'
+env CASE=last-network
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id last-network --json
+answer stderr TEMPORARY
+
+# With no ERROR record, preserve the network classification.
+env CASE=no-error
+exits 75 ncly transcript run youtube --url $URL --output $OUT --run-id no-error --json
+answer stderr TEMPORARY
+grep -count=10 '(?m)^download$' downloads.log
+! exists uploads.log
+exec /bin/ls -A $OUT
+! stdout .
+
+-- seed.jsonl --
+{"call":"set","account":"deepgram","key":"dg-test-key"}
+-- launcher.py --
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, sys.argv[1])
+import httpx
+import transcript
+import youtube
+
+
+def forbid_upload(*_args: object, **_kwargs: object) -> None:
+    Path(os.environ["WORK"], "uploads.log").write_text("attempted", encoding="utf-8")
+    raise AssertionError("a download refusal must not upload")
+
+
+httpx.post = forbid_upload
+youtube.YTDLP_MODULE_COMMAND = (
+    sys.executable,
+    str(Path(os.environ["WORK"], "yt_dlp_stub.py")),
+)
+raise SystemExit(transcript.main())
+-- yt_dlp_stub.py --
+import os
+import sys
+from pathlib import Path
+
+signin = (
+    "ERROR: [youtube] EIEc43CxIvY: Sign in to confirm you're not a bot. "
+    "Use --cookies-from-browser or --cookies for the authentication.\n"
+)
+network = "ERROR: HTTP Error 429: Too Many Requests\n"
+unknown = "ERROR: an unknown extractor refusal\n"
+diagnostics = {
+    "signin": (
+        "WARNING: Unable to download webpage: HTTP Error 429: Too Many Requests\n"
+        "WARNING: Unable to fetch GVS PO Token: Missing required Visitor Data\n"
+        + signin
+    ),
+    "long-signin": "WARNING: HTTP Error 429 " + "x" * 2100 + "\n" + signin,
+    "long-network": "WARNING: " + "x" * 2100 + "\n" + network,
+    "429": network,
+    "503": "ERROR: HTTP Error 503: Service Unavailable\n",
+    "refused": "ERROR: Connection refused\n",
+    "unknown": unknown,
+    "last-fatal": network + unknown,
+    "last-network": unknown + network,
+    "no-error": "Connection refused\n",
+}
+with Path(os.environ["WORK"], "downloads.log").open("a", encoding="utf-8") as log:
+    log.write("download\n")
+sys.stderr.write(diagnostics[os.environ["CASE"]])
+raise SystemExit(1)

@@ -56,7 +56,7 @@ grep -count=2 '(?m)^upload ' uploads.log
 env NCLY_TEST_DOWNLOAD=failed
 exits 1 ncly transcript run youtube --url $URL --output $OUT --run-id f3 --json
 answer stderr RUNTIME
-stderr '"errors":\[\{"code":"TRANSCRIPT_DOWNLOAD_FAILED","message":"yt-dlp could not download the audio of https://www\.youtube\.com/watch\?v=EIEc43CxIvY\.","hint":"Check that the video plays in a browser, then run the call again with --verbose\."\}\]'
+stderr '"errors":\[\{"code":"TRANSCRIPT_DOWNLOAD_FAILED","message":"yt-dlp could not download the audio of https://www\.youtube\.com/watch\?v=EIEc43CxIvY\.","hint":"Check that the video plays in a browser\. If YouTube asks you to sign in, set browser = .* in \[transcript\]\. Run the call again with --verbose\."\}\]'
 env NCLY_TEST_DOWNLOAD=
 grep -count=2 '(?m)^upload ' uploads.log
 

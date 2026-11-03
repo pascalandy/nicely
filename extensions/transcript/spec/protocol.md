@@ -64,6 +64,13 @@ A dry-run plan or zero exit alone never proves execution succeeded.
 | `transcript_unusable` | `unknown` | `RUNTIME` | `transcript.transcript_unusable` |
 | `write_failed` | `pending` before intent, `unknown` after it | `RUNTIME` | `transcript.write_failed` |
 
+The final `ERROR` record of a failed yt-dlp attempt decides its download code.
+Classification reads the raw diagnostic before display cleanup and its 2,000-character cut.
+A final network error uses `download_temporary`, including HTTP 429, HTTP 5xx, and `Connection refused`.
+A sign-in request or another final error uses `download_failed`, whose hint names the transcript `browser` setting.
+Earlier warnings do not decide the code.
+Without an `ERROR` record, the whole diagnostic uses the same network-failure rules.
+
 `browser_cookies_skipped` is the only program warning.
 Go maps it to `TRANSCRIPT_BROWSER_COOKIES_SKIPPED` with catalog ID `transcript.browser_cookies_skipped`.
 
