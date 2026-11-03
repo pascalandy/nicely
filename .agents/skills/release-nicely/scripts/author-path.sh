@@ -8,6 +8,8 @@ set -Eeuo pipefail
 trap 'printf "author-path: unexpected failure at line %s; inspect %s\n" "${LINENO}" "${scratch:-the output}" >&2' ERR
 # shellcheck source=.agents/skills/release-nicely/scripts/author-path-command.sh
 source "$(dirname -- "${BASH_SOURCE[0]}")/author-path-command.sh"
+# shellcheck source=.agents/skills/release-nicely/scripts/author-path-remove.sh
+source "$(dirname -- "${BASH_SOURCE[0]}")/author-path-remove.sh"
 
 fct_fail() {
 	printf 'author-path: FAIL %s\n' "$*" >&2
