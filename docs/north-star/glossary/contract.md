@@ -93,3 +93,10 @@
   - Def.: a question in the terminal that the human answers by typing a line, such as a `[y/N]` confirmation, whose look [Modes](../contract/modes.md) describes
   - Project note: [ncly auth](../core-spec.md#ncly-auth) defines it. [M07](../../milestones/M07-forms.md) replaced the key prompt of M06, which turned echo off, with a masked field, and styled the confirmation, which stays a prompt, as [D059](../decisions/D059-no-buttons.md) decides
   - Distinct from: a form, including the masked field of a key, which the shared tui package builds and [Modes](../contract/modes.md) describes
+- Publication
+  - Def.: the step of a command that creates or replaces a user file at its destination. An operation such as a hard link or a rename does it
+  - Project note: `## Publication` of `spec.md` declares each mode of it, as [Publication declaration](../contract/publication.md) defines
+  - Distinct from: a release, which publishes a version of an extension
+- Obligation
+  - Def.: a check that a row of `## Publication` asks for, such as `predicts`. A passing check of a scenario proves it, or a reason covers it
+  - Distinct from: a spec ID, which a test claims with a comment, and which no run proves

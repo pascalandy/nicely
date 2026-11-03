@@ -48,6 +48,7 @@ Each part is one file, in reading order.
       - [Scenario commands](contract/scenario-commands.md)
       - [Spec IDs](contract/spec-ids.md)
       - [Generic cases](contract/generic-cases.md)
+      - [Publication declaration](contract/publication.md)
   - [Extension repository](contract/extension-repository.md)
     - [Finish gate](contract/finish-gate.md)
     - [Build records](contract/build-records.md)

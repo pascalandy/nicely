@@ -13,6 +13,7 @@ A case that cannot occur for the command needs no line.
 A case name is not a test. For each case of the Output group that applies to the command, `just acceptance` checks a test file of the extension's own domain.
 The test makes that file, and an independent reader proves the safe outcome on it, as [Test kit](test-kit.md#acceptance-test-files) says.
 An error that names the input gives its path or its item, so an agent knows which call failed.
+A command that creates or replaces a user file also declares its publication, as [Publication declaration](publication.md) says.
 
 | Group | Case | Example | Safe outcome |
 |---|---|---|---|
@@ -36,7 +37,7 @@ An error that names the input gives its path or its item, so an agent knows whic
 | File name | Spaces | `my notes.md` | The command passes the name as one path, unchanged |
 | File name | Leading dash | `-notes.md`, which a program can read as a flag | The program reads it as a file, such as `./-notes.md`, never as a flag |
 | File name | Shell characters | `notes;$(date).md` | The command passes the name as one path, and no shell reads it |
-| Other | Dry run | `inspect --dry-run` leaves the file and its folder unchanged | No effect starts, and a refusal is the same as the refusal of a run |
+| Other | Dry run | `inspect --dry-run` leaves the file and its folder unchanged | No effect starts, and a refusal is the same as the refusal of a run. A dry run that succeeds predicts the destination and the overwrite choice of the run. It checks each ability of the destination that the run needs, or reports it as pending |
 | Other | Missing program | `inspect` on a host without `python3` | `PREREQ_MISSING` with exit 78 and the install hint, before any work |
 
 `inspect` is the example command of the extension template.

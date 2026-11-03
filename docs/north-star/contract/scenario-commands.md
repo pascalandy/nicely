@@ -15,12 +15,13 @@ A scenario uses the commands of [testscript](https://pkg.go.dev/github.com/rogpe
 | `appears <marker> <path> <command> <arg>...` | Creates a new file at the marker, and requires a failed run that keeps that file |
 | `protect <path>...` | Selects files, folders, or absent paths that the next `signal` or `appears` call and subsequent `refuses` calls must keep unchanged |
 | `refuses <code> <command> <arg>...` | Requires the same refusal code and exit in a dry run and a run |
+| `predicts <command> <arg>...` | Requires a successful dry run that changes no file, then a run that publishes what it predicted |
 | `grant <service>` | Grants the key of a declared service to the extension at its scratch path |
 | `fake <name>` | Puts the fake child in `$WORK/bin`, first in `PATH`, under the name `name` |
 
 The fake child runs the actions of `$WORK/bin/<name>.fake`, one per line: `stdout <text>`, `stderr <text>`, `stdin`, `env`, `sleep <duration>`, and `exit <code>`. `env` writes the names of its variables, never a value. The package comment of `sdk/extensiontest/fake` defines each action.
 
-`signal`, `appears`, and `refuses` accept only registered `ncly` and `ncly-<slug>` calls of runnable commands.
+`signal`, `appears`, `refuses`, and `predicts` accept only registered `ncly` and `ncly-<slug>` calls of runnable commands.
 They enable JSON and non-interactive mode, and validate each answer through `Coverage.Observe`.
 Explicit flags that disable JSON or non-interactive mode are refused.
 These commands leave the last call's streams available to `stdout` and `stderr` assertions.
@@ -73,3 +74,20 @@ These calls prove the invariants of a command that replaces a user file:
 - A failure leaves no partial output and keeps the old output: `protect` the output path or its folder before `refuses` and `signal`.
 - The command never writes through a link: `refuses`, with the output as a symbolic link to the input.
 - Without `--force`, the command never replaces a file that appears during the run: `appears`.
+
+`predicts` proves a mode of a command that [Publication declaration](publication.md) declares in `## Publication`.
+`--force` among the arguments selects the mode `replace`, and its absence the mode `create`.
+It requires a command with a dry run and arguments without dry-run flags, as `refuses` does.
+Both calls receive the same stdin bytes.
+
+1. The dry run must succeed. Its answer gives a path at the key Destination, and a boolean at the key Overwrite.
+2. With the treatment `pending`, `pending_checks` lists `publication.<operation>` for each operation of the row.
+3. The dry run must change no file of the scenario folder, except the cache and temporary folders of the scratch run. It must keep each protected path too.
+4. In the mode `create`, the destination must not exist, because a run without `--force` refuses an existing file.
+5. The overwrite choice must say whether the destination exists before the run.
+6. The run must succeed, and give the same destination. A regular file must be there after it.
+7. The run must keep each protected path, and the destination is never one of them.
+
+The protected paths are the values of the arguments and flags that Protected names, in this call.
+A run that fails after a successful dry run fails `predicts`, as on the destination with no hard link of #425.
+Each passing call proves the obligation `predicts` of its row, and each passing `appears` call the obligation `appears` of the row `create`.

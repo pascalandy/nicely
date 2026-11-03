@@ -29,13 +29,14 @@ A scratch `HOME` does not hide the OS keychain. `ncly` reads it only when the va
 - `extension.Check`, and a skill named after the slug, which every external extension ships, as [Extensions](extensions.md) defines
 - Each answer of a call through `ncly` or `ncly-<slug>`, for a success and for a failure. Its schema is the one that `contract.AnswerSchema` builds from the command's declaration
 - No scenario runs `ncly` or `ncly-<slug>` through `exec` in the foreground, by name or by path, which would skip the answer check. The kit splits each line into words as testscript does, so quotes and comments hide no call. A background call, which ends with `&`, keeps `exec`, and the kit does not check its answer
-- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, `appears`, or `refuses` after its answer passes validation
+- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, `appears`, `refuses`, or `predicts` after its answer passes validation
 - A command whose declared result kind is `text` counts a completed success, since that kind has no JSON answer
 - Coverage runs after all scenarios finish. Comments, assertions, skipped conditions, help, and shell or background `exec` calls earn no coverage
 - `just scenario <name>` runs one scenario. It sets `NCLY_TEST_SCENARIO` to that name, and selects only that scenario with `-run`. The kit then skips coverage, which needs every scenario (#422)
 - Human text earns no coverage for a command with a structured result
 - A path-qualified Nicely call in `exits` is refused with the registered command spelling
 - A failed report on stdout is checked as one complete object, including its envelope and declared result fields
+- `## Publication` of `spec.md` declares each mode of each command that may write a user file, and the manifest agrees, as [Publication declaration](publication.md) says. After all scenarios, a check proves each obligation, or a reason covers it
 - Each line of Failures and of Acceptance in `spec.md` starts with its own spec ID, and a test claims each ID, as [Spec IDs](#spec-ids) says. Each claim names an ID of `spec.md`
 - The skill names no `ncly <root>` command that the manifest lacks. Core's commands and commands outside that root stay free to mention, including sibling extensions
 - When the repository holds `.copier-answers.yml`, its `_commit`, the Nicely version of the template, equals the one in `go.mod`. For a development build, both name one commit. The failure says to run `just update <version>`
