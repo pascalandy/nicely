@@ -13,6 +13,7 @@ fct_test_finish_intake() {
 	local facts
 	cp "${finish}/intake.toml" "${scratch}/intake.toml.saved"
 	cp "${finish}/vision.md" "${scratch}/vision.md.saved"
+	cp "${finish}/spec.md" "${scratch}/spec.md.saved"
 	facts="$(grep -c '^\[\[facts\]\]$' "${finish}/intake.toml")"
 	# A fact of each kind, each with its fields, passes.
 	printf '\n[[facts]]\nkind = "inference"\nstatement = "A file over 1 GB takes more than 30 s"\n\n[[facts]]\nkind = "unknown"\nstatement = "The memory that a file over 1 GB takes"\nid = "large-file"\n' >>"${finish}/intake.toml"
@@ -31,16 +32,19 @@ fct_test_finish_intake() {
 	# inference and an unknown fact cite no source, and an unknown fact opens
 	# a line of spec.md (T24, T30, and T31 of N2).
 	printf '\n[[facts]]\nkind = "sourced"\nstatement = "The worker reads stdin"\nsource = "https://example.com/inspect"\n\n[[facts]]\nkind = "inference"\nstatement = "Large files take long"\nread = "the loop of main"\n\n[[facts]]\nkind = "guess"\nstatement = "It runs fast"\n\n[[facts]]\nkind = "unknown"\nstatement = "The time of a file over 2 GB"\n\n[[facts]]\nkind = "unknown"\nstatement = "The time of a file over 4 GB"\nid = "huge-file"\n\n[[facts]]\nkind = "sourced"\nsource = "worker/inspect.py"\nrevision = "v1"\nread = "main"\n\n[[experiments]]\ncommand = "python3 worker/inspect.py big.md"\n' >>"${finish}/intake.toml"
+	# An ID in another part of spec.md opens no line.
+	printf '\n## Notes\n\n- `huge-file`: a note\n' >>"${finish}/spec.md"
 	fct_finish 1
 	fct_finish_said "intake.toml: the sourced fact $((facts + 3)) has no source, no revision, or no part read. Fix: give its source, its revision, and the part that you read in read. A link alone is not evidence of a read"
 	fct_finish_said "intake.toml: the inference fact $((facts + 4)) names a source, a revision, or a part read. Fix: make it a sourced fact, or remove them"
 	fct_finish_said "intake.toml: the fact $((facts + 5)) has the kind \"guess\". Fix: give it the kind sourced, inference, or unknown"
 	fct_finish_said "intake.toml: the unknown fact $((facts + 6)) has no id. Fix: give it the spec ID of its open line in spec.md"
-	fct_finish_said "intake.toml: the unknown fact $((facts + 7)) names the line \`huge-file\`, which spec.md does not hold. Fix: write it under ## Open lines, with that ID"
+	fct_finish_said "intake.toml: the unknown fact $((facts + 7)) names the line \`huge-file\`, which is no open line, no line of Failures or Acceptance, and no accepted limit of spec.md. Fix: write it under ## Open lines, with that ID"
 	fct_finish_said "intake.toml: the fact $((facts + 8)) has no statement"
 	fct_finish_said 'intake.toml: the experiment 2 has no command or no result'
 
 	# A key that the record does not define fails, and just records writes no view.
+	cp "${scratch}/spec.md.saved" "${finish}/spec.md"
 	cp "${scratch}/intake.toml.saved" "${finish}/intake.toml"
 	printf '\n[[facts]]\nkind = "inference"\nstatement = "Large files take long"\nurl = "https://example.com/inspect"\n' >>"${finish}/intake.toml"
 	cp "${finish}/vision.md" "${scratch}/vision.md.before"
@@ -78,6 +82,10 @@ fct_test_finish_forms() {
 	fct_finish_said 'review.toml: the key findings.grade is no field of the record, so no check reads it. Fix: grade a finding only in its key severity'
 	fct_finish_said 'review.toml: the key notes is no field of the record'
 	fct_finish_said 'review.toml: the key notes.R1-F1' absent
+	# The decoder matches a key in any case, so a second grade in Severity fails too.
+	fct_readiness "${sha}" Ready "$(fct_finding R1-F2 block declined lines "${declined}" 'Severity = "advise"')"
+	fct_finish 1
+	fct_finish_said 'review.toml: the key findings.Severity is no field of the record'
 	fct_readiness "${sha}" Ready "$(fct_finding R1-F2 'really a warn' declined lines "${declined}")"
 	fct_finish 1
 	fct_finish_said 'review.toml: the finding R1-F2 has the severity "really a warn", which is not block, warn, or advise'

@@ -51,8 +51,8 @@ fct_test_ledger_builds() {
 	fct_finish 0
 	git -C "${finish}" reset -q --hard "${base}"
 
-	# Only a review that passes ends a build: a verdict that says Ready,
-	# a state with no commit, or a review that drops a finding ends none.
+	# Only a review that passes ends a build: a verdict that says Ready, a
+	# state with no commit, a review that drops a finding, or a stale view ends none.
 	fct_steps "${finish}"
 	printf 'Handler of a build that needs work.\n' >>"${finish}/README.md"
 	git -C "${finish}" commit -qam 'handler of a build that needs work'
@@ -60,7 +60,7 @@ fct_test_ledger_builds() {
 	fct_readiness "${head3}" 'Needs work' "${valid}"$'\n\n'"${blank}" 'agent B'
 	fct_review "${finish}" 'readiness review of the build that needs work'
 	base="$(git -C "${finish}" rev-parse HEAD)"
-	for forged in verdict state none; do
+	for forged in verdict state none view; do
 		case "${forged}" in
 		verdict) fct_edit "${finish}/review.toml" 'verdict = "Needs work"' 'verdict = "Ready"' ;;
 		state)
@@ -68,8 +68,10 @@ fct_test_ledger_builds() {
 			fct_edit "${finish}/review.toml" 'state = "open"' 'state = "fixed"'
 			;;
 		none) fct_readiness "${head3}" Ready '' 'agent B' ;;
+		view) fct_readiness "${head3}" Ready "${valid}"$'\n\n'"$(fct_finding R5-F1 block fixed bad-input "commit = \"${head3}\"")" 'agent B' ;;
 		esac
 		fct_records
+		[[ "${forged}" != view ]] || fct_edit "${finish}/readiness.md" 'Verdict: Ready' 'Verdict: Needs work'
 		fct_review "${finish}" "a review that ends the build: ${forged}"
 		fct_steps "${finish}"
 		printf 'Handler of the build after it.\n' >>"${finish}/README.md"

@@ -14,7 +14,7 @@ It reads the intake and the reviews only in their typed records, which [Build re
 - No table under `## Case matrix` of `spec.md` with the columns Family, Source, Accepted, and Refused (#423). Also a family that names no spec ID in Accepted, or a Refused cell with no spec ID and not `None`
 - A spec ID of `## Case matrix` that is no line of Failures or Acceptance and no accepted limit, so no test proves it. Also a line of Failures or Acceptance that no family names
 - A fact with no statement, or a kind other than `sourced`, `inference`, or `unknown`. A sourced fact without its source, revision, and read part. An inference or an unknown with a source
-- An unknown fact without a spec ID, or whose spec ID `spec.md` does not name
+- An unknown fact without a spec ID, or whose spec ID is no open line, no line of Failures or Acceptance, and no accepted limit
 - An experiment without its command or its result
 - No `review.toml`, or one without a full `commit`, a `reviewer`, or the verdict `Ready` or `Ready with stated limits`
 - A reviewed commit that differs from the working tree outside `readiness.md` and `review.toml`, and outside the part **Limits.** of `spec.md`. So the user accepts a limit after a review, with no new round. A row of `## Open lines` whose ID became a row of **Limits.** may leave too

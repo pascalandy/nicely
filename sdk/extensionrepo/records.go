@@ -113,26 +113,24 @@ func decodeRecord(file, text string, v any) []string {
 	if file == reviewFile {
 		fix = "Fix: grade a finding only in its key severity, give its state only in its key state, and use only the keys that build-records.md in the contract lists"
 	}
-	var problems, keys []string
+	undecoded := map[string]bool{}
 	for _, key := range md.Undecoded() {
-		keys = append(keys, key.String())
+		undecoded[key.String()] = true
 	}
-	for _, key := range keys {
+	var problems, reported []string
+	for _, key := range md.Keys() {
+		name := key.String()
 		// A table that the record does not define is one problem, not one for each of its keys.
-		if parent, _, found := cutLast(key); found && slices.Contains(keys, parent) {
+		if slices.ContainsFunc(reported, func(r string) bool { return name == r || strings.HasPrefix(name, r+".") }) {
 			continue
 		}
-		problems = append(problems, fmt.Sprintf("%s: the key %s is no field of the record, so no check reads it. %s", file, key, fix))
+		// The decoder matches a key in any case, so Severity would fill severity. Each key of a record is lowercase.
+		if undecoded[name] || name != strings.ToLower(name) {
+			reported = append(reported, name)
+			problems = append(problems, fmt.Sprintf("%s: the key %s is no field of the record, so no check reads it. %s", file, name, fix))
+		}
 	}
 	return problems
-}
-
-func cutLast(key string) (string, string, bool) {
-	i := strings.LastIndex(key, ".")
-	if i < 0 {
-		return "", key, false
-	}
-	return key[:i], key[i+1:], true
 }
 
 // readIntake reads intake.toml. It returns the record, whether the file

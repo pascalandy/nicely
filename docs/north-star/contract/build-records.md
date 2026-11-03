@@ -7,7 +7,7 @@ Two typed records hold this state, as COR-104-T4 of [D068](../decisions/D068-ver
 - `review.toml` holds the last readiness review and the ledger of the builds
 
 Each record is TOML, like `manifest.toml`. Finish reads only these records, never the Markdown views.
-A key that the record does not define fails `just finish`, such as `grade` in a finding.
+A key that the record does not define fails `just finish`, such as `grade` in a finding. Each key is lowercase, so `Severity` fails too.
 So a state or a grade has one place, and prose never holds one (#422).
 
 ## Views

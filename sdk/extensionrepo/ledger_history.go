@@ -75,8 +75,9 @@ func passProblems(rounds []round, reviews []review) []string {
 // and **Limits.** of spec.md differ from head. A later spec.md before the
 // next round can stand in when only **Limits.** differs, so a limit
 // committed after the review counts. The rows of ## Open lines of those
-// limits may leave too. The verdict and the states follow from the findings,
-// which keep each finding of the reviews before.
+// limits may leave too. The records read, and their views follow them. The
+// verdict and the states follow from the findings, which keep each finding
+// of the reviews before.
 func passedAt(reviews []review, at int, head, next string) bool {
 	r := reviews[at]
 	show := func(commit, file string) (string, bool) {
@@ -97,7 +98,9 @@ func passedAt(reviews []review, at int, head, next string) bool {
 	}) {
 		return false
 	}
-	if !r.readable {
+	// A stale view failed just finish then, so its review ended no build.
+	intake, shown := intakeAt(r.revision)
+	if view, _ := show(r.revision, "readiness.md"); !r.readable || !shown || view != readinessView(r.record) {
 		return false
 	}
 	reviewed, _ := show(head, "spec.md")
@@ -115,7 +118,7 @@ func passedAt(reviews []review, at int, head, next string) bool {
 		if len(open) != 0 || len(verdictProblems(r.record.Verdict, r.record.Findings, limits)) != 0 {
 			continue
 		}
-		if len(stateProblems(r.record.Findings, len(r.record.Rounds), spec, limits)) == 0 &&
+		if len(stateProblems(r.record.Findings, len(r.record.Rounds), spec, limits)) == 0 && len(intakeProblems(intake, spec, limits)) == 0 &&
 			len(findingHistory(r.record.Findings, reviews[at+1:], map[string]bool{})) == 0 {
 			return true
 		}
@@ -203,4 +206,18 @@ func roundHistory(rounds []round, r review, reported map[string]bool) []string {
 		}
 	}
 	return problems
+}
+
+// intakeAt returns the intake record at revision. It also reports whether
+// the record reads, and ## Intake of vision.md is its view, as just finish
+// checked them then.
+func intakeAt(revision string) (intakeRecord, bool) {
+	var intake intakeRecord
+	data, err := exec.Command("git", "show", revision+":"+intakeFile).Output()
+	if err != nil || len(decodeRecord(intakeFile, string(data), &intake)) != 0 {
+		return intake, false
+	}
+	vision, err := exec.Command("git", "show", revision+":vision.md").Output()
+	view, ok := withIntake(string(vision), intakeView(intake))
+	return intake, err == nil && ok && view == string(vision)
 }

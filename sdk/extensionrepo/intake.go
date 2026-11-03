@@ -13,14 +13,18 @@ var specID = regexp.MustCompile(`^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`)
 // intakeProblems checks the facts and the experiments of the intake record
 // (T24, T30, and T31 of N2). A sourced fact gives its source, its revision,
 // and the part read. An inference and an unknown fact cite no source. An
-// unknown fact opens a line: spec.md names its spec ID. Review still judges
-// that the part read supports the fact.
-func intakeProblems(r intakeRecord, spec string) []string {
+// unknown fact opens a line. Its spec ID is an open line, a line of Failures
+// or Acceptance, or an accepted limit. Review still judges that the part read
+// supports the fact.
+func intakeProblems(r intakeRecord, spec string, limits []limit) []string {
 	ids := map[string]bool{}
 	for _, l := range SpecLines(spec) {
-		if l.ID != "" && (l.Kind == SpecRow || l.Kind == SpecBullet) {
+		if l.ID != "" && (l.Part == "Failures" || l.Part == "Acceptance" || l.Part == "Open lines" && l.Kind == SpecRow) {
 			ids[l.ID] = true
 		}
+	}
+	for _, l := range limits {
+		ids[l.id] = ids[l.id] || l.accepted
 	}
 	var problems []string
 	for i, f := range r.Facts {
@@ -48,7 +52,7 @@ func intakeProblems(r intakeRecord, spec string) []string {
 		case f.Kind == "unknown" && f.ID == "":
 			problems = append(problems, fmt.Sprintf("intake.toml: the unknown fact %d has no id. Fix: give it the spec ID of its open line in spec.md", n))
 		case f.Kind == "unknown" && (!specID.MatchString(f.ID) || !ids[f.ID]):
-			problems = append(problems, fmt.Sprintf("intake.toml: the unknown fact %d names the line `%s`, which spec.md does not hold. Fix: write it under ## Open lines, with that ID", n, f.ID))
+			problems = append(problems, fmt.Sprintf("intake.toml: the unknown fact %d names the line `%s`, which is no open line, no line of Failures or Acceptance, and no accepted limit of spec.md. Fix: write it under ## Open lines, with that ID", n, f.ID))
 		}
 	}
 	for i, e := range r.Experiments {

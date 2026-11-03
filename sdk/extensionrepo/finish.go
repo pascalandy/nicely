@@ -26,7 +26,7 @@ func finishRepository() result {
 	intake, found, decoded := readIntake()
 	problems = append(problems, decoded...)
 	if found && len(decoded) == 0 {
-		problems = append(problems, intakeProblems(intake, spec)...)
+		problems = append(problems, intakeProblems(intake, spec, limits)...)
 		problems = append(problems, intakeViewProblems(intake)...)
 	}
 	review, reviewed, decoded := readReview()
