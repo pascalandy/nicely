@@ -13,16 +13,19 @@ A scenario uses the commands of [testscript](https://pkg.go.dev/github.com/rogpe
 | `signal INT\|TERM <marker> <command> <arg>...` | Waits for a new marker, signals the host, and checks its exit and answer |
 | `survives <file>...` | Requires these finished files at the next signal's marker and unchanged after its exit |
 | `appears <marker> <path> <command> <arg>...` | Creates a new file at the marker, and requires a failed run that keeps that file |
-| `protect <path>...` | Selects files, folders, or absent paths that the next `signal` or `appears` call and subsequent `refuses` calls must keep unchanged |
+| `protect <path>...` | Selects files, folders, or absent paths that the next `signal`, `appears`, `keeps`, or `holds` call and subsequent `refuses` calls must keep unchanged |
 | `refuses <code> <command> <arg>...` | Requires the same refusal code and exit in a dry run and a run |
 | `predicts <command> <arg>...` | Requires a successful dry run that changes no file, then a run that publishes what it predicted |
 | `reads [-case <case>] [-private <text>]... <output> <reference> <bad> <reader> <arg>...` | Reads the output with an independent reader, compares the reference, and requires the bad variant to fail, as [Acceptance cases](acceptance-cases.md) says |
+| `keeps <exit> <command> <arg>...` | Runs any call, and checks its exact exit, the protected paths, and its children |
+| `holds <marker> <path> <command> <arg>...` | Checks the public path while the worker waits at the marker, then the commit |
+| `without <operation> <check> <arg>...` | Runs `refuses`, `predicts`, `appears`, or `keeps` on Linux, where the guard refuses that operation |
 | `grant <service>` | Grants the key of a declared service to the extension at its scratch path |
 | `fake <name>` | Puts the fake child in `$WORK/bin`, first in `PATH`, under the name `name` |
 
 The fake child runs the actions of `$WORK/bin/<name>.fake`, one per line: `stdout <text>`, `stderr <text>`, `stdin`, `env`, `sleep <duration>`, and `exit <code>`. `env` writes the names of its variables, never a value. The package comment of `sdk/extensiontest/fake` defines each action.
 
-`signal`, `appears`, `refuses`, and `predicts` accept only registered `ncly` and `ncly-<slug>` calls of runnable commands.
+`signal`, `appears`, `refuses`, `predicts`, `keeps`, and `holds` accept only registered `ncly` and `ncly-<slug>` calls of runnable commands.
 They enable JSON and non-interactive mode, and validate each answer through `Coverage.Observe`.
 Explicit flags that disable JSON or non-interactive mode are refused.
 These commands leave the last call's streams available to `stdout` and `stderr` assertions.
@@ -48,8 +51,8 @@ Nicely's cache stays unprotected unless a scenario selects its path.
 Select inputs and possible outputs with `protect` before each refusal group.
 
 A `protect` selection applies to each later `refuses` call, until the next `protect` call replaces it.
-It also applies to the next `signal` or `appears` call, which ends it for these two commands.
-Give a new `protect` call before each `signal` or `appears` call that must keep paths.
+It also applies to the next `signal`, `appears`, `keeps`, or `holds` call, which ends it for these four commands.
+Give a new `protect` call before each of these calls that must keep paths.
 `signal` compares the protected paths before the host starts and after it exits, except its marker.
 So an interrupted run must keep its input, leave an absent output absent, and keep an old output.
 
@@ -92,3 +95,4 @@ Both calls receive the same stdin bytes.
 The protected paths are the values of the arguments and flags that Protected names, in this call.
 A run that fails after a successful dry run fails `predicts`, as on the destination with no hard link of #425.
 Each passing call proves the obligation `predicts` of its row, and each passing `appears` call the obligation `appears` of the row `create`.
+[Publication helpers](publication-helpers.md) says what `keeps`, `holds`, and `without` check, and how `without` proves the obligation of an operation.

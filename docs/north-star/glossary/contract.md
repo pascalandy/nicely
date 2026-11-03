@@ -104,3 +104,11 @@
 - Obligation
   - Def.: a check that a row of `## Publication` asks for, such as `predicts`. A passing check of a scenario proves it, or a reason covers it
   - Distinct from: a spec ID, which a test claims with a comment, and which no run proves
+- Commit
+  - Def.: the operation of a publication, a link or a rename, that makes the destination hold the new file
+  - Project note: `holds` observes the public path before it, and the guard observes it, as [Publication helpers](../contract/publication-helpers.md) defines
+  - Distinct from: a Git commit
+- Guard
+  - Def.: the program of the test kit that runs a call on Linux and adopts its orphans. It records or refuses the links and renames of the call in the scenario folder
+  - Project note: `keeps`, `holds`, and `without` run their calls under it, as [Publication helpers](../contract/publication-helpers.md) defines
+  - Distinct from: the fake child, which stands in place of a program that the extension runs

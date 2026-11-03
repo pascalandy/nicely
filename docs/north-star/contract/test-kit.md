@@ -17,6 +17,7 @@ func TestExtension(t *testing.T) { extensiontest.Run(t, Extension) }
 - The scenarios of `testdata/script/`, in an [owned](owned-runs.md) scratch run with a scratch `HOME` and scratch XDG folders. They call no paid service and read no real keychain
 - A `PATH` without any folder of the caller that holds an `ncly-*` file, so discovery finds only the extension under test
 - A fake child program, which the kit builds from Go source, because a Go module zip keeps no executable bit
+- On Linux, the guard, which the kit builds from Go source too. It supervises the calls of [Publication helpers](publication-helpers.md)
 
 A scratch `HOME` does not hide the OS keychain. `ncly` reads it only when the variable of a key is empty. So each service that the manifest declares gets a non-empty sentinel key, `sentinel-<service>`, in its variable. On Linux, the kit also points D-Bus at no bus, so a read that a scenario forces finds no keychain instead of the user's. A missing-key case runs `ncly-<slug>` directly, with `NCLY_MISSING_KEYS`, as [Grants](grants.md) defines.
 
@@ -29,7 +30,7 @@ A scratch `HOME` does not hide the OS keychain. `ncly` reads it only when the va
 - `extension.Check`, and a skill named after the slug, which every external extension ships, as [Extensions](extensions.md) defines
 - Each answer of a call through `ncly` or `ncly-<slug>`, for a success and for a failure. Its schema is the one that `contract.AnswerSchema` builds from the command's declaration
 - No scenario runs `ncly` or `ncly-<slug>` through `exec` in the foreground, by name or by path, which would skip the answer check. The kit splits each line into words as testscript does, so quotes and comments hide no call. A background call, which ends with `&`, keeps `exec`, and the kit does not check its answer
-- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, `appears`, `refuses`, or `predicts` after its answer passes validation
+- Each runnable command has a recorded call through `ncly`, `ncly-<slug>`, `exits`, `signal`, `appears`, `refuses`, `predicts`, `keeps`, or `holds` after its answer passes validation
 - A command whose declared result kind is `text` counts a completed success, since that kind has no JSON answer
 - Coverage runs after all scenarios finish. Comments, assertions, skipped conditions, help, and shell or background `exec` calls earn no coverage
 - `just scenario <name>` runs one scenario. It sets `NCLY_TEST_SCENARIO` to that name, and selects only that scenario with `-run`. The kit then skips coverage, which needs every scenario (#422)

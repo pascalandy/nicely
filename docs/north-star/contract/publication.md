@@ -47,14 +47,14 @@ Each row gives obligations. A scenario proves each one with a check of the kit, 
 |---|---|---|
 | `predicts` | Each row | A `predicts` call of the command in that mode passes |
 | `appears` | A row `create` | An `appears` call of the command passes |
-| Each operation, such as `link` | Each row | A check on a destination without that ability. The kit has no such check yet, so the obligation needs a reason, as COR-104-T7 plans |
+| Each operation, such as `link` | Each row | A `refuses`, `predicts`, or `keeps` call of that mode passes after `without` and that operation, on Linux, as [Publication helpers](publication-helpers.md) says |
 | `publication` | A mode with no row | None: the mode writes no user file, though the `effects` of its command allow it |
 
 The second table has the columns Command, Mode, Obligation, and Reason:
 
 | Command | Mode | Obligation | Reason |
 |---|---|---|---|
-| `ncly notes export` | create | `link` | The refusal of `refuses` covers a destination without hard link, and the source review checks that the run never falls back |
+| `ncly notes export` | create | `link` | Its publication starts after a paid step, which no scenario runs. The source review checks that the run fails closed without a hard link |
 
 The Mode of the obligation `publication` is the mode with no row, or `-` for a command with no row.
 Each reason names an obligation of its row, and says why no scenario proves it and what proves it instead.
@@ -65,5 +65,6 @@ The reviewer of round 1 accepts each reason, as for an `untested` code.
 Before the scenarios, the kit checks the form against the manifest, as [Test kit](test-kit.md#what-it-checks) lists.
 After all scenarios finish, it reports each obligation without a passing check and without a reason.
 It also reports a reason for an obligation that a check proved, so that no reason stays after its check.
+On a platform other than Linux, it skips the obligations of the operations, and prints a notice that names the platform.
 `just scenario` skips this report, as it skips coverage.
 [Scenario commands](scenario-commands.md) says what `predicts` checks.
