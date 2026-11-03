@@ -14,11 +14,26 @@ fct_remove_example() {
 		printf 'author-path: follow %s\n' "${step}"
 		case "${step}" in
 		'1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`' | \
-			'1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none')
+			'1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none' | \
+			'1. Delete `inspect.go`, `worker/inspect.py`, and `testdata/script/inspect.txtar`. Rewrite `testdata/script/refusal.txtar` for a refusal of your command, or delete it when the command has none. Rewrite `testdata/script/acceptance.txtar` for a property of your command')
 			mkdir "${scratch}/removed"
 			while IFS= read -r file; do
 				mv "${repo}/${file}" "${scratch}/removed/${file##*/}"
 			done < <(printf '%s\n' "${step}" | awk -F '`' '{ for (i=2; i<NF; i+=2) print $i }')
+			# Since COR-104-T5, the acceptance case of the greeting replaces the case of inspect.
+			if [[ "${step}" == *'Rewrite `testdata/script/acceptance.txtar`'* ]]; then
+				cat >"${repo}/testdata/script/acceptance.txtar" <<'EOF'
+# spec: greeting
+ncly probe greet --json
+cp stdout answer.json
+reads answer.json reference bad.json answer message
+
+-- reference --
+message: "ready"
+-- bad.json --
+{"ok":true,"contract_version":1,"message":"pending"}
+EOF
+			fi
 			saw_files=1
 			;;
 		'2. Replace the example declaration at `probe inspect` and its examples in `manifest.toml`. Remove `[programs.python3]` when no command needs it' | \
