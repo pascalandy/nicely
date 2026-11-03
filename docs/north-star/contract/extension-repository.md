@@ -2,7 +2,9 @@
 
 This part says how the Git repository of an extension outside Nicely is laid out, created, and checked. The extension template creates it, as [D062](../decisions/D062-copier-template.md) decides. [Release and install](extensions.md#release-and-install) says how an author releases a version, and how a user installs and removes it.
 
-The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compatibility](compatibility.md) defines. It also repeats the `replace` of Lip Gloss from Nicely's `go.mod`, because a `replace` never reaches another module. That fork fixes a `tmux info` call as the package loads, until a release of Lip Gloss ships the fix. The template writes `go.mod` only at creation, so the repository owns it with its own dependencies. Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `README.md`, `vision.md`, `worker/`, and `AGENTS.md`:
+[Version pins](extension-repository/versions.md) defines the repository's Go module and dependency pins.
+
+Its root holds the files of a first-party extension in `extensions/<name>/`, plus its own `README.md`, `vision.md`, `worker/`, and `AGENTS.md`:
 
 | File | Holds |
 |---|---|
