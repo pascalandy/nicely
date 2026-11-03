@@ -3,6 +3,7 @@ package extensionrepo
 import (
 	"bytes"
 	"errors"
+	"path/filepath"
 	"testing"
 )
 
@@ -41,5 +42,22 @@ func TestDeliverFailsOnALostAnswer(t *testing.T) {
 	r := result{action: "signoff", answer: []string{"Signed off on abc"}}
 	if exit := r.deliver(refusing{}, &stderr); exit != 1 || stderr.String() != "signoff: output was not delivered: closed\n" {
 		t.Fatalf("deliver gave exit %d and stderr %q", exit, stderr.String())
+	}
+}
+
+// TestARunResultCarriesItsNotices covers each action that runs one child in a
+// host run, such as acceptance, whose notices review round 2 found lost.
+func TestARunResultCarriesItsNotices(t *testing.T) {
+	run, err := NewOwnedRun(t.TempDir(), Profile{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(noticeFile, filepath.Join(run.Dir, "notices"))
+	if err := Notice("skipped: acceptance helper"); err != nil {
+		t.Fatal(err)
+	}
+	r := run.result("acceptance", nil)
+	if string(r.notices) != "skipped: acceptance helper\n" || r.err != nil || r.exit != 0 {
+		t.Fatalf("the result of the run holds notices %q, err %v, exit %d", r.notices, r.err, r.exit)
 	}
 }

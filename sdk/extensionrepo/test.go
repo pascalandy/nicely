@@ -49,11 +49,5 @@ func test(action string, args []string, set map[string]string) result {
 	cmd := exec.Command("go", append([]string{"test", "-count=1"}, args...)...)
 	cmd.Env = run.Env
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	r := child(action, cmd.Run())
-	notices, err := run.Notices()
-	r.notices = notices
-	if err != nil {
-		r.err = errors.Join(r.err, err)
-	}
-	return r
+	return run.result(action, cmd.Run())
 }

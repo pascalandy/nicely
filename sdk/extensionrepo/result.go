@@ -39,6 +39,18 @@ func child(action string, err error) result {
 	return result{action: action, err: err}
 }
 
+// result returns the result of an action that ran one child program in run,
+// with the notices that its programs recorded there.
+func (run OwnedRun) result(action string, err error) result {
+	r := child(action, err)
+	notices, readErr := run.Notices()
+	r.notices = notices
+	if readErr != nil {
+		r.err = errors.Join(r.err, readErr)
+	}
+	return r
+}
+
 // deliver writes the answer to stdout, then the notices and any refusal to
 // stderr, and returns the exit code. An answer or notices that a stream
 // refuses fail the action, because the caller never received them.

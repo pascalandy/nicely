@@ -33,5 +33,5 @@ func acceptance(args []string) result {
 	cmd := exec.CommandContext(ctx, bash, append([]string{"acceptance.sh"}, args...)...)
 	cmd.Env = run.Env
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	return child("acceptance", cmd.Run())
+	return run.result("acceptance", cmd.Run())
 }
