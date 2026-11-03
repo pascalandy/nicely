@@ -20,6 +20,9 @@ type Coverage struct {
 	mu       sync.Mutex
 	seen     map[string]bool
 	codes    map[codeObservation]bool
+	// proven holds each obligation of ## Publication that a check proved,
+	// by command path, mode, and obligation.
+	proven map[[3]string]bool
 }
 
 // NewCoverage prepares the manifest and answer checks that Run uses.
@@ -58,4 +61,22 @@ func (c *Coverage) Missing() []string {
 		}
 	}
 	return append(problems, c.missingCodes()...)
+}
+
+// prove records that a check of a scenario passed for an obligation of a
+// mode of a command, as Publication declaration in the contract defines.
+func (c *Coverage) prove(path, mode, obligation string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.proven == nil {
+		c.proven = map[[3]string]bool{}
+	}
+	c.proven[[3]string{path, mode, obligation}] = true
+}
+
+// proved reports whether a check proved that obligation.
+func (c *Coverage) proved(path, mode, obligation string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.proven[[3]string{path, mode, obligation}]
 }

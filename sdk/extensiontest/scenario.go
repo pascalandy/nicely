@@ -37,11 +37,12 @@ func (k *kit) commands() map[string]func(*testscript.TestScript, bool, []string)
 	}
 	commands := k.ScenarioCommands(filepath.Join(k.bin, "ncly"))
 	maps.Copy(commands, map[string]func(*testscript.TestScript, bool, []string){
-		"ncly":  expect("ncly"),
-		direct:  expect(direct),
-		"exits": k.exits,
-		"grant": k.grant,
-		"fake":  k.fakeChild,
+		"ncly":     expect("ncly"),
+		direct:     expect(direct),
+		"exits":    k.exits,
+		"grant":    k.grant,
+		"fake":     k.fakeChild,
+		"predicts": k.predicts,
 	})
 	return commands
 }

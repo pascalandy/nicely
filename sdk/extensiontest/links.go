@@ -18,6 +18,7 @@ import (
 //   - a skill that names a command that the manifest lacks
 //   - a call that skips the answer check
 //   - a line of Failures or Acceptance in spec.md that no test claims
+//   - a form of ## Publication in spec.md that the manifest contradicts
 //   - two Nicely versions
 func (k *kit) links() []string {
 	var problems []string
@@ -30,6 +31,9 @@ func (k *kit) links() []string {
 		problems = append(problems, k.scenarioLinks(scripts)...)
 		problems = append(problems, k.specLinks(scripts)...)
 	}
+	publications, reasons, publicationProblems := k.readPublication()
+	k.publications, k.reasons = publications, reasons
+	problems = append(problems, publicationProblems...)
 	problems = append(problems, k.skillLinks()...)
 	if problem := k.versionLink(); problem != "" {
 		problems = append(problems, problem)

@@ -20,7 +20,7 @@ A card that adds a check moves its rule up, as D068 says.
 | [preferences.md](preferences.md) | D01 to D26 of `dev-preferences.md`: mockups, docs, and Python |
 | [landing.md](landing.md) | D27 to D46 of `dev-preferences.md`: reviews, merges, stacks, UATs, and releases |
 | [principles.md](principles.md) | P01 to P31 of `principles.md` |
-| [sdk.md](sdk.md) | S01 to S26: contract, extension, repository, kit, and i18n. S52 to S53: owned runs and results |
+| [sdk.md](sdk.md) | S01 to S26: contract, extension, repository, kit, and i18n. S52 to S53: owned runs and results. S54 to S55: publication |
 | [runtime.md](runtime.md) | S27 to S51: platform, record, runner, tui, wrap, the fake child, and analysis |
 
 ## Support code

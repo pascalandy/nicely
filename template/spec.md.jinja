@@ -74,6 +74,18 @@ A repair of a finding adds a pair of tests for its whole family, not only a test
 
 Fill: one row for each family of cases of your commands, in place of the rows of `inspect`.
 
+## Publication
+
+This part declares each command that creates or replaces a user file, as `publication.md` in the folder that `just contract` prints defines.
+`just check` fails when a command whose effects set `user_writes` has no row.
+It also fails when no scenario proves an obligation of a row, and no reason covers it.
+
+None: `ncly {{ example_command }}` creates or replaces no user file.
+
+Fill: for a command that publishes a file, a table with the columns Command, Mode, Destination, Overwrite, Protected, Operation, and Dry run. Give each mode one row.
+
+Fill: a second table with the columns Command, Mode, Obligation, and Reason, for each obligation that no scenario proves.
+
 ## Open lines
 
 A round of the skill in `.agents/skills/nicely-extension/` moves an open line into Failures or Acceptance, with the scenario that claims it.

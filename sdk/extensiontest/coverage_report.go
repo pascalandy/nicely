@@ -9,7 +9,8 @@ import (
 )
 
 // reportCoverage prints each deferral of a declared code, and fails t for
-// each command or code that no scenario observed. Run calls it after all
+// each command, code, or obligation of ## Publication that no scenario
+// observed. Run calls it after all
 // scenarios finish. A run of one scenario, such as just scenario, skips it,
 // because coverage needs every scenario (#422).
 func (k *kit) reportCoverage(t *testing.T) {
@@ -23,7 +24,7 @@ func (k *kit) reportCoverage(t *testing.T) {
 			t.Errorf("extensionrepo.Notice: %v", err)
 		}
 	}
-	for _, problem := range k.Missing() {
+	for _, problem := range append(k.Missing(), k.publicationMissing()...) {
 		t.Error(problem)
 	}
 }

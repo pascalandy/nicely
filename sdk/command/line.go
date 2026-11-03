@@ -116,6 +116,14 @@ func (line Line) Switch(name string) (on, given bool) {
 	return on, given
 }
 
+// Value returns the last value of a flag that takes one, by long name, and
+// whether the line sets it. The test kit reads the protected paths of a
+// call with it.
+func (line Line) Value(name string) (string, bool) {
+	value, given := line.values[name]
+	return value, given
+}
+
 // Help reports whether the line asks for help.
 func (line Line) Help() bool {
 	on, _ := line.Switch("help")

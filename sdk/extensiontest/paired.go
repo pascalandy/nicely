@@ -145,21 +145,15 @@ func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected 
 	}
 	before, err := snapshotFiles(protected, false)
 	ts.Check(err)
-	// Exec consumes testscript's stdin. Save it once so both calls receive identical bytes.
-	dir, err := os.MkdirTemp("", "ncly-refuses-")
-	ts.Check(err)
-	defer func() { _ = os.RemoveAll(dir) }()
-	input := filepath.Join(dir, "stdin")
-	ts.Check(ts.Exec("/bin/sh", "-c", `/bin/cat > "$1"`, "refuses", input))
+	input, done := saveStdin(ts, "refuses")
+	defer done()
 	// The explicit value lets command discovery skip this flag before any command word.
 	// Prefixing it preserves separators, including a literal -- used as another flag's value.
 	preview := append([]string{"--dry-run=true"}, args[2:]...)
 	wantExit := 0
 	for i, arguments := range [][]string{preview, args[2:]} {
 		mode := []string{"dry run", "run"}[i]
-		invocation := append([]string{"-c", `input=$1; shift; exec "$@" < "$input"`, "refuses", input, program}, arguments...)
-		exit, err := exitCode(ts.Exec("/bin/sh", invocation...))
-		ts.Check(err)
+		exit := execSaved(ts, input, program, arguments)
 		observed := words
 		if i == 0 {
 			observed = slices.Clone(preview)
@@ -188,4 +182,24 @@ func (c *Coverage) refuses(ts *testscript.TestScript, neg bool, args, protected 
 			ts.Fatalf("refuses: %s changed protected paths: %s", mode, fmt.Sprint(protected))
 		}
 	}
+}
+
+// saveStdin saves the stdin of the scenario in a file, because Exec consumes
+// it. Each call of a pair then receives identical bytes. done removes the
+// file.
+func saveStdin(ts *testscript.TestScript, name string) (string, func()) {
+	dir, err := os.MkdirTemp("", "ncly-"+name+"-")
+	ts.Check(err)
+	input := filepath.Join(dir, "stdin")
+	ts.Check(ts.Exec("/bin/sh", "-c", `/bin/cat > "$1"`, name, input))
+	return input, func() { _ = os.RemoveAll(dir) }
+}
+
+// execSaved runs program with arguments and the saved stdin, and returns
+// its exit code.
+func execSaved(ts *testscript.TestScript, input, program string, arguments []string) int {
+	invocation := append([]string{"-c", `input=$1; shift; exec "$@" < "$input"`, "ncly-kit", input, program}, arguments...)
+	exit, err := exitCode(ts.Exec("/bin/sh", invocation...))
+	ts.Check(err)
+	return exit
 }

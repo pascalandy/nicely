@@ -63,6 +63,7 @@ func (c *Coverage) appears(ts *testscript.TestScript, neg bool, args, protected 
 	if !same {
 		ts.Fatalf("appears: the run changed protected paths: %s", fmt.Sprint(protected))
 	}
+	c.prove(call.path, "create", "appears")
 }
 
 // createNew creates path with an exclusive create and writes appearsText.

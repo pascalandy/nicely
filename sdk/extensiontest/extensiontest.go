@@ -17,6 +17,7 @@
 //	appears <marker> <path> <command> <arg>  requires a failure that keeps a new file
 //	protect <path>...            selects paths that refuses and the next signal or appears keep
 //	refuses <code> <command> <arg>  checks the same refusal in a dry run and a run
+//	predicts <command> <arg>...  checks that a dry run predicts the publication of its run
 //	grant <service>               grants the key of a declared service to the extension
 //	fake <name>                   puts the fake child in $WORK/bin as name
 //
@@ -110,6 +111,9 @@ type kit struct {
 	// built is the ncly-<slug> that go build made, and fake the fake
 	// child.
 	built, fake string
+	// publications and reasons are the tables of ## Publication of spec.md.
+	publications []publication
+	reasons      []reason
 }
 
 func load(e extension.Extension) (*kit, error) {
