@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/pascalandy/nicely/sdk/analysis"
 )
 
 func checkRepository() int {
@@ -25,6 +27,9 @@ func checkRepository() int {
 		return report("check", errors.New("run gofmt -w . to format these files"))
 	}
 	if err := updateRun("go", "vet", "./..."); err != nil {
+		return report("check", err)
+	}
+	if err := analysis.Check("./..."); err != nil {
 		return report("check", err)
 	}
 	fmt.Fprintln(os.Stderr, "go test -count=1 ./...")

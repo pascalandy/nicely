@@ -33,3 +33,15 @@ func shadow() process.Program {
 	stdio := struct{ Discard stdio.Writer }{Discard: os.Stdout}
 	return process.Program{Stdout: stdio.Discard}
 }
+
+// job embeds the SDK type, so its promoted fields are the same fields.
+type job struct {
+	process.Program
+	Stdout stdio.Writer
+}
+
+func embed(j *job) {
+	j.Stderr = stdio.Discard // want `runner.Program.Stderr: use nil or omit the field instead of io.Discard`
+	j.Stdout = stdio.Discard
+	_ = job{Program: process.Program{Stdout: stdio.Discard}} // want `runner.Program.Stdout: use nil or omit the field instead of io.Discard`
+}

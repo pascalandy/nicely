@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -25,7 +24,7 @@ func tally(ctx context.Context, call extension.Call) contract.Outcome {
 		return failure(contract.PrereqMissing, p.T("standalone.tally.missing"), p.T("standalone.tally.missing_hint"))
 	}
 	var stdout bytes.Buffer
-	result, err := runner.Run(ctx, runner.Program{Path: path, Env: runner.Environ(os.Environ(), nil), Stdout: &stdout, Stderr: io.Discard})
+	result, err := runner.Run(ctx, runner.Program{Path: path, Env: runner.Environ(os.Environ(), nil), Stdout: &stdout})
 	if err != nil || result.Exit != 0 {
 		return failure(contract.Runtime, p.T("standalone.tally.failed"), "ncly standalone tally")
 	}

@@ -65,3 +65,5 @@ require (
 // the fix of https://github.com/charmbracelet/lipgloss/pull/759, on its branch
 // pr-759. Remove this line once a release of Lip Gloss ships the fix.
 replace charm.land/lipgloss/v2 => github.com/pascalandy/lipgloss/v2 v2.0.7-0.20261016054459-6d92d28af73f
+
+tool github.com/pascalandy/nicely/sdk/analysis/cmd/nicelyvet

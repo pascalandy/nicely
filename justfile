@@ -112,12 +112,14 @@ python:
     uv tool run --with-requirements "$requirements" --with pytest==9.1.1 'pyright[nodejs]@1.1.414'
     uv tool run --with-requirements "$requirements" --with pytest-xdist==3.8.0 pytest@9.1.1 -n auto
 
-# Lint the Go code
+# Lint the Go code, and run the analyzers of sdk/analysis
 [group('checks')]
 lint:
     {{ golangci }} run ./... ./testdata/extensions/...
     for dir in {{ standalone }}; do (cd "$dir" && {{ golangci }} run ./...); done
     cd tools && go tool golangci-lint run ./cmd/...
+    go vet -vettool="$(go tool -n nicelyvet)" ./... ./testdata/extensions/...
+    vettool="$(go tool -n nicelyvet)"; for dir in {{ standalone }}; do (cd "$dir" && go vet -vettool="$vettool" ./...); done
 
 # Fail when a Go file needs formatting
 [group('checks')]
