@@ -32,10 +32,11 @@ These are the operations:
 With `pending`, the dry-run answer lists `publication.<operation>` in `pending_checks` for each operation, such as `publication.link`.
 An item is that string, or an object whose `id` is that string.
 
-A command whose `effects` set `user_writes`, as [Manifest](manifest.md) says, runs the mode `create`.
+A command may write a user file when its `effects` set `user_writes`, or when it declares no `effects`, as [Manifest](manifest.md) says.
+Such a command runs the mode `create`.
 It also runs the mode `replace` when it declares the switch `force`.
 Each mode that it runs has a row, or a reason for the obligation `publication`.
-A row of a command whose `effects` do not set `user_writes` fails.
+A row of a command whose declared `effects` do not set `user_writes` fails.
 When no command creates or replaces a user file, the part says `None`.
 
 ## Obligations
@@ -47,7 +48,7 @@ Each row gives obligations. A scenario proves each one with a check of the kit, 
 | `predicts` | Each row | A `predicts` call of the command in that mode passes |
 | `appears` | A row `create` | An `appears` call of the command passes |
 | Each operation, such as `link` | Each row | A check on a destination without that ability. The kit has no such check yet, so the obligation needs a reason, as COR-104-T7 plans |
-| `publication` | A mode with no row | None: the mode writes no user file, though the `effects` of its command say so |
+| `publication` | A mode with no row | None: the mode writes no user file, though the `effects` of its command allow it |
 
 The second table has the columns Command, Mode, Obligation, and Reason:
 

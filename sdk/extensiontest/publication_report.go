@@ -9,9 +9,10 @@ import (
 // publicationLinks reports these problems:
 //   - a row of a command whose effects do not set user_writes
 //   - a reason for no obligation
-//   - a mode of a command with user_writes that has no row and no reason
+//   - a mode of a command that may write a user file, with no row and no reason
 //
-// Such a command runs the mode create, and the mode replace when it
+// A command may write one when its effects set user_writes or are absent,
+// as Manifest says. Such a command runs the mode create, and the mode replace when it
 // declares the switch force. A reason for the obligation publication says
 // that one mode, or the whole command with the mode -, writes no file.
 func (k *kit) publicationLinks(rows []publication, reasons []reason) []string {
@@ -20,7 +21,7 @@ func (k *kit) publicationLinks(rows []publication, reasons []reason) []string {
 		return slices.ContainsFunc(rows, func(p publication) bool { return p.path == path && (mode == "-" || p.mode == mode) })
 	}
 	for _, row := range rows {
-		if command, _ := k.manifest.Command(row.path); command.Effects == nil || !command.Effects.UserWrites {
+		if command, _ := k.manifest.Command(row.path); !command.DeclaredEffects().UserWrites {
 			problems = append(problems, fmt.Sprintf("spec.md:%d: `ncly %s` publishes a file, and its effects in manifest.toml do not set user_writes. Fix: set user_writes = true", row.line, row.path))
 		}
 	}
@@ -41,7 +42,7 @@ func (k *kit) publicationLinks(rows []publication, reasons []reason) []string {
 		}
 	}
 	for _, command := range k.manifest.Commands {
-		if !k.manifest.Runs(command) || command.Effects == nil || !command.Effects.UserWrites {
+		if !k.manifest.Runs(command) || !command.DeclaredEffects().UserWrites {
 			continue
 		}
 		path, modes := strings.Join(command.Path, " "), []string{"create"}
@@ -50,7 +51,7 @@ func (k *kit) publicationLinks(rows []publication, reasons []reason) []string {
 		}
 		for _, mode := range modes {
 			if !declared(path, mode) && !unwritten[[2]string{path, mode}] && !unwritten[[2]string{path, "-"}] {
-				problems = append(problems, fmt.Sprintf("spec.md: `ncly %s` sets user_writes, and ## Publication has no row for its %s mode. "+
+				problems = append(problems, fmt.Sprintf("spec.md: `ncly %s` may write a user file, as its effects set user_writes or are absent, and ## Publication has no row for its %s mode. "+
 					"Fix: give that mode a row, or give the obligation `publication` a reason when that mode creates or replaces no user file", path, mode))
 			}
 		}
