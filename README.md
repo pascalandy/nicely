@@ -52,6 +52,7 @@ Both use the SDK test kit and the same update recipe.
 The kit runs manifest examples with scratch fixtures and checks each answer.
 It uses dry runs where available and prints skip reasons in plain `just check` output.
 `just check` also runs the [analyzers](docs/north-star/contract/analyzers.md) of the pinned SDK, such as the refusal of `io.Discard` in a `runner.Program`.
+The kit, `just signoff`, `just release`, and `just acceptance` run in [owned runs](docs/north-star/contract/owned-runs.md), without settings of the caller such as `NCLY_CONFIG`.
 `just update VERSION` runs the target version's updater.
 Older repositories use the bootstrap in [Update an extension](docs/north-star/contract/extension-repository.md#update-an-extension).
 Further work lives in [docs hub](docs/backlog/XT-104-docs-hub.md), [Canadian French](docs/backlog/COR-102-canadian-french.md),

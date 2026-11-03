@@ -14,7 +14,7 @@ func TestExtension(t *testing.T) { extensiontest.Run(t, Extension) }
 
 - The real `ncly-<slug>`, built from `cmd/ncly-<slug>/`, with the sidecars that `Export` writes, installed in scratch folders
 - The `ncly` that `go tool ncly` builds from the Nicely version of `go.mod`, whose `tool` line names `github.com/pascalandy/nicely/cmd/ncly`
-- The scenarios of `testdata/script/`, with a scratch `HOME` and scratch XDG folders. They call no paid service and read no real keychain
+- The scenarios of `testdata/script/`, in an [owned](owned-runs.md) scratch run with a scratch `HOME` and scratch XDG folders. They call no paid service and read no real keychain
 - A `PATH` without any folder of the caller that holds an `ncly-*` file, so discovery finds only the extension under test
 - A fake child program, which the kit builds from Go source, because a Go module zip keeps no executable bit
 

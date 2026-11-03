@@ -70,6 +70,10 @@
   - Def.: a Go rule of the SDK package `sdk/analysis`, which `go vet -vettool` runs on production files
   - Project note: [Analyzers](../contract/analyzers.md) lists the rules. An extension gets those of its pinned Nicely version
   - Distinct from: a check of the test kit, which runs the extension instead of reading its code
+- Owned run
+  - Def.: a run of the test kit, signoff, release, or acceptance whose environment and folder `extensionrepo.NewOwnedRun` builds
+  - Project note: [Owned runs](../contract/owned-runs.md) defines its host and scratch profiles, and the result of an action
+  - Distinct from: a scratch `HOME` alone, which keeps the other settings of the caller
 - Spec ID
   - Def.: the name in backticks that starts a line of Failures or of Acceptance in the `spec.md` of an extension repository, such as `still-image`
   - Project note: [Spec IDs](../contract/test-kit.md#spec-ids) defines its form

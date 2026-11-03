@@ -52,6 +52,7 @@ Each part is one file, in reading order.
     - [Finish gate](contract/finish-gate.md)
     - [Update an extension](contract/update-an-extension.md)
     - [Analyzers](contract/analyzers.md)
+    - [Owned runs](contract/owned-runs.md)
 - [Operations](contract/operations.md)
   - [Records and evidence](contract/records-and-evidence.md)
   - [Record format](contract/record-format.md)

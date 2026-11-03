@@ -27,7 +27,7 @@ Its checks must hold `just finish`, so a receipt with only `just check` never re
 Release runs `just finish` again on that clean HEAD, because a hand can write a receipt (#419).
 Then it runs `just acceptance [fixture]`, and creates and pushes an annotated tag whose message holds that signoff receipt.
 It executes the fenced `sh` block under `## Install` in `README.md`, with `TAG` replaced by the new tag.
-The install uses scratch HOME and XDG folders, without the caller's keys or installed extensions.
+The install uses an [owned](owned-runs.md) scratch run, without the caller's keys, settings, or installed extensions.
 The clone's HEAD must equal the tagged SHA, even when another README paragraph names the new tag.
 Release then checks discovery, measures [Economy](../../qa/north-star.md#economy), uninstalls, and requires `NOT_FOUND`.
 Economy runs literal manifest examples in both output formats, with a dry run when supported.

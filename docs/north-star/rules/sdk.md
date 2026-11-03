@@ -1,6 +1,6 @@
 # Contract, extension, repository, kit, and i18n
 
-This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments.
+This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments, and S52 to S53 of COR-104-T3.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|
@@ -30,6 +30,8 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 | S24 | Format numbers, sizes, durations, and dates with i18n | [i18n.go][i18n] | Prose only |
 | S25 | Translated text sets its own width | [i18n.go][i18n] | Prose only |
 | S26 | Clip command-line and variable values before a refusal quotes them | [i18n.go][i18n] | [Long values scenario][long-values] |
+| S52 | The kit, signoff, release, and acceptance build each environment with `NewOwnedRun`, which alone reads `os.Environ` | [Owned runs][owned-runs] | [owned_run.go][owned-run], [callerenv][callerenv], [isolation test][isolation-test], [acceptance.go][acceptance], [template recipes test][recipes-test], partial: a program with no `Env` inherits its caller |
+| S53 | Each action of the export program returns one result, whose answer, notices, and exit code one writer delivers | [Owned runs][owned-runs] | [result.go][result], [result test][result-test], [isolation test][isolation-test], [template recipes test][recipes-test] |
 
 [agents]: ../../../AGENTS.md
 [contract-codes]: ../../../sdk/contract/codes.go
@@ -67,3 +69,9 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 [i18n-test]: ../../../sdk/i18n/i18n_test.go
 [script-test]: ../../../cmd/ncly/script_test.go
 [long-values]: ../../../testdata/script/long_values.txtar
+[owned-run]: ../../../sdk/extensionrepo/owned_run.go
+[owned-runs]: ../contract/owned-runs.md
+[callerenv]: ../../../sdk/analysis/callerenv/callerenv.go
+[acceptance]: ../../../sdk/extensionrepo/acceptance.go
+[result]: ../../../sdk/extensionrepo/result.go
+[result-test]: ../../../sdk/extensionrepo/result_test.go

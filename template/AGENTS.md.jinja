@@ -64,7 +64,7 @@ After Copier creates the repository, run `go mod tidy` once, which writes `go.su
 - `just signoff`: runs `just finish` and `just check` on the committed SHA in a detached scratch worktree. It also runs the first failing run of `readiness.md` again, at its commit. Then it writes a receipt outside the repository, and signs that exact SHA
 - `just install`: installs the extension into Nicely's extensions folder, in place of its previous install
 - `just uninstall`: removes that install, and keeps its keys and grants
-- `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would, in scratch folders. It works on a copy of the fixture, or on an input that it makes
+- `just acceptance [fixture]`: runs `acceptance.sh`, which runs the command of `## Acceptance` as an agent would. It runs in an owned scratch run of the SDK, without the settings of the caller, such as `NCLY_CONFIG`. It works on a copy of the fixture, or on an input that it makes
 - `just update <version>`: runs the target version's updater on a clean Git tree, with the template before the SDK
 - `just contract`: prints the folder of the contract at the Nicely version that `go.mod` pins
 
