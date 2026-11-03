@@ -109,36 +109,12 @@ It reads the references only. The first reviewer checks that the matrix is compl
 5. Ask an agent that did not write the code to run the readiness review. It records the review and the ledger in `review.toml`, and runs `just records`. One independent pass can do both reviews.
 6. Write each finding that a test can prove as an open line, with the spec ID that the finding names. Each finding that the ledger records as `open` keeps its line under `## Open lines`, so `spec.md` and the ledger agree. The author can decline an `advise` instead, with a reason.
 7. Run `just finish`. Stop as "Done when" in `AGENTS.md` says. `just finish` fails until the loop is done.
-8. When `just finish` fails after round 5, stop, as "Round limit" says.
+8. When `just finish` fails after round 5, stop, as "Round limit" in [delivery.md](delivery.md) says.
 9. Otherwise, start the next round from the open lines and the open findings. Add its commits to the open pull request, or open a new one. Base a new pull request on the branch of the previous one when that one is not merged.
 
-### Reach "Done when" in 5 rounds
+### Round limit and delivery
 
-- Round 1 includes a test file for each generic case that applies
-- Ask the first reviewer to check that `## Case matrix` is complete and to run it, before it reviews any repair
-- Ask the first reviewer to test families of cases, such as all the declarations that change the meaning, not one counterexample
-- Fix a root cause, such as a parser or a conversion rule, before the next review
-- Keep the last rounds for verification, not for one patch per warning
-
-### Round limit
-
-At the limit of 5 rounds, stop. Do not start round 6.
-Report to the user each open line of `spec.md`, and each finding that the ledger records as `open`, with its ID.
-Then wait for the user.
-An answer that lets you choose, such as "decide yourself", accepts no limit and starts no round.
-The user can accept each open finding as a limit. That needs no new round, as `readiness-review.md` says.
-
-### Review, stop, and delivery
-
-These are three different acts:
-
-- A pull request opens for review. It can open in round 1, before the loop is done
-- A stop report goes to the user at the round limit. It delivers nothing
-- The delivery, such as a merge or a release, starts only after `just finish` passes on the head
-
-A delivery skill or a merge gate, such as a "full stop" or "full send" request, is a delivery.
-It never replaces "Done when", and it never ends the rounds early.
-The release receipt and the human items of `qa.md` come after the merge, as "Release" in `AGENTS.md` says.
+Read [delivery.md](delivery.md) to reach "Done when" in 5 rounds, for the stop at the round limit, and before any delivery.
 
 ### Commands that replace a file
 
