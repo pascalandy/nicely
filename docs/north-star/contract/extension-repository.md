@@ -16,7 +16,7 @@ The repository is one Go module. Its `go.mod` pins one Nicely version, as [Compa
 | `qa.md` | How a user accepts the extension: what its UAT adds to the UAT protocol of Nicely, with its error cases and its removal. Each criterion names the test that covers it, or why none can |
 | `acceptance.sh` | The run of the command on the real input of `## Acceptance`, which checks each property and each refusal that it lists |
 | `AGENTS.md` | The reading order, the change steps, the recipes, and the release steps, for an agent that changes the extension |
-| `AGENTS/rule-index.md` | The check that enforces each rule of `AGENTS.md` |
+| `AGENTS/rule-index.md` | The check that enforces each rule of `AGENTS.md`, with its parts in `AGENTS/rule-index/` |
 | `.agents/skills/nicely-extension/` | The skill that builds each command in rounds, from intake to a verified command, with a readiness review at the end of each round |
 | `readiness.md` | The last readiness review: the commit that it reviewed, its reviewer, its verdict, and its findings. Then the ledger of the build, as [Finish gate](finish-gate.md#the-ledger) defines |
 | `.copier-answers.yml`, `lefthook.yml` | The template version that `just update` reads, and the `just check` that Lefthook runs before each push |
@@ -35,7 +35,7 @@ Public repositories also run the same steps on `macos-15`, and both runners are 
 
 The repository tests itself through the [test kit](test-kit.md). Its `justfile` has nine recipes:
 
-- `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders
+- `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, and `go test`, whose test kit installs the extension into scratch folders. It first prints how many rules of the rule index are `Prose only`
 - `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. [Finish gate](finish-gate.md) lists what it checks
 - `just signoff` runs `just finish` and `just check` on the committed SHA in isolation, then signs that SHA, as [Local checks](../decisions/D016-local-ci.md) defines. After `just finish`, it runs the first failing run again, as [Finish gate](finish-gate.md#the-first-failing-run-again) says
 - `just scenario <name>` runs the scenario `testdata/script/<name>.txtar` alone, and the test kit skips its coverage checks

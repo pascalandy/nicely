@@ -1,7 +1,7 @@
 ---
 id: COR-104
 core: "verification map"
-state: "Ready. Core and template first, then video-convert"
+state: Active. Core and template first, then video-convert
 ---
 
 # COR-104 verification map
@@ -21,7 +21,7 @@ Trial findings are evidence of gaps only.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| COR-104-T1 | Rule indexes and ledger columns | agent | - | todo |
+| COR-104-T1 | Rule indexes and ledger columns | agent | - | done |
 | COR-104-T2 | SDK analyzers in every check | agent | - | todo |
 | COR-104-T3 | Owned verification runs | agent | COR-104-T2 | todo |
 | COR-104-T4 | Typed build records | agent | - | todo |

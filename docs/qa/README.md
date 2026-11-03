@@ -36,3 +36,4 @@ A finished UAT changes at most three files:
 - [protocol.md](protocol.md): only a lesson for every extension
 
 A lesson about the template goes in the ledger and in an issue about the template.
+Each correction that a UAT starts gets a row in the Corrections table of the ledger, with its level and owner.

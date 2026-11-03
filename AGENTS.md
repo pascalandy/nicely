@@ -30,6 +30,7 @@ Run `lefthook install` once per clone.
 | Accept a UAT? | [docs/qa/](docs/qa/README.md) | A UAT is assigned | A UAT ends |
 | Where does a new rule go? | The file whose question it answers | Before you write a rule | Never in this file |
 | Where does a new check go? | [D067](docs/north-star/decisions/D067-share-verification-rules.md) | Before you add a check | The placement rule changes |
+| Which check enforces a rule? | [rules/](docs/north-star/rules/README.md) | Before you add a rule or a check | A rule or its enforcer changes |
 
 ## Work on a card
 

@@ -26,7 +26,7 @@ These levels are not the layers of the [code map](../architecture.md#code-map).
 |---|---|---|---|
 | 1. Code | SDK types with one owner for each invariant, such as `sdk/runner`, `sdk/record`, `sdk/wrap`, and `sdk/contract` | Rendered entry points that only call the SDK | Domain code: shared preparation, input refusal, and its own publication |
 | 2. Checks | Kit checks and helpers, repository gates, Go analyzers, the TLC runner, `just check`, and core CI | One-line recipes, the CI workflow, and the forms that the gates read | Scenarios, Go tests, `acceptance.sh`, declared facts, and its TLA+ model with its mapping |
-| 3. Prose | `AGENTS.md`, the decisions, the core rule index, and the `nicely` skill | Its `AGENTS.md`, the rule index, and the `nicely-extension` skill | Its `AGENTS.md`, its skill, and **Limits.** in `spec.md` |
+| 3. Prose | `AGENTS.md`, the decisions, the [core rule index](../rules/README.md), and the `nicely` skill | Its `AGENTS.md`, the rule index, and the `nicely-extension` skill | Its `AGENTS.md`, its skill, and **Limits.** in `spec.md` |
 | 4. QA and UAT | verify-nicely by another agent, the UAT protocol, and the [UAT ledger](../../qa/ledger.md) | The readiness review by another agent, and the `qa.md` form | `just acceptance` on real input, its UAT, and the acceptance of Pascal |
 
 Each extension keeps its publication logic: staging, link, rename, and replace.
