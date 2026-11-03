@@ -133,7 +133,7 @@ Core's first model, its finish gate, fails first on the behavior before 59d33f38
 
 B, level 2, measure 3.
 As #427 asks, the contract and the template skill say how an existing extension adopts `just finish`.
-Its first build starts at the update commit, and its intake reads its current `spec.md`.
+Its first build starts after the update commit, and its intake reads its current `spec.md`.
 The update test renders an extension at v0.23.4, updates it, runs that first build, and requires `just signoff` to pass.
 The skill also teaches the step of D068 for a correction of A or B, as prose on purpose.
 It fails first on #427, and the step on #407, where an extension could not fix answers of `sdk/wrap`.
