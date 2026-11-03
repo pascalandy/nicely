@@ -1,6 +1,16 @@
-# Commands that replace a file
+# Commands that write a file
 
-This file says how to prove a command that replaces a user file.
+This file says how to declare and prove a command that creates or replaces a user file.
+
+## Declare the publication
+
+- Give each mode of the command a row in `## Publication` of `spec.md`, as `publication.md` in the contract says
+- Prove each mode with `predicts`: a successful dry run changes no file, and predicts the destination and the overwrite choice of its run
+- Make the dry run check each operation of the destination as the run does, such as a hard link
+- When the dry run cannot check an operation, declare `pending`, and list `publication.<operation>` in `pending_checks`
+- In the second table, give a reason for each obligation that no check proves, such as the operation `link`
+
+## Prove the invariants
 
 For a command that replaces a user file, prove these invariants with the commands of `scenario-commands.md` in the contract:
 

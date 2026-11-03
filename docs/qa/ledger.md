@@ -37,6 +37,7 @@ A correction that lands below the highest level that can prevent its failure say
 
 | Correction | Failure | Level | Owner |
 |---|---|---|---|
+| COR-104-T6 | In #425, a dry run passed, and the run failed on a destination with no hard link. No form named the abilities of the destination. Level 2 waits for the check of COR-104-T7 that removes an ability, so a reason covers each operation | 2 | A |
 | COR-104-T9 | #427: no rule said where the first build of an extension of v0.23.4 starts after `just update`. Finish accepted the update commit as its Intake, with the example facts of the template | 2 | B |
 | COR-104-T4 | Finish parsed review prose: a finding with no state passed it at the parent of 59d33f38, and free-form grades of #422 hid from the parser | 1 | A |
 | COR-104-T3 | At the parent of 09809608, the lifecycle check of the kit passed `os.Environ()`, so an invalid `NCLY_CONFIG` reached `ncly`. At the parent of e35bd0bb, check ran `go test` outside the notice file, and a passing package hid its notices | 1 | A |

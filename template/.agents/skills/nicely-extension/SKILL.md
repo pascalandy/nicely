@@ -68,7 +68,7 @@ Each round ends with the independent review, the readiness review, and `just fin
 Do these steps in this order. Commit each of the first four steps on its own:
 
 1. Record the intake facts in `intake.toml`, as "Evidence of the intake" in `intake.md` says, then run `just records`. The facts include the effects, the exit codes, the resource use, and the known failures. A fact that no source gives is `unknown`, with an open line of `spec.md`.
-2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`. Write the table under `## Case matrix` too, as "Case matrix" says.
+2. Write every line of the command in `spec.md`, from the generic cases of the contract and the intake. Each line that has no test stays `open`, under `## Open lines`. Write the table under `## Case matrix` too, as "Case matrix" says, and `## Publication`.
 3. Write the first scenario at the public command boundary, with its claim `# spec: <id>`. Commit it while it fails. Run it at that commit with `just scenario <name>`. Keep that command, its exit status, and the line of the scenario that failed. A compile error is no such failure. `just signoff` runs it again. When the scenario cannot run without the command, commit a handler that does no work in this step. Then the run reaches the assertion.
 4. Change the handler until that scenario passes, with "Change a command" in `AGENTS.md`.
 5. When no line stays open, write `None.` under `## Open lines`, with a sentence that cites the generic cases.
@@ -116,9 +116,9 @@ It reads the references only. The first reviewer checks that the matrix is compl
 
 Read [delivery.md](delivery.md) to reach "Done when" in 5 rounds, for the stop at the round limit, and before any delivery.
 
-### Commands that replace a file
+### Commands that write a file
 
-For a command that replaces a user file, read [replace-a-file.md](replace-a-file.md). It lists the invariants to prove, and the commands of the test kit that prove them.
+For a command that creates or replaces a user file, read [replace-a-file.md](replace-a-file.md). It says how to declare its publication, and how the test kit proves it.
 
 ## Update and fixes of Nicely
 
