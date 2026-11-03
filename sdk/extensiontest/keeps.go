@@ -59,16 +59,13 @@ func (k *kit) keeps(ts *testscript.TestScript, neg bool, args []string) {
 	if !same {
 		ts.Fatalf("keeps: the call changed protected paths: %s", strings.Join(protected, ", "))
 	}
+	// A dry run publishes nothing, and proves no operation of a run.
 	dryRun, _ := call.line.Switch("dry-run")
-	if dryRun {
-		// A dry run publishes nothing, and proves no operation of a run.
-		return
-	}
-	if exit == 0 && hasRow && g != nil {
+	if exit == 0 && hasRow && g != nil && !dryRun {
 		destination, _ := decodeAnswer(stdout)[row.destination].(string)
 		checkCommit(ts, "keeps", report, row, destination)
 	}
-	if op := g.proves(ts, "keeps"); op != "" {
+	if op := g.proves(ts, "keeps"); op != "" && !dryRun {
 		k.prove(call.path, mode, op)
 	}
 }

@@ -45,7 +45,7 @@ Then it waits until the marker is gone, and finishes its output.
 3. The kit then removes the marker. The run has 10 seconds to exit, and must succeed.
 4. The answer gives `<path>` at the key Destination, and a regular file is there.
 5. On Linux, the commit uses an operation of the row.
-6. The run keeps the paths of the last `protect` call, and the Protected paths of the row.
+6. The run keeps the paths of the last `protect` call, and the Protected paths of the row, except the marker and `<path>`, as for `appears`.
 
 A run that writes its partial output at `<path>` fails step 2.
 
