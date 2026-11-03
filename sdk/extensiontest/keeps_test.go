@@ -11,6 +11,7 @@ func TestKeeps(t *testing.T) {
 	cases := []struct{ name, host, script, problem string }{
 		{"exact exit of a refusal", publicationHost, "protect out\nkeeps 2 ncly video convert missing.mov\n", ""},
 		{"exact exit of a success", publicationHost, "keeps 0 ncly-video-convert clip.mov\nexists out/clip.txt\n", ""},
+		{"a dry run publishes nothing", publicationHost, "protect out\nkeeps 0 ncly video convert clip.mov --dry-run\n", ""},
 		{"other exit", publicationHost, "keeps 1 ncly video convert missing.mov\n", "keeps: ncly exited with 2, want 1"},
 		{"a protected folder changes", publicationHost, "protect out\nkeeps 0 ncly video convert clip.mov\n", "keeps: the call changed protected paths"},
 		{"the run changes its input", strings.Replace(publicationHost, `stage=out/.stage.$$`, `echo changed > "$input"; stage=out/.stage.$$`, 1), "keeps 0 ncly video convert clip.mov\n", "keeps: the call changed protected paths: $WORK/clip.mov"},

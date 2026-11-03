@@ -25,6 +25,7 @@ func TestWithout(t *testing.T) {
 		{"no try of the refused operation", closedHost, declared, "without rename keeps 0 ncly video convert clip.mov\n", "keeps: no call tried `rename` in the scenario folder"},
 		{"a refused rename that the run ignores", publicationHost, declared, "cp clip.mov out/clip.txt\nwithout rename keeps 0 ncly video convert clip.mov --force\n", "keeps: the run published out/clip.txt with no link and no rename"},
 		{"a dry run that never checks the hard link", publicationHost, declared, "without link refuses CAPABILITY_UNSUPPORTED ncly video convert clip.mov\n", "refuses: dry run exited with 0, want a refusal with CAPABILITY_UNSUPPORTED"},
+		{"a rename of the destination onto itself", strings.Replace(publicationHost, `ln "$stage" "$out" 2>/dev/null ||`, `cat "$stage" > "$out"; perl -e 'rename $ARGV[0], $ARGV[0]' "$out"; rm -f "$stage"; true ||`, 1), declared, "keeps 0 ncly video convert clip.mov\n", "keeps: the run published out/clip.txt with no link and no rename"},
 		{"unknown operation", closedHost, declared, "without copy keeps 0 ncly video convert clip.mov\n", "usage: without link|rename-noreplace|rename"},
 		{"signal is no check of without", closedHost, declared, "without link signal TERM started ncly video convert clip.mov\n", "usage: without"},
 	}
