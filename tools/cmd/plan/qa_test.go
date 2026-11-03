@@ -85,6 +85,7 @@ func TestLedgerCorrections(t *testing.T) {
 		{row, "| 5 | A |\n", "level 5"},
 		{row, "| 2 | D |\n", "owner D"},
 		{row, "|  | A |\n", "level "},
+		{row, "| 2 |\n", "the row has 3 cells, and its header 4"},
 		{"| Correction | Failure | Level | Owner |\n|---|---|---|---|\n", "| Correction | Failure | Owner |\n|---|---|---|\n", "no Level and Owner"},
 		{"## Corrections\n", "## Fixes\n", "no Corrections"},
 	} {
@@ -96,8 +97,9 @@ func TestLedgerCorrections(t *testing.T) {
 	}
 }
 
-// correctionProblems returns what is wrong with the Corrections table of the
-// ledger: a missing section or column, or a level or an owner outside D068.
+// correctionProblems returns the problems of the Corrections table of the
+// ledger. It refuses a missing section, column, or cell. It also refuses a
+// level or an owner outside D068.
 func correctionProblems(ledger string) []string {
 	var problems []string
 	var section string
@@ -119,7 +121,11 @@ func correctionProblems(ledger string) []string {
 			columns = level >= 0 && owner >= 0
 			continue
 		}
-		if cells == nil || !columns || len(cells) != len(header) {
+		if cells == nil || !columns {
+			continue
+		}
+		if len(cells) != len(header) {
+			problems = append(problems, fmt.Sprintf("%s: the row has %d cells, and its header %d", cells[0], len(cells), len(header)))
 			continue
 		}
 		if !slices.Contains([]string{"1", "2", "3", "4"}, cells[level]) {
