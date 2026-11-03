@@ -36,6 +36,9 @@ func (k *kit) holds(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("holds: marker %s must not exist before the call", args[0])
 	}
 	protected := slices.Concat(k.takeNext(ts), protectedPaths(ts, call, row.protected))
+	if slices.Contains(protected, filepath.Clean(path)) {
+		ts.Fatalf("holds: the destination %s is a protected path of the call", args[1])
+	}
 	before, err := snapshotFiles(protected, false)
 	ts.Check(err)
 	public, err := publicStateOf(path)

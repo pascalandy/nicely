@@ -21,7 +21,7 @@ A platform other than Linux has no such filter, so no call runs under the guard 
 ## The commit
 
 The commit is the operation that publishes the destination.
-After a successful run under the guard, a link or a rename must have published the destination.
+After a successful run under the guard, a link or a rename must have published the destination. A rename of a file onto itself publishes nothing.
 The row of the mode must declare that operation.
 So a run that writes its output in place fails, and a create that renames over the destination fails too.
 
@@ -32,7 +32,7 @@ So a run that writes its output in place fails, and a create that renames over t
 1. The call must exit with `<exit>`, and give a valid answer.
 2. The call must keep the paths of the last `protect` call, and the Protected paths of the row of its mode.
 3. No descendant of the call may still run, as [The guard](#the-guard) says.
-4. When the call succeeds and its mode has a row, the commit uses an operation of the row.
+4. When a run succeeds and its mode has a row, the commit uses an operation of the row. A dry run publishes nothing.
 
 ## holds
 
@@ -41,7 +41,7 @@ The worker writes part of its output in its private stage, and then writes the m
 Then it waits until the marker is gone, and finishes its output.
 
 1. The marker must not exist before the call.
-2. At the marker, `<path>` must have its state before the call: absent, or the same file with the same bytes and mode.
+2. At the marker, `<path>` must have its state before the call: absent, or the same file with the same bytes and mode. A protected path cannot be `<path>`.
 3. The kit then removes the marker. The run has 10 seconds to exit, and must succeed.
 4. The answer gives `<path>` at the key Destination, and a regular file is there.
 5. On Linux, the commit uses an operation of the row.
@@ -61,7 +61,7 @@ During that check, the guard refuses the operation in its scope, with the error 
 | `rename` | `EPERM` |
 
 - A call of the check must try the operation in the scope. Otherwise the check proves nothing, and it fails
-- A passing `refuses`, `predicts`, or `keeps` proves the obligation of the operation, for the row of the mode of the call. `appears` proves none
+- A passing `refuses`, `predicts`, or `keeps` proves the obligation of the operation, for the row of the mode of the call. `appears` and a dry run of `keeps` prove none
 - A create that falls back to a check and a rename that replaces fails `predicts` or `keeps`, as [The commit](#the-commit) says
 - The refusal reaches the system call, not the file system. A dry run that reads the type of the file system cannot see it. Then `keeps` proves that the run fails closed
 - Write `[linux]` before the line, because another platform fails. There, the kit checks no obligation of an operation, and prints a notice

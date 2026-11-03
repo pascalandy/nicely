@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pascalandy/nicely/sdk/contract"
+	"github.com/pascalandy/nicely/sdk/platform"
 	"github.com/pascalandy/nicely/sdk/runner"
 	"github.com/rogpeppe/go-internal/testscript"
 )
@@ -122,7 +123,14 @@ func waitExit(done <-chan struct{}, host *os.Process, limit time.Duration) bool 
 	}
 }
 
-func kill(host *os.Process) { _ = syscall.Kill(-host.Pid, syscall.SIGKILL) }
+// kill stops the host, its descendants first, so that a child in its own
+// session, as runner starts one, stops too.
+func kill(host *os.Process) {
+	for _, pid := range platform.Descendants(host.Pid) {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+	}
+	_ = syscall.Kill(-host.Pid, syscall.SIGKILL)
+}
 
 // unchanged compares protected paths with their state before the call. The kit's own files are skipped.
 func unchanged(protected []string, before map[string]fileState, skip ...string) (bool, error) {

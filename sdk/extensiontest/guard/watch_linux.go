@@ -120,6 +120,9 @@ func (w *watcher) handle(req notification) {
 		op.Refused = true
 		resp.flags, resp.error = 0, -int32(refusals[op.Name])
 	default:
+		// A rename of a file onto itself succeeds and changes nothing, so it
+		// publishes nothing.
+		same := sameFile(from, to)
 		err := perform(c.op, from, to, flags)
 		resp.flags = 0
 		var errno unix.Errno
@@ -128,7 +131,7 @@ func (w *watcher) handle(req notification) {
 		} else if err != nil {
 			resp.error = -int32(unix.EIO)
 		}
-		op.Done = err == nil
+		op.Done = err == nil && !same
 	}
 	_ = ioctl(w.listener, unix.SECCOMP_IOCTL_NOTIF_SEND, unsafe.Pointer(&resp))
 	if inScope {
@@ -145,6 +148,14 @@ func perform(op, from, to string, flags uint64) error {
 		return unix.Linkat(unix.AT_FDCWD, from, unix.AT_FDCWD, to, int(flags&unix.AT_SYMLINK_FOLLOW))
 	}
 	return unix.Renameat2(unix.AT_FDCWD, from, unix.AT_FDCWD, to, uint(flags))
+}
+
+// sameFile reports whether two paths name one file, without a link
+// followed.
+func sameFile(a, b string) bool {
+	x, errA := os.Lstat(a)
+	y, errB := os.Lstat(b)
+	return errA == nil && errB == nil && os.SameFile(x, y)
 }
 
 func ioctl(fd int, request uint, arg unsafe.Pointer) error {
