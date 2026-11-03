@@ -7,7 +7,7 @@ source "${BASH_SOURCE[0]%/*}/template-release-helpers.sh"
 source "${BASH_SOURCE[0]%/*}/template-release-url-test.sh"
 
 fct_test_release() {
-	local repo="${1}" scratch="${2}" slug="${3}" extension_root="${4}" sha previous receipt dir status out_file out_bytes err_file err_bytes i examples command file ledger_earlier=""
+	local repo="${1}" scratch="${2}" slug="${3}" extension_root="${4}" sha previous receipt dir status out_file out_bytes err_file err_bytes i examples command ledger_earlier=""
 	local remote="${2}/release-origin.git" fixture="${2}/release-fixture/input.md"
 	fct_has "${repo}/AGENTS.md" '## Release'
 	fct_has "${repo}/README.md" "ncly describe ${extension_root} --json"
@@ -63,11 +63,8 @@ SCRIPT
 
 	# The releases below pass just finish: the forms are filled, and an independent review passes.
 	fct_steps "${repo}"
-	for file in vision.md spec.md qa.md; do
-		grep -v '^Fill:' "${repo}/${file}" >"${scratch}/form.md"
-		mv "${scratch}/form.md" "${repo}/${file}"
-	done
-	git -C "${repo}" add vision.md spec.md qa.md
+	fct_fill "${repo}" "${scratch}"
+	git -C "${repo}" add vision.md spec.md qa.md intake.toml
 
 	# Economy selects modes even when the first example already sets them.
 	examples="$(grep -m1 '^examples = ' "${repo}/manifest.toml")"

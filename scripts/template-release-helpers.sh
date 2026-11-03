@@ -46,11 +46,10 @@ fct_release_refused_receipts() {
 # (#419). The round ends its build, so the next review starts at new steps of
 # fct_steps. The caller keeps the earlier rounds in ledger_earlier.
 fct_release_review() {
-	# shellcheck disable=SC2034 # fct_readiness writes readiness.md in finish.
+	# shellcheck disable=SC2034 # fct_readiness writes review.toml in finish.
 	local finish="${1}" head
 	head="$(git -C "${1}" rev-parse HEAD)"
-	fct_readiness "${head}" Ready None.
-	git -C "${1}" add readiness.md
-	git -C "${1}" commit -qm 'readiness review'
+	fct_readiness "${head}" Ready ''
+	fct_review "${1}" 'readiness review'
 	ledger_earlier="${ledger_earlier:+${ledger_earlier} }${head}:pass"
 }

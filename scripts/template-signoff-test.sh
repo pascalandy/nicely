@@ -29,18 +29,18 @@ SCRIPT
 	# Signoff runs the first failing run again at its Scenario commit (#422).
 	# An invented command, a compile error, and a scenario that passes sign nothing.
 	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-echo" read
-	fct_signoff_refuses "${scratch}" "${scratch}/signoff-echo" 'echo invented' 'names the command "echo invented", which is not just scenario <name>'
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-echo" 'echo invented' 'names the scenario "echo invented", which is no name of a scenario'
 	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-compile" read 'package broken'$'\n''func {'
-	fct_signoff_refuses "${scratch}" "${scratch}/signoff-compile" 'just scenario first' 'before any line of the scenario, such as on a compile error'
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-compile" first 'before any line of the scenario, such as on a compile error'
 	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-passes" inspect
-	fct_signoff_refuses "${scratch}" "${scratch}/signoff-passes" 'just scenario first' 'passes at its Scenario commit'
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-passes" first 'passes at its Scenario commit'
 	# The run must fail on the line that the record names, not on another line of the scenario.
 	fct_signoff_ready "${repo}" "${scratch}" "${scratch}/signoff-line" read
-	fct_signoff_refuses "${scratch}" "${scratch}/signoff-line" 'just scenario first' 'and ## First failing run names the assertion' \
+	fct_signoff_refuses "${scratch}" "${scratch}/signoff-line" first 'and first_run of review.toml names the assertion' \
 		"$(grep -m 1 '^refuses ' "${scratch}/signoff-line/testdata/script/first.txtar")"
 
 	fct_signoff_ready "${repo}" "${scratch}" "${ready}" read
-	fct_signoff_review "${ready}" 'just scenario first'
+	fct_signoff_review "${ready}" first
 	sha="$(git -C "${ready}" rev-parse HEAD)"
 	if ! fct_signoff "${ready}" "${scratch}"; then
 		cat "${scratch}/signoff.out" >&2
@@ -85,27 +85,23 @@ fct_signoff_ready() {
 		done
 	fi
 	git -C "${ready}" commit -q --allow-empty -am 'handler'
-	for file in vision.md spec.md qa.md; do
-		grep -v '^Fill:' "${ready}/${file}" >"${2}/form.md"
-		mv "${2}/form.md" "${ready}/${file}"
-	done
+	fct_fill "${ready}" "${2}"
 	git -C "${ready}" commit -qam 'fill the forms'
 }
 
 # fct_signoff_review commits the readiness review of the head of $1, whose
-# first failing run names the command $2, and the assertion $3 or the line
+# first failing run names the scenario $2, and the assertion $3 or the line
 # stderr of the first scenario.
 fct_signoff_review() {
 	local expected="${3:-}"
 	[[ -n "${expected}" ]] || expected="$(grep -m 1 '^stderr ' "${1}/testdata/script/first.txtar")"
-	finish="${1}" ledger_run=$'- **Commit**: '"$(fct_step "${1}" scenario)"$'\n- **Command**: `'"${2}"$'`\n- **Exit**: 1\n- **Assertion**: `'"${expected}"'` found no match' \
-		fct_readiness "$(git -C "${1}" rev-parse HEAD)" Ready None.
-	git -C "${1}" add readiness.md
-	git -C "${1}" commit -qm 'readiness review'
+	finish="${1}" ledger_run=$'[first_run]\ncommit = "'"$(fct_step "${1}" scenario)"$'"\nscenario = "'"${2}"$'"\nexit = 1\nassertion = \'\'\''"${expected}"$' found no match\'\'\'' \
+		fct_readiness "$(git -C "${1}" rev-parse HEAD)" Ready ''
+	fct_review "${1}" 'readiness review'
 }
 
 # fct_signoff_refuses requires that just signoff of the repository $2, whose
-# first failing run names the command $3 and the assertion $5, fails with the
+# first failing run names the scenario $3 and the assertion $5, fails with the
 # text $4 and signs nothing.
 fct_signoff_refuses() {
 	local status=0
