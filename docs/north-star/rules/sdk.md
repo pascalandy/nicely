@@ -1,6 +1,6 @@
 # Contract, extension, repository, kit, and i18n
 
-This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments. It also holds S52 to S53 of COR-104-T3, S54 to S55 of COR-104-T6, and S56 to S58 of COR-104-T8.
+This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK package comments. It also holds S52 to S53 of COR-104-T3, S54 to S55 of COR-104-T6. [Formal models](models.md) holds S56 to S58 of COR-104-T8.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|
@@ -34,9 +34,6 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 | S53 | Each action of the export program returns one result, whose answer, notices, and exit code one writer delivers | [Owned runs][owned-runs] | [result.go][result], [result test][result-test], [isolation test][isolation-test], [template recipes test][recipes-test] |
 | S54 | `## Publication` of `spec.md` declares each mode of each command that may write a user file. A passing check proves each obligation, or a reason covers it | [Publication declaration][publication-contract] | [publication.go][publication], [publication_row.go][publication-row], [publication_report.go][publication-report], [publication test][publication-test], [predicts test][predicts-test], [template recipes test][recipes-test], partial: the reviewer accepts each reason |
 | S55 | A successful dry run changes no file, and predicts the destination and the overwrite choice of its run | [Scenario commands][scenario-commands] | [predicts.go][predicts], [publication test][publication-test], [predicts test][predicts-test], partial: only Linux removes an ability of the destination, with `without` of [S61](publication.md) |
-| S56 | The TLC jar holds the SHA-256 that the suite pins before Java starts, from the URL or a local jar | [verification.go][verification] | [tlc.go][tlc], [verification test][verification-test], [template models test][models-test] |
-| S57 | A model run writes its record only when each check gives its expected outcome, and no input changed | [verification.go][verification] | [verification.go][verification], [tlc.go][tlc], [verification test][verification-test] |
-| S58 | `just check` reads only the record of the models, with their pins, inputs, and outcomes | [verification.go][verification] | [record.go][verification-record], [models.go][models], [verification test][verification-test], [template models test][models-test], partial: the record binds the model, not the code that it models |
 
 [agents]: ../../../AGENTS.md
 [contract-codes]: ../../../sdk/contract/codes.go
@@ -90,8 +87,3 @@ This part of the [core rule index](README.md) holds S01 to S26, the rules of SDK
 [publication-test]: ../../../sdk/extensiontest/publication_test.go
 [predicts-test]: ../../../sdk/extensiontest/predicts_test.go
 [models]: ../../../sdk/extensionrepo/models.go
-[verification]: ../../../sdk/verification/verification.go
-[tlc]: ../../../sdk/verification/tlc.go
-[verification-record]: ../../../sdk/verification/record.go
-[verification-test]: ../../../sdk/verification/verification_test.go
-[models-test]: ../../../scripts/template-models-test.sh
