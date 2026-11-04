@@ -89,6 +89,6 @@ Its case still needs a passing independent reader, the complete reference, and a
 
 Only the two privacy Output cases accept `-limit`.
 The ID must identify exactly one accepted limit whose Limit cell names the case, and apply in every matrix row that names it.
-An unknown ID, missing acceptance, unrelated limit declaration or matrix row, or ambiguous binding fails.
-The reviewer judges that the description justifies the declared exception and that the reference checks every retained field.
+An unknown ID, missing acceptance, wrong declared case, unbound matrix row, or ambiguous binding fails.
+The reviewer rejects a description unrelated to the declared case, and checks that the reference covers every retained field.
 A declaration alone proves no case and grants no coverage exemption.
