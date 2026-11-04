@@ -97,10 +97,10 @@ func (a *acceptance) wasProved(name string) bool {
 // cell can name more than one.
 func matrixOutputs(spec string) []outputCase {
 	var found []outputCase
-	var accepted []string
+	var limitIDs []string
 	for _, line := range extensionrepo.SpecLines(spec) {
-		if line.Part == "Limits" && line.ID != "" && extensionrepo.SpecAcceptedLimit(spec, line.ID) {
-			accepted = append(accepted, line.ID)
+		if line.Part == "Limits" && line.ID != "" {
+			limitIDs = append(limitIDs, line.ID)
 		}
 	}
 	header := false
@@ -110,19 +110,17 @@ func matrixOutputs(spec string) []outputCase {
 		case l.Kind == extensionrepo.SpecHeader:
 			header = slices.Equal(l.Cells, []string{"Family", "Source", "Accepted", "Refused"})
 		case l.Kind == extensionrepo.SpecRow && header && len(l.Cells) == 4 && strings.Contains(l.Cells[1], "Output"):
-			var limits []string
-			for _, id := range accepted {
-				if strings.Contains(l.Cells[2], "`"+id+"`") {
-					limits = append(limits, id)
-				}
-			}
 			for _, name := range outputCases {
 				if !strings.Contains(caseName(l.Cells[1]), caseName(name)) {
 					continue
 				}
-				bound := limits
-				if !explicitOutputCase(l.Cells[1], name) {
-					bound = nil
+				var bound []string
+				if explicitOutputCase(l.Cells[1], name) {
+					for _, id := range limitIDs {
+						if strings.Contains(l.Cells[2], "`"+id+"`") && extensionrepo.SpecAcceptedOutputLimit(spec, id, name) {
+							bound = append(bound, id)
+						}
+					}
 				}
 				if index := slices.IndexFunc(found, func(c outputCase) bool { return c.name == caseName(name) }); index >= 0 {
 					found[index].limits = slices.DeleteFunc(found[index].limits, func(id string) bool { return !slices.Contains(bound, id) })

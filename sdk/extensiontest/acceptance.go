@@ -73,7 +73,7 @@ func (k *kit) reads(ts *testscript.TestScript, neg bool, args []string) {
 			ts.Fatalf("reads: ## Case matrix of spec.md names no family from the Output case %q. Fix: add the row of its family, with the Source Output: %s", c.name, c.name)
 		}
 		if c.limit != "" && !slices.ContainsFunc(k.outputs, func(o outputCase) bool { return o.name == c.name && slices.Contains(o.limits, c.limit) }) {
-			ts.Fatalf("reads: limit %q is not accepted for every matrix row of the Output case %q. Fix: record the accepted limit in Limits and name its ID in Accepted for each applicable row", c.limit, c.name)
+			ts.Fatalf("reads: limit %q is not accepted for every matrix row of the Output case %q. Fix: declare the Output case in the accepted Limit row and name its ID in Accepted for every applicable matrix row", c.limit, c.name)
 		}
 		if slices.Contains(privateCases, c.name) && len(c.private) == 0 && c.limit == "" {
 			ts.Fatalf("reads: the case %q needs the private text of its test file, given with -private. Fix: put private text in the block, and give it with -private", c.name)

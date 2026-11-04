@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-// SpecAcceptedLimit reports whether id names one complete, accepted Limits row.
-// It uses the acceptance state that finish reads and requires the canonical form.
-func SpecAcceptedLimit(spec, id string) bool {
+// SpecAcceptedOutputLimit reports whether id names one complete, accepted Limits
+// row that declares the exact Output case. The matrix must bind that ID too.
+func SpecAcceptedOutputLimit(spec, id, name string) bool {
 	_, limits := specProblems(spec)
 	count, accepted := 0, false
 	for _, limit := range limits {
@@ -43,7 +43,12 @@ func SpecAcceptedLimit(spec, id string) bool {
 					return false
 				}
 			}
-			return true
+			for _, source := range strings.Split(strings.ReplaceAll(line.Cells[2], "`", ""), ";") {
+				if strings.TrimSpace(source) == "Output: "+strings.ReplaceAll(name, "`", "") {
+					return true
+				}
+			}
+			return false
 		}
 	}
 	return false

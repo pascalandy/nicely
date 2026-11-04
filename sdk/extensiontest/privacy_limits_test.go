@@ -16,8 +16,8 @@ const privacyLimitSpec = `
 
 | ID | State | Limit | Accepted |
 |---|---|---|---|
-| ` + "`private-metadata`" + ` | limit | Retain author, capture date, and location | Pascal, 2026-11-03, issue #462 |
-| ` + "`unrelated`" + ` | limit | A different case keeps metadata | Pascal, 2026-11-03, issue #462 |
+| ` + "`private-metadata`" + ` | limit | Output: Keeps private data of the input; Output: Keeps data that a reader needs; Retain author, capture date, and location | Pascal, 2026-11-03, issue #462 |
+| ` + "`unrelated`" + ` | limit | Network calls can be slow on a hotel network | Pascal, 2026-11-03, issue #462 |
 `
 
 const retainedSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20">
@@ -70,16 +70,18 @@ func TestAcceptedPrivacyLimitKeepsIndependentProof(t *testing.T) {
 }
 
 func TestPrivacyLimitsRejectMissingOrUnrelatedApproval(t *testing.T) {
-	invalid := strings.Replace(privacyLimitSpec, "`private-metadata` | None |", "`private-metadata`, `pending`, `wrong-state`, `duplicate`, `empty`, `placeholder` | None |", 1) +
-		"| `pending` | limit | Retain author | |\n" +
-		"| `wrong-state` | open | Retain author | Pascal, 2026-11-03, issue #462 |\n" +
-		"| `duplicate` | limit | Retain author | Pascal, 2026-11-03, issue #462 |\n" +
-		"| `duplicate` | limit | Another meaning | Pascal, 2026-11-03, issue #462 |\n" +
+	const declared = "Output: Keeps private data of the input; Retain author"
+	invalid := strings.Replace(privacyLimitSpec, "`private-metadata` | None |", "`private-metadata`, `pending`, `wrong-state`, `duplicate`, `empty`, `placeholder`, `unrelated`, `wrong-case` | None |", 1) +
+		"| `pending` | limit | " + declared + " | |\n" +
+		"| `wrong-state` | open | " + declared + " | Pascal, 2026-11-03, issue #462 |\n" +
+		"| `duplicate` | limit | " + declared + " | Pascal, 2026-11-03, issue #462 |\n" +
+		"| `duplicate` | limit | " + declared + " | Pascal, 2026-11-03, issue #462 |\n" +
 		"| `empty` | limit | | Pascal, 2026-11-03, issue #462 |\n" +
-		"| `placeholder` | limit | Retain author | None. |\n"
+		"| `placeholder` | limit | " + declared + " | None. |\n" +
+		"| `wrong-case` | limit | Output: Loses data that changes the meaning; Retain author | Pascal, 2026-11-03, issue #462 |\n"
 	const tail = " privacy.txt privacy-reference.txt privacy-bad.txt go run read-privacy.go\n"
 	scripts := map[string]string{}
-	for _, id := range []string{"pending", "wrong-state", "duplicate", "empty", "placeholder", "missing", "unrelated"} {
+	for _, id := range []string{"pending", "wrong-state", "duplicate", "empty", "placeholder", "missing", "unrelated", "wrong-case"} {
 		scripts[id] = privacyScript("reads -case 'Keeps private data of the input' -limit " + id + tail)
 	}
 	scripts["strict"] = privacyScript("reads -case 'Keeps private data of the input' -limit private-metadata -private 'Ana Lima'" + tail)
@@ -91,7 +93,7 @@ func TestPrivacyLimitsRejectMissingOrUnrelatedApproval(t *testing.T) {
 	if err == nil {
 		t.Fatal("invalid privacy bindings passed")
 	}
-	for _, id := range []string{"pending", "wrong-state", "duplicate", "empty", "placeholder", "missing", "unrelated"} {
+	for _, id := range []string{"pending", "wrong-state", "duplicate", "empty", "placeholder", "missing", "unrelated", "wrong-case"} {
 		if want := `reads: limit "` + id + `" is not accepted`; !strings.Contains(out, want) {
 			t.Errorf("missing rejection %q:\n%s", want, out)
 		}

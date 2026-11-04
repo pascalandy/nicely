@@ -80,6 +80,7 @@ Its case still needs a passing independent reader, the complete reference, and a
 
 1. Declare the limit under **Limits.**, with its ID, state `limit`, description, and the user's acceptance record.
    Use the columns ID, State, Limit, and Accepted, in that order. Empty cells and placeholder text supply no acceptance.
+   The Limit cell also declares each affected `Output: <case>`, separated by semicolons before its description.
 2. Name that ID in backticks in Accepted for each matrix row that names the applicable Output case.
    Source uses the complete `Output: <case>` binding. Separate multiple bindings with semicolons.
 3. Use `reads -case '<case>' -limit <id> <output> <reference> <bad> <reader> [<arg>...]`.
@@ -87,6 +88,7 @@ Its case still needs a passing independent reader, the complete reference, and a
 5. Keep `-private` for text that must stay absent. Every such search remains strict, including with `-limit`.
 
 Only the two privacy Output cases accept `-limit`.
-The ID must identify exactly one accepted limit and apply in every matrix row that names the case.
-An unknown ID, missing acceptance, unrelated matrix row, or ambiguous binding fails.
+The ID must identify exactly one accepted limit whose Limit cell names the case, and apply in every matrix row that names it.
+An unknown ID, missing acceptance, unrelated limit declaration or matrix row, or ambiguous binding fails.
+The reviewer judges that the description justifies the declared exception and that the reference checks every retained field.
 A declaration alone proves no case and grants no coverage exemption.
