@@ -20,6 +20,8 @@ import (
 // then name-2 up to name-1000.
 const maxCandidates = 1000
 
+var newRunID = record.NewID
+
 // execute runs the prepared job under the run ID of the call, or a new one,
 // as Records and replay in spec/records-and-replay.md defines. It takes the
 // run lock first for a caller-named run, then replays completion or refuses
@@ -36,7 +38,7 @@ func execute(ctx context.Context, call extension.Call, j job, id string) contrac
 		if problem != nil {
 			return refusal(problem, "")
 		}
-		id = record.NewID(time.Now())
+		id = newRunID(time.Now())
 	}
 	run, err := runs.Open(ctx, id)
 	var bad *record.UnreadableError

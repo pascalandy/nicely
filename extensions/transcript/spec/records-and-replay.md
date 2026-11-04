@@ -8,7 +8,8 @@ Without `--run-id`, output and key checks finish before the run opens.
 A refusal from either check adds no file to the runs folder.
 A caller-named run still takes its lock before those checks or replay.
 A refusal after the run opens can leave its lock file, which execution never deletes.
-A generated ID still opens once and follows the existing-run decision if it collides.
+After successful preflight, a generated ID opens once and follows the existing-run decision if it collides.
+Busy, replay, mismatch, and uncertain-record answers then match a caller-named run of that ID.
 
 Python emits the single-item plan before user-side effects.
 Go validates it and durably creates the initial record with a pending step.
@@ -26,7 +27,8 @@ Go records completion only after it verifies and syncs the required artifacts, a
   A different command, URL, or explicit output argument is `USAGE_INVALID` before effects.
   A busy run returns `TEMPORARY` with a `run view` hint and starts no program.
 - A completed run returns its verified saved result without Python, a dependency upgrade, or a Deepgram request.
-  It needs no key.
+  A caller-named completed run needs no key.
+  A collision of a generated ID reaches replay only after preflight.
   For a caller-named run, the extension reads the key only for a new attempt, after the lock and replay decision.
   Core may still read a granted key first, as [Keys](../../../docs/north-star/contract/keys.md) defines, and a replay answers even when that read fails.
   A dry run with the same ID first tries the run lock without waiting and without creating its file, and releases it at once.
