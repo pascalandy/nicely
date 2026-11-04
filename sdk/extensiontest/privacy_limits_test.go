@@ -1,6 +1,7 @@
 package extensiontest_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -71,17 +72,31 @@ func TestAcceptedPrivacyLimitKeepsIndependentProof(t *testing.T) {
 
 func TestPrivacyLimitsRejectMissingOrUnrelatedApproval(t *testing.T) {
 	const declared = "Output: Keeps private data of the input; Retain author"
-	invalid := strings.Replace(privacyLimitSpec, "`private-metadata` | None |", "`private-metadata`, `pending`, `wrong-state`, `duplicate`, `empty`, `placeholder`, `unrelated`, `wrong-case` | None |", 1) +
+	missingText := map[string]string{
+		"empty":           "",
+		"whitespace":      " \t ",
+		"id-only":         "`id-only`",
+		"binding-only":    "Output: Keeps private data of the input",
+		"binding-id-only": "Output: Keeps private data of the input; `binding-id-only`",
+		"binding-none":    "Output: Keeps private data of the input; None.",
+	}
+	invalid := strings.Replace(privacyLimitSpec, "`private-metadata` | None |", "`private-metadata`, `pending`, `wrong-state`, `duplicate`, `placeholder`, `unrelated`, `wrong-case` | None |", 1) +
 		"| `pending` | limit | " + declared + " | |\n" +
 		"| `wrong-state` | open | " + declared + " | Pascal, 2026-11-03, issue #462 |\n" +
 		"| `duplicate` | limit | " + declared + " | Pascal, 2026-11-03, issue #462 |\n" +
 		"| `duplicate` | limit | " + declared + " | Pascal, 2026-11-03, issue #462 |\n" +
-		"| `empty` | limit | | Pascal, 2026-11-03, issue #462 |\n" +
 		"| `placeholder` | limit | " + declared + " | None. |\n" +
 		"| `wrong-case` | limit | Output: Loses data that changes the meaning; Retain author | Pascal, 2026-11-03, issue #462 |\n"
+	for id, text := range missingText {
+		invalid = strings.Replace(invalid, "`private-metadata`,", "`"+id+"`, `private-metadata`,", 1)
+		invalid += fmt.Sprintf("| `%s` | limit | %s | Pascal, 2026-11-03, issue #462 |\n", id, text)
+	}
 	const tail = " privacy.txt privacy-reference.txt privacy-bad.txt go run read-privacy.go\n"
 	scripts := map[string]string{}
-	for _, id := range []string{"pending", "wrong-state", "duplicate", "empty", "placeholder", "missing", "unrelated", "wrong-case"} {
+	for _, id := range []string{"pending", "wrong-state", "duplicate", "placeholder", "missing", "unrelated", "wrong-case"} {
+		scripts[id] = privacyScript("reads -case 'Keeps private data of the input' -limit " + id + tail)
+	}
+	for id := range missingText {
 		scripts[id] = privacyScript("reads -case 'Keeps private data of the input' -limit " + id + tail)
 	}
 	scripts["strict"] = privacyScript("reads -case 'Keeps private data of the input' -limit private-metadata -private 'Ana Lima'" + tail)
@@ -93,8 +108,13 @@ func TestPrivacyLimitsRejectMissingOrUnrelatedApproval(t *testing.T) {
 	if err == nil {
 		t.Fatal("invalid privacy bindings passed")
 	}
-	for _, id := range []string{"pending", "wrong-state", "duplicate", "empty", "placeholder", "missing", "unrelated", "wrong-case"} {
+	for _, id := range []string{"pending", "wrong-state", "duplicate", "placeholder", "missing", "unrelated", "wrong-case"} {
 		if want := `reads: limit "` + id + `" is not accepted`; !strings.Contains(out, want) {
+			t.Errorf("missing rejection %q:\n%s", want, out)
+		}
+	}
+	for id := range missingText {
+		if want := `reads: limit "` + id + `" is missing Limit text`; !strings.Contains(out, want) {
 			t.Errorf("missing rejection %q:\n%s", want, out)
 		}
 	}

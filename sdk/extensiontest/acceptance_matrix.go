@@ -33,16 +33,6 @@ var (
 // a cell of spec.md can quote a flag or not.
 func caseName(text string) string { return strings.ReplaceAll(text, "`", "") }
 
-// explicitOutputCase requires a complete Output binding for a privacy exception.
-func explicitOutputCase(source, name string) bool {
-	for _, part := range strings.Split(caseName(source), ";") {
-		if strings.TrimSpace(part) == "Output: "+caseName(name) {
-			return true
-		}
-	}
-	return false
-}
-
 // An outputCase is an Output case that a cell Source of ## Case matrix in
 // spec.md names, at its line.
 type outputCase struct {
@@ -115,9 +105,9 @@ func matrixOutputs(spec string) []outputCase {
 					continue
 				}
 				var bound []string
-				if explicitOutputCase(l.Cells[1], name) {
+				if extensionrepo.SpecNamesOutput(l.Cells[1], name) {
 					for _, id := range limitIDs {
-						if strings.Contains(l.Cells[2], "`"+id+"`") && extensionrepo.SpecAcceptedOutputLimit(spec, id, name) {
+						if strings.Contains(l.Cells[2], "`"+id+"`") && extensionrepo.SpecCheckOutputLimit(spec, id, name) == nil {
 							bound = append(bound, id)
 						}
 					}

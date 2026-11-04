@@ -108,6 +108,8 @@ type kit struct {
 	ext extension.Extension
 	// root is the folder of the repository's go.mod.
 	root string
+	// spec is the same spec.md snapshot that links and reads validate.
+	spec string
 	// bin holds ncly, which go tool ncly built.
 	bin string
 	// built is the ncly-<slug> that go build made, and fake the fake

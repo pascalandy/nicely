@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/pascalandy/nicely/sdk/extensionrepo"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -71,6 +72,11 @@ func (k *kit) reads(ts *testscript.TestScript, neg bool, args []string) {
 		}
 		if !slices.ContainsFunc(k.outputs, func(o outputCase) bool { return o.name == c.name }) {
 			ts.Fatalf("reads: ## Case matrix of spec.md names no family from the Output case %q. Fix: add the row of its family, with the Source Output: %s", c.name, c.name)
+		}
+		if c.limit != "" {
+			if err := extensionrepo.SpecCheckOutputLimit(k.spec, c.limit, c.name); err != nil {
+				ts.Fatalf("reads: %v. Fix: describe the retained data and declare its Output case and acceptance in Limits", err)
+			}
 		}
 		if c.limit != "" && !slices.ContainsFunc(k.outputs, func(o outputCase) bool { return o.name == c.name && slices.Contains(o.limits, c.limit) }) {
 			ts.Fatalf("reads: limit %q is not accepted for every matrix row of the Output case %q. Fix: declare the Output case in the accepted Limit row and name its ID in Accepted for every applicable matrix row", c.limit, c.name)

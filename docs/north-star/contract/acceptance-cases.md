@@ -80,7 +80,9 @@ Its case still needs a passing independent reader, the complete reference, and a
 
 1. Declare the limit under **Limits.**, with its ID, state `limit`, description, and the user's acceptance record.
    Use the columns ID, State, Limit, and Accepted, in that order. Empty cells and placeholder text supply no acceptance.
-   The Limit cell also declares each affected `Output: <case>`, separated by semicolons before its description.
+   The Limit cell also declares each affected `Output: <case>`, separated from its description by semicolons.
+   Bindings can come before or after the description. Empty text, whitespace, the ID alone, bindings alone, and placeholders do not describe retained data.
+   Missing description text fails with `limit "<id>" is missing Limit text`.
 2. Name that ID in backticks in Accepted for each matrix row that names the applicable Output case.
    Source uses the complete `Output: <case>` binding. Separate multiple bindings with semicolons.
 3. Use `reads -case '<case>' -limit <id> <output> <reference> <bad> <reader> [<arg>...]`.

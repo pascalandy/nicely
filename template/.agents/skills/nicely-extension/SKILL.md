@@ -52,6 +52,7 @@ Before the first review, each command that writes an output gets an acceptance c
 - Without an accepted privacy limit, `reads -private` proves that private text is absent and rejects a bad variant that keeps the raw block
 
 For an accepted limit, follow Accepted privacy limits in the pinned contract's `acceptance-cases.md` before using `reads -limit`.
+Describe the retained data in its Limit cell. The ID or Output bindings alone do not supply that text.
 Keep the complete retained-metadata reference, nondefault display value, and a bad variant that fails.
 
 The tests and `just acceptance` need no root, no mount, and no system service.

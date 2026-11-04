@@ -1,14 +1,16 @@
 package extensionrepo
 
 import (
+	"fmt"
 	"regexp"
 	"slices"
 	"strings"
 )
 
-// SpecAcceptedOutputLimit reports whether id names one complete, accepted Limits
-// row that declares the exact Output case. The matrix must bind that ID too.
-func SpecAcceptedOutputLimit(spec, id, name string) bool {
+// SpecCheckOutputLimit requires one accepted Limits row with a description and
+// the exact Output case. The matrix must bind that ID too.
+func SpecCheckOutputLimit(spec, id, name string) error {
+	notAccepted := fmt.Errorf("limit %q is not accepted", id)
 	_, limits := specProblems(spec)
 	count, accepted := 0, false
 	for _, limit := range limits {
@@ -18,7 +20,7 @@ func SpecAcceptedOutputLimit(spec, id, name string) bool {
 		}
 	}
 	if count != 1 || !accepted {
-		return false
+		return notAccepted
 	}
 	header := false
 	for _, line := range SpecLines(spec) {
@@ -35,20 +37,46 @@ func SpecAcceptedOutputLimit(spec, id, name string) bool {
 				continue
 			}
 			if !header || len(line.Cells) != 4 {
-				return false
+				return notAccepted
 			}
-			for _, cell := range line.Cells[2:] {
-				text := strings.Trim(cell, "`* .-")
-				if text == "" || strings.EqualFold(text, "None") || strings.HasPrefix(strings.ToLower(text), "fill:") {
-					return false
-				}
+			if !specLimitDescription(line.Cells[2], id) {
+				return fmt.Errorf("limit %q is missing Limit text describing what is retained", id)
 			}
-			for _, source := range strings.Split(strings.ReplaceAll(line.Cells[2], "`", ""), ";") {
-				if strings.TrimSpace(source) == "Output: "+strings.ReplaceAll(name, "`", "") {
-					return true
-				}
+			text := strings.Trim(line.Cells[3], "`* .-")
+			if text == "" || strings.EqualFold(text, "None") || strings.HasPrefix(strings.ToLower(text), "fill:") || !SpecNamesOutput(line.Cells[2], name) {
+				return notAccepted
 			}
-			return false
+			return nil
+		}
+	}
+	return notAccepted
+}
+
+// SpecNamesOutput reports whether a semicolon-separated cell declares the exact
+// Output case. The Limit and matrix Source cells share this grammar.
+func SpecNamesOutput(cell, name string) bool {
+	for _, part := range specParts(cell) {
+		if part == "Output: "+strings.ReplaceAll(name, "`", "") {
+			return true
+		}
+	}
+	return false
+}
+
+func specParts(cell string) []string {
+	parts := strings.Split(strings.ReplaceAll(cell, "`", ""), ";")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
+}
+
+func specLimitDescription(cell, id string) bool {
+	for _, part := range specParts(cell) {
+		text := strings.Trim(part, "* .-")
+		if text != "" && text != id && !strings.EqualFold(text, "None") &&
+			!strings.HasPrefix(strings.ToLower(text), "fill:") && !strings.HasPrefix(strings.ToLower(text), "output:") {
+			return true
 		}
 	}
 	return false
