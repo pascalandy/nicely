@@ -58,7 +58,8 @@ The child observation equals the reviewer ID; it is not a third distinct session
 
 ## Git binding
 
-The recorded output of `git log -1 --format=fuller --notes=nicely-session-proof` includes both receipts:
+The recorded output of `git log -1 --format=fuller --notes=nicely-session-proof` includes both receipts.
+One whitespace-only line is trimmed below:
 
 ```text
 commit 0f3f093575f806b5d1da5d07e23551b82ef524dc
