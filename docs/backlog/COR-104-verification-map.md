@@ -155,7 +155,6 @@ The [#427 gate table](https://github.com/pascalandy/nicely/issues/427#issuecomme
 ## After
 
 Pascal runs a UAT of video-convert at the release of COR-104-T10, and its corrections enter the ledger.
-That UAT remains pending.
 
 Compare the time and findings of each gate in [#427](https://github.com/pascalandy/nicely/issues/427).
 After Pascal accepts each removal, remove each gate that took time and found no real defect.

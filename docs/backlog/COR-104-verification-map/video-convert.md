@@ -14,7 +14,7 @@ Done when `just signoff` and `just release` pass.
 
 ## Follow-ups
 
-Batch 2 filed these issues. They remain separate work:
+These issues remain separate work:
 
 - [ncly-video-convert#14](https://github.com/pascalandy/ncly-video-convert/issues/14): Intel runtime warning test
 - [ncly-video-convert#18](https://github.com/pascalandy/ncly-video-convert/issues/18): opt-in metadata removal
