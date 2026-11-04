@@ -37,8 +37,10 @@ Nicely does not silently edit a user's global Claude or Codex settings.
 The user owns project and hook trust.
 Codex requires its project configuration and non-managed hooks to be trusted before they run.
 The ordinary setup uses the supported trust interface, rather than editing trust storage.
-The scratch proof vets its hook files and uses Codex's per-invocation hook-trust bypass.
-That exception installs no persisted trust and is not the default author path.
+The successful scratch proof used a project-trust entry in its private Codex home and the per-invocation hook-trust bypass.
+That trust persisted only in the scratch home. No user-global trust setting changed.
+The initial attempt without that project trust loaded no hooks and is excluded from the proof.
+This exception is not the default author path.
 
 The launcher owns the context path, role and expected repository, and exports them to the harness and its Git subprocesses.
 A missing context, wrong repository or unobserved hook fails; it never falls back to an agent-written ID.
