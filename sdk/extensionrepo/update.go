@@ -255,8 +255,9 @@ func updateOutput(name string, args ...string) ([]byte, error) {
 	return cmd.Output()
 }
 
-// updateEnviron keeps update tools' caller settings except Git's repository
-// selection and other GIT_* state, which can leak from a hook or rebase --exec.
+// updateEnviron builds the environment for programs started by updateRun or updateOutput.
+// These helpers serve updates, repository checks, contract commands and readiness probes.
+// Other caller settings stay available. GIT_* state from hooks or rebase --exec is removed.
 func updateEnviron() []string {
 	var env []string
 	for _, value := range os.Environ() {

@@ -31,7 +31,8 @@ The rule reads a call and a function value.
 It reads each owned package and every path starting with that package followed by `/`.
 A similar prefix such as `sdk/extensiontestx` is outside its scope.
 The allowed readers match the exact package and function; a child package never inherits an allowance.
-`extensionrepo.NewOwnedRun` builds owned runs, and `extensionrepo.updateEnviron` removes `GIT_*` for update programs.
+`extensionrepo.NewOwnedRun` builds owned runs.
+`extensionrepo.updateEnviron` removes `GIT_*` for updates, repository checks, contract commands, and readiness probes.
 `extensiontest/guard.stage` preserves the isolated scenario environment across `exec`.
 `extensiontest/fake.run` prints environment names, never values, for its `env` action.
 An extension package is outside these SDK paths.
