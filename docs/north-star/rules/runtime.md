@@ -1,6 +1,7 @@
 # Platform, record, runner, tui, wrap, and analysis
 
-This part of the [core rule index](README.md) holds S27 to S51 and S68, the rules of SDK package comments.
+This part of the [core rule index](README.md) holds S27 to S51, the rules of SDK package comments.
+It also holds S68 of [Cancellation][programs].
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|

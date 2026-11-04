@@ -1,8 +1,8 @@
 # Cancellation
 
 On Ctrl-C or SIGTERM, `ncly` sends the signal to every program it started and to every descendant that it can still reach. The host keeps a 15-second cleanup bound.
-After 13 seconds, it force-stops descendants, leaving a nominal 2-second allowance for the extension handler.
-Force-stop and exit overhead use part of that allowance.
+After 13 seconds, it force-stops descendants, leaving a nominal 2-second reservation for the extension handler.
+Force-stop and exit overhead use part of that reservation.
 Staging cleanup must fit the remaining time.
 The force-stop targets all observed descendants, including programs that the handler started for cleanup.
 The reservation protects only the direct handler; the runner cannot distinguish cleanup children from workers.
