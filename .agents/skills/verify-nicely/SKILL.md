@@ -25,6 +25,8 @@ The session also stops when its owned state or runtime marker disappears, and ex
 Start a new run after expiry; the wrapper never falls back to the user's session.
 The Linux integration test follows this real start, auth and cleanup path.
 It skips with the missing program's name when either prerequisite is absent.
+[The lifecycle test](../../../cmd/ncly/keyring_lifecycle_linux_test.go) requires a normal private stop to record exit 0 without a shell diagnostic.
+It also checks daemon termination and private runtime removal.
 The macOS keychain path is unchanged.
 
 ## Launch

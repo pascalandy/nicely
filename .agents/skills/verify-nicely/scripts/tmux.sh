@@ -72,7 +72,7 @@ tmux_step() {
 	# sets, because a variable of the caller, such as the NO_COLOR=1 that agents
 	# set or WT_SESSION, can skip the detection that asks tmux.
 	# The pane passes caller bus variables too. The Linux wrapper replaces them
-	# with this run's private keyring address and runtime directory before ncly starts.
+	# with this run's private D-Bus session before ncly starts.
 	# shellcheck disable=SC2016 # the pane's sh expands these
 	tmux -L "$pane_server" -f /dev/null new-session -d -s verify -x 200 -y 50 /bin/sh -c '
 		while [ ! -e "$1" ]; do sleep 0.1; done

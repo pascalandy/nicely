@@ -67,6 +67,8 @@ serve() {
 		kill -0 "$daemon" 2>/dev/null || fail "private gnome-keyring-daemon stopped"
 		sleep 1
 	done
+	# Exit before the EXIT trap loses this function's local daemon PID.
+	exit 0
 }
 
 stop_session() {

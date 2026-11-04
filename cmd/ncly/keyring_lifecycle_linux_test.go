@@ -13,9 +13,9 @@ import (
 	"time"
 )
 
-// Abandonment differs from normal Verify cleanup: the owning state or runtime
-// marker disappears before the session receives its stop request.
-func TestPrivateKeyringAbandonment(t *testing.T) {
+// A private session stops cleanly on request and ends when its owning state
+// or runtime marker disappears.
+func TestPrivateKeyringLifecycle(t *testing.T) {
 	for _, name := range []string{"dbus-run-session", "gnome-keyring-daemon"} {
 		if _, err := exec.LookPath(name); err != nil {
 			t.Skipf("%s is required for the private Linux keyring test", name)
@@ -25,8 +25,8 @@ func TestPrivateKeyringAbandonment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, missing := range []string{"state", "runtime marker"} {
-		t.Run(missing, func(t *testing.T) {
+	for _, ending := range []string{"normal stop", "state", "runtime marker"} {
+		t.Run(ending, func(t *testing.T) {
 			root := t.TempDir()
 			// Secret Service control sockets must fit Unix's short path limit.
 			runtimeRoot, err := os.MkdirTemp(os.TempDir(), "ka-")
@@ -95,7 +95,31 @@ func TestPrivateKeyringAbandonment(t *testing.T) {
 					t.Error(err)
 				}
 			})
-			if missing == "state" {
+			if ending == "normal stop" {
+				if err := call("stop", state); err != nil {
+					t.Fatal(err)
+				}
+				if code := read("stopped"); code != "0" {
+					t.Errorf("normal private session exited %s, want 0", code)
+				}
+				if log := read("session.log"); strings.Contains(log, "unbound variable") {
+					t.Errorf("normal private stop has a shell failure: %s", log)
+				}
+				if !errors.Is(syscall.Kill(pid, 0), syscall.ESRCH) {
+					t.Error("private daemon survived normal stop")
+				}
+				if _, err := os.Stat(runtime); !os.IsNotExist(err) {
+					t.Errorf("private runtime remains after normal stop: %v", err)
+				}
+				if err := call("stop", state); err != nil {
+					t.Fatal(err)
+				}
+				if code := read("stopped"); code != "0" {
+					t.Errorf("repeated stop changed the clean session status: %s", code)
+				}
+				return
+			}
+			if ending == "state" {
 				err = os.Rename(state, state+".moved")
 			} else {
 				err = os.Remove(marker)
@@ -107,7 +131,7 @@ func TestPrivateKeyringAbandonment(t *testing.T) {
 			for {
 				_, ended := os.Stat(filepath.Join(state, "stopped"))
 				finished := ended == nil
-				if missing == "state" {
+				if ending == "state" {
 					_, err := os.Stat(runtime)
 					finished = os.IsNotExist(err)
 				}
@@ -115,7 +139,7 @@ func TestPrivateKeyringAbandonment(t *testing.T) {
 					break
 				}
 				if time.Now().After(deadline) {
-					t.Fatal("private daemon survived the loss of its owning " + missing)
+					t.Fatal("private daemon survived the loss of its owning " + ending)
 				}
 				time.Sleep(20 * time.Millisecond)
 			}
