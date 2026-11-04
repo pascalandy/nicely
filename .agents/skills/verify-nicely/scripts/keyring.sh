@@ -31,7 +31,9 @@ start_session() {
 			XDG_DATA_HOME="$home/.local/share" XDG_STATE_HOME="$home/.local/state" \
 			XDG_CACHE_HOME="$home/.cache" XDG_RUNTIME_DIR="$runtime" \
 			dbus-run-session -- bash "$self" serve "$state" "$runtime" || code=$?
-		printf '%s\n' "$code" >"$state/stopped"
+		# An abandoned run can lose its state before the private bus exits.
+		if [[ -f "$runtime/.verify-nicely-keyring" ]]; then rm -rf "${runtime:?}"; fi
+		if [[ -d "$state" ]]; then printf '%s\n' "$code" >"$state/stopped"; fi
 	) >"$state/session.log" 2>&1 </dev/null &
 	for ((i = 0; i < 100; i++)); do
 		[[ ! -f "$state/stopped" ]] || break
@@ -43,7 +45,7 @@ start_session() {
 }
 
 serve() {
-	local state="$1" runtime="$2" daemon i
+	local state="$1" runtime="$2" daemon i started=$SECONDS
 	# Only a public fixture password protects this disposable keyring.
 	printf 'verify-nicely-private\n' | gnome-keyring-daemon --foreground --unlock \
 		--components=secrets --control-directory="$runtime/keyring" >"$state/daemon.log" 2>&1 &
@@ -61,9 +63,9 @@ serve() {
 		sleep 0.1
 	done
 	[[ -s "$state/address" ]] || fail "private keyring control socket did not start"
-	while [[ ! -f "$state/stop" ]]; do
+	while [[ -d "$state" && -f "$runtime/.verify-nicely-keyring" && ! -f "$state/stop" ]] && ((SECONDS - started < 21600)); do
 		kill -0 "$daemon" 2>/dev/null || fail "private gnome-keyring-daemon stopped"
-		sleep 0.1
+		sleep 1
 	done
 }
 

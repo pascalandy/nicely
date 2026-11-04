@@ -21,6 +21,8 @@ On Linux, a run also needs `dbus-run-session` and `gnome-keyring-daemon`.
 Launch fails with the missing program's name; it never uses the caller's D-Bus session.
 The run starts and unlocks its own keyring in one private session, shared by every later step.
 Cleanup stops that keyring and its bus before removing scratch files.
+The session also stops when its owned state or runtime marker disappears, and expires after six hours.
+Start a new run after expiry; the wrapper never falls back to the user's session.
 The Linux integration test follows this real start, auth and cleanup path.
 It skips with the missing program's name when either prerequisite is absent.
 The macOS keychain path is unchanged.
@@ -61,6 +63,7 @@ just verify cleanup "$run"
 `cleanup` makes scratch and build files writable, including Go's module cache, before removal.
 On Linux, it first stops the private keyring and D-Bus session, after any fake-key cleanup.
 Its evidence records that stop. A stop failure keeps scratch files and fails cleanup.
+If the private session already ended, cleanup discards its private keyring with the scratch folder.
 It keeps `$run/evidence/` and refuses a folder that `start` did not create.
 When the run prepared `auth`, cleanup first removes its fake key and checks that the keychain reports `AUTH_MISSING`.
 Both calls remain in `$run/evidence/cleanup.txt`.

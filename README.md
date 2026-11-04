@@ -111,9 +111,9 @@ Nicely sends no telemetry. It contacts a service only when a command you run nee
 
 Issues and pull requests are welcome. [AGENTS.md](AGENTS.md) explains how changes are made.
 
+On Linux, `just verify` uses a private D-Bus session and keyring for every step of its scratch run.
+It needs `dbus-run-session` and `gnome-keyring-daemon`; a missing prerequisite stops the run.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-On Linux, `just verify` uses a private D-Bus session and keyring for every step of its scratch run.
-It needs `dbus-run-session` and `gnome-keyring-daemon`; a missing prerequisite stops the run.
