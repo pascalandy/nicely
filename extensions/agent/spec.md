@@ -110,7 +110,7 @@ A dry run with `--run-id` tries the run lock without waiting and without creatin
 
 ### Stops and failures
 
-Ctrl-C, SIGTERM, and the timeout stop Codex and every descendant that `ncly` can reach, with the process-tree cleanup of [Programs that ncly runs](../../docs/north-star/contract/programs-that-ncly-runs.md): the signal, or SIGTERM for the timeout, then SIGKILL 15 seconds later. They stop the Codex check at once, as they stop a version probe. Without `--dry-run`, what the call answers depends on where the stop comes. Each answer keeps the `run_id`, and each answer after the record has `ncly run view <id>` as its hint and `next`:
+Ctrl-C and SIGTERM stop Codex and every descendant that `ncly` can reach under [Cancellation](../../docs/north-star/contract/programs-that-ncly-runs/cancellation.md). A timeout sends SIGTERM, then SIGKILL 15 seconds later. Each stop interrupts the Codex check and version probes at once. Without `--dry-run`, what the call answers depends on where the stop comes. Each answer keeps the `run_id`, and each answer after the record has `ncly run view <id>` as its hint and `next`:
 
 - Before the record, such as during the Codex check or the wait for the run lock, no record exists: a signal answers with exit 130 or 143, and the timeout answers `RUNTIME`, whose hint asks for a longer `--timeout`
 - After the intent, before Codex starts, and for a start that fails, such as a Codex that is no longer executable or a temporary folder that cannot be made, no task ran: the step turns `failed` with its error, and the run `interrupted` after a signal, or `failed`. The call answers `INTERRUPTED` with exit 130, `TERMINATED` with exit 143, or `RUNTIME`
