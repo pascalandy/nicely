@@ -256,8 +256,9 @@ func updateOutput(name string, args ...string) ([]byte, error) {
 }
 
 // updateEnviron builds the environment for programs started by updateRun or updateOutput.
-// These helpers serve updates, repository checks, contract commands and readiness probes.
-// Other caller settings stay available. GIT_* state from hooks or rebase --exec is removed.
+// These helpers serve updates, repository checks, just contract and readiness Git probes.
+// Other caller settings stay available. Every GIT_* variable is removed.
+// A hook or rebase --exec can set one.
 func updateEnviron() []string {
 	var env []string
 	for _, value := range os.Environ() {

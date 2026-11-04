@@ -32,7 +32,7 @@ It reads each owned package and every path starting with that package followed b
 A similar prefix such as `sdk/extensiontestx` is outside its scope.
 The allowed readers match the exact package and function; a child package never inherits an allowance.
 `extensionrepo.NewOwnedRun` builds owned runs.
-`extensionrepo.updateEnviron` removes `GIT_*` for updates, repository checks, contract commands, and readiness probes.
+`extensionrepo.updateEnviron` removes `GIT_*` for updates, repository checks, `just contract`, and readiness Git probes.
 `extensiontest/guard.stage` preserves the isolated scenario environment across `exec`.
 `extensiontest/fake.run` prints environment names, never values, for its `env` action.
 An extension package is outside these SDK paths.
