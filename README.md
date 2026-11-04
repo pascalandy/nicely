@@ -36,9 +36,9 @@ The [test kit](docs/north-star/contract/test-kit.md#declared-codes) requires eac
 It lists coverage exemptions for the UAT report.
 Accepted privacy limits use [a declared case](docs/north-star/contract/acceptance-cases.md#accepted-privacy-limits), with `reads -case '<case>' -limit <id>` and an independent reader.
 
-[The current build](docs/status.md) describes each command. The commands below are planned work.
+[The current build](docs/status.md) describes each command.
 
-## Planned commands
+## Commands and extensions
 
 Nicely is a small core that extensions add commands to, in the spirit of Pi.
 Core brings `describe`, `doctor`, `auth`, and `run`. It bundles `skill`, which agents use to learn Nicely.

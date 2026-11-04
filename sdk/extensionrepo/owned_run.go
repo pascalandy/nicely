@@ -56,9 +56,8 @@ func dropped(name string) bool {
 }
 
 // NewOwnedRun builds the environment of a run in dir, which must be an
-// absolute path, or empty for a host run without notices. It is the one
-// function of the kit and the repository gates that reads the environment
-// of the caller as a whole.
+// absolute path, or empty for a host run without notices. Its profile decides
+// which caller settings reach the programs of that run.
 //
 // Each run masks GOFLAGS with a blank value, which also masks one that go
 // env -w keeps, and sets GOWORK=off, unless Keep names them. A host run with
