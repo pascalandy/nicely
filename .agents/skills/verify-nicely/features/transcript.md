@@ -56,6 +56,6 @@ In `just verify step "$run" transcript <args>`, `transcript` names this feature,
 
 - Run `prepare` before any `transcript` step. Before it, the wrapper runs the build of `just verify`, without `ncly-transcript`. Its `PATH` may also start with a shim of `uv` that fails under the scratch home
 - Call `ncly` only through `just verify step` or `just verify tmux`, whose wrapper forces the fake key. Core reads `DEEPGRAM_API_KEY` before the keychain, so another call could bill a real key. Never run `ncly auth login deepgram`: it writes the real keychain, where it would replace a real key
-- Every call of `transcript run youtube` here passes `--dry-run`, so none reaches YouTube or Deepgram
+- The unnamed output and key refusals execute preparation and stop before the engine or network. The other `transcript run youtube` calls here use `--dry-run`
 - The dry run reaches PyPI through `uv` only. Nicely's cache in the scratch home holds the engine and the uv cache, and the cleanup removes both
 - The wrapper keeps the caller's variables, so a `UV_OFFLINE` or `UV_INDEX_URL` of the caller reaches `uv`
