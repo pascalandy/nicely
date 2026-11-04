@@ -80,8 +80,8 @@ An external extension, such as `ncly-video-convert`, installs from its repositor
 
 ## Cancellation
 
-The host force-stops resistant descendants after 13 seconds, with a nominal two-second allowance for handler cleanup.
-Force-stop and exit overhead use part of that allowance. Cleanup children can be force-stopped too.
+The host force-stops resistant descendants after 13 seconds, with a nominal two-second reservation for handler cleanup.
+Force-stop and exit overhead use part of that reservation. Cleanup children can be force-stopped too.
 An unfinished handler stops at the 15-second deadline and can leave private staging behind.
 The signal answer then omits the handler's result data.
 

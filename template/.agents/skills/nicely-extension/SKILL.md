@@ -26,7 +26,7 @@ Read [intake.md](intake.md) before you write code. It gives the facts to get fro
 - Declare each effect, program, and key in `manifest.toml`. When you cannot tell whether an effect occurs, declare it
 - Give `--dry-run` to a command that writes or bills. The dry run shares the preparation and starts no effect
 
-Under `ncly`, cleanup after a resistant worker has a nominal two-second allowance inside the host's 15-second bound.
+Under `ncly`, cleanup after a resistant worker has a nominal two-second reservation inside the host's 15-second bound.
 Allow for force-stop and exit overhead.
 Read `programs-that-ncly-runs/cancellation.md` in the pinned contract before designing staging cleanup.
 
