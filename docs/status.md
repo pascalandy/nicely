@@ -65,9 +65,10 @@ An existing extension adopts it through `just update`, then starts its first bui
 
 [COR-104](backlog/COR-104-verification-map.md) delivered T1 through T9 in core and the template.
 The SDK now provides analyzers, [owned runs](north-star/contract/owned-runs.md), typed build records, acceptance checks, publication checks, and the TLC runner.
-Video-convert has yet to adopt the loop of the `nicely-extension` skill through COR-104-T10, tracked in [#427](https://github.com/pascalandy/nicely/issues/427).
+Video-convert adopted the loop through [COR-104-T10](backlog/COR-104-verification-map.md#cor-104-t10-video-convert-adopts-the-loop).
+Its signoff and release passed on 2026-11-04. Pascal's UAT and the gate review remain pending under COR-104's After.
 
-The queue is COR-104, COR-102 Canadian French, then COR-105 AUR package.
-`just next` prints COR-104-T10.
+The queue is COR-102 Canadian French, then COR-105 AUR package.
+`just next` prints COR-102-T1.
 COR-105-T1 waits on Pascal's AUR account and release key.
 After COR-102 ships, XT-602 returns for one small useful slice through the loop.

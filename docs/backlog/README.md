@@ -6,9 +6,8 @@ This folder holds one file per extension or core item and the ordered delivery q
 
 ## Queue
 
-1. COR-104
-2. COR-102
-3. COR-105
+1. COR-102
+2. COR-105
 
 ## Plan rules
 

@@ -70,7 +70,7 @@ These three measures replace the score of the 36 trial cases.
 |---|---|---|---|
 | 1. Pyramid shape | The rules whose enforcer is `Prose only`, for each owner | `just status` for the core and template indexes, `extensionrepo check` for an extension | A: 79 of 154 rules. B: 24 of 57 rules ([N2][n2]). C, video-convert: 3 of 15 ([S4][s4]) |
 | 2. Correction ledger | The level where each correction landed, and its owner | The Level and Owner columns of the Corrections table in the [QA ledger](../../qa/ledger.md) | 66 of 237 past corrections landed below their highest working level ([N1][n1]) |
-| 3. Real use | Video-convert adopts the loop, and its corrections feed measure 2 | COR-104-T10, and the rows of video-convert in the ledger | Not adopted, as #427 says |
+| 3. Real use | Video-convert adopts the loop, and its corrections feed measure 2 | COR-104-T10, and the rows of video-convert in the ledger | Adopted in [COR-104-T10](../../backlog/COR-104-verification-map.md#cor-104-t10-video-convert-adopts-the-loop), released as v0.2.2 |
 
 **Why.** Since 2026-10-01, 232 of 237 corrections reached level 1 or 2 ([N1][n1]).
 But 66 landed below the highest level that works, and four classes hold 50 of them.

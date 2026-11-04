@@ -1,7 +1,7 @@
 ---
 id: COR-104
 core: "verification map"
-state: "Active. Core and template first, then video-convert. Gate review of #427 waits under After"
+state: "Shipped. Core, template, and video-convert adopted the loop. UAT and gate review wait under After"
 ---
 
 # COR-104 verification map
@@ -30,7 +30,7 @@ Trial findings are evidence of gaps only.
 | COR-104-T7 | Publication helpers | agent | COR-104-T6 | done |
 | COR-104-T8 | TLC runner in the kit | agent | - | done |
 | COR-104-T9 | Adoption and shared corrections | agent | COR-104-T4 | done |
-| COR-104-T10 | Video-convert adopts the loop | agent | COR-104-T1, COR-104-T2, COR-104-T3, COR-104-T4, COR-104-T5, COR-104-T6, COR-104-T7, COR-104-T8, COR-104-T9 | todo |
+| COR-104-T10 | Video-convert adopts the loop | agent | COR-104-T1, COR-104-T2, COR-104-T3, COR-104-T4, COR-104-T5, COR-104-T6, COR-104-T7, COR-104-T8, COR-104-T9 | done |
 
 ### COR-104-T1 Rule indexes and ledger columns
 
@@ -145,15 +145,17 @@ It fails first on #427, and the step on #407, where an extension could not fix a
 - **Proves:** readiness.md and the release receipt, in ncly-video-convert
 
 C, level 2, measures 2 and 3.
-In ncly-video-convert, update to that release and run the first build of #427.
-Its publication proof runs through `sdk/verification`, and keeps its model, mapping, probes, and expected results.
-It declares its publications and acceptance cases.
-Each correction gets a ledger row, and a correction of A or B gets the step of D068.
-It fails first on its record, which rejects the new pin ([P1][p1]), and on #427. Done when `just signoff` and `just release` pass.
+The [adoption page](COR-104-verification-map/video-convert.md) keeps the requirements and follow-ups.
+
+Done in [PR #17](https://github.com/pascalandy/ncly-video-convert/pull/17), merged on 2026-11-04.
+`just signoff` and `just release` passed at `4ad77bd5e19ddab9d79c3c5d692087a2789c64d2`.
+The annotated tag [v0.2.2](https://github.com/pascalandy/ncly-video-convert/tree/v0.2.2) points to that commit.
+The [#427 gate table](https://github.com/pascalandy/nicely/issues/427#issuecomment-6637077133) records the evidence.
 
 ## After
 
 Pascal runs a UAT of video-convert at the release of COR-104-T10, and its corrections enter the ledger.
+That UAT remains pending.
 
 Compare the time and findings of each gate in [#427](https://github.com/pascalandy/nicely/issues/427).
 After Pascal accepts each removal, remove each gate that took time and found no real defect.
