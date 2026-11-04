@@ -2,6 +2,8 @@
 
 This part of [COR-104-T10](../COR-104-verification-map.md#cor-104-t10-video-convert-adopts-the-loop) keeps its adoption requirements and follow-ups.
 The card links the completed delivery and its evidence.
+The [adoption corrections](https://github.com/pascalandy/ncly-video-convert/blob/v0.2.2/verification/corrections.md) record each finding.
+The [QA ledger](../../qa/ledger.md#corrections) holds the landed corrections of owner A, #462 and #468.
 
 ## Requirements
 

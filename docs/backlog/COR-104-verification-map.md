@@ -1,7 +1,7 @@
 ---
 id: COR-104
 core: "verification map"
-state: "Shipped. Core, template, and video-convert adopted the loop. UAT and gate review wait under After"
+state: "Shipped. Video-convert adopted the loop. UAT and gate review wait under After"
 ---
 
 # COR-104 verification map
@@ -147,7 +147,7 @@ It fails first on #427, and the step on #407, where an extension could not fix a
 C, level 2, measures 2 and 3.
 The [adoption page](COR-104-verification-map/video-convert.md) keeps the requirements and follow-ups.
 
-Done in [PR #17](https://github.com/pascalandy/ncly-video-convert/pull/17), merged on 2026-11-04.
+Done in [ncly-video-convert#17](https://github.com/pascalandy/ncly-video-convert/pull/17), merged on 2026-11-04.
 `just signoff` and `just release` passed at `4ad77bd5e19ddab9d79c3c5d692087a2789c64d2`.
 The annotated tag [v0.2.2](https://github.com/pascalandy/ncly-video-convert/tree/v0.2.2) points to that commit.
 The [#427 gate table](https://github.com/pascalandy/nicely/issues/427#issuecomment-6637077133) records the evidence.
