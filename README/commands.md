@@ -1,4 +1,4 @@
-# Planned commands
+# Commands and extensions
 
 Nicely is a small core that extensions add commands to, in the spirit of Pi.
 Core brings `describe`, `doctor`, `auth`, and `run`. It bundles `skill`, which agents use to learn Nicely.
@@ -26,4 +26,3 @@ Further work lives in [docs hub](../docs/backlog/XT-104-docs-hub.md), [Canadian 
 [Markdown view](../docs/backlog/XT-103-markdown-view.md), and [video and image jobs](../docs/backlog/XT-602-video-image-jobs.md).
 
 In a terminal, a form asks a human for each missing value. Scripts and agents set `NCLY_NO_INPUT=1` to prevent questions, including in a pseudo-terminal, and use `--json` or `NCLY_JSON=1` for machine output. Commands group actions by domain, such as `ncly transcript run youtube`.
-

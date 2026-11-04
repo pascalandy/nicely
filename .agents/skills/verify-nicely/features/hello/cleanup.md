@@ -26,6 +26,7 @@ It runs the real public host ten times per signal, with 20,000 files and partial
 The driver counts the files before signalling the host through the worker's ancestry.
 Every call records the signal answer, preserved files, stage absence and stopped worker PIDs.
 It records deletion and handler cleanup times, plus the margin inside the 2-second reservation, in `evidence/cleanup-stress.txt` and `.json`.
-That margin subtracts measured handler cleanup only. The signal-to-exit time also includes force-stop and exit overhead.
-The difference `15000 - signal_ms` is the observed margin before the nominal final deadline.
+That margin subtracts measured handler cleanup only. `cleanup_ms` excludes writes of `cleanup.json` and `cleanup.done`.
+`signal_ms` ends when the Verify step returns, after host exit and transcript capture.
+Thus `15000 - signal_ms` is a conservative lower bound on the host's budget margin.
 Run Cleanup and quote `cleanup-stress` afterward. A failed run or nonpositive cleanup margin fails the driver.
