@@ -73,12 +73,15 @@ func TestAcceptedPrivacyLimitKeepsIndependentProof(t *testing.T) {
 func TestPrivacyLimitsRejectMissingOrUnrelatedApproval(t *testing.T) {
 	const declared = "Output: Keeps private data of the input; Retain author"
 	missingText := map[string]string{
-		"empty":           "",
-		"whitespace":      " \t ",
-		"id-only":         "`id-only`",
-		"binding-only":    "Output: Keeps private data of the input",
-		"binding-id-only": "Output: Keeps private data of the input; `binding-id-only`",
-		"binding-none":    "Output: Keeps private data of the input; None.",
+		"empty":              "",
+		"whitespace":         " \t ",
+		"id-only":            "`id-only`",
+		"binding-only":       "Output: Keeps private data of the input",
+		"binding-id-only":    "Output: Keeps private data of the input; `binding-id-only`",
+		"binding-none":       "Output: Keeps private data of the input; None.",
+		"binding-fill-first": "Fill: what is retained; Output: Keeps private data of the input; Retain author",
+		"binding-fill-last":  "Output: Keeps private data of the input; Retain author; fill: acceptance details",
+		"binding-none-text":  "Output: Keeps private data of the input; None.; Retain author",
 	}
 	invalid := strings.Replace(privacyLimitSpec, "`private-metadata` | None |", "`private-metadata`, `pending`, `wrong-state`, `duplicate`, `placeholder`, `unrelated`, `wrong-case` | None |", 1) +
 		"| `pending` | limit | " + declared + " | |\n" +

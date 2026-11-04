@@ -81,7 +81,8 @@ Its case still needs a passing independent reader, the complete reference, and a
 1. Declare the limit under **Limits.**, with its ID, state `limit`, description, and the user's acceptance record.
    Use the columns ID, State, Limit, and Accepted, in that order. Empty cells and placeholder text supply no acceptance.
    The Limit cell also declares each affected `Output: <case>`, separated from its description by semicolons.
-   Bindings can come before or after the description. Empty text, whitespace, the ID alone, bindings alone, and placeholders do not describe retained data.
+   Bindings can come before or after the description. Empty text, whitespace, its own ID alone, and bindings alone do not describe retained data.
+   A `None` or `Fill:` placeholder anywhere in the Limit cell prevents acceptance, even beside a description.
    Missing description text fails with `limit "<id>" is missing Limit text`.
 2. Name that ID in backticks in Accepted for each matrix row that names the applicable Output case.
    Source uses the complete `Output: <case>` binding. Separate multiple bindings with semicolons.

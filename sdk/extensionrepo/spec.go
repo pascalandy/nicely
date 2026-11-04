@@ -42,8 +42,7 @@ func SpecCheckOutputLimit(spec, id, name string) error {
 			if !specLimitDescription(line.Cells[2], id) {
 				return fmt.Errorf("limit %q is missing Limit text describing what is retained", id)
 			}
-			text := strings.Trim(line.Cells[3], "`* .-")
-			if text == "" || strings.EqualFold(text, "None") || strings.HasPrefix(strings.ToLower(text), "fill:") || !SpecNamesOutput(line.Cells[2], name) {
+			if specPlaceholder(line.Cells[3]) || !SpecNamesOutput(line.Cells[2], name) {
 				return notAccepted
 			}
 			return nil
@@ -72,14 +71,23 @@ func specParts(cell string) []string {
 }
 
 func specLimitDescription(cell, id string) bool {
+	described := false
 	for _, part := range specParts(cell) {
 		text := strings.Trim(part, "* .-")
-		if text != "" && text != id && !strings.EqualFold(text, "None") &&
-			!strings.HasPrefix(strings.ToLower(text), "fill:") && !strings.HasPrefix(strings.ToLower(text), "output:") {
-			return true
+		if text == "" || text == id || strings.HasPrefix(strings.ToLower(text), "output:") {
+			continue
 		}
+		if specPlaceholder(text) {
+			return false
+		}
+		described = true
 	}
-	return false
+	return described
+}
+
+func specPlaceholder(text string) bool {
+	text = strings.Trim(text, "`* .-")
+	return text == "" || strings.EqualFold(text, "None") || strings.HasPrefix(strings.ToLower(text), "fill:")
 }
 
 // SpecKind says what a line of spec.md is.
