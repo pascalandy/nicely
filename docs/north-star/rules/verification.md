@@ -1,6 +1,6 @@
 # Verification runs
 
-This part of the [core rule index](README.md) holds the isolation rules of real CLI verification.
+This part of the [core rule index](README.md) holds rules for isolation of verification runs and for recorded author and reviewer identities.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|

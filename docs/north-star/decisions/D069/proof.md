@@ -68,7 +68,7 @@ Commit:     Nicely session proof <pascalandy@users.noreply.github.com>
 CommitDate: Tue Nov 3 16:29:28 2026 -0500
 
     🚑 fix: sessionproof: Greet the requested person
-    
+
     Nicely-Session-ID: b7897dc7-005f-4d0b-8a9e-ba821f3952d4
     Nicely-Harness: claude-code
     Nicely-Harness-Version: 2.1.317
