@@ -70,9 +70,9 @@ tmux_step() {
 	# stays open until kill-server, so the capture holds only what ncly showed.
 	# ncly gets only TERM, which tmux sets, and TMUX, beside what the wrapper
 	# sets, because a variable of the caller, such as the NO_COLOR=1 that agents
-	# set or WT_SESSION, can skip the detection that asks tmux. The variables
-	# that reach the session bus of the user's keychain on Linux, which the
-	# pane gets from the caller, detect nothing, so they pass too.
+	# set or WT_SESSION, can skip the detection that asks tmux.
+	# The pane passes caller bus variables too. The Linux wrapper replaces them
+	# with this run's private keyring address and runtime directory before ncly starts.
 	# shellcheck disable=SC2016 # the pane's sh expands these
 	tmux -L "$pane_server" -f /dev/null new-session -d -s verify -x 200 -y 50 /bin/sh -c '
 		while [ ! -e "$1" ]; do sleep 0.1; done

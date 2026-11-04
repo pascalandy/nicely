@@ -7,7 +7,7 @@ Preconditions:
 
 - A new run from `just verify`, whose Doctor step passed. On macOS, an agent runs it as Gotchas says
 - `tmux -V` answers, for the steps in a terminal, as [terminal.md](terminal.md) describes `just verify tmux`
-- The keychain may hold the fake key of an earlier run under `verifynicely`, left by a release without logout or by a cleanup that could not finish
+- On macOS, the login keychain can hold `verifynicely` from an earlier run. Linux starts with a new private keyring
 - The fake key of this run: `fake=verify-nicely-fake-$(date +%s)`
 
 - **No default keychain.** On macOS, before the step Fixture, run `just verify step "$run" auth auth status --json`. Exit 0 with `"keychain":"unavailable"`: the scratch home holds no keychain. Then `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --json` exits 78 with `KEYRING_UNAVAILABLE`, and no window opens.

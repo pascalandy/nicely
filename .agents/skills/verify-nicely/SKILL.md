@@ -70,7 +70,8 @@ Both calls remain in `$run/evidence/cleanup.txt`.
 Its stderr says `logged the fake key of verifynicely out of the keychain` only after removal.
 Otherwise, stderr says `found no fake key`.
 When the key may remain, cleanup keeps scratch and exits 1.
-Run cleanup again once the keychain answers.
+On macOS, run cleanup again once the login keychain answers.
+On Linux, rerun cleanup to discard the stopped private keyring and its scratch files.
 Run cleanup after a failed drive too.
 Done when cleanup lists the evidence files and both `$run/scratch` and `$run/build` are gone.
 
