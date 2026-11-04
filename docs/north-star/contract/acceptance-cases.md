@@ -86,6 +86,7 @@ Its case still needs a passing independent reader, the complete reference, and a
    Bindings can come before or after the description. Empty text, whitespace, its own ID alone, and bindings alone do not describe retained data.
    A semicolon-separated part that equals `None` or starts with `Fill:` prevents acceptance. These comparisons ignore case.
    Missing description text fails with `limit "<id>" is missing Limit text`.
+   A placeholder part fails with the same message. Remove any placeholder part and describe the retained data.
 2. Name that ID in backticks in Accepted for each matrix row that names the applicable Output case.
    Source uses the complete `Output: <case>` binding. Separate multiple bindings with semicolons.
 3. Use `reads -case '<case>' -limit <id> <output> <reference> <bad> <reader> [<arg>...]`.

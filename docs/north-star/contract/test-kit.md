@@ -58,7 +58,9 @@ An acceptance case makes the same check on a made input, and the kit runs it, as
 ### Acceptance test files
 
 Each case of the Output group of [Generic cases](generic-cases.md) that applies to the command needs a test file (#420).
-A scenario makes that file in the extension's own domain, and `reads` proves the safe outcome on it, as [Acceptance cases](acceptance-cases.md) says. Two cases need more:
+A scenario makes that file in the extension's own domain.
+`reads` proves its safe outcome, or the declared outcome of an accepted privacy limit, with an independent reader.
+[Acceptance cases](acceptance-cases.md) defines this check. Two cases need more:
 
 - **Keeps data that a reader needs.** The test file holds a valid block that a reader needs, and that block holds private text. The block uses a value that is not the default. An independent reader proves the declared privacy behavior and that the output still shows the content correctly. Without an [accepted privacy limit](acceptance-cases.md#accepted-privacy-limits), private text is absent, and the bad variant keeps the raw block and fails (#423)
 - **Loses data that changes the meaning.** Some declarations change how a reader shows the content. The test file gives each of them a value that is not the default. The independent reference applies that declaration before it compares the content, so a lost declaration fails the check
