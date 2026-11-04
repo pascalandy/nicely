@@ -1,6 +1,6 @@
 # Platform, record, runner, tui, wrap, and analysis
 
-This part of the [core rule index](README.md) holds S27 to S51, the rules of SDK package comments.
+This part of the [core rule index](README.md) holds S27 to S51 and S68, the rules of SDK package comments.
 
 | ID | Rule | Source | Enforced by |
 |---|---|---|---|
@@ -15,7 +15,6 @@ This part of the [core rule index](README.md) holds S27 to S51, the rules of SDK
 | S35 | Read stdout and stderr through pipes of the runner, so descendants cannot block Wait | [runner.go][runner] | [Runner test][runner-test], [streams test][streams-test] |
 | S36 | Signal and clean the whole process tree, not only the direct child | [runner.go][runner] | [Runner test][runner-test], [wrap stop scenario][wrap-stop] |
 | S37 | Keep the signal handler until cleanup ends, also for a second Ctrl-C | [runner.go][runner] | [Stubborn cancel scenario][cancel-stubborn], [signal.go][runner-signal] |
-| S68 | The host reserves the last 2 seconds of its 15-second cancellation budget for handler cleanup, after force-stopping descendants, including cleanup children. The final deadline still kills an unresponsive handler | [Cancellation][programs] | [runner cleanup][cleanup], [host dispatch][dispatch], [staged cleanup scenario][staged-test], [real-host stress driver][staged-stress], [stubborn handler control][cancel-stubborn] |
 | S38 | Shorten cleanup only in the test binary, so scenarios reach SIGKILL without a long wait | [runner.go][runner] | [Script test][script-test], [wrap stop scenario][wrap-stop] |
 | S39 | Build each interactive screen from `sdk/tui` | [tui.go][tui] | Prose only |
 | S40 | With no specified look, use the shared help and error styles, and print the rest plainly | [tui.go][tui] | Prose only; the [styles scenario][styles] checks the existing styles |
@@ -30,6 +29,7 @@ This part of the [core rule index](README.md) holds S27 to S51, the rules of SDK
 | S49 | The env action of the fake child prints names only, never values | [fake/main.go][fake] | [Fake test][fake-test] |
 | S50 | Discard a stream of a runner.Program with nil, never io.Discard, so no descendant holds its pipe | [runnerdiscard.go][runnerdiscard] | [runnerdiscard test][runnerdiscard-test], [template recipes test][template-recipes-test], partial: no variable flow |
 | S51 | Add an analyzer as a package listed in Analyzers, with cases that fail first on its past mistake | [analysis.go][analysis] | Prose only |
+| S68 | The host reserves the last 2 seconds of its 15-second cancellation budget for handler cleanup, after force-stopping descendants, including cleanup children. The final deadline still kills an unresponsive handler | [Cancellation][programs] | [runner cleanup][cleanup], [host dispatch][dispatch], [staged cleanup scenario][staged-test], [real-host stress driver][staged-stress], [stubborn handler control][cancel-stubborn] |
 
 [proctree]: ../../../sdk/platform/proctree.go
 [platform-file]: ../../../sdk/platform/file_test.go
@@ -58,7 +58,7 @@ This part of the [core rule index](README.md) holds S27 to S51, the rules of SDK
 [template-recipes-test]: ../../../scripts/template-recipes-test.sh
 [analysis]: ../../../sdk/analysis/analysis.go
 
-[programs]: ../contract/programs-that-ncly-runs.md
+[programs]: ../contract/programs-that-ncly-runs/cancellation.md
 [cleanup]: ../../../sdk/runner/cleanup.go
 [dispatch]: ../../../internal/cli/dispatch.go
 [staged-test]: ../../../testdata/extensions/hello/testdata/script/staged_cleanup.txtar

@@ -58,6 +58,9 @@ An undeclared service gets `RUNTIME`, because core never passes its key. `Main` 
 
 A failure of the command itself prints as an ordinary failure for every kind: the error block, or the answer on stderr with `--json`. On Ctrl-C or SIGTERM, the SDK ends `ctx`, stops the extension's programs as [Programs that ncly runs](programs-that-ncly-runs.md) defines, and sets the outcome's signal, so a handler returns what it has. A handler that has not returned once the 15 seconds of cleanup and the 2 seconds of the drain limit have passed, the time that the SIGKILL of cleanup gives its programs to end, gets no more time: the SDK answers `INTERRUPTED` or `TERMINATED` alone and exits. Under `ncly`, core's own 15 seconds govern, and either path gives the same answer, because both carry the signal's code and no data key. Run directly, `ncly-<slug>` parses global flags and ordinary syntax relative to its extension root.
 Canonical arguments are a subset of that syntax.
+Under the host, cleanup after a resistant worker has a nominal two-second allowance inside the 15-second bound.
+Allow for force-stop and exit overhead when designing staging cleanup.
+[Cancellation](programs-that-ncly-runs/cancellation.md) defines the outcome when that allowance is insufficient.
 `--version` prints the version of the module that built it. `Check` reports each fault below:
 
 - A manifest that breaks [Manifest](manifest.md)

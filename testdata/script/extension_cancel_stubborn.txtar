@@ -14,8 +14,8 @@ answer stderr INTERRUPTED
 stderr '"output_dir":"/Users/me/out"'
 gone fixture.pid
 
-# The reservation also stops the handler's cleanup child. Its diagnostic never
-# enters the JSON stream; the handler answers before the final force-stop.
+# The fixture captures its cleanup child's wait diagnostic separately.
+# It keeps a valid JSON answer and returns before the final force-stop.
 rm fixture.pid
 exec exitcode exit.txt ncly hello cleanup-child --json &
 waitfile fixture.pid

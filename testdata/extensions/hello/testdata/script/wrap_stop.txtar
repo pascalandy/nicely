@@ -55,8 +55,8 @@ answer stderr INTERRUPTED
 stderr '"message":"Stopped by Ctrl-C\. Finished work is kept\."'
 gone hang.pid
 
-# A program that ignores Ctrl-C runs until the SIGKILL of core's cleanup, 4 seconds in the
-# test binary, and the folder of the worker is gone before that SIGKILL
+# Core's reservation force-stops this resistant worker after 2 seconds in the
+# test binary. The worker's folder is gone before that force-stop.
 rm hang.pid child.pid worker.path
 env STUB=stubborn
 exec exitcode exit.txt ncly hello count input.md --json &

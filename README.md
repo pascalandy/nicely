@@ -78,6 +78,13 @@ From a checkout, with Go and `just`, run `just install`. It builds `ncly` into `
 
 An external extension, such as `ncly-video-convert`, installs from its repository at a release tag, with Go and `just`. [Release and install](docs/north-star/contract/extensions.md#release-and-install) gives the commands, and `ncly skill view nicely-extensions` gives them to an agent, with the steps that remove an extension.
 
+## Cancellation
+
+The host force-stops resistant descendants after 13 seconds, with a nominal two-second allowance for handler cleanup.
+Force-stop and exit overhead use part of that allowance. Cleanup children can be force-stopped too.
+An unfinished handler stops at the 15-second deadline and can leave private staging behind.
+The signal answer then omits the handler's result data.
+
 ## Privacy
 
 Nicely sends no telemetry. It contacts a service only when a command you run needs it, such as Deepgram for `ncly transcript`.
@@ -92,7 +99,3 @@ It needs `dbus-run-session` and `gnome-keyring-daemon`; a missing prerequisite s
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-On cancellation, the host stops resistant descendants before its final deadline, leaving the extension handler two seconds to remove private staging.
-Only the direct handler receives that reservation; its cleanup children can be force-stopped with other descendants.
-The existing 15-second cleanup bound still ends an unresponsive handler.

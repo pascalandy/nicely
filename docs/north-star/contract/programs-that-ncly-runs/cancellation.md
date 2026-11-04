@@ -2,12 +2,16 @@
 
 On Ctrl-C or SIGTERM, `ncly` sends the signal to every program it started and to every descendant that it can still reach. The host keeps a 15-second cleanup bound.
 It reserves the final 2 seconds for the extension handler.
-After 13 seconds, it force-stops descendants while leaving the extension process time to remove its private staging.
-This pass targets all observed descendants, including programs that the handler started for cleanup.
+After 13 seconds, it force-stops descendants, leaving a nominal 2-second allowance for handler cleanup.
+Force-stop and exit overhead use part of that allowance.
+Staging cleanup must fit the remaining time.
+The force-stop targets all observed descendants, including programs that the handler started for cleanup.
 The reservation protects only the direct handler; the runner cannot distinguish cleanup children from workers.
 A handler must account for stopped cleanup programs before reporting its signal outcome.
 Keep child diagnostics separate from the structured answer.
 At 15 seconds, it force-stops every remaining process, including an extension that does not finish cleanup.
+An unfinished handler can leave staging behind.
+The host then reports `INTERRUPTED` with exit 130, or `TERMINATED` with exit 143, without the handler's result data.
 A Python program still has its own 10 seconds to stop its children.
 The shared runner exposes this reservation as `Program.CleanupReserve`; its default is zero.
 The reservation stays inside `Cleanup`, and values outside zero through `Cleanup` are clamped to that range.
