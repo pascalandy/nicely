@@ -6,9 +6,9 @@
 #   verify.sh cleanup <run>             remove the scratch folder, keep the evidence
 #   verify.sh prune --keep <n>          remove the runs before the newest <n>, once cleaned up
 
-# logout_fake_key logs the fake key of the auth feature out of the real
-# keychain, then checks that status no longer finds it. Both calls go to the
-# transcript evidence/cleanup.txt. It fails when the key may remain.
+# logout_fake_key removes the auth feature's fake key and checks its absence.
+# Linux uses the private keyring. macOS uses the login keychain.
+# Both calls go to evidence/cleanup.txt. It fails when the key may remain.
 logout_fake_key() {
 	local run="$1" code=0 answer outcome
 	# The key must come from the keychain, never from the caller's variable.
@@ -41,9 +41,10 @@ logout_fake_key() {
 cleanup() {
 	local run folder
 	run="$(run_folder "${1:-}")"
-	# The auth feature leaves its fake key in the real keychain, after a failed
-	# run too. The scratch folder stays until the key is gone, so that a later
-	# cleanup can try again.
+	# Auth can leave its fake key after a failed run.
+	# macOS keeps scratch for another logout attempt.
+	# On Linux, a failed logout calls private-keyring cleanup.
+	# Later cleanup discards a stopped private keyring with scratch.
 	if [[ -f "$run/auth-prepared" && -d "$run/scratch" && ! -f "$run/scratch/keyring/stopped" ]]; then
 		if ! logout_fake_key "$run"; then
 			if [[ -d "$run/scratch/keyring" ]]; then

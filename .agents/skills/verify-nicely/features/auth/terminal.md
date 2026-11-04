@@ -14,4 +14,3 @@ Part of [auth](../auth.md). Follow the three guides in order.
 - **Login for the cleanup.** Run `printf '%s\n' "$fake" | just verify step "$run" auth auth login verifynicely --stdin --force --json`. Exit 0, so the cleanup has a key to log out.
 - **Proof.** Run `grep -c "$fake" "$run/evidence/auth.txt"` after the steps. It prints `0` and exits 1, grep's code for no match: no transcript holds the fake key, not even the one that the terminal steps typed.
 - **Cleanup.** Run `just verify cleanup "$run"`, as SKILL.md says. Exit 0, stderr says `logged the fake key of verifynicely out of the keychain`, and `$run/evidence/cleanup.txt` holds an `ncly auth logout verifynicely --force --json` that exits 0, then an `ncly auth status --json` with `"keychain":"available"`, whose entry of `verifynicely` has `"source":"none"` and `"code":"AUTH_MISSING"`.
-
