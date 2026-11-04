@@ -64,7 +64,7 @@ Accepted names the lines whose tests give an input that passes. Refused names th
 An accepted privacy limit names its ID in Accepted for every applicable Output case.
 The Limit cell declares the same `Output: <case>` bindings, separated from its description by semicolons.
 Bindings can come before or after the description. Its own ID or bindings alone do not describe retained data.
-A `None` or `Fill:` placeholder anywhere in the Limit cell prevents acceptance, even beside a description.
+A semicolon-separated part that equals `None` or starts with `Fill:` prevents acceptance. These comparisons ignore case.
 Its acceptance case uses `reads -case '<case>' -limit <id>` and independently checks the retained metadata and nondefault display declaration.
 Each refusal and each branch that classifies an input has a pair: a test that passes, and a test that refuses.
 Each line of Failures and of Acceptance is in a family. `just finish` fails when a family has no test.

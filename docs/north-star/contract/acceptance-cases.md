@@ -26,10 +26,11 @@ The archive also holds `show.sh`, `reference.txt`, and `bad.txt`. The made input
 
 - **Output**: the primary output that the command wrote. When the answer is the output, `cp stdout answer.json` keeps it in a file first
 - **Reference**: the file that holds what the reader must print, byte for byte. The author writes it from the made input, without the extension
-- **Bad**: a bad variant of the output, which a handler with the bug writes. For a block that a reader needs, it keeps the raw block
+- **Bad**: a bad variant of the output, which a handler with the bug writes. Without an accepted privacy limit, a block that a reader needs stays raw in the bad variant
 - **Reader**: the program that reads the output, and its arguments. The word `{}` stands for the path of the file that it reads. Without that word, the kit adds the path as the last argument
 - `-private`: a text of the made input that the output must not hold. Give it once for each text
 - `-case`: the case of the Output group of [Generic cases](generic-cases.md) that the case proves, by its name
+- `-limit`: an [accepted privacy limit](#accepted-privacy-limits) bound to that exact Output case
 
 Output, Reference, and Bad are paths in the folder of the scenario.
 The scenario makes each file that the case reads.
@@ -49,7 +50,7 @@ The kit compares the whole value, so an answer of 30 lines never passes for 3. A
 2. Output, Reference, and Bad are paths in the folder of the scenario.
 3. The reader is not `ncly`, `ncly-<slug>`, or a program in `requires.bins` of a command of the manifest.
 4. The reader exits 0 on the output, and prints the reference.
-5. No private text is in the output, or in the text of the reader.
+5. Each text given with `-private` is absent from the output and the reader's text.
 6. The bad variant fails. With a private text, the bad variant holds it. Without one, the reader fails on the bad variant, or prints other text.
 7. The cases `Keeps data that a reader needs` and `Keeps private data of the input` give private text or a validated `-limit`.
 8. The case of `-case` is an Output case, and `## Case matrix` of `spec.md` names it.
@@ -79,10 +80,11 @@ An accepted privacy limit can retain metadata that the command does not remove.
 Its case still needs a passing independent reader, the complete reference, and a bad variant that fails.
 
 1. Declare the limit under **Limits.**, with its ID, state `limit`, description, and the user's acceptance record.
-   Use the columns ID, State, Limit, and Accepted, in that order. Empty cells and placeholder text supply no acceptance.
+   Use the columns ID, State, Limit, and Accepted, in that order.
+   An empty Accepted cell, `None`, or a cell that starts with `Fill:` supplies no acceptance.
    The Limit cell also declares each affected `Output: <case>`, separated from its description by semicolons.
    Bindings can come before or after the description. Empty text, whitespace, its own ID alone, and bindings alone do not describe retained data.
-   A `None` or `Fill:` placeholder anywhere in the Limit cell prevents acceptance, even beside a description.
+   A semicolon-separated part that equals `None` or starts with `Fill:` prevents acceptance. These comparisons ignore case.
    Missing description text fails with `limit "<id>" is missing Limit text`.
 2. Name that ID in backticks in Accepted for each matrix row that names the applicable Output case.
    Source uses the complete `Output: <case>` binding. Separate multiple bindings with semicolons.
