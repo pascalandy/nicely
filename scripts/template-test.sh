@@ -75,6 +75,12 @@ fct_main() {
 	proxy="${scratch}/proxy/github.com/pascalandy/nicely/@v"
 	mkdir -p "${proxy}"
 	cache_proxy="file://$(go env GOMODCACHE)/cache/download"
+	# Update drops GIT_CONFIG_GLOBAL too. Its children need the same private
+	# identity through HOME, while tool caches keep their existing locations.
+	export GOCACHE="${GOCACHE:-$(go env GOCACHE)}" UV_CACHE_DIR="${UV_CACHE_DIR:-$(uv cache dir)}"
+	export HOME="${scratch}/home" XDG_CONFIG_HOME="${scratch}/home/.config"
+	mkdir -p "${HOME}"
+	cp "${scratch}/gitconfig" "${HOME}/.gitconfig"
 	export GOPROXY="file://${scratch}/proxy,${cache_proxy},${GOPROXY:-https://proxy.golang.org,direct}"
 	export GOMODCACHE="${scratch}/modcache" GONOSUMDB=github.com/pascalandy/nicely
 	# Go normally makes cached module folders read-only, which prevents scratch cleanup.

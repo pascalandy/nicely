@@ -18,6 +18,8 @@ go -C "$(go mod download -json github.com/pascalandy/nicely@VERSION | sed -n 's/
 
 The updater accepts only `vX.Y.Z` tags and an absolute repository path.
 Every program it starts gets an explicit environment, with every `GIT_*` variable of the caller removed.
+The same helpers serve repository checks, `just contract`, and readiness Git probes.
+Their Git configuration comes from the repository, HOME, and the system, rather than caller `GIT_*` overrides.
 This includes Git started by Copier, so a hook or `git rebase --exec` cannot redirect the update to its repository.
 Other caller settings remain available to the update programs.
 It first requires a committed, clean Git tree.
