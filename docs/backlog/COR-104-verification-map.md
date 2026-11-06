@@ -39,7 +39,7 @@ Trial findings are evidence of gaps only.
 
 A, level 2, measures 1 and 2.
 Core's index in `docs/north-star/rules/` starts with N2's 154 rules.
-`just status` now counts 169 core rules and 13 template rules `Prose on purpose`.
+At T1, `just status` counted 169 core rules and 13 template rules `Prose on purpose`.
 `just test` checks both indexes: each enforcer links a file, or says `Prose only` or `Prose on purpose`.
 `just status` prints the `Prose only` count of each index, and `extensionrepo check` that of an extension.
 T1 marked 11 judgment rules `Prose on purpose` and deleted one rule that signoff replay enforces.

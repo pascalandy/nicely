@@ -30,7 +30,7 @@ flowchart TB
     host["<b>3 · Core, the host</b><br/>Dispatch, help, completion, describe, doctor, auth, run, tap<br/><i>Application layer</i>"]
     svc["<b>2 · Services</b><br/>Config, i18n, program runner, run records<br/><i>Runtime layer</i>"]
     contract["<b>1 · Contract</b><br/>Manifest, environment, answer, exit code, run record<br/><i>Primitives and interface</i>"]
-    platform["<b>0 · Platform</b><br/>Durable writes, locks, keychain, trash, process tree<br/><i>Foundation</i>"]
+    platform["<b>0 · Platform</b><br/>Durable writes, locks, keychain, process tree<br/><i>Foundation</i>"]
   end
 
   taps ~~~ ext ~~~ host ~~~ svc ~~~ contract ~~~ platform
@@ -72,7 +72,7 @@ Each part has one owner: one package and one spec section.
 | 2 | i18n | Catalogs, lookup, plurals, and number, size, and date formats, and the SDK's own catalog | `sdk/i18n/` | [Configuration](contract/configuration.md) |
 | 2 | Interactive parts | The shared styles, forms, and screens | `sdk/tui/` | [dev-preferences.md](dev-preferences.md#decide-the-look-with-a-published-mockup) |
 | 1 | Contract | Answer, answer check, error registry, exit codes, modes, declarations, manifests, and streams | `sdk/contract/` | [contract.md](contract.md) |
-| 0 | Platform | Durable writes, locks, trash, and process tree | `sdk/platform/` | [Record format](contract/record-format.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
+| 0 | Platform | Durable writes, locks, and process tree. [COR-629](../backlog/COR-629-os-trash.md) would add the OS trash | `sdk/platform/` | [Record format](contract/record-format.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
 | 0 | Keychain | Keys in the OS keychain, which reach an extension only through grants, and the time limit of each keychain call | `internal/keychain/` | [Keys](contract/keys.md), [Programs that ncly runs](contract/programs-that-ncly-runs.md) |
 
 A later shared service starts in `sdk/`. Core keeps in `internal/` only what an extension never runs: the host, core's commands and catalog, and the keychain. [The backlog](../backlog/README.md) records when each implementation arrives.
@@ -99,7 +99,7 @@ Each correction lands at the highest of four verification levels that can preven
 | `skill` | Lists, views, and checks skills for agents, including the bundled `nicely` skills | bundled |
 | `agent` | Runs one trusted Codex task with model and effort settings | external |
 | `transcript` | Transcribes one selected YouTube video | external |
-| `docs` | Shows selected project docs in one local site | external |
+| `docs` | Would show selected project docs in one local site. See [XT-104](../backlog/XT-104-docs-hub.md) | external |
 
 [Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key.
 M17 selected neither everyday candidate.

@@ -36,7 +36,7 @@ The template refuses `main` and each Go keyword as a domain, such as `type`. It 
 A push can skip Lefthook, so its GitHub workflow runs `just check` again on `ubuntu-24.04`.
 Public repositories also run the same steps on `macos-15`, and both runners are free.
 
-The repository tests itself through the [test kit](test-kit.md). Its `justfile` has eleven recipes:
+The repository tests itself through the [test kit](test-kit.md). Its `justfile` has twelve recipes:
 
 - `just check` runs every check: `go mod tidy -diff`, `gofmt`, `go vet`, the [analyzers](analyzers.md) of the pinned SDK, and `go test`, whose test kit installs the extension into scratch folders. With `verification/tlc.json`, it first reads the record of the [models](formal-models.md). It first prints how many rules of the rule index are `Prose only`
 - `just finish` is the exit of the loop of the skill, and `just check` stays green for an incomplete round. [Finish gate](finish-gate.md) lists what it checks

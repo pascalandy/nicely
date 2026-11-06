@@ -15,7 +15,7 @@ The candidate renders one Markdown file in the terminal.
 ### Everyday domains
 
 Pascal picked neither candidate in [M17](../milestones/M17-inventory.md) on 2026-10-19.
-Both wait for the [extension template](../milestones/M18-extension-template.md).
+The [extension template](../milestones/M18-extension-template.md) that both waited for shipped with M18.
 
 #### Markdown view
 
