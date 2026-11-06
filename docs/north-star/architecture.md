@@ -104,4 +104,4 @@ Each correction lands at the highest of four verification levels that can preven
 [Command tree](core-spec.md#command-tree) lists the names that core reserves. `transcript` is not the first thing a visitor should try, because it needs a Deepgram key.
 M17 selected neither everyday candidate.
 [M18](../milestones/M18-extension-template.md) shipped the extension template before any particular extension.
-The backlog tracks [Markdown view](../backlog/XT-103-markdown-view.md) and [additional video and image jobs](../backlog/XT-602-video-image-jobs.md).
+The backlog tracks [Markdown view](../backlog/XT-103-markdown-view.md), [image shrink](../backlog/XT-107-image-shrink.md), and [additional video and image jobs](../backlog/XT-602-video-image-jobs.md).

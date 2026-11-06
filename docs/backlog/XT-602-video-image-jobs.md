@@ -1,12 +1,13 @@
 ---
 id: XT-602
 extension: "video and image jobs"
-state: "Idea. Revisit after COR-102 ships: deliver one small useful slice through the loop"
+state: "Idea. XT-107 image shrink delivers the first slice. Revisit another operation after XT-107 ships"
 ---
 
 # XT-602 video and image jobs
 
 Video and image commands encode, cut, extract audio, resize, or compress one selected input.
+[XT-107 image shrink](XT-107-image-shrink.md) is the first slice, chosen by Pascal on 2026-11-06.
 
 ## Later
 

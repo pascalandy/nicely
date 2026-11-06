@@ -7,7 +7,8 @@ This folder holds one file per extension or core item and the ordered delivery q
 ## Queue
 
 1. COR-102
-2. COR-105
+2. XT-107
+3. COR-105
 
 ## Plan rules
 
@@ -111,6 +112,7 @@ With no todo card, it becomes Shipped and leaves the queue.
 
 - [Markdown view](XT-103-markdown-view.md)
 - [Video convert](XT-101-video-convert.md)
+- [Image shrink](XT-107-image-shrink.md)
 - [Video and image jobs](XT-602-video-image-jobs.md)
 
 ## Other deferred scope
