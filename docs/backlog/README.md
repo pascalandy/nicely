@@ -61,6 +61,8 @@ Create no new M file.
 
 An extension maintained in its own repository, such as XT-101, keeps its cards in that repository's Epic.
 The exceptions are COR-103 and COR-104, which hold the verification cards of video-convert.
+XT-107 is also an exception: its cards prove the template on a new extension, so they stay here.
+A pull request here sets each of them to done, as [Cards](#cards) says.
 
 ## Make an item ready
 

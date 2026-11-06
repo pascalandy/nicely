@@ -20,6 +20,7 @@ This is the first slice of [video and image jobs](XT-602-video-image-jobs.md).
 
 - One job: make one image smaller to share it. Domain `image`, name `shrink`, slug `image-shrink`, as [Extension identity](../north-star/contract/extension-identity.md) defines
 - One JPEG, PNG, or WebP file in. One file out, in the same format, at `<stem>.shrunk.<ext>` beside the input. The input never changes
+- Success means that the output has fewer bytes than the input. Otherwise the command publishes nothing and fails with its own error code. An optimized PNG below the size limit is such a case
 - The longest side becomes at most 2048 pixels by default, and one flag sets another value. The command never enlarges an image
 - JPEG and WebP use a lossy quality setting. PNG stays lossless
 - The output applies the orientation of the input and keeps its color profile
@@ -67,7 +68,9 @@ Run `go mod tidy`, commit, and push.
 - **Proves:** intake.toml, spec.md, review.toml, and just finish, in ncly-image-shrink
 
 Build the command of [The command](#the-command) in one pull request, in at most 5 rounds, as the `nicely-extension` skill says.
-Its acceptance cases use images that the tests make, and one of them holds a location that the output must not keep.
+Its acceptance cases use images that the tests make.
+One of them holds a location that the output must not keep.
+One of them cannot get smaller, and the command must refuse it without an output.
 The card is done when `just finish` passes and the pull request merges.
 
 ### XT-107-T3 Release v0.1.0

@@ -21,4 +21,4 @@ The [extension template](../milestones/M18-extension-template.md) that both wait
 
 Today, `just sk-read <name>` in Pascal's SKILLS_MONO repository prints a skill's raw Markdown.
 The candidate renders one Markdown file in the terminal.
-Revisit as a default extension that wraps Glow once the extension template milestone is done.
+Revisit as a default extension that wraps Glow.
