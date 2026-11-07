@@ -1,7 +1,7 @@
 ---
 id: XT-107
 extension: "image shrink"
-state: "Ready. Epic 19, #494, owns the work in pascalandy/ncly-image-shrink"
+state: "Shipped v0.1.0 in pascalandy/ncly-image-shrink. Epic #494 keeps the UAT and Nicely issues #496, #497, and #498 open"
 ---
 
 # XT-107 image shrink
@@ -48,9 +48,9 @@ The video-convert adoption proved the loop on an extension that already existed.
 
 | Card | Title | Owner | Depends on | Status |
 |---|---|---|---|---|
-| XT-107-T1 | Create the repository from the template | agent | - | todo |
-| XT-107-T2 | Build ncly image shrink through the loop | agent | XT-107-T1 | todo |
-| XT-107-T3 | Release v0.1.0 | agent | XT-107-T2 | todo |
+| XT-107-T1 | Create the repository from the template | agent | - | done |
+| XT-107-T2 | Build ncly image shrink through the loop | agent | XT-107-T1 | done |
+| XT-107-T3 | Release v0.1.0 | agent | XT-107-T2 | done |
 
 ### XT-107-T1 Create the repository from the template
 
@@ -61,6 +61,8 @@ Create the public repository `pascalandy/ncly-image-shrink` with the Copier comm
 Pass `domain=image`, `name=shrink`, and `module=github.com/pascalandy/ncly-image-shrink`.
 Run `go mod tidy`, commit, and push.
 `just check` passes on the rendered repository, and its GitHub workflow passes on Linux and macOS.
+
+Done in the [initial push 3af2232](https://github.com/pascalandy/ncly-image-shrink/commit/3af22321e95dac6558baac3fec6db8f54b11a679), with [Linux and macOS checks](https://github.com/pascalandy/ncly-image-shrink/actions/runs/42327801797) passed.
 
 ### XT-107-T2 Build ncly image shrink through the loop
 
@@ -73,6 +75,8 @@ One of them holds a location that the output must not keep.
 One of them cannot get smaller, and the command must refuse it without an output.
 The card is done when `just finish` passes and the pull request merges.
 
+Done in [PR #1](https://github.com/pascalandy/ncly-image-shrink/pull/1), merged at `f83de69`, with Ready in round 4.
+
 ### XT-107-T3 Release v0.1.0
 
 - **Read:** the [README](../../template/README.md.jinja) and the [justfile](../../template/justfile) that the template renders, and [delivery.md](../../template/.agents/skills/nicely-extension/delivery.md)
@@ -81,6 +85,9 @@ The card is done when `just finish` passes and the pull request merges.
 Run `just signoff`, then `just release v0.1.0`.
 Install the tag on om1 and on the Mini as the README says.
 Install the program that the manifest declares on the Mini only with Pascal's consent.
+
+Released [v0.1.0](https://github.com/pascalandy/ncly-image-shrink/tree/v0.1.0).
+See the [release receipt](https://github.com/pascalandy/ncly-image-shrink/pull/1#issuecomment-6703974395) and [om1 and Mini runs](https://github.com/pascalandy/ncly-image-shrink/pull/1#issuecomment-6704004143).
 
 ## After
 
