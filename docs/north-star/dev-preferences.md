@@ -60,6 +60,8 @@ Fix review findings on their pull request's branch. A finding about behavior get
 
 For one branch, rebase onto `origin/main`, push with `--no-verify --force-with-lease`, and run `just signoff`. Then push the SHA of its `Signed off on <sha>` line with `git push --no-verify origin <sha>:main`.
 
+`just merge` does these steps for one rebased and pushed branch. It runs `just signoff` when the head has no green `signoff` status. Then it pushes the signed SHA to `main`. Then it updates the nicely clone on om1, mbp, and the Mini.
+
 These pushes skip the pre-push `just test`, because `just signoff` checks that commit. `main` receives only that signed SHA, even when the branch moves later. An admin push bypasses the `signoff` ruleset, so never push the branch name to `main`. Every other push keeps the hook.
 
 For a stack, follow Land in `gh-stack` for a project that pushes its head to trunk, with these checks. Steps 2 and 7 skip the hook too, because `just signoff-layers` checks each layer:

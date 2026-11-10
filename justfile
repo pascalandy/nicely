@@ -198,3 +198,8 @@ signoff:
 [positional-arguments]
 signoff-layers *branches:
     @exec bash scripts/check-layers.sh --signoff "$@"
+
+# Merge this branch's pull request: sign off if needed, push the signed SHA to main, then update the nicely clone on every fleet machine
+[positional-arguments]
+merge *args:
+    @exec uv run ~/.claude/skills/fleet/scripts/fleet_merge.py --method fast-forward "$@"
