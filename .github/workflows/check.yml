@@ -46,8 +46,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          # The Azure mirror failed DNS during setup; use Ubuntu's archive.
-          printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          # Hosted runners failed DNS for Ubuntu's hosts; use the kernel.org mirror.
+          printf '%s\n' 'https://mirrors.edge.kernel.org/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
           sudo apt-get update
           sudo apt-get install --yes ruby sqlite3 dbus gnome-keyring
           curl --fail --silent --show-error --location \
