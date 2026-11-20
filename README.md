@@ -1,13 +1,32 @@
 # Nicely
 
+![A person at a workbench in a small workshop, with tools on a pegboard and a server rack beside them](docs/assets/hero.png)
+
 A curated, multilingual CLI toolbox that humans and AI agents operate equally well. The command is `ncly`.
+
+Get started on macOS (Linux: see [Install](#install)):
+
+```bash
+brew install pascalandy/tap/ncly
+```
+
+List the skills that teach an agent how to use it:
+
+```console
+$ ncly skill list
+nicely:             Use before running any ncly command.
+nicely-auth:        Use when an ncly command needs a key, or answers AUTH_MISSING, KEYRING_UNAVAILABLE, KEY_NOT_GRANTED, or TERMINAL_REQUIRED.
+nicely-extensions:  Use to install, build, or remove an ncly extension.
+nicely-runs:        Use before a recorded ncly command, or after the answer of one is lost.
+```
+
+More commands:
 
 ```bash
 ncly --help
 ncly --version
 ncly skill view nicely
 ncly describe --json
-ncly skill list
 ncly completion bash
 ```
 
