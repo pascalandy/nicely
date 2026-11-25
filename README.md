@@ -1,6 +1,6 @@
 # Nicely
 
-![Isometric drawing of a person seen from behind at an oak desk on a lakeside roof terrace, under a vine-covered pergola: a monitor and a laptop show terminal lines beside three stacked mini-PCs, and one hand reaches for pliers on a pegboard of hand tools](docs/assets/hero-v2a.png)
+![Isometric drawing of a person at an oak desk under a lakeside roof pergola, reaching for pliers on a pegboard of tools beside terminal screens](docs/assets/hero-v2a.png)
 
 A curated, multilingual CLI toolbox that humans and AI agents operate equally well. The command is `ncly`.
 
