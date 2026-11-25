@@ -45,11 +45,12 @@
     "backend": "plan"
   },
   "post_processing": {
-    "step": "quantized to a 256-color palette with Pillow (median cut, Floyd-Steinberg dither) to stay under 1,000,000 bytes",
+    "step": "quantized to a 256-color palette with Pillow (median cut; dithering left the pixels unchanged) to stay under 1,000,000 bytes",
     "output": "hero-v2a.png",
     "width": 1280,
     "height": 640,
     "bytes": 613700
   },
-  "redacted": "receipt.prompt (identical to the prompt file) and receipt.calls[].source (a local file path) removed; local paths reduced to file names before commit because this repo is public"
+  "redacted": "receipt.prompt (identical to the prompt file) and receipt.calls[].source (a local file path) removed; local paths reduced to file names before commit because this repo is public",
+  "command_note": "normalized: paths reduced to file names; raw render names as used in the working folder"
 }
