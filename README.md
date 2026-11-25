@@ -1,6 +1,6 @@
 # Nicely
 
-![A person at a workbench in a small workshop, with tools on a pegboard and a server rack beside them](docs/assets/hero.png)
+![Isometric drawing of a person at an outdoor workbench by a lakeside tower-house, with tools on a pegboard and a laptop showing terminal lines](docs/assets/hero-v2b.png)
 
 A curated, multilingual CLI toolbox that humans and AI agents operate equally well. The command is `ncly`.
 
